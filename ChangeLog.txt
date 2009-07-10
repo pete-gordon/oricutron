@@ -1,0 +1,31 @@
+Oriculator ChangeLog
+
+0.0.3 (xx-xxx-xxxx)
+-------------------
+
+ * Fixed broken FPS display
+ * You can now auto-insert a tape by passing its name to
+   CLOAD. If you need to "CLOAD" a specific file within
+   a tape image, you can disable this feature.
+
+
+0.0.2 (06-Apr-2009)
+-------------------
+
+ * Blink attribute emulated
+ * Removed the need for a mutex in the sound framework, which
+   gives a good speed up.
+ * AY sound works, more or less (needs much more work :)
+ * FPS display is now averaged over 8 frames
+ * Sends an extra zero-byte at the end of .tap files. This seems
+   to make more tapes load (e.g. MazezaM), but I don't know why.
+   Needs further investigation.
+
+
+0.0.1 (31-Mar-2009)
+-------------------
+
+ * Just an early preview. Please do not report bugs or
+   judge it too harshly. The emulator is not really
+   ready for a release yet :-)
+
