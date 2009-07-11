@@ -20,6 +20,8 @@
 
 #define IRQB_VIA 0
 #define IRQF_VIA (1<<IRQB_VIA)
+#define IRQB_DISK 1
+#define IRQF_DISK (1<<IRQB_DISK)
 
 struct m6502
 {

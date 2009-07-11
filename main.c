@@ -35,6 +35,7 @@ SDL_bool init( void )
 
 void shut( void )
 {
+  if( oric.drivetype == DRV_MICRODISC ) microdisc_free( &oric.md );
   shut_machine();
   shut_gui();
 }
@@ -104,6 +105,7 @@ int main( int argc, char *argv[] )
               breaky = m6502_inst( &oric.cpu, SDL_TRUE );
               via_clock( &oric.via, oric.cpu.icycles );
               ay_ticktock( &oric.ay, oric.cpu.icycles );
+              if( oric.drivetype ) wd17xx_ticktock( &oric.wddisk, oric.cpu.icycles );
 
               if( oric.emu_mode != EM_RUNNING )
               {

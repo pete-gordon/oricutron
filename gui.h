@@ -2,9 +2,11 @@
 enum
 {
   TZ_MONITOR = 0,
+  TZ_DEBUG,
   TZ_REGS,
   TZ_VIA,
   TZ_AY,
+  TZ_DISK,
   TZ_MENU,
   TZ_FILEREQ,
   TZ_LAST

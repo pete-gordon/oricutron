@@ -27,10 +27,18 @@ enum
 {
   MSHOW_VIA=0,
   MSHOW_AY,
+  MSHOW_DISK,
   MSHOW_LAST
 };
 
-static int mshow;
+enum
+{
+  CSHOW_CONSOLE=0,
+  CSHOW_DEBUG,
+  CSHOW_LAST
+};
+
+static int mshow, cshow;
 
 enum
 {
@@ -115,6 +123,49 @@ int hexit( char c )
   if( ( c >= 'A' ) && ( c <= 'F' ) ) return c-('A'-10);
   return -1;
 }
+
+void dbg_scroll( void )
+{
+  int x, y, s, d;
+  struct textzone *ptz = tz[TZ_DEBUG];
+
+  s = ptz->w*2+1;
+  d = ptz->w+1;
+  for( y=0; y<18; y++ )
+  {
+    for( x=0; x<48; x++ )
+    {
+      ptz->tx[d] = ptz->tx[s];
+      ptz->fc[d] = ptz->fc[s];
+      ptz->bc[d++] = ptz->bc[s++];
+    }
+    d += 2;
+    s += 2;
+  }
+
+  for( x=0; x<48; x++ )
+  {
+    ptz->tx[d] = ' ';
+    ptz->fc[d] = 2;
+    ptz->bc[d++] = 3;
+  }
+}
+
+void dbg_printf( char *fmt, ... )
+{
+  va_list ap;
+
+  dbg_scroll();
+
+  va_start( ap, fmt );
+  if( vsnprintf( vsptmp, VSPTMPSIZE, fmt, ap ) != -1 )
+  {
+    vsptmp[VSPTMPSIZE-1] = 0;
+    tzstrpos( tz[TZ_DEBUG], 1, 19, vsptmp );
+  }
+  va_end( ap );
+}
+
 
 static struct disinf distab[] = { { "BRK", AM_IMP },  // 00
                                   { "ORA", AM_ZIX },  // 01
@@ -549,6 +600,51 @@ void mon_update_ay( struct machine *oric )
     oric->ay.regs[AY_PORT_A] );  
 }
 
+/*
+  Uint8             r_status;
+  Uint8             cmd;
+  Uint8             r_track;
+  Uint8             r_sector;
+  Uint8             r_data;
+  Uint8             c_drive;
+  Uint8             c_side;
+  Uint8             c_track;
+  SDL_bool          last_step_in;
+  void            (*setintrq)(void *);
+  void            (*clrintrq)(void *);
+  void             *intrqarg;
+  void            (*setdrq)(void *);
+  void            (*clrdrq)(void *);
+  void             *drqarg;
+  struct diskimage *disk[MAX_DRIVES];
+  int               currentop;
+  int               delayedint;
+*/
+void mon_update_disk( struct machine *oric )
+{
+  if( oric->drivetype == DRV_NONE )
+    return;
+
+  tzprintfpos( tz[TZ_DISK], 2, 2, "STATUS=%02X        ROMDIS=%1X", oric->wddisk.r_status, oric->romdis );
+  tzprintfpos( tz[TZ_DISK], 2, 3, "DRIVE=%02X SIDE=%02X TRACK=%02X",
+    oric->wddisk.c_drive,
+    oric->wddisk.c_side,
+    oric->wddisk.c_track );
+
+  switch( oric->drivetype )
+  {
+    case DRV_MICRODISC:
+      tzprintfpos( tz[TZ_DISK], 2, 5, "MDSTAT=%02X INTRQ=%1X DRQ=%1X",
+        oric->md.status,
+        oric->md.intrq!=0,
+        oric->md.drq!=0 );
+      break;
+    
+    case DRV_JASMIN:
+      break;
+  }
+}
+
 void mon_render( struct machine *oric )
 {
   video_show( oric );
@@ -565,9 +661,23 @@ void mon_render( struct machine *oric )
       mon_update_ay( oric );
       draw_textzone( tz[TZ_AY] );
       break;
+    
+    case MSHOW_DISK:
+      mon_update_disk( oric );
+      draw_textzone( tz[TZ_DISK] );
+      break;
   }
 
-  draw_textzone( tz[TZ_MONITOR] );
+  switch( cshow )
+  {
+    case CSHOW_CONSOLE:
+      draw_textzone( tz[TZ_MONITOR] );
+      break;
+    
+    case CSHOW_DEBUG:
+      draw_textzone( tz[TZ_DEBUG] );
+      break;
+  }
   draw_textzone( tz[TZ_REGS] );
 }
 
@@ -585,14 +695,16 @@ void mon_show_curs( void )
   ptz->bc[ptz->w*19+2+cursx] = 2;
 }
 
-void mon_scroll( void )
+void mon_scroll( SDL_bool above )
 {
-  int x, y, s, d;
+  int x, y, s, d, h;
   struct textzone *ptz = tz[TZ_MONITOR];
+
+  h = above ? 17 : 18;
 
   s = ptz->w*2+1;
   d = ptz->w+1;
-  for( y=0; y<18; y++ )
+  for( y=0; y<h; y++ )
   {
     for( x=0; x<48; x++ )
     {
@@ -616,7 +728,7 @@ void mon_printf( char *fmt, ... )
 {
   va_list ap;
 
-  mon_scroll();
+  mon_scroll( SDL_FALSE );
 
   va_start( ap, fmt );
   if( vsnprintf( vsptmp, VSPTMPSIZE, fmt, ap ) != -1 )
@@ -627,15 +739,36 @@ void mon_printf( char *fmt, ... )
   va_end( ap );
 }
 
+void mon_printf_above( char *fmt, ... )
+{
+  va_list ap;
+
+  mon_scroll( SDL_TRUE );
+
+  va_start( ap, fmt );
+  if( vsnprintf( vsptmp, VSPTMPSIZE, fmt, ap ) != -1 )
+  {
+    vsptmp[VSPTMPSIZE-1] = 0;
+    tzstrpos( tz[TZ_MONITOR], 1, 18, vsptmp );
+  }
+  va_end( ap );
+}
+
 void mon_str( char *str )
 {
-  mon_scroll();
+  mon_scroll( SDL_FALSE );
   tzstrpos( tz[TZ_MONITOR], 1, 19, str );
+}
+
+void mon_str_above( char *str )
+{
+  mon_scroll( SDL_TRUE );
+  tzstrpos( tz[TZ_MONITOR], 1, 18, str );
 }
 
 void mon_start_input( void )
 {
-  mon_scroll();
+  mon_scroll( SDL_FALSE );
   ibuf[0] = 0;
   ilen = 0;
   cursx = 0;
@@ -646,6 +779,7 @@ void mon_start_input( void )
 void mon_init( struct machine *oric )
 {
   mshow = MSHOW_VIA;
+  cshow = CSHOW_CONSOLE;
   mon_start_input();
   mon_show_curs();
   mon_addr = oric->cpu.pc;
@@ -1347,6 +1481,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           m6502_inst( &oric->cpu, SDL_FALSE );
           via_clock( &oric->via, oric->cpu.icycles );
           ay_ticktock( &oric->ay, oric->cpu.icycles );
+          if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
           if( oric->cpu.rastercycles <= 0 )
           {
             video_doraster( oric );
@@ -1356,8 +1491,16 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           setemumode( oric, NULL, EM_RUNNING );
           break;
 
+
         case SDLK_F3:
           mshow = (mshow+1)%MSHOW_LAST;
+          if( ( oric->drivetype == DRV_NONE ) && ( mshow == MSHOW_DISK ) )
+            mshow = (mshow+1)%MSHOW_LAST;
+          *needrender = SDL_TRUE;
+          break;
+
+        case SDLK_F4:
+          cshow = (cshow+1)%CSHOW_LAST;
           *needrender = SDL_TRUE;
           break;
 
@@ -1373,6 +1516,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           m6502_inst( &oric->cpu, SDL_FALSE );
           via_clock( &oric->via, oric->cpu.icycles );
           ay_ticktock( &oric->ay, oric->cpu.icycles );
+          if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
           if( oric->cpu.rastercycles <= 0 )
           {
             video_doraster( oric );
