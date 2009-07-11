@@ -303,7 +303,7 @@ void microdisc_atmoswrite( unsigned short addr, unsigned char data )
 {
   if( oric.romdis )
   {
-    if( addr >= 0xe000 ) return; // Can't write to ROM!
+    if( ( oric.md.diskrom ) && ( addr >= 0xe000 ) ) return; // Can't write to ROM!
   } else {
     if( addr >= 0xc000 ) return;
   }
@@ -356,7 +356,7 @@ unsigned char microdisc_atmosread( unsigned short addr )
 {
   if( oric.romdis )
   {
-    if( addr >= 0xe000 )
+    if( ( oric.md.diskrom ) && ( addr >= 0xe000 ) )
       return rom_microdisc[addr-0xe000];
   } else {
     if( addr >= 0xc000 )
@@ -398,6 +398,8 @@ static SDL_bool load_rom( char *fname, int size, unsigned char *where )
 
 void preinit_machine( void )
 {
+  int i;
+
   oric.mem = NULL;
   oric.rom = NULL;
   oric.scr = NULL;
@@ -411,9 +413,11 @@ void preinit_machine( void )
   oric.tapename[0] = 0;
 
   oric.drivetype = DRV_NONE;
-  oric.diskimg   = NULL;
-  oric.diskimglen = 0;
-  oric.diskname[0] = 0;
+  for( i=0; i<MAX_DRIVES; i++ )
+  {
+    oric.wddisk.disk[i] = NULL;
+    oric.diskname[i][0] = 0;
+  }
 
   microdiscrom_valid = load_rom( "roms/microdis.rom", 8192, rom_microdisc );
   jasminrom_valid    = load_rom( "roms/jasmin.rom"  , 2048, rom_jasmin );

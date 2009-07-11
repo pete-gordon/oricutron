@@ -148,12 +148,11 @@ void tape_ticktock( struct machine *oric, int cycles )
   if( ( oric->tapeoffs < 0 ) || ( oric->tapeoffs >= oric->tapelen ) )
     return;
 
-  if( oric->type == MACH_ATMOS )
+  if( ( oric->type == MACH_ATMOS ) && ( oric->tapeturbo ) )
   {
     switch( oric->cpu.pc )
     {
       case 0xe735: // Cassette sync
-        if( !oric->tapeturbo ) break;
         if( oric->tapebuf[oric->tapeoffs] != 0x16 )
         {
           do
@@ -167,7 +166,6 @@ void tape_ticktock( struct machine *oric, int cycles )
         break;
       
       case 0xe6c9: // Read byte
-        if( !oric->tapeturbo ) break;
         oric->cpu.a = oric->tapebuf[oric->tapeoffs++];
         oric->cpu.f_z = oric->cpu.a == 0;
         oric->cpu.f_c = 1;

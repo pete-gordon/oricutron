@@ -75,14 +75,17 @@ int cmenuitem = 0;
 void toggletapenoise( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglesound( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy );
-void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive );
 void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void toggletapeturbo( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void toggleautowind( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void toggleautoinsrt( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 
 struct osdmenuitem mainitems[] = { { "Insert tape...",      inserttape,      0 },
-                                   { "Insert disk...",      insertdisk,      0 },
+                                   { "Insert disk 0...",    insertdisk,      0 },
+                                   { "Insert disk 1...",    insertdisk,      1 },
+                                   { "Insert disk 2...",    insertdisk,      2 },
+                                   { "Insert disk 3...",    insertdisk,      3 },
                                    { OSDMENUBAR,            NULL,            0 },
                                    { "Hardware options...", gotomenu,        1 },
                                    { "Audio options...",    gotomenu,        2 },
@@ -117,9 +120,9 @@ struct osdmenuitem auopitems[] = { { " Sound enabled",      togglesound,     0 }
                                    { NULL, } };
                                   
 
-struct osdmenu menus[] = { { "Main Menu",        0, mainitems },
-                           { "Hardware options", 8, hwopitems },
-                           { "Audio options",    3, auopitems } };
+struct osdmenu menus[] = { { "Main Menu",        12, mainitems },
+                           { "Hardware options",  8, hwopitems },
+                           { "Audio options",     3, auopitems } };
 
 static int popuptime=0;
 static char popupstr[40];
@@ -948,7 +951,7 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   setemumode( oric, NULL, EM_RUNNING );
 }
 
-void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
 {
   char *odir;
 
@@ -956,7 +959,7 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 
   odir = getcwd( NULL, 0 );
   chdir( diskpath );
-  disk_load_dsk( oric, diskfile );
+  diskimage_load( oric, diskfile, drive );
   chdir( odir );
   free( odir );
 
@@ -964,6 +967,7 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   {
     oric->drivetype = DRV_MICRODISC;
     swapmach( oric, NULL, oric->type );
+    setemumode( oric, NULL, EM_DEBUG );
     return;
   }
   setemumode( oric, NULL, EM_RUNNING );
@@ -1189,7 +1193,7 @@ void preinit_gui( void )
 {
   int i;
   for( i=0; i<TZ_LAST; i++ ) tz[i] = NULL;
-  strcpy( tapepath, "tapes/oricdemo" );
+  strcpy( tapepath, "tapes" );
   strcpy( tapefile, "" );
   strcpy( diskpath, "disks" );
   strcpy( diskfile, "" );
@@ -1276,12 +1280,16 @@ SDL_bool init_gui( void )
 
   tz[TZ_MONITOR] = alloc_textzone( 0, 228, 50, 21, "Monitor" );
   if( !tz[TZ_MONITOR] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
+  tz[TZ_DEBUG] = alloc_textzone( 0, 228, 50, 21, "Debug console" );
+  if( !tz[TZ_DEBUG] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
   tz[TZ_REGS] = alloc_textzone( 240, 0, 50, 19, "6502 Status" );
   if( !tz[TZ_REGS] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
   tz[TZ_VIA]  = alloc_textzone( 400, 228, 30, 21, "VIA Status" );
   if( !tz[TZ_VIA] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
   tz[TZ_AY]   = alloc_textzone( 400, 228, 30, 21, "AY Status" );
   if( !tz[TZ_AY] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
+  tz[TZ_DISK]   = alloc_textzone( 400, 228, 30, 21, "Disk Status" );
+  if( !tz[TZ_DISK] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
   tz[TZ_FILEREQ] = alloc_textzone( 160, 48, 40, 32, "Files" );
   if( !tz[TZ_FILEREQ] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
 

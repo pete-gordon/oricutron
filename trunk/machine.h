@@ -62,9 +62,7 @@ struct machine
   int drivetype;
   struct wd17xx    wddisk;
   struct microdisc md;
-  char diskname[16];
-  int diskimglen;
-  unsigned char *diskimg;
+  char diskname[MAX_DRIVES][16];
 
   unsigned char tapebit, tapeout, tapeparity;
   int tapelen, tapeoffs, tapecount, tapetime, tapedupbytes;
