@@ -46,10 +46,23 @@ In Debugger/Monitor
 -------------------
 
   F2      - Return to the emulator
+  F4      - Toggle console/debug output/memwatch
   F3      - Toggle VIA/AY information
   F9      - Reset cycle count
   F10     - Step over code
+
+  In the console:
+  ---------------
+
   Up/Down - Command history
+
+
+  In memwatch:
+  ------------
+
+  Up/Down           - Scroll (+shift for page up/down)
+  Page Up/Page Down - Page up/down
+  Hex digits        - Enter address
 
 
 Monitor instructions

@@ -3,6 +3,7 @@ enum
 {
   TZ_MONITOR = 0,
   TZ_DEBUG,
+  TZ_MEMWATCH,
   TZ_REGS,
   TZ_VIA,
   TZ_AY,

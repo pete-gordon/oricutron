@@ -86,7 +86,11 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
   oric->tapelen = ftell( f );
   fseek( f, 0, SEEK_SET );
 
-  if( oric->tapelen <= 0 ) return SDL_FALSE;
+  if( oric->tapelen <= 0 )
+  {
+    fclose( f );
+    return SDL_FALSE;
+  }
 
   oric->tapebuf = malloc( oric->tapelen+1 );
   if( !oric->tapebuf )
