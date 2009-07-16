@@ -1,6 +1,28 @@
+/*
+**  Oriculator
+**  Copyright (C) 2009 Peter Gordon
+**
+**  This program is free software; you can redistribute it and/or
+**  modify it under the terms of the GNU General Public License
+**  as published by the Free Software Foundation, version 2
+**  of the License.
+**
+**  This program is distributed in the hope that it will be useful,
+**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**  GNU General Public License for more details.
+**
+**  You should have received a copy of the GNU General Public License
+**  along with this program; if not, write to the Free Software
+**  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+**
+**  6502 emulation header
+*/
 
+// Set to TRUE to count all CPU cycles since the emulation was started
 #define CYCLECOUNT 1
 
+// 6502 flag bits
 #define FB_C 0
 #define FF_C (1<<FB_C)
 #define FB_Z 1
@@ -18,6 +40,7 @@
 #define FB_N 7
 #define FF_N (1<<FB_N)
 
+// IRQ sources
 #define IRQB_VIA 0
 #define IRQF_VIA (1<<IRQB_VIA)
 #define IRQB_DISK 1
@@ -35,12 +58,13 @@ struct m6502
   unsigned short pc;
   SDL_bool nmi, irql;
   int irq;
-  void (*write)(unsigned short, unsigned char);
-  unsigned char (*read)(unsigned short);
+  void (*write)(struct m6502 *,unsigned short, unsigned char);
+  unsigned char (*read)(struct m6502 *,unsigned short);
   SDL_bool anybp;
   int breakpoints[16];
+  void *userdata;
 };
 
-void m6502_init( struct m6502 *cpu );
+void m6502_init( struct m6502 *cpu, void *userdata );
 void m6502_reset( struct m6502 *cpu );
 SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp );

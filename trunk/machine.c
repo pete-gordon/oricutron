@@ -1,3 +1,23 @@
+/*
+**  Oriculator
+**  Copyright (C) 2009 Peter Gordon
+**
+**  This program is free software; you can redistribute it and/or
+**  modify it under the terms of the GNU General Public License
+**  as published by the Free Software Foundation, version 2
+**  of the License.
+**
+**  This program is distributed in the hope that it will be useful,
+**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**  GNU General Public License for more details.
+**
+**  You should have received a copy of the GNU General Public License
+**  along with this program; if not, write to the Free Software
+**  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+**
+**  Oric machine stuff
+*/
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -12,7 +32,6 @@
 #include "disk.h"
 #include "machine.h"
 
-struct machine oric;
 extern SDL_Surface *screen;
 extern int pixpitch;
 SDL_bool needclr = SDL_TRUE;
@@ -25,6 +44,7 @@ extern struct osdmenuitem hwopitems[];
 unsigned char rom_microdisc[8912], rom_jasmin[2048];
 SDL_bool microdiscrom_valid, jasminrom_valid;
 
+// Switch between emulation/monitor/menus etc.
 void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode )
 {
   oric->emu_mode = mode;
@@ -54,6 +74,7 @@ void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode )
   }
 }
 
+// Refresh the video base pointer
 static inline void video_refresh_charset( struct machine *oric )
 {
   if( oric->vid_textattrs & 1 )
@@ -64,6 +85,7 @@ static inline void video_refresh_charset( struct machine *oric )
   }
 }
 
+// Decode an oric video attribute
 void video_decode_attr( struct machine *oric, int attr )
 {
   switch( attr & 0x18 )
@@ -100,6 +122,7 @@ void video_decode_attr( struct machine *oric, int attr )
   }   
 }
 
+// Render a 6x1 block
 void video_render_block( struct machine *oric, int fg, int bg, SDL_bool inverted, int data )
 {
   int i;
@@ -117,6 +140,7 @@ void video_render_block( struct machine *oric, int fg, int bg, SDL_bool inverted
   }
 }
 
+// Copy the video output buffer to the SDL surface
 void video_show( struct machine *oric )
 {
   int x, y;
@@ -269,21 +293,23 @@ SDL_bool video_doraster( struct machine *oric )
 }
 
 // Oric Atmos CPU write
-void atmoswrite( unsigned short addr, unsigned char data )
+void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
-  if( ( !oric.romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
+  struct machine *oric = (struct machine *)cpu->userdata;
+  if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
   if( ( addr & 0xff00 ) == 0x0300 )
   {
-    via_write( &oric.via, addr, data );
+    via_write( &oric->via, addr, data );
     return;
   }
-  oric.mem[addr] = data;
+  oric->mem[addr] = data;
 }
 
 // Atmos + jasmin
-void jasmin_atmoswrite( unsigned short addr, unsigned char data )
+void jasmin_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
-  if( oric.romdis )
+  struct machine *oric = (struct machine *)cpu->userdata;
+  if( oric->romdis )
   {
     if( addr >= 0xf800 ) return; // Can't write to ROM!
   } else {
@@ -292,18 +318,19 @@ void jasmin_atmoswrite( unsigned short addr, unsigned char data )
 
   if( ( addr & 0xff00 ) == 0x0300 )
   {
-    via_write( &oric.via, addr, data );
+    via_write( &oric->via, addr, data );
     return;
   }
-  oric.mem[addr] = data;
+  oric->mem[addr] = data;
 }
 
 // Atmos + microdisc
-void microdisc_atmoswrite( unsigned short addr, unsigned char data )
+void microdisc_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
-  if( oric.romdis )
+  struct machine *oric = (struct machine *)cpu->userdata;
+  if( oric->romdis )
   {
-    if( ( oric.md.diskrom ) && ( addr >= 0xe000 ) ) return; // Can't write to ROM!
+    if( ( oric->md.diskrom ) && ( addr >= 0xe000 ) ) return; // Can't write to ROM!
   } else {
     if( addr >= 0xc000 ) return;
   }
@@ -312,66 +339,72 @@ void microdisc_atmoswrite( unsigned short addr, unsigned char data )
   {
     if( ( addr >= 0x310 ) && ( addr < 0x31c ) )
     {
-      microdisc_write( &oric.md, addr, data );
+      microdisc_write( &oric->md, addr, data );
     } else {
-      via_write( &oric.via, addr, data );
+      via_write( &oric->via, addr, data );
     }
     return;
   }
-  oric.mem[addr] = data;
+  oric->mem[addr] = data;
 }
 
 // Oric Atmos CPU read
-unsigned char atmosread( unsigned short addr )
+unsigned char atmosread( struct m6502 *cpu, unsigned short addr )
 {
+  struct machine *oric = (struct machine *)cpu->userdata;
+
   if( ( addr & 0xff00 ) == 0x0300 )
-    return via_read( &oric.via, addr );
+    return via_read( &oric->via, addr );
 
-  if( ( !oric.romdis ) && ( addr >= 0xc000 ) )
-    return oric.rom[addr-0xc000];
+  if( ( !oric->romdis ) && ( addr >= 0xc000 ) )
+    return oric->rom[addr-0xc000];
 
-  return oric.mem[addr];
+  return oric->mem[addr];
 }
 
 // Atmos + jasmin
-unsigned char jasmin_atmosread( unsigned short addr )
+unsigned char jasmin_atmosread( struct m6502 *cpu, unsigned short addr )
 {
-  if( oric.romdis )
+  struct machine *oric = (struct machine *)cpu->userdata;
+
+  if( oric->romdis )
   {
     if( addr >= 0xf800 )
       return rom_jasmin[addr-0xf800];
   } else {
     if( addr >= 0xc000 )
-      return oric.rom[addr-0xc000];
+      return oric->rom[addr-0xc000];
   }
 
   if( ( addr & 0xff00 ) == 0x0300 )
-    return via_read( &oric.via, addr );
+    return via_read( &oric->via, addr );
 
-  return oric.mem[addr];
+  return oric->mem[addr];
 }
 
 // Atmos + microdisc
-unsigned char microdisc_atmosread( unsigned short addr )
+unsigned char microdisc_atmosread( struct m6502 *cpu, unsigned short addr )
 {
-  if( oric.romdis )
+  struct machine *oric = (struct machine *)cpu->userdata;
+
+  if( oric->romdis )
   {
-    if( ( oric.md.diskrom ) && ( addr >= 0xe000 ) )
+    if( ( oric->md.diskrom ) && ( addr >= 0xe000 ) )
       return rom_microdisc[addr-0xe000];
   } else {
     if( addr >= 0xc000 )
-      return oric.rom[addr-0xc000];
+      return oric->rom[addr-0xc000];
   }
 
   if( ( addr & 0xff00 ) == 0x0300 )
   {
     if( ( addr >= 0x310 ) && ( addr < 0x31c ) )
-      return microdisc_read( &oric.md, addr );
+      return microdisc_read( &oric->md, addr );
 
-    return via_read( &oric.via, addr );
+    return via_read( &oric->via, addr );
   }
 
-  return oric.mem[addr];
+  return oric->mem[addr];
 }
 
 static SDL_bool load_rom( char *fname, int size, unsigned char *where )
@@ -396,27 +429,27 @@ static SDL_bool load_rom( char *fname, int size, unsigned char *where )
   return SDL_TRUE;
 }
 
-void preinit_machine( void )
+void preinit_machine( struct machine *oric )
 {
   int i;
 
-  oric.mem = NULL;
-  oric.rom = NULL;
-  oric.scr = NULL;
+  oric->mem = NULL;
+  oric->rom = NULL;
+  oric->scr = NULL;
 
-  oric.tapebuf = NULL;
-  oric.tapelen = 0;
-  oric.tapemotor = SDL_FALSE;
-  oric.tapeturbo = SDL_TRUE;
-  oric.autorewind = SDL_FALSE;
-  oric.autoinsert = SDL_TRUE;
-  oric.tapename[0] = 0;
+  oric->tapebuf = NULL;
+  oric->tapelen = 0;
+  oric->tapemotor = SDL_FALSE;
+  oric->tapeturbo = SDL_TRUE;
+  oric->autorewind = SDL_FALSE;
+  oric->autoinsert = SDL_TRUE;
+  oric->tapename[0] = 0;
 
-  oric.drivetype = DRV_NONE;
+  oric->drivetype = DRV_NONE;
   for( i=0; i<MAX_DRIVES; i++ )
   {
-    oric.wddisk.disk[i] = NULL;
-    oric.diskname[i][0] = 0;
+    oric->wddisk.disk[i] = NULL;
+    oric->diskname[i][0] = 0;
   }
 
   microdiscrom_valid = load_rom( "roms/microdis.rom", 8192, rom_microdisc );
@@ -474,10 +507,10 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
   return SDL_FALSE;
 }
 
-SDL_bool init_machine( int type )
+SDL_bool init_machine( struct machine *oric, int type )
 {
-  oric.type = type;
-  m6502_init( &oric.cpu );
+  oric->type = type;
+  m6502_init( &oric->cpu, (void*)oric );
   
   switch( type )
   {
@@ -485,101 +518,101 @@ SDL_bool init_machine( int type )
       hwopitems[0].name = "\x0e""Oric-1";
       hwopitems[1].name = " Atmos";
       hwopitems[2].name = " Telestrat";
-      oric.mem = malloc( 65536 + 16384 );
-      if( !oric.mem )
+      oric->mem = malloc( 65536 + 16384 );
+      if( !oric->mem )
       {
         printf( "Out of memory\n" );
         return SDL_FALSE;
       }
 
-      oric.rom = &oric.mem[65536];
+      oric->rom = &oric->mem[65536];
 
-      oric.cpu.read = atmosread;
-      oric.cpu.write = atmoswrite;
+      oric->cpu.read = atmosread;
+      oric->cpu.write = atmoswrite;
 
-      if( !load_rom( "roms/basic10.rom", 16384, &oric.rom[0] ) )
+      if( !load_rom( "roms/basic10.rom", 16384, &oric->rom[0] ) )
         return SDL_FALSE;
 
-      oric.pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
-      oric.pal[1] = SDL_MapRGB( screen->format, 0xff, 0x00, 0x00 );
-      oric.pal[2] = SDL_MapRGB( screen->format, 0x00, 0xff, 0x00 );
-      oric.pal[3] = SDL_MapRGB( screen->format, 0xff, 0xff, 0x00 );
-      oric.pal[4] = SDL_MapRGB( screen->format, 0x00, 0x00, 0xff );
-      oric.pal[5] = SDL_MapRGB( screen->format, 0xff, 0x00, 0xff );
-      oric.pal[6] = SDL_MapRGB( screen->format, 0x00, 0xff, 0xff );
-      oric.pal[7] = SDL_MapRGB( screen->format, 0xff, 0xff, 0xff );
+      oric->pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
+      oric->pal[1] = SDL_MapRGB( screen->format, 0xff, 0x00, 0x00 );
+      oric->pal[2] = SDL_MapRGB( screen->format, 0x00, 0xff, 0x00 );
+      oric->pal[3] = SDL_MapRGB( screen->format, 0xff, 0xff, 0x00 );
+      oric->pal[4] = SDL_MapRGB( screen->format, 0x00, 0x00, 0xff );
+      oric->pal[5] = SDL_MapRGB( screen->format, 0xff, 0x00, 0xff );
+      oric->pal[6] = SDL_MapRGB( screen->format, 0x00, 0xff, 0xff );
+      oric->pal[7] = SDL_MapRGB( screen->format, 0xff, 0xff, 0xff );
 
-      oric.scr = (Uint16 *)malloc( 240*224*2 );
-      if( !oric.scr ) return SDL_FALSE;
+      oric->scr = (Uint16 *)malloc( 240*224*2 );
+      if( !oric->scr ) return SDL_FALSE;
 
-      oric.cyclesperraster = 64;
-      oric.vid_start = 65;
-      oric.vid_maxrast = 312;
-      oric.vid_special = oric.vid_start + 200;
-      oric.vid_end     = oric.vid_start + 224;
-      oric.vid_raster  = 0;
-      video_decode_attr( &oric, 0x18 );
+      oric->cyclesperraster = 64;
+      oric->vid_start = 65;
+      oric->vid_maxrast = 312;
+      oric->vid_special = oric->vid_start + 200;
+      oric->vid_end     = oric->vid_start + 224;
+      oric->vid_raster  = 0;
+      video_decode_attr( oric, 0x18 );
 
-      oric.romdis = SDL_FALSE;
+      oric->romdis = SDL_FALSE;
       break;
     
     case MACH_ATMOS:
       hwopitems[0].name = " Oric-1";
       hwopitems[1].name = "\x0e""Atmos";
       hwopitems[2].name = " Telestrat";
-      oric.mem = malloc( 65536 + 16384 );
-      if( !oric.mem )
+      oric->mem = malloc( 65536 + 16384 );
+      if( !oric->mem )
       {
         printf( "Out of memory\n" );
         return SDL_FALSE;
       }
 
-      oric.rom = &oric.mem[65536];
+      oric->rom = &oric->mem[65536];
 
-      switch( oric.drivetype )
+      switch( oric->drivetype )
       {
         case DRV_MICRODISC:
-          oric.cpu.read = microdisc_atmosread;
-          oric.cpu.write = microdisc_atmoswrite;
-          oric.romdis = SDL_TRUE;
-          microdisc_init( &oric.md, &oric.wddisk, &oric );
+          oric->cpu.read = microdisc_atmosread;
+          oric->cpu.write = microdisc_atmoswrite;
+          oric->romdis = SDL_TRUE;
+          microdisc_init( &oric->md, &oric->wddisk, oric );
           break;
         
         case DRV_JASMIN:
-          oric.cpu.read = jasmin_atmosread;
-          oric.cpu.write = jasmin_atmoswrite;
-          oric.romdis = SDL_TRUE;
+          oric->cpu.read = jasmin_atmosread;
+          oric->cpu.write = jasmin_atmoswrite;
+          oric->romdis = SDL_TRUE;
           break;
 
         default:
-          oric.cpu.read = atmosread;
-          oric.cpu.write = atmoswrite;
-          oric.romdis = SDL_FALSE;
+          oric->cpu.read = atmosread;
+          oric->cpu.write = atmoswrite;
+          oric->romdis = SDL_FALSE;
           break;
       }
 
-      if( !load_rom( "roms/basic11b.rom", 16384, &oric.rom[0] ) )
+      if( !load_rom( "roms/basic11b.rom", 16384, &oric->rom[0] ) )
         return SDL_FALSE;
 
-      oric.pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
-      oric.pal[1] = SDL_MapRGB( screen->format, 0xff, 0x00, 0x00 );
-      oric.pal[2] = SDL_MapRGB( screen->format, 0x00, 0xff, 0x00 );
-      oric.pal[3] = SDL_MapRGB( screen->format, 0xff, 0xff, 0x00 );
-      oric.pal[4] = SDL_MapRGB( screen->format, 0x00, 0x00, 0xff );
-      oric.pal[5] = SDL_MapRGB( screen->format, 0xff, 0x00, 0xff );
-      oric.pal[6] = SDL_MapRGB( screen->format, 0x00, 0xff, 0xff );
-      oric.pal[7] = SDL_MapRGB( screen->format, 0xff, 0xff, 0xff );
+      oric->pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
+      oric->pal[1] = SDL_MapRGB( screen->format, 0xff, 0x00, 0x00 );
+      oric->pal[2] = SDL_MapRGB( screen->format, 0x00, 0xff, 0x00 );
+      oric->pal[3] = SDL_MapRGB( screen->format, 0xff, 0xff, 0x00 );
+      oric->pal[4] = SDL_MapRGB( screen->format, 0x00, 0x00, 0xff );
+      oric->pal[5] = SDL_MapRGB( screen->format, 0xff, 0x00, 0xff );
+      oric->pal[6] = SDL_MapRGB( screen->format, 0x00, 0xff, 0xff );
+      oric->pal[7] = SDL_MapRGB( screen->format, 0xff, 0xff, 0xff );
 
-      oric.scr = (Uint16 *)malloc( 240*224*2 );
-      if( !oric.scr ) return SDL_FALSE;
+      oric->scr = (Uint16 *)malloc( 240*224*2 );
+      if( !oric->scr ) return SDL_FALSE;
 
-      oric.cyclesperraster = 64;
-      oric.vid_start = 65;
-      oric.vid_maxrast = 312;
-      oric.vid_special = oric.vid_start + 200;
-      oric.vid_end     = oric.vid_start + 224;
-      oric.vid_raster  = 0;
-      video_decode_attr( &oric, 0x18 );
+      oric->cyclesperraster = 64;
+      oric->vid_start = 65;
+      oric->vid_maxrast = 312;
+      oric->vid_special = oric->vid_start + 200;
+      oric->vid_end     = oric->vid_start + 224;
+      oric->vid_raster  = 0;
+      video_decode_attr( oric, 0x18 );
       break;
 
     case MACH_TELESTRAT:
@@ -590,28 +623,29 @@ SDL_bool init_machine( int type )
       return SDL_FALSE;
   }
 
-  oric.tapename[0] = 0;
-  tape_rewind( &oric );
-  m6502_reset( &oric.cpu );
-  via_init( &oric.via, &oric );
-  ay_init( &oric.ay, &oric );
-  oric.cpu.rastercycles = oric.cyclesperraster;
-  oric.frames = 0;
-  oric.vid_double = SDL_TRUE;
-  setemumode( &oric, NULL, EM_RUNNING );
-//  setemumode( &oric, NULL, EM_DEBUG );
+  oric->tapename[0] = 0;
+  tape_rewind( oric );
+  m6502_reset( &oric->cpu );
+  via_init( &oric->via, oric );
+  ay_init( &oric->ay, oric );
+  oric->cpu.rastercycles = oric->cyclesperraster;
+  oric->frames = 0;
+  oric->vid_double = SDL_TRUE;
+  setemumode( oric, NULL, EM_RUNNING );
+//  setemumode( oric, NULL, EM_DEBUG );
 
-  if( oric.autorewind ) tape_rewind( &oric );
+  if( oric->autorewind ) tape_rewind( oric );
 
-  setmenutoggles( &oric );
+  setmenutoggles( oric );
 
   return SDL_TRUE;
 }
 
-void shut_machine( void )
+void shut_machine( struct machine *oric )
 {
-  if( oric.mem ) { free( oric.mem ); oric.mem = NULL; oric.rom = NULL; }
-  if( oric.scr ) { free( oric.scr ); oric.scr = NULL; }
+  if( oric->drivetype == DRV_MICRODISC ) { microdisc_free( &oric->md ); oric->drivetype = DRV_NONE; }
+  if( oric->mem ) { free( oric->mem ); oric->mem = NULL; oric->rom = NULL; }
+  if( oric->scr ) { free( oric->scr ); oric->scr = NULL; }
 }
 
 void shut( void );
@@ -635,8 +669,8 @@ void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
   if( oldtype == oric->type )
     return;
 
-  shut_machine();
-  if( !init_machine( oric->type ) )
+  shut_machine( oric );
+  if( !init_machine( oric, oric->type ) )
   {
     shut();
     exit(0);
@@ -645,8 +679,10 @@ void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
 
 void swapmach( struct machine *oric, struct osdmenuitem *mitem, int which )
 {
-  shut_machine();
-  if( !init_machine( which ) )
+  shut_machine( oric );
+  if( ((which>>16)&0xffff) != 0xffff )
+    oric->drivetype = (which>>16)&0xffff;
+  if( !init_machine( oric, which&0xffff ) )
   {
     shut();
     exit(0);

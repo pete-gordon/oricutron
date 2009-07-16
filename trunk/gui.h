@@ -1,4 +1,25 @@
+/*
+**  Oriculator
+**  Copyright (C) 2009 Peter Gordon
+**
+**  This program is free software; you can redistribute it and/or
+**  modify it under the terms of the GNU General Public License
+**  as published by the Free Software Foundation, version 2
+**  of the License.
+**
+**  This program is distributed in the hope that it will be useful,
+**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**  GNU General Public License for more details.
+**
+**  You should have received a copy of the GNU General Public License
+**  along with this program; if not, write to the Free Software
+**  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+**
+**  GUI
+*/
 
+// Reserve your textzones here!
 enum
 {
   TZ_MONITOR = 0,
@@ -15,12 +36,13 @@ enum
 
 struct textzone
 {
-  int x, y, w, h;
-  int px, py, cfc, cbc;
-  unsigned char *tx;
-  unsigned char *fc, *bc;
+  int x, y, w, h;           // Dimensions
+  int px, py, cfc, cbc;     // Current position and text colours
+  unsigned char *tx;        // Text buffer
+  unsigned char *fc, *bc;   // Colour buffers
 };
 
+// "on screen display" menus
 #define OSDMENUBAR ((char *)-1)
 
 struct osdmenuitem
@@ -52,7 +74,7 @@ void gotomenu( struct machine *oric, struct osdmenuitem *mitem, int menunum );
 SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender );
 void setmenutoggles( struct machine *oric );
 
-void render( void );
+void render( struct machine *oric );
 void preinit_gui( void );
-SDL_bool init_gui( void );
+SDL_bool init_gui( struct machine *oric );
 void shut_gui( void );

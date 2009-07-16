@@ -1,3 +1,24 @@
+/*
+**  Oriculator
+**  Copyright (C) 2009 Peter Gordon
+**
+**  This program is free software; you can redistribute it and/or
+**  modify it under the terms of the GNU General Public License
+**  as published by the Free Software Foundation, version 2
+**  of the License.
+**
+**  This program is distributed in the hope that it will be useful,
+**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**  GNU General Public License for more details.
+**
+**  You should have received a copy of the GNU General Public License
+**  along with this program; if not, write to the Free Software
+**  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+**
+**  Monitor/Debugger
+*/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -436,7 +457,7 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr )
   int i;
 
   iaddr = *paddr;
-  op = oric->cpu.read( (*paddr)++ );
+  op = oric->cpu.read( &oric->cpu, (*paddr)++ );
   switch( distab[op].amode )
   {
     case AM_IMP:
@@ -444,14 +465,14 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr )
       break;
     
     case AM_IMM:
-      a1 = oric->cpu.read( (*paddr)++ );
+      a1 = oric->cpu.read( &oric->cpu, (*paddr)++ );
       sprintf( distmp, "  %04X  %02X %02X     %s #$%02X", iaddr, op, a1, distab[op].name, a1 );
       break;
 
     case AM_ZP:
     case AM_ZPX:
     case AM_ZPY:
-      a1 = oric->cpu.read( (*paddr)++ );
+      a1 = oric->cpu.read( &oric->cpu, (*paddr)++ );
       sprintf( distmp, "  %04X  %02X %02X     %s $%02X", iaddr, op, a1, distab[op].name, a1 );
       if( distab[op].amode == AM_ZP ) break;
       strcat( distmp, distab[op].amode == AM_ZPX ? ",X" : ",Y" );
@@ -460,31 +481,31 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr )
     case AM_ABS:
     case AM_ABX:
     case AM_ABY:
-      a1 = oric->cpu.read( (*paddr)++ );
-      a2 = oric->cpu.read( (*paddr)++ );
+      a1 = oric->cpu.read( &oric->cpu, (*paddr)++ );
+      a2 = oric->cpu.read( &oric->cpu, (*paddr)++ );
       sprintf( distmp, "  %04X  %02X %02X %02X  %s $%02X%02X", iaddr, op, a1, a2, distab[op].name, a2, a1 );
       if( distab[op].amode == AM_ABS ) break;
       strcat( distmp, distab[op].amode == AM_ABX ? ",X" : ",Y" );
       break;
 
     case AM_ZIX:
-      a1 = oric->cpu.read( (*paddr)++ );
+      a1 = oric->cpu.read( &oric->cpu, (*paddr)++ );
       sprintf( distmp, "  %04X  %02X %02X     %s ($%02X,X)", iaddr, op, a1, distab[op].name, a1 );
       break;
 
     case AM_ZIY:
-      a1 = oric->cpu.read( (*paddr)++ );
+      a1 = oric->cpu.read( &oric->cpu, (*paddr)++ );
       sprintf( distmp, "  %04X  %02X %02X     %s ($%02X),Y", iaddr, op, a1, distab[op].name, a1 );
       break;
 
     case AM_REL:
-      a1 = oric->cpu.read( (*paddr)++ );
+      a1 = oric->cpu.read( &oric->cpu, (*paddr)++ );
       sprintf( distmp, "  %04X  %02X %02X     %s $%04X", iaddr, op, a1, distab[op].name, ((*paddr)+((signed char)a1))&0xffff );
       break;
 
     case AM_IND:
-      a1 = oric->cpu.read( (*paddr)++ );
-      a2 = oric->cpu.read( (*paddr)++ );
+      a1 = oric->cpu.read( &oric->cpu, (*paddr)++ );
+      a2 = oric->cpu.read( &oric->cpu, (*paddr)++ );
       sprintf( distmp, "  %04X  %02X %02X %02X  %s ($%02X%02X)", iaddr, op, a1, a2, distab[op].name, a2, a1 );
       break;
     
@@ -662,7 +683,7 @@ void mon_update_mwatch( struct machine *oric )
     sprintf( vsptmp, "%04X  ", addr );
     for( k=0; k<8; k++ )
     {
-      sprintf( &vsptmp[128], "%02X ", oric->cpu.read( addr+k ) );
+      sprintf( &vsptmp[128], "%02X ", oric->cpu.read( &oric->cpu, addr+k ) );
       strcat( vsptmp, &vsptmp[128] );
     }
     l = strlen( vsptmp );
@@ -670,7 +691,7 @@ void mon_update_mwatch( struct machine *oric )
     vsptmp[l++] = '\'';
     for( k=0; k<8; k++ )
     {
-      v = oric->cpu.read( addr++ );
+      v = oric->cpu.read( &oric->cpu, addr++ );
       vsptmp[l++] = ((v>31)&&(v<128))?v:'.';
     }
     vsptmp[l++] = '\'';
@@ -1262,7 +1283,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
         sprintf( vsptmp, "%04X  ", mon_addr );
         for( k=0; k<8; k++ )
         {
-          sprintf( &vsptmp[128], "%02X ", oric->cpu.read( mon_addr+k ) );
+          sprintf( &vsptmp[128], "%02X ", oric->cpu.read( &oric->cpu, mon_addr+k ) );
           strcat( vsptmp, &vsptmp[128] );
         }
         l = strlen( vsptmp );
@@ -1270,7 +1291,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
         vsptmp[l++] = '\'';
         for( k=0; k<8; k++ )
         {
-          v = oric->cpu.read( mon_addr++ );
+          v = oric->cpu.read( &oric->cpu, mon_addr++ );
           vsptmp[l++] = ((v>31)&&(v<128))?v:'.';
         }
         vsptmp[l++] = '\'';
@@ -1471,7 +1492,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           }
 
           for( j=0; j<w; j++ )
-            tmem[j] = oric->cpu.read( v+j );
+            tmem[j] = oric->cpu.read( &oric->cpu, v+j );
 
           f = fopen( &cmd[i], "wb" );
           if( !f )

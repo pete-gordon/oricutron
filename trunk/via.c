@@ -1,5 +1,26 @@
+/*
+**  Oriculator
+**  Copyright (C) 2009 Peter Gordon
+**
+**  This program is free software; you can redistribute it and/or
+**  modify it under the terms of the GNU General Public License
+**  as published by the Free Software Foundation, version 2
+**  of the License.
+**
+**  This program is distributed in the hope that it will be useful,
+**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**  GNU General Public License for more details.
+**
+**  You should have received a copy of the GNU General Public License
+**  along with this program; if not, write to the Free Software
+**  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+**
+*/
+
 /* VIA 6522 */
 /* Written from the MOS6522 datasheet */
+/* TODO: shift register */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -128,16 +149,16 @@ void tape_ticktock( struct machine *oric, int cycles )
     {
       case 0xe85f: // Decoded filename
         if( !oric->autoinsert ) break;
-        if( oric->cpu.read( 0x027f ) == 0 ) break;
+        if( oric->cpu.read( &oric->cpu, 0x027f ) == 0 ) break;
 
         for( i=0; i<16; i++ )
         {
-          j = oric->cpu.read( 0x027f+i );
+          j = oric->cpu.read( &oric->cpu, 0x027f+i );
           if( !j ) break;
           tapefile[i] = j;
         }
         tapefile[i] = 0;
-        oric->cpu.write( 0x27f, 0 );
+        oric->cpu.write( &oric->cpu, 0x27f, 0 );
 
         odir = getcwd( NULL, 0 );
         chdir( tapepath );
@@ -173,8 +194,8 @@ void tape_ticktock( struct machine *oric, int cycles )
         oric->cpu.a = oric->tapebuf[oric->tapeoffs++];
         oric->cpu.f_z = oric->cpu.a == 0;
         oric->cpu.f_c = 1;
-        oric->cpu.write( 0x2f, oric->cpu.a );
-        oric->cpu.write( 0x2b1, 0x00 );
+        oric->cpu.write( &oric->cpu, 0x2f, oric->cpu.a );
+        oric->cpu.write( &oric->cpu, 0x2b1, 0x00 );
         oric->cpu.pc = 0xe6fb;
         break;
     }

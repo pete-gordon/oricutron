@@ -1,3 +1,23 @@
+/*
+**  Oriculator
+**  Copyright (C) 2009 Peter Gordon
+**
+**  This program is free software; you can redistribute it and/or
+**  modify it under the terms of the GNU General Public License
+**  as published by the Free Software Foundation, version 2
+**  of the License.
+**
+**  This program is distributed in the hope that it will be useful,
+**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**  GNU General Public License for more details.
+**
+**  You should have received a copy of the GNU General Public License
+**  along with this program; if not, write to the Free Software
+**  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+**
+**  WD17xx, Microdisc and Jasmin emulation
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,12 +35,13 @@
 #include "monitor.h"
 
 extern char diskfile[], diskpath[];
-extern struct machine oric;
 
+// Track size, ID mark, Data mark, Deleted data mark
 static struct densityinfo dinf[] = { { 0, },          // ?
                                      { 0, },          // High density
                                      { 0x1900, 0xfe, 0xfb, 0xf8 } };
 
+// Pop up disk image information for a couple of seconds
 void disk_popup( struct machine *oric, int drive )
 {
   char tmp[40];
@@ -34,6 +55,7 @@ void disk_popup( struct machine *oric, int drive )
   do_popup( tmp );
 }
 
+// Free a disk image and clear the pointer to it
 void diskimage_free( struct diskimage **dimg )
 {
   if( !(*dimg) ) return;
@@ -42,6 +64,7 @@ void diskimage_free( struct diskimage **dimg )
   (*dimg) = NULL;
 }
 
+// Read a raw integer from a disk image file
 Uint32 diskimage_rawint( struct diskimage *dimg, Uint32 offset )
 {
   if( !dimg ) return 0;
@@ -51,6 +74,9 @@ Uint32 diskimage_rawint( struct diskimage *dimg, Uint32 offset )
   return (dimg->rawimage[offset+3]<<24)|(dimg->rawimage[offset+2]<<16)|(dimg->rawimage[offset+1]<<8)|dimg->rawimage[offset];
 }
 
+// Allocate and initialise a disk image structure
+// If "rawimglen" isn't zero, it will also allocate
+// ram for a raw disk image
 struct diskimage *diskimage_alloc( Uint32 rawimglen )
 {
   struct diskimage *dimg;
@@ -77,6 +103,7 @@ struct diskimage *diskimage_alloc( Uint32 rawimglen )
   return dimg;
 }
 
+// Eject a disk from a drive
 void disk_eject( struct machine *oric, int drive )
 {
   diskimage_free( &oric->wddisk.disk[drive] );
@@ -84,6 +111,7 @@ void disk_eject( struct machine *oric, int drive )
   disk_popup( oric, drive );
 }
 
+// Cache a track
 void diskimage_cachetrack( struct diskimage *dimg, int track, int side )
 {
   Uint8 *ptr, *eot;
@@ -355,7 +383,7 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
 }
 
 static SDL_bool last_step_in = SDL_FALSE;
-void wd17xx_write( struct wd17xx *wd, unsigned short addr, unsigned char data )
+void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr, unsigned char data )
 {
   switch( addr )
   {
@@ -367,13 +395,13 @@ void wd17xx_write( struct wd17xx *wd, unsigned short addr, unsigned char data )
           switch( data & 0x10 )
           {
             case 0x00:  // Restore (Type I)
-              dbg_printf( "DISK: (%04X) Restore", oric.cpu.pc-1 );
+              dbg_printf( "DISK: (%04X) Restore", oric->cpu.pc-1 );
               wd17xx_seek_track( wd, 0 );
               wd->currentop = COP_NUFFINK;
               break;
             
             case 0x10:  // Seek (Type I)
-              dbg_printf( "DISK: (%04X) Seek", oric.cpu.pc-1 );
+              dbg_printf( "DISK: (%04X) Seek", oric->cpu.pc-1 );
               wd17xx_seek_track( wd, wd->r_data );
               wd->currentop = COP_NUFFINK;
               break;
@@ -381,7 +409,7 @@ void wd17xx_write( struct wd17xx *wd, unsigned short addr, unsigned char data )
           break;
         
         case 0x20:  // Step (Type I)
-          dbg_printf( "DISK: (%04X) Step", oric.cpu.pc-1 );
+          dbg_printf( "DISK: (%04X) Step", oric->cpu.pc-1 );
           if( last_step_in )
             wd17xx_seek_track( wd, wd->c_track+1 );
           else
@@ -406,7 +434,7 @@ void wd17xx_write( struct wd17xx *wd, unsigned short addr, unsigned char data )
         
         case 0x80:  // Read sector (Type II)
           printf( "TRACK: %d, SECTOR: %d\n", wd->r_track, wd->r_sector );
-          dbg_printf( "DISK: (%04X) Read sector", oric.cpu.pc-1 );
+          dbg_printf( "DISK: (%04X) Read sector", oric->cpu.pc-1 );
           wd->curroffs   = 0;
           wd->currsector = wd17xx_find_sector( wd, wd->r_sector );
           if( !wd->currsector )
@@ -433,11 +461,11 @@ void wd17xx_write( struct wd17xx *wd, unsigned short addr, unsigned char data )
           switch( data & 0x10 )
           {
             case 0x00: // Read address (Type III)
-              dbg_printf( "DISK: (%04X) Read address", oric.cpu.pc-1 );
+              dbg_printf( "DISK: (%04X) Read address", oric->cpu.pc-1 );
               break;
             
             case 0x10: // Force IRQ (Type IV)
-              dbg_printf( "DISK: (%04X) Force int", oric.cpu.pc-1 );
+              dbg_printf( "DISK: (%04X) Force int", oric->cpu.pc-1 );
               wd->setintrq( wd->intrqarg );
               wd->r_status = 0;
               wd->currentop = COP_NUFFINK;
@@ -449,12 +477,12 @@ void wd17xx_write( struct wd17xx *wd, unsigned short addr, unsigned char data )
           switch( data & 0x10 )
           {
             case 0x00: // Read track (Type III)
-              dbg_printf( "DISK: (%04X) Read track", oric.cpu.pc-1 );
+              dbg_printf( "DISK: (%04X) Read track", oric->cpu.pc-1 );
               wd->currentop = COP_READ_TRACK;
               break;
             
             case 0x10: // Write track (Type III)
-              dbg_printf( "DISK: (%04X) Write track", oric.cpu.pc-1 );
+              dbg_printf( "DISK: (%04X) Write track", oric->cpu.pc-1 );
               wd->currentop = COP_WRITE_TRACK;
               break;
           }
@@ -536,7 +564,7 @@ void microdisc_free( struct microdisc *md )
 
 unsigned char microdisc_read( struct microdisc *md, unsigned short addr )
 {
-//  dbg_printf( "DISK: (%04X) Read from %04X", oric.cpu.pc-1, addr );
+//  dbg_printf( "DISK: (%04X) Read from %04X", md->oric->cpu.pc-1, addr );
   if( ( addr >= 0x310 ) && ( addr < 0x314 ) )
     return wd17xx_read( md->wd, addr&3 );
 
@@ -554,10 +582,10 @@ unsigned char microdisc_read( struct microdisc *md, unsigned short addr )
 
 void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char data )
 {
-//  dbg_printf( "DISK: (%04X) Write %02X to %04X", oric.cpu.pc-1, data, addr );
+//  dbg_printf( "DISK: (%04X) Write %02X to %04X", md->oric->cpu.pc-1, data, addr );
   if( ( addr >= 0x310 ) && ( addr < 0x314 ) )
   {
-    wd17xx_write( md->wd, addr&3, data );
+    wd17xx_write( md->oric, md->wd, addr&3, data );
     return;
   }
 

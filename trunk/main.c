@@ -1,3 +1,22 @@
+/*
+**  Oriculator
+**  Copyright (C) 2009 Peter Gordon
+**
+**  This program is free software; you can redistribute it and/or
+**  modify it under the terms of the GNU General Public License
+**  as published by the Free Software Foundation, version 2
+**  of the License.
+**
+**  This program is distributed in the hope that it will be useful,
+**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**  GNU General Public License for more details.
+**
+**  You should have received a copy of the GNU General Public License
+**  along with this program; if not, write to the Free Software
+**  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+**
+*/
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -13,36 +32,35 @@
 #include "machine.h"
 #include "monitor.h"
 
-extern struct machine oric;
 extern SDL_bool warpspeed, soundon;
 Uint32 lastframetimes[8], frametimeave;
 
-SDL_bool init( void )
+SDL_bool init( struct machine *oric )
 {
   Sint32 i;
 
   for( i=0; i<8; i++ ) lastframetimes[i] = 0;
   frametimeave = 0;
-  preinit_machine();
+  preinit_machine( oric );
   preinit_gui();
 
-  if( !init_gui() ) return SDL_FALSE;
-  if( !init_machine( MACH_ATMOS ) ) return SDL_FALSE;
-  mon_init( &oric );
+  if( !init_gui( oric ) ) return SDL_FALSE;
+  if( !init_machine( oric, MACH_ATMOS ) ) return SDL_FALSE;
+  mon_init( oric );
 
   return SDL_TRUE;
 }
 
-void shut( void )
+void shut( struct machine *oric )
 {
-  if( oric.drivetype == DRV_MICRODISC ) microdisc_free( &oric.md );
-  shut_machine();
+  shut_machine( oric );
   shut_gui();
 }
 
-Uint32 nosoundtiming( Uint32 interval, void *dummy )
+Uint32 nosoundtiming( Uint32 interval, void *userdata )
 {
-  if( ( oric.emu_mode == EM_RUNNING ) &&
+  struct machine *oric = (struct machine *)userdata;
+  if( ( oric->emu_mode == EM_RUNNING ) &&
       ( !soundon ) )
   {
     SDL_Event     event;
@@ -59,20 +77,20 @@ Uint32 nosoundtiming( Uint32 interval, void *dummy )
     SDL_PushEvent( &event );
   }
 
-  return (oric.cyclesperraster == 64) ? 1000/50 : 1000/60;
+  return (oric->cyclesperraster == 64) ? 1000/50 : 1000/60;
 }
-
 
 int main( int argc, char *argv[] )
 {
   void *thetimer;
   Sint32 i;
+  struct machine oric;
 
-  if( init() )
+  if( init( &oric ) )
   {
     SDL_bool done, needrender, framedone;
 
-    thetimer = SDL_AddTimer( 1000/50, (SDL_NewTimerCallback)nosoundtiming, 0 );
+    thetimer = SDL_AddTimer( 1000/50, (SDL_NewTimerCallback)nosoundtiming, (void *)&oric );
 
     done = SDL_FALSE;
     needrender = SDL_TRUE;
@@ -86,7 +104,7 @@ int main( int argc, char *argv[] )
 
       if( needrender )
       {
-        render();
+        render( &oric );
         needrender = SDL_FALSE;
       }
       
@@ -186,7 +204,7 @@ int main( int argc, char *argv[] )
       }
     }
   }
-  shut();
+  shut( &oric );
 
 	return 0;
 }

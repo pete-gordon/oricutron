@@ -1,14 +1,44 @@
+/*
+**  Oriculator
+**  Copyright (C) 2009 Peter Gordon
+**
+**  This program is free software; you can redistribute it and/or
+**  modify it under the terms of the GNU General Public License
+**  as published by the Free Software Foundation, version 2
+**  of the License.
+**
+**  This program is distributed in the hope that it will be useful,
+**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**  GNU General Public License for more details.
+**
+**  You should have received a copy of the GNU General Public License
+**  along with this program; if not, write to the Free Software
+**  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+**
+**  General Instruments AY-8912 emulation (including oric keyboard emulation)
+*/
 
+// Integer fraction bits to use when mapping
+// clock cycles to audio samples
 #define FPBITS 16
+
+// Output audio frequency
 #define AUDIO_FREQ   44100
+
+// Audio buffer size (50Hz)
 #define AUDIO_BUFLEN (AUDIO_FREQ/50)
+
+// Audio samples per clock cycle
 #define SAMPLESPERCYCLE (((AUDIO_BUFLEN<<FPBITS)/(64*312))+1)  // Samples per frame / Cycles per frame (in fixed point) Rounded up a bit.
 
+// GI addressing
 #define AYBMB_BC1  0
 #define AYBMF_BC1  (1<<AYBMB_BC1)
 #define AYBMB_BDIR 1
 #define AYBMF_BDIR (1<<AYBMB_BDIR)
 
+// 8912 registers
 enum
 {
   AY_CHA_PER_L = 0,
