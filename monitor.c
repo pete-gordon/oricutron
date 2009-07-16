@@ -22,6 +22,10 @@ static char ibuf[60], lastcmd;
 static char history[10][60];
 static int ilen, cursx, histu=0, histp=-1;
 static unsigned short mon_addr;
+static unsigned short mw_addr;
+static int mw_mode=0, mw_koffs=0;
+static char mw_ibuf[8];
+static SDL_bool kshifted = SDL_FALSE;
 
 enum
 {
@@ -35,6 +39,7 @@ enum
 {
   CSHOW_CONSOLE=0,
   CSHOW_DEBUG,
+  CSHOW_MWATCH,
   CSHOW_LAST
 };
 
@@ -645,6 +650,40 @@ void mon_update_disk( struct machine *oric )
   }
 }
 
+void mon_update_mwatch( struct machine *oric )
+{
+  unsigned short addr;
+  int j,k,l;
+  unsigned int v;
+
+  addr = mw_addr;
+  for( j=0; j<19; j++ )
+  {
+    sprintf( vsptmp, "%04X  ", addr );
+    for( k=0; k<8; k++ )
+    {
+      sprintf( &vsptmp[128], "%02X ", oric->cpu.read( addr+k ) );
+      strcat( vsptmp, &vsptmp[128] );
+    }
+    l = strlen( vsptmp );
+    vsptmp[l++] = 32;
+    vsptmp[l++] = '\'';
+    for( k=0; k<8; k++ )
+    {
+      v = oric->cpu.read( addr++ );
+      vsptmp[l++] = ((v>31)&&(v<128))?v:'.';
+    }
+    vsptmp[l++] = '\'';
+    vsptmp[l++] = 0;
+    tzstrpos( tz[TZ_MEMWATCH], 1, j+1, vsptmp );
+  }
+
+  if( mw_mode == 0 ) return;
+
+  makebox( tz[TZ_MEMWATCH], 17, 8, 7, 3, 2, 3 );
+  tzstrpos( tz[TZ_MEMWATCH], 18, 9, mw_ibuf );
+}
+
 void mon_render( struct machine *oric )
 {
   video_show( oric );
@@ -677,7 +716,12 @@ void mon_render( struct machine *oric )
     case CSHOW_DEBUG:
       draw_textzone( tz[TZ_DEBUG] );
       break;
-  }
+
+    case CSHOW_MWATCH:
+      mon_update_mwatch( oric );
+      draw_textzone( tz[TZ_MEMWATCH] );
+      break;
+}
   draw_textzone( tz[TZ_REGS] );
 }
 
@@ -1447,7 +1491,23 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
     case '?':
       lastcmd = cmd[i];
+      mon_str( "KEYS:" );
+      //          |          -          |          -          |
+      mon_str( "  F2 : Quit Monitor     F3 : Toggle Console" );
+      mon_str( "  F4 : Toggle info      F9 : Reset cycles" );
+      mon_str( "  F10: Step CPU" );
+      mon_str( " " );
       mon_str( "COMMANDS:" );
+      mon_str( "  bs <addr>             - Set breakpoint" );
+      mon_str( "  bc <bp id>            - Clear breakpoint" );
+      mon_str( "  bz                    - Zap breakpoints" );
+      mon_str( "  bl                    - List breakpoints" );
+      mon_str( "  m <addr>              - Dump memory" );
+      mon_str( "  d <addr>              - Disassemble" );
+      mon_str( "  r <reg> <val>         - Set <reg> to <val>" );
+      mon_str( "  q, x or qm            - Quit monitor" );
+      mon_str( "  qe                    - Quit emulator" );
+      mon_str( "  wm <addr> <len> <file>- Write mem to disk" );
       break;
 
     default:
@@ -1459,12 +1519,227 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
   return done;
 }
 
-SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
+static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 {
   int i;
   SDL_bool done;
 
   done = SDL_FALSE;
+  switch( ev->key.keysym.sym )
+  {
+    case SDLK_UP:
+      if( histp >= (histu-1) ) break;
+      mon_hide_curs();
+      strcpy( ibuf, &history[++histp][0] );
+      ilen = strlen( ibuf );
+      cursx = ilen;
+      tzstrpos( tz[TZ_MONITOR], 2, 19, "                                               " );
+      tzstrpos( tz[TZ_MONITOR], 2, 19, ibuf );
+      mon_show_curs();
+      *needrender = SDL_TRUE;
+      break;
+
+    case SDLK_DOWN:
+      mon_hide_curs();
+      if( histp <= 0 )
+      {
+        histp = -1;
+        ibuf[0] = 0;
+        ilen = 0;
+        cursx = 0;
+      } else {
+        strcpy( ibuf, &history[--histp][0] );
+        ilen = strlen( ibuf );
+        cursx = ilen;
+      }
+      tzstrpos( tz[TZ_MONITOR], 2, 19, "                                               " );
+      tzstrpos( tz[TZ_MONITOR], 2, 19, ibuf );
+      mon_show_curs();
+      *needrender = SDL_TRUE;
+      break;
+    
+    default:
+      break;
+  }
+
+  switch( ev->key.keysym.unicode )
+  {
+    case SDLK_BACKSPACE:
+      if( cursx > 0 )
+      {
+        mon_hide_curs();
+        for( i=cursx-1; i<ilen; i++ )
+          ibuf[i] = ibuf[i+1];
+        cursx--;
+        ilen = strlen( ibuf );
+        tzstrpos( tz[TZ_MONITOR], 2, 19, ibuf );
+        tzstr( tz[TZ_MONITOR], " " );
+        mon_show_curs();
+        *needrender = SDL_TRUE;
+      }
+      break;
+    
+    case SDLK_LEFT:
+      if( cursx > 0 )
+      {
+        mon_hide_curs();
+        cursx--;
+        mon_show_curs();
+        *needrender = SDL_TRUE;
+      }
+      break;
+
+    case SDLK_RIGHT:
+      if( cursx < ilen )
+      {
+        mon_hide_curs();
+        cursx++;
+        mon_show_curs();
+        *needrender = SDL_TRUE;
+      }
+      break;
+    
+    case SDLK_RETURN:
+      mon_hide_curs();
+      ibuf[ilen] = 0;
+      if( ilen == 0 )
+      {
+        switch( lastcmd )
+        {
+          case 'm':
+          case 'd':
+            ibuf[cursx++] = lastcmd;
+            ibuf[cursx] = 0;
+            ilen = 1;
+            break;
+        }
+      } else {
+        if( ( histu > 0 ) && ( strcmp( &history[0][0], ibuf ) == 0 ) )
+        {
+        } else {
+          if( histu > 0 )
+          {
+            for( i=histu; i>0; i-- )
+              strcpy( &history[i][0], &history[i-1][0] );
+
+          }
+          strcpy( &history[0][0], ibuf );
+          if( histu < 10 ) histu++;
+        }
+      }
+      histp = -1;
+
+      tzsetcol( tz[TZ_MONITOR], 2, 3 ); 
+      done |= mon_cmd( ibuf, oric, needrender );
+      mon_start_input();
+      mon_show_curs();
+      *needrender = SDL_TRUE;
+      break;
+
+    default:
+      if( ( ev->key.keysym.unicode > 31 ) && ( ev->key.keysym.unicode < 127 ) )
+      {
+        if( ilen >= 47 ) break;
+
+        mon_hide_curs();
+        for( i=ilen+1; i>cursx; i-- )
+          ibuf[i] = ibuf[i-1];
+        ibuf[cursx] = ev->key.keysym.unicode;
+        cursx++;
+        ilen++;
+        tzstrpos( tz[TZ_MONITOR], 2, 19, ibuf );
+        tzstr( tz[TZ_MONITOR], " " );
+        mon_show_curs();
+        *needrender = SDL_TRUE;
+      }
+      break;
+  }
+  return done;
+}
+
+static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
+{
+  SDL_bool done;
+  unsigned int v;
+  int i;
+
+  done = SDL_FALSE;
+  switch( ev->key.keysym.sym )
+  {
+    case SDLK_UP:
+      mw_addr -= kshifted ? 8*18 : 8;
+      *needrender = SDL_TRUE;
+      break;
+
+    case SDLK_DOWN:
+      mw_addr += kshifted ? 8*18 : 8;
+      *needrender = SDL_TRUE;
+      break;
+
+    case SDLK_PAGEUP:
+      mw_addr -= 8*18;
+      *needrender = SDL_TRUE;
+      break;
+
+    case SDLK_PAGEDOWN:
+      mw_addr += 8*18;
+      *needrender = SDL_TRUE;
+      break;
+    
+    case SDLK_RETURN:
+      if( mw_mode != 1 ) break;
+      mw_ibuf[5] = 0;
+      mw_mode = 0;
+      i = 0;
+      if( mon_getnum( oric, &v, mw_ibuf, &i, SDL_FALSE, SDL_FALSE, SDL_FALSE ) )
+        mw_addr = v;
+      *needrender = SDL_TRUE;
+      break;
+    
+    case SDLK_ESCAPE:
+      mw_mode = 0;
+      break;
+     
+    case SDLK_BACKSPACE:
+      if( mw_mode != 1 ) break;
+      if( mw_koffs <= 0 ) break;
+      mw_ibuf[mw_koffs--] = 0;
+      *needrender = SDL_TRUE;
+      break;
+
+    default:
+      break;
+  }
+
+  if( ishex( ev->key.keysym.unicode ) )
+  {
+    if( mw_mode != 1 )
+    {
+      mw_mode = 1;
+      mw_ibuf[0] = '$';
+      mw_ibuf[1] = 0;
+      mw_koffs = 0;
+    }
+
+    if( mw_koffs < 4 )
+    {
+      mw_ibuf[++mw_koffs] = ev->key.keysym.unicode;
+      mw_ibuf[mw_koffs+1] = 0;
+    }
+
+    *needrender = SDL_TRUE;
+  }
+
+  return done;
+}
+
+SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
+{
+  SDL_bool done;
+  SDL_bool donkey;
+
+  done = SDL_FALSE;
+  donkey = SDL_FALSE;
   switch( ev->type )
   {
     case SDL_KEYUP:
@@ -1476,6 +1751,11 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           *needrender = SDL_TRUE;
           break;
 #endif
+        case SDLK_LSHIFT:
+        case SDLK_RSHIFT:
+          kshifted = SDL_FALSE;
+          break;
+
         case SDLK_F2:
           // In case we're on a breakpoint
           m6502_inst( &oric->cpu, SDL_FALSE );
@@ -1491,16 +1771,15 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           setemumode( oric, NULL, EM_RUNNING );
           break;
 
-
         case SDLK_F3:
-          mshow = (mshow+1)%MSHOW_LAST;
-          if( ( oric->drivetype == DRV_NONE ) && ( mshow == MSHOW_DISK ) )
-            mshow = (mshow+1)%MSHOW_LAST;
+          cshow = (cshow+1)%CSHOW_LAST;
           *needrender = SDL_TRUE;
           break;
 
         case SDLK_F4:
-          cshow = (cshow+1)%CSHOW_LAST;
+          mshow = (mshow+1)%MSHOW_LAST;
+          if( ( oric->drivetype == DRV_NONE ) && ( mshow == MSHOW_DISK ) )
+            mshow = (mshow+1)%MSHOW_LAST;
           *needrender = SDL_TRUE;
           break;
 
@@ -1512,6 +1791,12 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
     case SDL_KEYDOWN:
       switch( ev->key.keysym.sym )
       {
+        case SDLK_LSHIFT:
+        case SDLK_RSHIFT:
+          kshifted = SDL_TRUE;
+          donkey = SDL_TRUE;
+          break;
+
         case SDLK_F10:
           m6502_inst( &oric->cpu, SDL_FALSE );
           via_clock( &oric->via, oric->cpu.icycles );
@@ -1523,135 +1808,25 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             oric->cpu.rastercycles += oric->cyclesperraster;
           }
           *needrender = SDL_TRUE;
+          donkey = SDL_TRUE;
           break;
         
-        case SDLK_UP:
-          if( histp >= (histu-1) ) break;
-
-          mon_hide_curs();
-          strcpy( ibuf, &history[++histp][0] );
-          ilen = strlen( ibuf );
-          cursx = ilen;
-          tzstrpos( tz[TZ_MONITOR], 2, 19, "                                               " );
-          tzstrpos( tz[TZ_MONITOR], 2, 19, ibuf );
-          mon_show_curs();
-          *needrender = SDL_TRUE;
-          break;
-        
-        case SDLK_DOWN:
-          mon_hide_curs();
-          if( histp <= 0 )
-          {
-            histp = -1;
-            ibuf[0] = 0;
-            ilen = 0;
-            cursx = 0;
-          } else {
-            strcpy( ibuf, &history[--histp][0] );
-            ilen = strlen( ibuf );
-            cursx = ilen;
-          }
-          tzstrpos( tz[TZ_MONITOR], 2, 19, "                                               " );
-          tzstrpos( tz[TZ_MONITOR], 2, 19, ibuf );
-          mon_show_curs();
-          *needrender = SDL_TRUE;
-          break;
-
         default:
           break;
       }
-        
-      switch( ev->key.keysym.unicode )
+
+      if( !donkey )
       {
-        case SDLK_BACKSPACE:
-          if( cursx > 0 )
-          {
-            mon_hide_curs();
-            for( i=cursx-1; i<ilen; i++ )
-              ibuf[i] = ibuf[i+1];
-            cursx--;
-            ilen = strlen( ibuf );
-            tzstrpos( tz[TZ_MONITOR], 2, 19, ibuf );
-            tzstr( tz[TZ_MONITOR], " " );
-            mon_show_curs();
-            *needrender = SDL_TRUE;
-          }
-          break;
-        
-        case SDLK_LEFT:
-          if( cursx > 0 )
-          {
-            mon_hide_curs();
-            cursx--;
-            mon_show_curs();
-            *needrender = SDL_TRUE;
-          }
-          break;
+        switch( cshow )
+        {
+          case CSHOW_CONSOLE:
+            done |= mon_console_keydown( ev, oric, needrender );
+            break;
 
-        case SDLK_RIGHT:
-          if( cursx < ilen )
-          {
-            mon_hide_curs();
-            cursx++;
-            mon_show_curs();
-            *needrender = SDL_TRUE;
-          }
-          break;
-        
-        case SDLK_RETURN:
-          mon_hide_curs();
-          ibuf[ilen] = 0;
-          if( ilen == 0 )
-          {
-            switch( lastcmd )
-            {
-              case 'm':
-              case 'd':
-                ibuf[cursx++] = lastcmd;
-                ibuf[cursx] = 0;
-                ilen = 1;
-                break;
-            }
-          } else {
-            if( ( histu > 0 ) && ( strcmp( &history[0][0], ibuf ) == 0 ) )
-            {
-            } else {
-              if( histu > 0 )
-              {
-                for( i=histu; i>0; i-- )
-                  strcpy( &history[i][0], &history[i-1][0] );
-   
-              }
-              strcpy( &history[0][0], ibuf );
-              if( histu < 10 ) histu++;
-            }
-          }
-          histp = -1;
-
-          tzsetcol( tz[TZ_MONITOR], 2, 3 ); 
-          done |= mon_cmd( ibuf, oric, needrender );
-          mon_start_input();
-          mon_show_curs();
-          *needrender = SDL_TRUE;
-          break;
-
-        default:
-          if( ( ev->key.keysym.unicode > 31 ) && ( ev->key.keysym.unicode < 127 ) )
-          {
-            if( ilen >= 47 ) break;
-
-            mon_hide_curs();
-            for( i=ilen+1; i>cursx; i-- )
-              ibuf[i] = ibuf[i-1];
-            ibuf[cursx] = ev->key.keysym.unicode;
-            cursx++;
-            ilen++;
-            tzstrpos( tz[TZ_MONITOR], 2, 19, ibuf );
-            tzstr( tz[TZ_MONITOR], " " );
-            mon_show_curs();
-            *needrender = SDL_TRUE;
-          }
-          break;
+          case CSHOW_MWATCH:
+            done |= mon_mwatch_keydown( ev, oric, needrender );
+            break;
+        }
       }
       break;
   }

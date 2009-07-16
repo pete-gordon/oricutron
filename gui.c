@@ -1282,6 +1282,8 @@ SDL_bool init_gui( void )
   if( !tz[TZ_MONITOR] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
   tz[TZ_DEBUG] = alloc_textzone( 0, 228, 50, 21, "Debug console" );
   if( !tz[TZ_DEBUG] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
+  tz[TZ_MEMWATCH] = alloc_textzone( 0, 228, 50, 21, "Memory watch" );
+  if( !tz[TZ_MEMWATCH] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
   tz[TZ_REGS] = alloc_textzone( 240, 0, 50, 19, "6502 Status" );
   if( !tz[TZ_REGS] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
   tz[TZ_VIA]  = alloc_textzone( 400, 228, 30, 21, "VIA Status" );

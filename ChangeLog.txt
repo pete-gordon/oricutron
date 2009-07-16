@@ -7,6 +7,7 @@ Oriculator ChangeLog
  * You can now auto-insert a tape by passing its name to
    CLOAD. If you need to "CLOAD" a specific file within
    a tape image, you can disable this feature.
+ * Fixed a condition where a filehandle wouldn't get closed.
 
 
 0.0.2 (06-Apr-2009)
