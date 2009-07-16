@@ -1,5 +1,25 @@
+/*
+**  Oriculator
+**  Copyright (C) 2009 Peter Gordon
+**
+**  This program is free software; you can redistribute it and/or
+**  modify it under the terms of the GNU General Public License
+**  as published by the Free Software Foundation, version 2
+**  of the License.
+**
+**  This program is distributed in the hope that it will be useful,
+**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**  GNU General Public License for more details.
+**
+**  You should have received a copy of the GNU General Public License
+**  along with this program; if not, write to the Free Software
+**  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+**
+**  WD17xx, Microdisc and Jasmin emulation
+*/
 
-// Microdisc
+/******************** MICRODISC *********************/
 #define MAX_DRIVES 4
 
 // Status bits (0x314)
@@ -20,6 +40,8 @@
 // 0x318
 #define MB_DRQ 7
 #define MF_DRQ (1<<MB_DRQ)
+
+/******************** WD17xx *********************/
 
 // WD17xx status
 #define WSB_BUSY     0

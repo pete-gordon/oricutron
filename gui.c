@@ -1,3 +1,29 @@
+/*
+**  Oriculator
+**  Copyright (C) 2009 Peter Gordon
+**
+**  This program is free software; you can redistribute it and/or
+**  modify it under the terms of the GNU General Public License
+**  as published by the Free Software Foundation, version 2
+**  of the License.
+**
+**  This program is distributed in the hope that it will be useful,
+**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**  GNU General Public License for more details.
+**
+**  You should have received a copy of the GNU General Public License
+**  along with this program; if not, write to the Free Software
+**  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+**
+**  GUI
+*/
+
+/*
+** The GUI in Oriculator is built on the basic element of the "textzone". This
+** is a simple structure containing the position, size and contents of an area
+** of text, which you can render onto an SDL surface whenever you like.
+*/
 
 #include <stdlib.h>
 #include <string.h>
@@ -17,8 +43,6 @@
 #include "machine.h"
 #include "monitor.h"
 
-extern struct machine oric; // bleh
-
 SDL_Surface *screen = NULL;
 SDL_bool need_sdl_quit = SDL_FALSE;
 SDL_bool soundavailable, soundon;
@@ -27,6 +51,7 @@ extern SDL_bool microdiscrom_valid, jasminrom_valid;
 char tapepath[4096], tapefile[512];
 char diskpath[4096], diskfile[512];
 
+// A directory entry in the file requester
 struct frq_ent
 {
   char name[512];
@@ -34,6 +59,7 @@ struct frq_ent
   SDL_bool isdir;
 };
 
+// A text input box (used in the file requester)
 struct frq_textbox
 {
   char *buf;
@@ -41,37 +67,53 @@ struct frq_textbox
   int maxlen, slen, cpos, vpos;
 };
 
+// The actual text box structures used by the file requester
 static struct frq_textbox freqf_tbox[] = { { NULL, 7, 28, 32, 4096, 0, 0, 0 },
                                            { NULL, 7, 30, 32,  512, 0, 0, 0 } };
+
+// File requester state
 static int freqf_size=0, freqf_used=0, freqf_cgad=2;
 static struct frq_ent *freqfiles=NULL;
 static int freqf_clicktime=0;
 
+// Our "lovely" hand-coded font
 extern unsigned char thefont[];
 
+// Believe it or not, i have defined more than 2 shades of blue :)
 #define NUM_GUI_COLS 8
 
-unsigned char sgpal[] = { 0x00, 0x00, 0x00,
-                          0xff, 0xff, 0xff,
-                          0xcc, 0xcc, 0xff,
-                          0x00, 0x00, 0xff,
-                          0x00, 0x00, 0x40,
-                          0x70, 0x70, 0xff,
-                          0x80, 0x80, 0x80,
-                          0xa0, 0xa0, 0x00 };
+// Text zone (and other gui area) colours
+unsigned char sgpal[] = { 0x00, 0x00, 0x00,     // 0 = black
+                          0xff, 0xff, 0xff,     // 1 = white
+                          0xcc, 0xcc, 0xff,     // 2 = light blue
+                          0x00, 0x00, 0xff,     // 3 = dark blue
+                          0x00, 0x00, 0x40,     // 4 = very dark blue
+                          0x70, 0x70, 0xff,     // 5 = mid blue
+                          0x80, 0x80, 0x80,     // 6 = grey
+                          0xa0, 0xa0, 0x00 };   // 7 = yellow
 
+// GUI colours in display format
 Uint16 gpal[NUM_GUI_COLS];
 
+// All the textzones. Spaces in this array
+// are reserved in gui.h
 struct textzone *tz[TZ_LAST];
+
+// Temporary string buffer
 char vsptmp[VSPTMPSIZE];
 
+// Cached screen->pitch
 int pixpitch;
+
+// FPS calculation vars
 extern Uint32 frametimeave;
 SDL_bool showfps=SDL_TRUE,warpspeed=SDL_FALSE;
 
+// Current menu, and highlighted item number
 struct osdmenu *cmenu = NULL;
 int cmenuitem = 0;
 
+// Menufunctions
 void toggletapenoise( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglesound( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy );
@@ -81,6 +123,7 @@ void toggletapeturbo( struct machine *oric, struct osdmenuitem *mitem, int dummy
 void toggleautowind( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void toggleautoinsrt( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 
+// Menu definitions. Name, function, parameter
 struct osdmenuitem mainitems[] = { { "Insert tape...",      inserttape,      0 },
                                    { "Insert disk 0...",    insertdisk,      0 },
                                    { "Insert disk 1...",    insertdisk,      1 },
@@ -98,8 +141,8 @@ struct osdmenuitem mainitems[] = { { "Insert tape...",      inserttape,      0 }
                                    { "Quit",                setemumode,      EM_PLEASEQUIT },
                                    { NULL, } };
 
-struct osdmenuitem hwopitems[] = { { " Oric-1",             swapmach,        MACH_ORIC1 },
-                                   { " Atmos",              swapmach,        MACH_ATMOS },
+struct osdmenuitem hwopitems[] = { { " Oric-1",             swapmach,        (0xffff<<16)|MACH_ORIC1 },
+                                   { " Atmos",              swapmach,        (0xffff<<16)|MACH_ATMOS },
                                    { " Telestrat",          NULL,            0 },
                                    { OSDMENUBAR,            NULL,            0 },
                                    { " No disk",            setdrivetype,    DRV_NONE },
@@ -124,9 +167,11 @@ struct osdmenu menus[] = { { "Main Menu",        12, mainitems },
                            { "Hardware options",  8, hwopitems },
                            { "Audio options",     3, auopitems } };
 
+// Info popups
 static int popuptime=0;
 static char popupstr[40];
 
+// Pop up some info!
 void do_popup( char *str )
 {
   int i;
@@ -135,7 +180,8 @@ void do_popup( char *str )
   popuptime = 100;
 }
 
-void render( void )
+// Top-level rendering routine
+void render( struct machine *oric )
 {
   char tmp[64];
   int perc, fps; //, i;
@@ -143,10 +189,10 @@ void render( void )
   if( SDL_MUSTLOCK( screen ) )
     SDL_LockSurface( screen );
 
-  switch( oric.emu_mode )
+  switch( oric->emu_mode )
   {
     case EM_MENU:
-      video_show( &oric );
+      video_show( oric );
       if( tz[TZ_MENU] ) draw_textzone( tz[TZ_MENU] );
       break;
 
@@ -162,49 +208,8 @@ void render( void )
           sprintf( tmp, " 100.00%% -   50FPS - %3d ms/frame", frametimeave );
         }
       }
-/*
-    tmp[0] = 0;
-      if (next != 0)
-      {
-        now = SDL_GetTicks();
-
-        if( warpspeed )
-        {
-          if( showfps )
-          {
-            if( (next-now) >=0 )
-            {
-              fms = 20-(next-now);
-              if( fms == 0 ) fms = 1;
-              fps  = 100000/fms;
-              perc = fps*2;
-              sprintf( tmp, "%4d.%02d%% - %4dFPS - %3d ms/frame ", perc/100, perc%100, fps/100, 20-(next-now) );
-            }
-          }
-        } else {
-          if( showfps )
-          {
-            if( (next-now) >= 0 )
-            {
-              sprintf( tmp, " 100.00%% -   50FPS - %3d ms/frame ", 20-(next-now) );
-            } else {
-              fps  = 100000/(now-next);
-              perc = fps*2;
-
-              sprintf( tmp, "%4d.%02d%% - %4dFPS - %3d ms/frame ", perc/100, perc%100, fps/100, (now-next)+20 );
-            }
-          }
-          if (now < next)
-            SDL_Delay(next-now);
-        }
-      }
-      next = SDL_GetTicks() + 20;  // 20ms = 50FPS
-*/
-      video_show( &oric );
+      video_show( oric );
       if( showfps ) printstr( 0, 0, gpal[1], gpal[4], tmp );
-//      for( i=0; i<8; i++ )
-//        sprintf( &tmp[i*3], "%02X ", oric.ay.keystates[i] );
-//      printstr( 320, 0, gpal[1], gpal[4], tmp );
       if( popuptime > 0 )
       {
         popuptime--;
@@ -216,7 +221,7 @@ void render( void )
       break;
 
     case EM_DEBUG:
-      mon_render( &oric );
+      mon_render( oric );
       break;
   }
 
@@ -226,6 +231,12 @@ void render( void )
   SDL_Flip( screen );
 }
 
+// Print a char onto a 16-bit framebuffer
+//   ptr       = where to draw it
+//   ch        = which char to draw
+//   fcol      = foreground colour
+//   bcol      = background colour
+//   solidfont = use background colour
 static void printchar( Uint16 *ptr, unsigned char ch, Uint16 fcol, Uint16 bcol, SDL_bool solidfont )
 {
   int px, py, c;
@@ -255,6 +266,10 @@ static void printchar( Uint16 *ptr, unsigned char ch, Uint16 fcol, Uint16 bcol, 
   }
 }
 
+// Draws a box in a textzone (uses the box chars in the font)
+//   ptz     = target textzone
+//   x,y,w,h = location and dimensions
+//   fg,bg   = colours
 void makebox( struct textzone *ptz, int x, int y, int w, int h, int fg, int bg )
 {
   int cx, cy, o, bo;
@@ -285,6 +300,7 @@ void makebox( struct textzone *ptz, int x, int y, int w, int h, int fg, int bg )
   ptz->tx[bo] = 11;
 }
 
+// Write a string to a textzone
 void tzstr( struct textzone *ptz, char *text )
 {
   int i, o;
@@ -319,6 +335,7 @@ void tzstr( struct textzone *ptz, char *text )
   }
 }
 
+// Print a formatted string into a textzone
 void tzprintf( struct textzone *ptz, char *fmt, ... )
 {
   va_list ap;
@@ -331,6 +348,7 @@ void tzprintf( struct textzone *ptz, char *fmt, ... )
   va_end( ap );
 }
 
+// Write a string to a textzone at a specific location
 void tzstrpos( struct textzone *ptz, int x, int y, char *text )
 {
   ptz->px = x;
@@ -338,6 +356,7 @@ void tzstrpos( struct textzone *ptz, int x, int y, char *text )
   tzstr( ptz, text );
 }
 
+// Print a formatted string into a textzone at a specific location
 void tzprintfpos( struct textzone *ptz, int x, int y, char *fmt, ... )
 {
   va_list ap;
@@ -350,13 +369,14 @@ void tzprintfpos( struct textzone *ptz, int x, int y, char *fmt, ... )
   va_end( ap );
 }
 
+// Set the foreground and background colours for printing text into a textzone
 void tzsetcol( struct textzone *ptz, int fc, int bc )
 {
   ptz->cfc = fc;
   ptz->cbc = bc;
 }
 
-
+// Render a textzone onto the SDL surface
 void draw_textzone( struct textzone *ptz )
 {
   int x, y, o;
@@ -375,6 +395,10 @@ void draw_textzone( struct textzone *ptz )
   }
 }
 
+// Print a string directly onto the SDL surface
+//   x,y   = location
+//   fc,bc = colours
+//   str   = string
 void printstr( int x, int y, Uint16 fc, Uint16 bc, char *str )
 {
   Uint16 *ptr;
@@ -385,6 +409,7 @@ void printstr( int x, int y, Uint16 fc, Uint16 bc, char *str )
     printchar( ptr, str[i], fc, bc, SDL_TRUE );
 }
 
+// Set the title of a textzone
 void tzsettitle( struct textzone *ptz, char *title )
 {
   int ox, oy;
@@ -403,6 +428,7 @@ void tzsettitle( struct textzone *ptz, char *title )
   ptz->py = oy;
 }
 
+// Allocate a textzone structure
 struct textzone *alloc_textzone( int x, int y, int w, int h, char *title )
 {
   struct textzone *ntz;
@@ -427,23 +453,29 @@ struct textzone *alloc_textzone( int x, int y, int w, int h, char *title )
   return ntz;
 }
 
+// Free a textzone structure
 void free_textzone( struct textzone *ptz )
 {
   if( !ptz ) return;
   free( ptz );
 }
 
+// Draw the current menu items into the menu textzone
 void drawitems( void )
 {
   int i, j, o;
 
+  // No menu, or no textzone?
   if( ( !cmenu ) || ( !tz[TZ_MENU] ) )
     return;
 
+  // For each item...
   for( i=0; cmenu->items[i].name; i++ )
   {
+    // Check if its a menu bar
     if( cmenu->items[i].name == OSDMENUBAR )
     {
+      // Fill it with the menu bar char
       o = tz[TZ_MENU]->w * (i+1) + 1;
       for( j=1; j<tz[TZ_MENU]->w-1; j++, o++ )
       {
@@ -453,24 +485,32 @@ void drawitems( void )
       }
       continue;
     }
+
+    // Check if this is the highlighted item, and set the colours accordingly
     if( i==cmenu->citem )
       tzsetcol( tz[TZ_MENU], 1, 5 );
     else
       tzsetcol( tz[TZ_MENU], 2, 3 );
 
+    // Calculate the position in the textzone
     o = tz[TZ_MENU]->w * (i+1) + 1;
+
+    // Fill the background colour all the way along
     for( j=1; j<tz[TZ_MENU]->w-1; j++, o++ )
       tz[TZ_MENU]->bc[o] = tz[TZ_MENU]->cbc;
+    
+    // Write the text for the item
     tzstrpos( tz[TZ_MENU], 1, i+1, cmenu->items[i].name );
   }
 }
 
-void filereq_render( void )
+// Render the filerequester
+void filereq_render( struct machine *oric )
 {
   if( SDL_MUSTLOCK( screen ) )
     SDL_LockSurface( screen );
 
-  video_show( &oric );
+  video_show( oric );
   draw_textzone( tz[TZ_FILEREQ] );
 
   if( SDL_MUSTLOCK( screen ) )
@@ -479,6 +519,7 @@ void filereq_render( void )
   SDL_Flip( screen );
 }
 
+// Add a file to the list of files to show in the file requester
 static void filereq_addent( SDL_bool isdir, char *name, char *showname )
 {
   struct frq_ent *tmpf;
@@ -514,6 +555,7 @@ static void filereq_addent( SDL_bool isdir, char *name, char *showname )
   freqf_used++;
 }
 
+// Scan a directory to show in the filerequester
 static SDL_bool filereq_scan( char *path )
 {
   DIR *dh;
@@ -553,6 +595,7 @@ static SDL_bool filereq_scan( char *path )
   return SDL_TRUE;
 }
 
+// Render the file list into the filerequester textzone
 static void filereq_showfiles( int offset, int cfile )
 {
   int i, j, o;
@@ -584,6 +627,7 @@ static void filereq_showfiles( int offset, int cfile )
   }
 }
 
+// Set a filerequester textbox contents tothe specified string
 static void filereq_settbox( struct frq_textbox *tb, char *buf )
 {
   tb->buf  = buf;
@@ -592,6 +636,7 @@ static void filereq_settbox( struct frq_textbox *tb, char *buf )
   tb->vpos = tb->slen > (tb->w-1) ? tb->slen-(tb->w-1) : 0;
 }
 
+// Draw a textbox into the filerequester textzone
 static void filereq_drawtbox( struct frq_textbox *tb, SDL_bool active )
 {
   struct textzone *ptz = tz[TZ_FILEREQ];
@@ -616,6 +661,8 @@ static void filereq_drawtbox( struct frq_textbox *tb, SDL_bool active )
   }
 }
 
+// This sets the file textbox to the currently highlighted file
+// It also stores the filename in "fname"
 static void filereq_setfiletbox( int cfile, char *fname )
 {
   if( ( cfile < 0 ) || ( cfile >= freqf_used ) ||
@@ -633,6 +680,12 @@ static void filereq_setfiletbox( int cfile, char *fname )
   filereq_settbox( &freqf_tbox[1], fname );
 }
 
+// This routine displays a file requester and waits for the user to select a file
+//   title = title at the top of the requester
+//   path  = initial path to show
+//   fname = initial contents of the filename textbox
+// It returns true if the user selected a file, although the file is not
+// guarranteed to exist.
 SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fname )
 {
   SDL_Event event;
@@ -664,7 +717,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   filereq_showfiles( top, cfile );
   filereq_drawtbox( &freqf_tbox[0], freqf_cgad==0 );
   filereq_drawtbox( &freqf_tbox[1], freqf_cgad==1 );
-  filereq_render();
+  filereq_render( oric );
 
   for( ;; )
   {
@@ -709,7 +762,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
           filereq_showfiles( top, cfile );
           filereq_drawtbox( &freqf_tbox[0], freqf_cgad==0 );
           filereq_drawtbox( &freqf_tbox[1], freqf_cgad==1 );
-          filereq_render();
+          filereq_render( oric );
           break;
         }
 
@@ -727,7 +780,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
           filereq_setfiletbox( cfile, fname );
           filereq_showfiles( top, cfile );
           filereq_drawtbox( &freqf_tbox[1], 0 );
-          filereq_render();
+          filereq_render( oric );
           freqf_clicktime = mclick;
           break;
         }
@@ -768,7 +821,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
                 filereq_showfiles( top, cfile );
                 filereq_drawtbox( &freqf_tbox[0], freqf_cgad==0 );
                 filereq_drawtbox( &freqf_tbox[1], freqf_cgad==1 );
-                filereq_render();
+                filereq_render( oric );
                 break;
               
               case 1:
@@ -819,7 +872,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
                 filereq_showfiles( top, cfile );
                 filereq_drawtbox( &freqf_tbox[0], freqf_cgad==0 );
                 filereq_drawtbox( &freqf_tbox[1], freqf_cgad==1 );
-                filereq_render();
+                filereq_render( oric );
                 break;
             }
             break;
@@ -834,7 +887,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
             filereq_showfiles( top, cfile );
             filereq_drawtbox( &freqf_tbox[0], freqf_cgad==0 );
             filereq_drawtbox( &freqf_tbox[1], freqf_cgad==1 );
-            filereq_render();
+            filereq_render( oric );
             break;
           
           case SDLK_UP:
@@ -844,7 +897,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
             filereq_setfiletbox( cfile, fname );
             filereq_showfiles( top, cfile );
             filereq_drawtbox( &freqf_tbox[1], SDL_FALSE );
-            filereq_render();
+            filereq_render( oric );
             break;
           
           case SDLK_DOWN:
@@ -854,7 +907,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
             filereq_setfiletbox( cfile, fname );
             filereq_showfiles( top, cfile );
             filereq_drawtbox( &freqf_tbox[1], SDL_FALSE );
-            filereq_render();
+            filereq_render( oric );
             break;
           
           case SDLK_BACKSPACE:
@@ -878,7 +931,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
             if( tb->cpos >= (tb->vpos+tb->w) ) tb->vpos = tb->cpos-(tb->w-1);
             if( tb->vpos < 0 ) tb->vpos = 0;
             filereq_drawtbox( tb, SDL_TRUE );
-            filereq_render();
+            filereq_render( oric );
             break;
 
           case SDLK_RIGHT:
@@ -889,7 +942,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
             if( tb->cpos >= (tb->vpos+tb->w) ) tb->vpos = tb->cpos-(tb->w-1);
             if( tb->vpos < 0 ) tb->vpos = 0;
             filereq_drawtbox( tb, SDL_TRUE );
-            filereq_render();
+            filereq_render( oric );
             break;          
 
           case SDLK_DELETE:
@@ -905,7 +958,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
               tb->cpos = 0;
             }
             filereq_drawtbox( tb, SDL_TRUE );
-            filereq_render();
+            filereq_render( oric );
             break;
           
           default:
@@ -924,7 +977,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
               if( tb->cpos >= (tb->vpos+tb->w) ) tb->vpos = tb->cpos-(tb->w-1);
               if( tb->vpos < 0 ) tb->vpos = 0;
               filereq_drawtbox( tb, SDL_TRUE );
-              filereq_render();
+              filereq_render( oric );
             }
             break;
         }
@@ -937,6 +990,9 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   }
 }
 
+/***************** These functions can be used directly from the menu system ***************/
+
+// "insert" a tape into the virtual tape drive, via filerequester
 void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
   char *odir;
@@ -951,6 +1007,7 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   setemumode( oric, NULL, EM_RUNNING );
 }
 
+// "insert" a disk into the virtual disk drive, via filerequester
 void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
 {
   char *odir;
@@ -965,14 +1022,14 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
 
   if( oric->drivetype == DRV_NONE )
   {
-    oric->drivetype = DRV_MICRODISC;
-    swapmach( oric, NULL, oric->type );
+    swapmach( oric, NULL, (DRV_MICRODISC<<16)|oric->type );
     setemumode( oric, NULL, EM_DEBUG );
     return;
   }
   setemumode( oric, NULL, EM_RUNNING );
 }
 
+// Reset the oric
 void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
   m6502_reset( &oric->cpu );
@@ -984,6 +1041,7 @@ void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   setemumode( oric, NULL, EM_RUNNING );  
 }
 
+// Turn tape noise on/off
 void toggletapenoise( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
   if( oric->tapenoise )
@@ -997,6 +1055,7 @@ void toggletapenoise( struct machine *oric, struct osdmenuitem *mitem, int dummy
   mitem->name = "\x0e""Tape noise";
 }
 
+// Toggle sound on/off
 void togglesound( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
   if( ( soundon ) || (!soundavailable) )
@@ -1014,6 +1073,7 @@ void togglesound( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   if( oric->emu_mode == EM_RUNNING ) SDL_PauseAudio( !warpspeed );
 }
 
+// Toggle turbotape on/off
 void toggletapeturbo( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
   if( oric->tapeturbo )
@@ -1027,6 +1087,7 @@ void toggletapeturbo( struct machine *oric, struct osdmenuitem *mitem, int dummy
   mitem->name = "\x0e""Turbo tape";
 }
 
+// Toggle autorewind on/off
 void toggleautowind( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
   if( oric->autorewind )
@@ -1040,6 +1101,7 @@ void toggleautowind( struct machine *oric, struct osdmenuitem *mitem, int dummy 
   mitem->name = "\x0e""Autorewind tape";
 }
 
+// Toggle autoinsert on/off
 void toggleautoinsrt( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
   if( oric->autoinsert )
@@ -1053,6 +1115,7 @@ void toggleautoinsrt( struct machine *oric, struct osdmenuitem *mitem, int dummy
   mitem->name = "\x0e""Autoinsert tape";
 }
 
+// Go to a different menu
 void gotomenu( struct machine *oric, struct osdmenuitem *mitem, int menunum )
 {
   int i, w;
@@ -1081,11 +1144,15 @@ void gotomenu( struct machine *oric, struct osdmenuitem *mitem, int menunum )
   drawitems();
 }
 
+/************************* End of menu callable funcs *******************************/
+
+// This is the event handler for when you are in the menus
 SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 {
   SDL_bool done = SDL_FALSE;
   int i, x, y;
 
+  // Wot, no menu?!
   if( ( !cmenu ) || ( !tz[TZ_MENU] ) )
     return done;
 
@@ -1189,6 +1256,7 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
   return done;
 }
 
+// Set things to default that can't fail
 void preinit_gui( void )
 {
   int i;
@@ -1199,6 +1267,7 @@ void preinit_gui( void )
   strcpy( diskfile, "" );
 }
 
+// Ensure the sanity of toggle menuitems
 void setmenutoggles( struct machine *oric )
 {
   if( soundavailable && soundon )
@@ -1235,11 +1304,13 @@ void setmenutoggles( struct machine *oric )
   hwopitems[6].name = oric->drivetype==DRV_JASMIN    ? "\x0e""Jasmin"    : " Jasmin";
 }
 
-SDL_bool init_gui( void )
+// Initialise the GUI
+SDL_bool init_gui( struct machine *oric )
 {
   int i;
   SDL_AudioSpec wanted;
 
+  // Go SDL!
   if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO ) < 0 )
   {
     printf( "SDL init failed\n" );
@@ -1255,6 +1326,7 @@ SDL_bool init_gui( void )
     return SDL_FALSE;
   }
 
+  // Set up SDL audio
   wanted.freq     = AUDIO_FREQ; 
   wanted.format   = AUDIO_S16SYS; 
   wanted.channels = 2; /* 1 = mono, 2 = stereo */
@@ -1273,11 +1345,13 @@ SDL_bool init_gui( void )
 
   SDL_WM_SetCaption( "Oriculator 0.0.2", "Oriculator 0.0.2" );
 
+  // Get the GUI palette
   for( i=0; i<NUM_GUI_COLS; i++ )
     gpal[i] = SDL_MapRGB( screen->format, sgpal[i*3  ], sgpal[i*3+1], sgpal[i*3+2] );
 
   pixpitch = screen->pitch / 2;
 
+  // Allocate all text zones
   tz[TZ_MONITOR] = alloc_textzone( 0, 228, 50, 21, "Monitor" );
   if( !tz[TZ_MONITOR] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
   tz[TZ_DEBUG] = alloc_textzone( 0, 228, 50, 21, "Debug console" );
@@ -1295,10 +1369,11 @@ SDL_bool init_gui( void )
   tz[TZ_FILEREQ] = alloc_textzone( 160, 48, 40, 32, "Files" );
   if( !tz[TZ_FILEREQ] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
 
-  setmenutoggles( &oric );
+  setmenutoggles( oric );
   return SDL_TRUE;
 }
 
+// Bye bye.
 void shut_gui( void )
 {
   int i;
