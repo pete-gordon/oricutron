@@ -341,6 +341,7 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
   ay->cte = 0; // Reset the envelope counter
 
   ay->envtab  = eshape0;    // Default to envelope 0
+  ay->envpos  = 0;
 
   ay->bmode   = 0;          // GI silly addressing mode
   ay->creg    = 0;          // Current register to 0
