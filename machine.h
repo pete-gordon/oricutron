@@ -19,6 +19,12 @@
 **  Oric machine stuff
 */
 
+#if __WIN32__
+#define PATHSEP '\\'
+#else
+#define PATHSEP '/'
+#endif
+
 enum
 {
   DRV_NONE = 0,

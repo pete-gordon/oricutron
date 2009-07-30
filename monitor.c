@@ -789,7 +789,7 @@ struct msym *mon_find_sym_by_name( struct machine *oric, char *name )
         continue;
     }
 
-    if( oric->symbolscase )
+    if( !oric->symbolscase )
     {
       if( strcasecmp( name, syms[i].name ) == 0 )
         return &syms[i];
@@ -818,13 +818,13 @@ struct msym *mon_find_sym_by_name( struct machine *oric, char *name )
         continue;
     }
 
-    if( oric->symbolscase )
+    if( !oric->symbolscase )
     {
       if( strcasecmp( name, defaultsyms[i].name ) == 0 )
-        return &syms[i];
+        return &defaultsyms[i];
     } else {
       if( strcmp( name, defaultsyms[i].name ) == 0 )
-        return &syms[i];
+        return &defaultsyms[i];
     }
   }
 
@@ -1308,6 +1308,8 @@ void mon_scroll( SDL_bool above )
 void mon_printf( char *fmt, ... )
 {
   va_list ap;
+  int i;
+  char stmp[48];
 
   mon_scroll( SDL_FALSE );
 
@@ -1315,7 +1317,16 @@ void mon_printf( char *fmt, ... )
   if( vsnprintf( vsptmp, VSPTMPSIZE, fmt, ap ) != -1 )
   {
     vsptmp[VSPTMPSIZE-1] = 0;
-    tzstrpos( tz[TZ_MONITOR], 1, 19, vsptmp );
+    i = 0;
+    while( strlen( &vsptmp[i] ) > 46 )
+    {
+      strncpy( stmp, &vsptmp[i], 46 );
+      stmp[46] = 0;
+      tzstrpos( tz[TZ_MONITOR], 1, 19, stmp );
+      mon_scroll( SDL_FALSE );
+      i += 46;
+    }
+    tzstrpos( tz[TZ_MONITOR], 1, 19, &vsptmp[i] );
   }
   va_end( ap );
 }
@@ -1323,6 +1334,8 @@ void mon_printf( char *fmt, ... )
 void mon_printf_above( char *fmt, ... )
 {
   va_list ap;
+  int i;
+  char stmp[48];
 
   mon_scroll( SDL_TRUE );
 
@@ -1330,7 +1343,16 @@ void mon_printf_above( char *fmt, ... )
   if( vsnprintf( vsptmp, VSPTMPSIZE, fmt, ap ) != -1 )
   {
     vsptmp[VSPTMPSIZE-1] = 0;
-    tzstrpos( tz[TZ_MONITOR], 1, 18, vsptmp );
+    i = 0;
+    while( strlen( &vsptmp[i] ) > 46 )
+    {
+      strncpy( stmp, &vsptmp[i], 46 );
+      stmp[46] = 0;
+      tzstrpos( tz[TZ_MONITOR], 1, 18, stmp );
+      mon_scroll( SDL_TRUE );
+      i += 46;
+    }
+    tzstrpos( tz[TZ_MONITOR], 1, 18, &vsptmp[i] );
   }
   va_end( ap );
 }
@@ -1731,23 +1753,13 @@ SDL_bool mon_getnum( struct machine *oric, unsigned int *num, char *buf, int *of
 SDL_bool mon_new_symbols( char *fname )
 {
   FILE *f;
-  int i, j, k;
+  int i, j;
   unsigned int v;
 
   f = fopen( fname, "r" );
   if( !f )
   {
-    char sfnam[30];
-    if( strlen( fname ) > 29 )
-    {
-      sfnam[0] = 22;
-      for( k=1,j=strlen( fname )-28; fname[j]; j++,k++ )
-        sfnam[k] = fname[j];
-      sfnam[k] = 0;
-    } else {
-      strcpy( sfnam, fname );
-    }
-    mon_printf( "Unable to open '%s'", sfnam );
+    mon_printf( "Unable to open '%s'", fname );
     return SDL_FALSE;
   }
 
@@ -1782,6 +1794,8 @@ SDL_bool mon_new_symbols( char *fname )
   }
 
   fclose( f );
+  
+  mon_printf( "Symbols loaded from '%s'", fname );
   return SDL_TRUE;
 }
 
@@ -1803,9 +1817,20 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
       i++;
       switch( cmd[i] )
       {
+        case 'c':  // Case insensitive
+          oric->symbolscase = SDL_FALSE;
+          mon_str( "Symbols are not case-sensitive" );
+          break;
+        
+        case 'C':  // Case sensitive
+          oric->symbolscase = SDL_TRUE;
+          mon_str( "Symbols are case-sensitive" );
+          break;
+
         case 'z':  // Zap
           numsyms = 0;
           defaultsyms = NULL;
+          mon_str( "Symbols zapped!" );
           break;
 
         case 'l':  // Load
