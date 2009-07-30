@@ -1,4 +1,4 @@
-Oriculator 0.0.2
+Oriculator 0.0.x
 ----------------
 
 All code (c)2009 Peter Gordon (pete@petergordon.org.uk)
@@ -16,7 +16,7 @@ Current status:
   AY:    I/O done. Sound works, but isn't great.
   Video: Almost done. 60Hz mode missing.
   Tape:  ".TAP" file support (no WAV yet)
-  Disk:  Not a single line of code yet.
+  Disk:  Nowhere near working yet
 
 The Telestrat is not emulated at all yet. Also, "Turbo Tape" only works in
 Atmos mode. Tape noise only works if Turbo Tape is disabled.
@@ -72,7 +72,8 @@ In the monitor, number arguments are decimal by default, or prefixed with $ for
 hex or % for binary. Pretty much everything is output in hex.
 
 In most places where you can enter a number or address, you can pass a CPU or
-VIA register. (VIA registers are prefixed with V, e.g. VDDRA).
+VIA register. (VIA registers are prefixed with V, e.g. VDDRA). Anywhere you can
+pass an address, you can also use a symbol.
 
 Commands:
 
@@ -81,6 +82,11 @@ Commands:
   bz                         - Zap breakpoints
   bl                         - List breakpoints
   m <address>                - Dump memory
+  mw <address>               - Memory watch at <address>
+  sc                         - Symbols are not case sensitive
+  sC                         - Symbols are case sensitive
+  sl <file>                  - Load symbols
+  sz                         - Zap symbols
   d <address>                - Disassemble
   r <reg> <value>            - Set register <reg> to <value>
   q, x or qm                 - Quit monitor (back to emulator)
