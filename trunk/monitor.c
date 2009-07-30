@@ -19,6 +19,11 @@
 **  Monitor/Debugger
 */
 
+#define MAX_CONS_INPUT 127        // Max line length in console
+#define CONS_WIDTH 46             // Actual console width for input
+#define SNAME_LEN 11              // Short name for symbols (with ...)
+#define SSNAME_LEN (SNAME_LEN-3)  // Short short name :)
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -35,18 +40,272 @@
 #include "machine.h"
 #include "monitor.h"
 
+struct disinf
+{
+  char *name;
+  int amode;
+};
+
+#define SYMB_ROMDIS0   0
+#define SYMF_ROMDIS0   (1<<SYMB_ROMDIS0)
+#define SYMB_ROMDIS1   1
+#define SYMF_ROMDIS1   (1<<SYMB_ROMDIS1)
+#define SYMB_MICRODISC 2
+#define SYMF_MICRODISC (1<<SYMB_MICRODISC)
+#define SYMB_JASMIN    3
+#define SYMF_JASMIN    (1<<SYMB_JASMIN)
+
+struct msym
+{
+  unsigned short addr;       // Address
+  unsigned short flags;
+  char sname[SNAME_LEN+1];   // Short name
+  char ssname[SSNAME_LEN+1]; // Short short name
+  char *name;                // Full name
+};
+
+
 extern struct textzone *tz[];
 extern char vsptmp[];
 
-static char distmp[40];
-static char ibuf[60], lastcmd;
-static char history[10][60];
-static int ilen, cursx, histu=0, histp=-1;
+static char distmp[80];
+static char ibuf[128], lastcmd;
+static char history[10][128];
+static int ilen, iloff=0, cursx, histu=0, histp=-1;
 static unsigned short mon_addr;
 static unsigned short mw_addr;
 static int mw_mode=0, mw_koffs=0;
 static char mw_ibuf[8];
 static SDL_bool kshifted = SDL_FALSE;
+
+static int numsyms=0, symspace=0;
+static struct msym *defaultsyms = NULL, *syms = NULL;
+
+//                                                             12345678901    12345678 
+static struct msym defsym_oric1[] = { { 0xc000, SYMF_ROMDIS0, "ROMStart"   , "ROMStart", "ROMStart" },
+                                      { 0, 0, { 0, }, { 0, }, NULL } };
+
+//                                                           12345678901       12345678 
+static struct msym defsym_atmos[] = { { 0xc000, SYMF_ROMDIS0, "ROMStart"      , "ROMStart"   , "ROMStart" },
+                                      { 0xc000, SYMF_ROMDIS1, "Overlay"       , "Overlay"    , "Overlay" },
+                                      { 0xc006, SYMF_ROMDIS0, "JumpTab"       , "JumpTab"    , "JumpTab" },
+                                      { 0xc0ea, SYMF_ROMDIS0, "Keywords"      , "Keywords"   , "Keywords" },
+                                      { 0xc2a8, SYMF_ROMDIS0, "ErrorMsgs"     , "ErrorMs\x16", "ErrorMsgs" },
+                                      { 0xc3c6, SYMF_ROMDIS0, "FindForVar"    , "FindFor\x16", "FindForVar" },
+                                      { 0xc3f4, SYMF_ROMDIS0, "VarAlloc"      , "VarAlloc"   , "VarAlloc" },
+                                      { 0xc444, SYMF_ROMDIS0, "FreeMemChe\x16", "FreeMem\x16", "FreeMemCheck" },
+                                      { 0xc47c, SYMF_ROMDIS0, "PrintError"    , "PrintEr\x16", "PrintError" },
+                                      { 0xc4a8, SYMF_ROMDIS0, "BackToBASIC"   , "BackToB\x16", "BackToBASIC" },
+                                      { 0xc4d3, SYMF_ROMDIS0, "InsDelLine"    , "InsDelL\x16", "InsDelLine" },
+                                      { 0xc4e0, SYMF_ROMDIS0, "DeleteLine"    , "DeleteL\x16", "DeleteLine" },
+                                      { 0xc524, SYMF_ROMDIS0, "InsertLine"    , "InsertL\x16", "InsertLine" },
+                                      { 0xc55f, SYMF_ROMDIS0, "SetLineLin\x16", "SetLine\x16", "SetLineLinkPtrs" },
+                                      { 0xc444, SYMF_ROMDIS0, "FreeMemChe\x16", "FreeMem\x16", "FreeMemCheck" },
+                                      { 0xc592, SYMF_ROMDIS0, "GetLine"       , "GetLine"    , "GetLine" },
+                                      { 0xc5e8, SYMF_ROMDIS0, "ReadKey"       , "ReadKey"    , "ReadKey" },
+                                      { 0xc5fa, SYMF_ROMDIS0, "TokeniseLi\x16", "Tokenis\x16", "TokeniseLine" },
+                                      { 0xc692, SYMF_ROMDIS0, "EDIT"          , "EDIT"       , "EDIT" },
+                                      { 0xc6b3, SYMF_ROMDIS0, "FindLine"      , "FindLine"   , "FindLine" },
+                                      { 0xc6ee, SYMF_ROMDIS0, "NEW"           , "NEW"        , "NEW" },
+                                      { 0xc70d, SYMF_ROMDIS0, "CLEAR"         , "CLEAR"      , "CLEAR" },
+                                      { 0xc748, SYMF_ROMDIS0, "LIST"          , "LIST"       , "LIST" },
+                                      { 0xc7fd, SYMF_ROMDIS0, "LLIST"         , "LLIST"      , "LLIST" },
+                                      { 0xc809, SYMF_ROMDIS0, "LPRINT"        , "LPRINT"     , "LPRINT" },
+                                      { 0xc816, SYMF_ROMDIS0, "SetPrinter"    , "SetPrin\x16", "SetPrinter" },
+                                      { 0xc82f, SYMF_ROMDIS0, "SetScreen"     , "SetScre\x16", "SetScreen" },
+                                      { 0xc855, SYMF_ROMDIS0, "FOR"           , "FOR"        , "FOR" },
+                                      { 0xc8c1, SYMF_ROMDIS0, "DoNextLine"    , "DoNextL\x16", "DoNextLine" },
+                                      { 0xc915, SYMF_ROMDIS0, "DoStatement"   , "DoState\x16", "DoStatement" },
+                                      { 0xc952, SYMF_ROMDIS0, "RESTORE"       , "RESTORE"    , "RESTORE" },
+                                      { 0xc9a0, SYMF_ROMDIS0, "CONT"          , "CONT"       , "CONT" },
+                                      { 0xc9bd, SYMF_ROMDIS0, "RUN"           , "RUN"        , "RUN" },
+                                      { 0xc9c8, SYMF_ROMDIS0, "GOSUB"         , "GOSUB"      , "GOSUB" },
+                                      { 0xc9e5, SYMF_ROMDIS0, "GOTO"          , "GOTO"       , "GOTO" },
+                                      { 0xca12, SYMF_ROMDIS0, "RETURN"        , "RETURN"     , "RETURN" },
+                                      { 0xca4e, SYMF_ROMDIS0, "FindEndOfS\x16", "FindEnd\x16", "FindEndOfStatement" },
+                                      { 0xca51, SYMF_ROMDIS0, "FindEOL"       , "FindEOL"    , "FindEOL" },
+                                      { 0xca70, SYMF_ROMDIS0, "IF"            , "IF"         , "IF" },
+                                      { 0xca99, SYMF_ROMDIS0, "REM"           , "REM"        , "REM" },
+                                      { 0xcac2, SYMF_ROMDIS0, "ON"            , "ON"         , "ON" },
+                                      { 0xcae2, SYMF_ROMDIS0, "Txt2Int"       , "Txt2Int"    , "Txt2Int" },
+                                      { 0xcb1c, SYMF_ROMDIS0, "LET"           , "LET"        , "LET" },
+                                      { 0xcbab, SYMF_ROMDIS0, "PRINT"         , "PRINT"      , "PRINT" },
+                                      { 0xcbf0, SYMF_ROMDIS0, "NewLine"       , "NewLine"    , "NewLine" },
+                                      { 0xcc59, SYMF_ROMDIS0, "SetCursor"     , "SetCurs\x16", "SetCursor" },
+                                      { 0xccb0, SYMF_ROMDIS0, "PrintString"   , "PrintSt\x16", "PrintString" },
+                                      { 0xccce, SYMF_ROMDIS0, "ClrScr"        , "ClrScr"     , "ClrScr" },
+                                      { 0xcd16, SYMF_ROMDIS0, "TRON"          , "TRON"       , "TRON" },
+                                      { 0xcd46, SYMF_ROMDIS0, "GET"           , "GET"        , "GET" },
+                                      { 0xcd55, SYMF_ROMDIS0, "INPUT"         , "INPUT"      , "INPUT" },
+                                      { 0xcd89, SYMF_ROMDIS0, "READ"          , "READ"       , "READ" },
+                                      { 0xce98, SYMF_ROMDIS0, "NEXT"          , "NEXT"       , "NEXT" },
+                                      { 0xcf03, SYMF_ROMDIS0, "GetExpr"       , "GetExpr"    , "GetExpr" },
+                                      { 0xcf17, SYMF_ROMDIS0, "EvalExpr"      , "EvalExpr"   , "EvalExpr" },
+                                      { 0xcfac, SYMF_ROMDIS0, "DoOper"        , "DoOper"     , "DoOper" },
+                                      { 0xd000, SYMF_ROMDIS0, "GetItem"       , "GetItem"    , "GetItem" },
+                                      { 0xd03c, SYMF_ROMDIS0, "NOT"           , "NOT"        , "NOT" },
+                                      { 0xd059, SYMF_ROMDIS0, "EvalBracket"   , "EvalBra\x16", "EvalBracket" },
+                                      { 0xd07c, SYMF_ROMDIS0, "GetVarVal"     , "GetVarV\x16", "GetVarVal" },
+                                      { 0xd113, SYMF_ROMDIS0, "Compare"       , "Compare"    , "Compare" },
+                                      { 0xd17e, SYMF_ROMDIS0, "DIM"           , "DIM"        , "DIM" },
+                                      { 0xd188, SYMF_ROMDIS0, "GetVarFrom\x16", "GetVarF\x16", "GetVarFromText" },
+                                      { 0xd361, SYMF_ROMDIS0, "DimArray"      , "DimArray"   , "DimArray" },
+                                      { 0xd3eb, SYMF_ROMDIS0, "GetArrayEl\x16", "GetArra\x16", "GetArrayElement" },
+                                      { 0xd47e, SYMF_ROMDIS0, "FRE"           , "FRE"        , "FRE" },
+                                      { 0xd4a6, SYMF_ROMDIS0, "POS"           , "POS"        , "POS" },
+                                      { 0xd4ba, SYMF_ROMDIS0, "DEF"           , "DEF"        , "DEF" },
+                                      { 0xd593, SYMF_ROMDIS0, "STR"           , "STR"        , "STR" },
+                                      { 0xd5a3, SYMF_ROMDIS0, "SetupString"   , "SetupSt\x16", "SetupString" },
+                                      { 0xd5b5, SYMF_ROMDIS0, "GetString"     , "GetStri\x16", "GetString" },
+                                      { 0xd650, SYMF_ROMDIS0, "GarbageCol\x16", "Garbage\x16", "GarbageCollect" },
+                                      { 0xd730, SYMF_ROMDIS0, "CopyString"    , "CopyStr\x16", "CopyString" },
+                                      { 0xd767, SYMF_ROMDIS0, "StrCat"        , "StrCat"     , "StrCat" },
+                                      { 0xd816, SYMF_ROMDIS0, "CHR"           , "CHR"        , "CHR" },
+                                      { 0xd82a, SYMF_ROMDIS0, "LEFT"          , "LEFT"       , "LEFT" },
+                                      { 0xd856, SYMF_ROMDIS0, "RIGHT"         , "RIGHT"      , "RIGHT" },
+                                      { 0xd861, SYMF_ROMDIS0, "MID"           , "MID"        , "MID" },
+                                      { 0xd8a6, SYMF_ROMDIS0, "LEN"           , "LEN"        , "LEN" },
+                                      { 0xd8b5, SYMF_ROMDIS0, "ASC"           , "ASC"        , "ASC" },
+                                      { 0xd8c5, SYMF_ROMDIS0, "GetByteExp\x16", "GetByte\x16", "GetByteExpr" },
+                                      { 0xd922, SYMF_ROMDIS0, "FP2Int"        , "FP2Int"     , "FP2Int" },
+                                      { 0xd938, SYMF_ROMDIS0, "PEEK"          , "PEEK"       , "PEEK" },
+                                      { 0xd94f, SYMF_ROMDIS0, "POKE"          , "POKE"       , "POKE" },
+                                      { 0xd958, SYMF_ROMDIS0, "WAIT"          , "WAIT"       , "WAIT" },
+                                      { 0xd967, SYMF_ROMDIS0, "DOKE"          , "DOKE"       , "DOKE" },
+                                      { 0xd983, SYMF_ROMDIS0, "DEEK"          , "DEEK"       , "DEEK" },
+                                      { 0xd993, SYMF_ROMDIS0, "Byte2Hex"      , "Byte2Hex"   , "Byte2Hex" },
+                                      { 0xd9b5, SYMF_ROMDIS0, "HEX"           , "HEX"        , "HEX" },
+                                      { 0xd9de, SYMF_ROMDIS0, "LORES"         , "LORES"      , "LORES" },
+                                      { 0xda0c, SYMF_ROMDIS0, "RowCalc"       , "RowCalc"    , "RowCalc" },
+                                      { 0xda3f, SYMF_ROMDIS0, "SCRN"          , "SCRN"       , "SCRN" },
+                                      { 0xda51, SYMF_ROMDIS0, "PLOT"          , "PLOT"       , "PLOT" },
+                                      { 0xdaa1, SYMF_ROMDIS0, "UNTIL"         , "UNTIL"      , "UNTIL" },
+                                      { 0xdaab, SYMF_ROMDIS0, "REPEAT"        , "REPEAT"     , "REPEAT" },
+                                      { 0xdada, SYMF_ROMDIS0, "KEY"           , "KEY"        , "KEY" },
+                                      { 0xdaf6, SYMF_ROMDIS0, "TxtTest"       , "TxtTest"    , "TxtTest" },
+                                      { 0xdb92, SYMF_ROMDIS0, "Normalise"     , "Normali\x16", "Normalise" },
+                                      { 0xdbb9, SYMF_ROMDIS0, "AddMantiss\x16", "AddMant\x16", "AddMantissas" },
+                                      { 0xdcaf, SYMF_ROMDIS0, "LN"            , "LN"         , "LN" },
+                                      { 0xdd51, SYMF_ROMDIS0, "UnpackFPA"     , "UnpackF\x16", "UnpackFPA" },
+                                      { 0xdda7, SYMF_ROMDIS0, "FPAMult10"     , "FPAMult\x16", "FPAMult10" },
+                                      { 0xddc3, SYMF_ROMDIS0, "FPADiv10"      , "FPADiv1\x16", "FPADiv10" },
+                                      { 0xddd4, SYMF_ROMDIS0, "LOG"           , "LOG"        , "LOG" },
+                                      { 0xde77, SYMF_ROMDIS0, "PI"            , "PI"         , "PI" },
+                                      { 0xdef4, SYMF_ROMDIS0, "RoundFPA"      , "RoundFPA"   , "RoundFPA" },
+                                      { 0xdf0b, SYMF_ROMDIS0, "FALSE"         , "FALSE"      , "FALSE" },
+                                      { 0xdf0f, SYMF_ROMDIS0, "TRUE"          , "TRUE"       , "TRUE" },
+                                      { 0xdf13, SYMF_ROMDIS0, "GetSign"       , "GetSign"    , "GetSign" },
+                                      { 0xdf21, SYMF_ROMDIS0, "SGN"           , "SGN"        , "SGN" },
+                                      { 0xdf4c, SYMF_ROMDIS0, "CompareFPA"    , "Compare\x16", "CompareFPA" },
+                                      { 0xdf8c, SYMF_ROMDIS0, "FPA2Int"       , "FPA2Int"    , "FPA2Int" },
+                                      { 0xdfbd, SYMF_ROMDIS0, "INT"           , "INT"        , "INT" },
+                                      { 0xdfe7, SYMF_ROMDIS0, "GetNumber"     , "GetNumb\x16", "GetNumber" },
+                                      { 0xe076, SYMF_ROMDIS0, "AddToFPA"      , "AddToFPA"   , "AddToFPA" },
+                                      { 0xe0c5, SYMF_ROMDIS0, "PrintInt"      , "PrintInt"   , "PrintInt" },
+                                      { 0xe22e, SYMF_ROMDIS0, "SQR"           , "SQR"        , "SQR" },
+                                      { 0xe27c, SYMF_ROMDIS0, "ExpData"       , "ExpData"    , "ExpData" },
+                                      { 0xe22a, SYMF_ROMDIS0, "EXP"           , "EXP"        , "EXP" },
+                                      { 0xe313, SYMF_ROMDIS0, "SeriesEval"    , "SeriesE\x16", "SeriesEval" },
+                                      { 0xe34f, SYMF_ROMDIS0, "RND"           , "RND"        , "RND" },
+                                      { 0xe38b, SYMF_ROMDIS0, "COS"           , "COS"        , "COS" },
+                                      { 0xe392, SYMF_ROMDIS0, "SIN"           , "SIN"        , "SIN" },
+                                      { 0xe407, SYMF_ROMDIS0, "TrigData"      , "TrigData"   , "TrigData" },
+                                      { 0xe43f, SYMF_ROMDIS0, "ATN"           , "ATN"        , "ATN" },
+                                      { 0xe46f, SYMF_ROMDIS0, "ATNData"       , "ATNData"    , "ATNData" },
+                                      { 0xe4ac, SYMF_ROMDIS0, "TapeSync"      , "TapeSync"   , "TapeSync" },
+                                      { 0xe4e0, SYMF_ROMDIS0, "GetTapeData"   , "GetTape\x16", "GetTapeData" },
+                                      { 0xe4f2, SYMF_ROMDIS0, "VERIFY"        , "VERIFY"     , "VERIFY" },
+                                      { 0xe56c, SYMF_ROMDIS0, "IncTapeCou\x16", "IncTape\x16", "IncTapeCount" },
+                                      { 0xe57d, SYMF_ROMDIS0, "PrintSearc\x16", "PrintSe\x16", "PrintSearching" },
+                                      { 0xe585, SYMF_ROMDIS0, "PrintSavin\x16", "PrintSa\x16", "PrintSaving" },
+                                      { 0xe58c, SYMF_ROMDIS0, "PrintFName"    , "PrintFN\x16", "PrintFName" },
+                                      { 0xe594, SYMF_ROMDIS0, "PrintFound"    , "PrintFo\x16", "PrintFound" },
+                                      { 0xe5a4, SYMF_ROMDIS0, "PrintLoadi\x16", "PrintLo\x16", "PrintLoading" },
+                                      { 0xe5ab, SYMF_ROMDIS0, "PrintVerif\x16", "PrintVe\x16", "PrintVerifying" },
+                                      { 0xe5b6, SYMF_ROMDIS0, "PrintMsg"      , "PrintMsg"   , "PrintMsg" },
+                                      { 0xe5ea, SYMF_ROMDIS0, "ClrStatus"     , "ClrStat\x16", "ClrStatus" },
+                                      { 0xe5f5, SYMF_ROMDIS0, "ClrTapeSta\x16", "ClrTape\x16", "ClrTapeStatus" },
+                                      { 0xe607, SYMF_ROMDIS0, "WriteFileH\x16", "WriteFi\x16", "WriteFileHeader" },
+                                      { 0xe65e, SYMF_ROMDIS0, "PutTapeByte"   , "PutTape\x16", "PutTapeByte" },
+                                      { 0xe6c9, SYMF_ROMDIS0, "GetTapeByte"   , "GetTape\x16", "GetTapeByte" },
+                                      { 0xe735, SYMF_ROMDIS0, "SyncTape"      , "SyncTape"   , "SyncTape" },
+                                      { 0xe75a, SYMF_ROMDIS0, "WriteLeader"   , "WriteLe\x16", "WriteLeader" },
+                                      { 0xe76a, SYMF_ROMDIS0, "SetupTape"     , "SetupTa\x16", "SetupTape" },
+                                      { 0xe7b2, SYMF_ROMDIS0, "GetTapePar\x16", "GetTape\x16", "GetTapeParams" },
+                                      { 0xe85b, SYMF_ROMDIS0, "CLOAD"         , "CLOAD"      , "CLOAD" },
+                                      { 0xe903, SYMF_ROMDIS0, "CLEAR"         , "CLEAR"      , "CLEAR" },
+                                      { 0xe909, SYMF_ROMDIS0, "CSAVE"         , "CSAVE"      , "CSAVE" },
+                                      { 0xe946, SYMF_ROMDIS0, "CALL"          , "CALL"       , "CALL" },
+                                      { 0xe987, SYMF_ROMDIS0, "STORE"         , "STORE"      , "STORE" },
+                                      { 0xe9d1, SYMF_ROMDIS0, "RECALL"        , "RECALL"     , "RECALL" },
+                                      { 0xeaf0, SYMF_ROMDIS0, "HiresTest"     , "HiresTe\x16", "HiresTest" },
+                                      { 0xeb78, SYMF_ROMDIS0, "CheckKbd"      , "CheckKbd"   , "CheckKbd" },
+                                      { 0xebce, SYMF_ROMDIS0, "HIMEM"         , "HIMEM"      , "HIMEM" },
+                                      { 0xec0c, SYMF_ROMDIS0, "RELEASE"       , "RELEASE"    , "RELEASE" },
+                                      { 0xec21, SYMF_ROMDIS0, "TEXT"          , "TEXT"       , "TEXT" },
+                                      { 0xec33, SYMF_ROMDIS0, "HIRES"         , "HIRES"      , "HIRES" },
+                                      { 0xec45, SYMF_ROMDIS0, "POINT"         , "POINT"      , "POINT" },
+                                      { 0xeccc, SYMF_ROMDIS0, "StartBASIC"    , "StartBA\x16", "StartBASIC" },
+                                      { 0xedc4, SYMF_ROMDIS0, "CopyMem"       , "CopyMem"    , "CopyMem" },
+                                      { 0xede0, SYMF_ROMDIS0, "SetupTimer"    , "SetupTi\x16", "SetupTimer" },
+                                      { 0xee1a, SYMF_ROMDIS0, "StopTimer"     , "StopTim\x16", "StopTimer" },
+                                      { 0xee22, SYMF_ROMDIS0, "IRQ"           , "IRQ"        , "IRQ" },
+                                      { 0xee8c, SYMF_ROMDIS0, "ResetTimer"    , "ResetTi\x16", "ResetTimer" },
+                                      { 0xee1a, SYMF_ROMDIS0, "StopTimer"     , "StopTim\x16", "StopTimer" },
+                                      { 0xee9d, SYMF_ROMDIS0, "GetTimer"      , "GetTime\x16", "GetTimer" },
+                                      { 0xeeab, SYMF_ROMDIS0, "SetTimer"      , "SetTime\x16", "SetTimer" },
+                                      { 0xeec9, SYMF_ROMDIS0, "Delay"         , "Delay"      , "Delay" },
+                                      { 0xeee8, SYMF_ROMDIS0, "WritePixel"    , "WritePi\x16", "WritePixel" },
+                                      { 0xeef8, SYMF_ROMDIS0, "DrawLine"      , "DrawLine"   , "DrawLine" },
+                                      { 0xf0c8, SYMF_ROMDIS0, "CURSET"        , "CURSET"     , "CURSET" },
+                                      { 0xf0fd, SYMF_ROMDIS0, "CURMOV"        , "CURMOV"     , "CURMOV" },
+                                      { 0xf110, SYMF_ROMDIS0, "DRAW"          , "DRAW"       , "DRAW" },
+                                      { 0xf11d, SYMF_ROMDIS0, "PATTERN"       , "PATTERN"    , "PATTERN" },
+                                      { 0xf12d, SYMF_ROMDIS0, "CHAR"          , "CHAR"       , "CHAR" },
+                                      { 0xf204, SYMF_ROMDIS0, "PAPER"         , "PAPER"      , "PAPER" },
+                                      { 0xf210, SYMF_ROMDIS0, "INK"           , "INK"        , "INK" },
+                                      { 0xf268, SYMF_ROMDIS0, "FILL"          , "FILL"       , "FILL" },
+                                      { 0xf37f, SYMF_ROMDIS0, "CIRCLE"        , "CIRCLE"     , "CIRCLE" },
+                                      { 0xf495, SYMF_ROMDIS0, "ReadKbd"       , "ReadKbd"    , "ReadKbd" },
+                                      { 0xf4ef, SYMF_ROMDIS0, "Key2ASCII"     , "Key2ASC\x16", "Key2ASCII" },
+                                      { 0xf523, SYMF_ROMDIS0, "FindKey"       , "FindKey"    , "FindKey" },
+                                      { 0xf561, SYMF_ROMDIS0, "ReadKbdCol"    , "ReadKbd\x16", "ReadKbdCol" },
+                                      { 0xf590, SYMF_ROMDIS0, "WriteToAY"     , "WriteTo\x16", "WriteToAY" },
+                                      { 0xf5c1, SYMF_ROMDIS0, "PrintChar"     , "PrintCh\x16", "PrintChar" },
+                                      { 0xf602, SYMF_ROMDIS0, "ControlChr"    , "Control\x16", "ControlChr" },
+                                      { 0xf71a, SYMF_ROMDIS0, "ClearLine"     , "ClearLi\x16", "ClearLine" },
+                                      { 0xf77c, SYMF_ROMDIS0, "Char2Scr"      , "Char2Sc\x16", "Char2Scr" },
+                                      { 0xf7e4, SYMF_ROMDIS0, "PrintA"        , "PrintA"     , "PrintA" },
+                                      { 0xf816, SYMF_ROMDIS0, "AltChars"      , "AltChars"   , "AltChars" },
+                                      { 0xf865, SYMF_ROMDIS0, "PrintStatus"   , "PrintSt\x16", "PrintStatus" },
+                                      { 0xf88f, SYMF_ROMDIS0, "Reset"         , "Reset"      , "Reset" },
+                                      { 0xf8af, SYMF_ROMDIS0, "BASICStart"    , "BASICSt\x16", "BASICStart" },
+                                      { 0xf8b5, SYMF_ROMDIS0, "BASICResta\x16", "BASICRe\x16", "BASICRestart" },
+                                      { 0xf920, SYMF_ROMDIS0, "HiresMode"     , "HiresMo\x16", "HiresMode" },
+                                      { 0xf967, SYMF_ROMDIS0, "LoresMode"     , "LoresMo\x16", "LoresMode" },
+                                      { 0xf9aa, SYMF_ROMDIS0, "ResetVIA"      , "ResetVIA"   , "ResetVIA" },
+                                      { 0xf9c9, SYMF_ROMDIS0, "SetupText"     , "SetupTe\x16", "SetupText" },
+                                      { 0xfa14, SYMF_ROMDIS0, "RamTest"       , "RamTest"    , "RamTest" },
+                                      { 0xfa9f, SYMF_ROMDIS0, "PING"          , "PING"       , "PING" },
+                                      { 0xfaa7, SYMF_ROMDIS0, "PingData"      , "PingData"   , "PingData" },
+                                      { 0xfab5, SYMF_ROMDIS0, "SHOOT"         , "SHOOT"      , "SHOOT" },
+                                      { 0xfabd, SYMF_ROMDIS0, "ShootData"     , "ShootDa\x16", "ShootData" },
+                                      { 0xfab5, SYMF_ROMDIS0, "EXPLODE"       , "EXPLODE"    , "EXPLODE" },
+                                      { 0xfacb, SYMF_ROMDIS0, "ExplodeData"   , "Explode\x16", "ExplodeData" },
+                                      { 0xfae1, SYMF_ROMDIS0, "ZAP"           , "ZAP"        , "ZAP" },
+                                      { 0xfb06, SYMF_ROMDIS0, "ZapData"       , "ZapData"    , "ZapData" },
+                                      { 0xfb14, SYMF_ROMDIS0, "KeyClickH"     , "KeyClic\x16", "KeyClickH" },
+                                      { 0xfb1c, SYMF_ROMDIS0, "KeyClickHD\x16", "KeyClic\x16", "KeyClickHData" },
+                                      { 0xfb2a, SYMF_ROMDIS0, "KeyClickL"     , "KeyClic\x16", "KeyClickL" },
+                                      { 0xfb32, SYMF_ROMDIS0, "KeyClickLD\x16", "KeyClic\x16", "KeyClickLData" },
+                                      { 0xfb14, SYMF_ROMDIS0, "KeyClickH"     , "KeyClic\x16", "KeyClickH" },
+                                      { 0xfb40, SYMF_ROMDIS0, "SOUND"         , "SOUND"      , "SOUND" },
+                                      { 0xfbd0, SYMF_ROMDIS0, "PLAY"          , "PLAY"       , "PLAY" },
+                                      { 0xfc18, SYMF_ROMDIS0, "MUSIC"         , "MUSIC"      , "MUSIC" },
+                                      { 0xfc5e, SYMF_ROMDIS0, "MusicData"     , "MusicDa\x16", "MusicData" },
+                                      { 0xfc78, SYMF_ROMDIS0, "CharSet"       , "CharSet"    , "CharSet" },
+                                      { 0xff78, SYMF_ROMDIS0, "KeyCodeTab"    , "KeyCode\x16", "KeyCodeTab" },
+                                      { 0, 0, { 0, }, { 0, }, NULL } };
 
 enum
 {
@@ -109,89 +368,6 @@ enum
   AM_REL,
   AM_IND
 };
-
-struct disinf
-{
-  char *name;
-  int amode;
-};
-
-SDL_bool isws( char c )
-{
-  if( ( c == 9 ) || ( c == 32 ) ) return SDL_TRUE;
-  return SDL_FALSE;
-}
-
-SDL_bool isbin( char c )
-{
-  if( ( c >= '0' ) && ( c <= '1' ) ) return SDL_TRUE;
-  return SDL_FALSE;
-}
-
-SDL_bool isnum( char c )
-{
-  if( ( c >= '0' ) && ( c <= '9' ) ) return SDL_TRUE;
-  return SDL_FALSE;
-}
-
-SDL_bool ishex( char c )
-{
-  if( isnum( c ) ) return SDL_TRUE;
-  if( ( c >= 'a' ) && ( c <= 'f' ) ) return SDL_TRUE;
-  if( ( c >= 'A' ) && ( c <= 'F' ) ) return SDL_TRUE;
-  return SDL_FALSE;
-}
-
-int hexit( char c )
-{
-  if( isnum( c ) ) return c-'0';
-  if( ( c >= 'a' ) && ( c <= 'f' ) ) return c-('a'-10);
-  if( ( c >= 'A' ) && ( c <= 'F' ) ) return c-('A'-10);
-  return -1;
-}
-
-void dbg_scroll( void )
-{
-  int x, y, s, d;
-  struct textzone *ptz = tz[TZ_DEBUG];
-
-  s = ptz->w*2+1;
-  d = ptz->w+1;
-  for( y=0; y<18; y++ )
-  {
-    for( x=0; x<48; x++ )
-    {
-      ptz->tx[d] = ptz->tx[s];
-      ptz->fc[d] = ptz->fc[s];
-      ptz->bc[d++] = ptz->bc[s++];
-    }
-    d += 2;
-    s += 2;
-  }
-
-  for( x=0; x<48; x++ )
-  {
-    ptz->tx[d] = ' ';
-    ptz->fc[d] = 2;
-    ptz->bc[d++] = 3;
-  }
-}
-
-void dbg_printf( char *fmt, ... )
-{
-  va_list ap;
-
-  dbg_scroll();
-
-  va_start( ap, fmt );
-  if( vsnprintf( vsptmp, VSPTMPSIZE, fmt, ap ) != -1 )
-  {
-    vsptmp[VSPTMPSIZE-1] = 0;
-    tzstrpos( tz[TZ_DEBUG], 1, 19, vsptmp );
-  }
-  va_end( ap );
-}
-
 
 static struct disinf distab[] = { { "BRK", AM_IMP },  // 00
                                   { "ORA", AM_ZIX },  // 01
@@ -450,30 +626,323 @@ static struct disinf distab[] = { { "BRK", AM_IMP },  // 00
                                   { "INC", AM_ABX },  // FE
                                   { "???", AM_IMP } };// FF
 
-char *mon_disassemble( struct machine *oric, unsigned short *paddr )
+SDL_bool isws( char c )
 {
-  unsigned short iaddr;
-  unsigned char op, a1, a2;
+  if( ( c == 9 ) || ( c == 32 ) ) return SDL_TRUE;
+  return SDL_FALSE;
+}
+
+SDL_bool isbin( char c )
+{
+  if( ( c >= '0' ) && ( c <= '1' ) ) return SDL_TRUE;
+  return SDL_FALSE;
+}
+
+SDL_bool isnum( char c )
+{
+  if( ( c >= '0' ) && ( c <= '9' ) ) return SDL_TRUE;
+  return SDL_FALSE;
+}
+
+SDL_bool ishex( char c )
+{
+  if( isnum( c ) ) return SDL_TRUE;
+  if( ( c >= 'a' ) && ( c <= 'f' ) ) return SDL_TRUE;
+  if( ( c >= 'A' ) && ( c <= 'F' ) ) return SDL_TRUE;
+  return SDL_FALSE;
+}
+
+SDL_bool issymstart( char c )
+{
+  if( ( c >= 'a' ) && ( c <= 'z' ) ) return SDL_TRUE;
+  if( ( c >= 'A' ) && ( c <= 'Z' ) ) return SDL_TRUE;
+  if( c == '_' ) return SDL_TRUE;
+  return SDL_FALSE;
+}
+
+SDL_bool issymchar( char c )
+{
+  if( issymstart( c ) ) return SDL_TRUE;
+  if( isnum( c ) ) return SDL_TRUE;
+  return SDL_FALSE;
+}
+
+int hexit( char c )
+{
+  if( isnum( c ) ) return c-'0';
+  if( ( c >= 'a' ) && ( c <= 'f' ) ) return c-('a'-10);
+  if( ( c >= 'A' ) && ( c <= 'F' ) ) return c-('A'-10);
+  return -1;
+}
+
+void dbg_scroll( void )
+{
+  int x, y, s, d;
+  struct textzone *ptz = tz[TZ_DEBUG];
+
+  s = ptz->w*2+1;
+  d = ptz->w+1;
+  for( y=0; y<18; y++ )
+  {
+    for( x=0; x<48; x++ )
+    {
+      ptz->tx[d] = ptz->tx[s];
+      ptz->fc[d] = ptz->fc[s];
+      ptz->bc[d++] = ptz->bc[s++];
+    }
+    d += 2;
+    s += 2;
+  }
+
+  for( x=0; x<48; x++ )
+  {
+    ptz->tx[d] = ' ';
+    ptz->fc[d] = 2;
+    ptz->bc[d++] = 3;
+  }
+}
+
+void dbg_printf( char *fmt, ... )
+{
+  va_list ap;
+
+  dbg_scroll();
+
+  va_start( ap, fmt );
+  if( vsnprintf( vsptmp, VSPTMPSIZE, fmt, ap ) != -1 )
+  {
+    vsptmp[VSPTMPSIZE-1] = 0;
+    tzstrpos( tz[TZ_DEBUG], 1, 19, vsptmp );
+  }
+  va_end( ap );
+}
+
+struct msym *mon_find_sym_by_addr( struct machine *oric, unsigned short addr )
+{
   int i;
 
+  for( i=0; i<numsyms; i++ )
+  {
+    if( (syms[i].flags&SYMF_MICRODISC) && ( oric->drivetype != DRV_MICRODISC ) )
+      continue;
+
+    if( (syms[i].flags&SYMF_JASMIN) && ( oric->drivetype != DRV_JASMIN ) )
+      continue;
+
+    if( oric->romdis )
+    {
+      if( (syms[i].flags&SYMF_ROMDIS1) == 0 )
+        continue;
+    } else {
+      if( (syms[i].flags&SYMF_ROMDIS0) == 0 )
+        continue;
+    }
+
+    if( addr == syms[i].addr )
+      return &syms[i];
+  }
+
+  if( !defaultsyms ) return NULL;
+
+  for( i=0; defaultsyms[i].name; i++ )
+  {
+    if( (defaultsyms[i].flags&SYMF_MICRODISC) && ( oric->drivetype != DRV_MICRODISC ) )
+      continue;
+
+    if( (defaultsyms[i].flags&SYMF_JASMIN) && ( oric->drivetype != DRV_JASMIN ) )
+      continue;
+
+    if( oric->romdis )
+    {
+      if( (defaultsyms[i].flags&SYMF_ROMDIS1) == 0 )
+        continue;
+    } else {
+      if( (defaultsyms[i].flags&SYMF_ROMDIS0) == 0 )
+        continue;
+    }
+
+    if( addr == defaultsyms[i].addr )
+      return &defaultsyms[i];
+  }
+
+  return NULL;
+}
+
+struct msym *mon_find_sym_by_name( struct machine *oric, char *name )
+{
+  int i;
+
+  for( i=0; i<numsyms; i++ )
+  {
+    if( (syms[i].flags&SYMF_MICRODISC) && ( oric->drivetype != DRV_MICRODISC ) )
+      continue;
+
+    if( (syms[i].flags&SYMF_JASMIN) && ( oric->drivetype != DRV_JASMIN ) )
+      continue;
+
+    if( oric->romdis )
+    {
+      if( (syms[i].flags&SYMF_ROMDIS1) == 0 )
+        continue;
+    } else {
+      if( (syms[i].flags&SYMF_ROMDIS0) == 0 )
+        continue;
+    }
+
+    if( oric->symbolscase )
+    {
+      if( strcasecmp( name, syms[i].name ) == 0 )
+        return &syms[i];
+    } else {
+      if( strcmp( name, syms[i].name ) == 0 )
+        return &syms[i];
+    }
+  }
+
+  if( !defaultsyms ) return NULL;
+
+  for( i=0; defaultsyms[i].name; i++ )
+  {
+    if( (defaultsyms[i].flags&SYMF_MICRODISC) && ( oric->drivetype != DRV_MICRODISC ) )
+      continue;
+
+    if( (defaultsyms[i].flags&SYMF_JASMIN) && ( oric->drivetype != DRV_JASMIN ) )
+      continue;
+
+    if( oric->romdis )
+    {
+      if( (defaultsyms[i].flags&SYMF_ROMDIS1) == 0 )
+        continue;
+    } else {
+      if( (defaultsyms[i].flags&SYMF_ROMDIS0) == 0 )
+        continue;
+    }
+
+    if( oric->symbolscase )
+    {
+      if( strcasecmp( name, defaultsyms[i].name ) == 0 )
+        return &syms[i];
+    } else {
+      if( strcmp( name, defaultsyms[i].name ) == 0 )
+        return &syms[i];
+    }
+  }
+
+  return NULL;
+}
+
+SDL_bool mon_addsym( unsigned short addr, unsigned short flags, char *name )
+{
+  int i;
+
+  if( ( !syms ) || ( symspace < (numsyms+1) ) )
+  {
+    struct msym *newbuf;
+
+    newbuf = malloc( sizeof( struct msym ) * (symspace+64) );
+    if( !newbuf ) return SDL_FALSE;
+
+    if( ( syms ) && ( numsyms > 0 ) )
+      memcpy( newbuf, syms, sizeof( struct msym ) * numsyms );
+
+    free( syms );
+    syms = newbuf;
+    symspace += 64;
+
+    for( i=numsyms; i<symspace; i++ )
+      syms[i].name = NULL;
+  }
+
+  if( !syms[numsyms].name )
+  {
+    syms[numsyms].name = malloc( 128 );
+    if( !syms[numsyms].name ) return SDL_FALSE;
+  }
+
+  syms[numsyms].addr = addr;
+  syms[numsyms].flags = flags;
+  strncpy( syms[numsyms].name, name, 128 );
+  syms[numsyms].name[127] = 0;
+
+  if( strlen( name ) > SNAME_LEN )
+  {
+    strncpy( syms[numsyms].sname, name, (SNAME_LEN-1) );
+    syms[numsyms].sname[SNAME_LEN-1] = 22;
+    syms[numsyms].sname[SNAME_LEN] = 0;
+  } else {
+    strcpy( syms[numsyms].sname, name );
+  }
+
+  if( strlen( name ) > SSNAME_LEN )
+  {
+    strncpy( syms[numsyms].ssname, name, (SSNAME_LEN-1) );
+    syms[numsyms].ssname[SSNAME_LEN-1] = 22;
+    syms[numsyms].ssname[SSNAME_LEN] = 0;
+  } else {
+    strcpy( syms[numsyms].ssname, name );
+  }
+
+  numsyms++;
+
+  return SDL_TRUE;
+}
+
+void mon_enter( struct machine *oric )
+{
+  defaultsyms = NULL;
+  switch( oric->type )
+  {
+    case MACH_ORIC1:
+      defaultsyms = defsym_oric1;
+      break;
+
+    case MACH_ATMOS:
+      defaultsyms = defsym_atmos;
+      break;
+  }
+}
+
+char *mon_disassemble( struct machine *oric, unsigned short *paddr )
+{
+  unsigned short iaddr, addr;
+  unsigned char op, a1, a2;
+  int i;
+  char *tmpsname;
+  char sname[SNAME_LEN+1];
+  struct msym *csym;
+
   iaddr = *paddr;
+
+  tmpsname = "";
+  csym = mon_find_sym_by_addr( oric, iaddr );
+  if( csym ) tmpsname = csym->sname;
+
+  strcpy( sname, tmpsname );
+  for( i=strlen(sname); i<SNAME_LEN; i++ )
+    sname[i] = 32;
+  sname[i] = 0;
+
   op = oric->cpu.read( &oric->cpu, (*paddr)++ );
   switch( distab[op].amode )
   {
     case AM_IMP:
-      sprintf( distmp, "  %04X  %02X        %s", iaddr, op, distab[op].name );
+      sprintf( distmp, "%s   %04X  %02X        %s", sname, iaddr, op, distab[op].name );
       break;
     
     case AM_IMM:
       a1 = oric->cpu.read( &oric->cpu, (*paddr)++ );
-      sprintf( distmp, "  %04X  %02X %02X     %s #$%02X", iaddr, op, a1, distab[op].name, a1 );
+      sprintf( distmp, "%s   %04X  %02X %02X     %s #$%02X", sname, iaddr, op, a1, distab[op].name, a1 );
       break;
 
     case AM_ZP:
     case AM_ZPX:
     case AM_ZPY:
       a1 = oric->cpu.read( &oric->cpu, (*paddr)++ );
-      sprintf( distmp, "  %04X  %02X %02X     %s $%02X", iaddr, op, a1, distab[op].name, a1 );
+      csym = mon_find_sym_by_addr( oric, a1 );
+      if( csym )
+        sprintf( distmp, "%s   %04X  %02X %02X     %s %s", sname, iaddr, op, a1, distab[op].name, csym->sname );
+      else
+        sprintf( distmp, "%s   %04X  %02X %02X     %s $%02X", sname, iaddr, op, a1, distab[op].name, a1 );
       if( distab[op].amode == AM_ZP ) break;
       strcat( distmp, distab[op].amode == AM_ZPX ? ",X" : ",Y" );
       break;
@@ -483,36 +952,61 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr )
     case AM_ABY:
       a1 = oric->cpu.read( &oric->cpu, (*paddr)++ );
       a2 = oric->cpu.read( &oric->cpu, (*paddr)++ );
-      sprintf( distmp, "  %04X  %02X %02X %02X  %s $%02X%02X", iaddr, op, a1, a2, distab[op].name, a2, a1 );
+      csym = mon_find_sym_by_addr( oric, (a2<<8)|a1 );
+      if( csym )
+        sprintf( distmp, "%s   %04X  %02X %02X %02X  %s %s", sname, iaddr, op, a1, a2, distab[op].name, csym->sname );
+      else
+        sprintf( distmp, "%s   %04X  %02X %02X %02X  %s $%02X%02X", sname, iaddr, op, a1, a2, distab[op].name, a2, a1 );
       if( distab[op].amode == AM_ABS ) break;
       strcat( distmp, distab[op].amode == AM_ABX ? ",X" : ",Y" );
       break;
 
     case AM_ZIX:
       a1 = oric->cpu.read( &oric->cpu, (*paddr)++ );
-      sprintf( distmp, "  %04X  %02X %02X     %s ($%02X,X)", iaddr, op, a1, distab[op].name, a1 );
+      csym = mon_find_sym_by_addr( oric, a1 );
+      if( csym )
+        sprintf( distmp, "%s   %04X  %02X %02X     %s (%s,X)", sname, iaddr, op, a1, distab[op].name, csym->ssname );
+      else
+        sprintf( distmp, "%s   %04X  %02X %02X     %s ($%02X,X)", sname, iaddr, op, a1, distab[op].name, a1 );
       break;
 
     case AM_ZIY:
       a1 = oric->cpu.read( &oric->cpu, (*paddr)++ );
-      sprintf( distmp, "  %04X  %02X %02X     %s ($%02X),Y", iaddr, op, a1, distab[op].name, a1 );
+      csym = mon_find_sym_by_addr( oric, a1 );
+      if( csym )     
+        sprintf( distmp, "%s   %04X  %02X %02X     %s (%s),Y", sname, iaddr, op, a1, distab[op].name, csym->ssname );
+      else
+        sprintf( distmp, "%s   %04X  %02X %02X     %s ($%02X),Y", sname, iaddr, op, a1, distab[op].name, a1 );
       break;
 
     case AM_REL:
       a1 = oric->cpu.read( &oric->cpu, (*paddr)++ );
-      sprintf( distmp, "  %04X  %02X %02X     %s $%04X", iaddr, op, a1, distab[op].name, ((*paddr)+((signed char)a1))&0xffff );
+      addr = ((*paddr)+((signed char)a1))&0xffff;
+      csym = mon_find_sym_by_addr( oric, addr );
+      if( csym )
+        sprintf( distmp, "%s   %04X  %02X %02X     %s %s", sname, iaddr, op, a1, distab[op].name, csym->sname );
+      else
+        sprintf( distmp, "%s   %04X  %02X %02X     %s $%04X", sname, iaddr, op, a1, distab[op].name, addr );
       break;
 
     case AM_IND:
       a1 = oric->cpu.read( &oric->cpu, (*paddr)++ );
       a2 = oric->cpu.read( &oric->cpu, (*paddr)++ );
-      sprintf( distmp, "  %04X  %02X %02X %02X  %s ($%02X%02X)", iaddr, op, a1, a2, distab[op].name, a2, a1 );
+      csym = mon_find_sym_by_addr( oric, (a2<<8)|a1 );
+      if( csym )
+        sprintf( distmp, "%s   %04X  %02X %02X %02X  %s (%s)", sname, iaddr, op, a1, a2, distab[op].name, csym->sname );
+      else
+        sprintf( distmp, "%s   %04X  %02X %02X %02X  %s ($%02X%02X)", sname, iaddr, op, a1, a2, distab[op].name, a2, a1 );
       break;
     
     default:
       strcpy( distmp, "  WTF?" );
       break;
   }
+
+  for( i=strlen(distmp); i<47; i++ )
+    distmp[i] = 32;
+  distmp[i] = 0;
 
   oric->cpu.anybp = SDL_FALSE;
   for( i=0; i<16; i++ )
@@ -521,12 +1015,12 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr )
     {
       oric->cpu.anybp = SDL_TRUE;
       if( iaddr == oric->cpu.breakpoints[i] )
-        distmp[0] = '*';
+        distmp[SNAME_LEN+1] = '*';
     }
   }
 
   if( iaddr == oric->cpu.pc )
-    distmp[1] = '>';
+    distmp[SNAME_LEN+2] = '>';
 
   return distmp;
 }
@@ -535,6 +1029,8 @@ void mon_update_regs( struct machine *oric )
 {
   int i;
   unsigned short addr;
+  struct msym *csym;
+  char stmp[48];
 
   tzprintfpos( tz[TZ_REGS], 2, 2, "PC=%04X  SP=01%02X    A=%02X  X=%02X  Y=%02X",
     oric->cpu.pc,
@@ -542,6 +1038,22 @@ void mon_update_regs( struct machine *oric )
     oric->cpu.a,
     oric->cpu.x,
     oric->cpu.y );
+
+  csym = mon_find_sym_by_addr( oric, oric->cpu.pc );
+  if( csym )
+  {
+    if( strlen( csym->name ) > 46 )
+    {
+      strncpy( stmp, csym->name, 46 );
+      stmp[46] = 0;
+    } else {
+      strcpy( stmp, csym->name );
+    }
+    tzstrpos( tz[TZ_REGS], 2, 3, stmp );
+  } else {
+    tzprintfpos( tz[TZ_REGS], 2, 3, "%46s", " " );
+  }
+
 #if CYCLECOUNT
   tzprintfpos( tz[TZ_REGS], 2, 4, "CY=%08d", oric->cpu.cycles );
   tzprintfpos( tz[TZ_REGS], 2, 5, "FM=%06d RS=%03d", oric->frames, oric->vid_raster );
@@ -749,15 +1261,19 @@ void mon_render( struct machine *oric )
 void mon_hide_curs( void )
 {
   struct textzone *ptz = tz[TZ_MONITOR];
-  ptz->fc[ptz->w*19+2+cursx] = 2;
-  ptz->bc[ptz->w*19+2+cursx] = 3;
+  int x = cursx-iloff;
+  if( ( x < 0 ) || ( x > CONS_WIDTH ) ) return;
+  ptz->fc[ptz->w*19+2+x] = 2;
+  ptz->bc[ptz->w*19+2+x] = 3;
 }
 
 void mon_show_curs( void )
 {
   struct textzone *ptz = tz[TZ_MONITOR];
-  ptz->fc[ptz->w*19+2+cursx] = 3;
-  ptz->bc[ptz->w*19+2+cursx] = 2;
+  int x = cursx-iloff;
+  if( ( x < 0 ) || ( x > CONS_WIDTH ) ) return;
+  ptz->fc[ptz->w*19+2+x] = 3;
+  ptz->bc[ptz->w*19+2+x] = 2;
 }
 
 void mon_scroll( SDL_bool above )
@@ -836,6 +1352,7 @@ void mon_start_input( void )
   mon_scroll( SDL_FALSE );
   ibuf[0] = 0;
   ilen = 0;
+  iloff = 0;
   cursx = 0;
   tzsetcol( tz[TZ_MONITOR], 1, 3 );
   tzstrpos( tz[TZ_MONITOR], 1, 19, "]" ); 
@@ -849,6 +1366,18 @@ void mon_init( struct machine *oric )
   mon_show_curs();
   mon_addr = oric->cpu.pc;
   lastcmd = 0;
+}
+
+void mon_shut( void )
+{
+  int i;
+  if( syms )
+  {
+    for( i=0; i<symspace; i++ )
+      if( syms[i].name ) free( syms[i].name );
+    free( syms );
+  }
+  syms = NULL;
 }
 
 int mon_getreg( char *buf, int *off, SDL_bool addrregs, SDL_bool nregs, SDL_bool viaregs )
@@ -1039,13 +1568,33 @@ int mon_getreg( char *buf, int *off, SDL_bool addrregs, SDL_bool nregs, SDL_bool
   return -1;
 }
 
-SDL_bool mon_getnum( struct machine *oric, unsigned int *num, char *buf, int *off, SDL_bool addrregs, SDL_bool nregs, SDL_bool viaregs )
+SDL_bool mon_getnum( struct machine *oric, unsigned int *num, char *buf, int *off, SDL_bool addrregs, SDL_bool nregs, SDL_bool viaregs, SDL_bool symbols )
 {
   int i, j;
+  char c;
   unsigned int v;
 
   i = *off;
   while( isws( buf[i] ) ) i++;
+
+  if( ( symbols ) && ( issymstart( buf[i] ) ) )
+  {
+    struct msym *fsym;
+
+    for( j=0; issymchar( buf[i+j] ); j++ ) ;
+    c = buf[i+j];
+    if( isws( c ) || ( c == 13 ) || ( c == 10 ) || ( c == 0 ) || ( c == ',' ) )
+    {
+      buf[i+j] = 0;
+      fsym = mon_find_sym_by_name( oric, &buf[i] );
+      if( fsym )
+      {
+        (*num) = fsym->addr;
+        (*off) = i+j;
+        return SDL_TRUE;
+      }
+    }
+  }
 
   j = mon_getreg( buf, off, addrregs, nregs, viaregs );
   if( j != -1 )
@@ -1179,6 +1728,63 @@ SDL_bool mon_getnum( struct machine *oric, unsigned int *num, char *buf, int *of
   return SDL_TRUE;    
 }
 
+SDL_bool mon_new_symbols( char *fname )
+{
+  FILE *f;
+  int i, j, k;
+  unsigned int v;
+
+  f = fopen( fname, "r" );
+  if( !f )
+  {
+    char sfnam[30];
+    if( strlen( fname ) > 29 )
+    {
+      sfnam[0] = 22;
+      for( k=1,j=strlen( fname )-28; fname[j]; j++,k++ )
+        sfnam[k] = fname[j];
+      sfnam[k] = 0;
+    } else {
+      strcpy( sfnam, fname );
+    }
+    mon_printf( "Unable to open '%s'", sfnam );
+    return SDL_FALSE;
+  }
+
+  numsyms = 0;
+  while( !feof( f ) )
+  {
+    char linetmp[256];
+
+    if( !fgets( linetmp, 256, f ) ) break;
+
+    for( i=0, v=0; i<4; i++ )
+    {
+      j = hexit( linetmp[i] );
+      if( j == -1 ) break;
+      v = (v<<4)|j;
+    }
+    if( i < 4 ) continue;
+    if( linetmp[4] != 32 ) continue;
+    if( !issymstart( linetmp[5] ) ) continue;
+
+    for( i=5,j=0; issymchar(linetmp[i]); i++,j++ )
+      linetmp[j] = linetmp[i];
+    linetmp[j] = 0;
+
+    printf( "'%s' = %04X\n", linetmp, v );
+    fflush( stdout );
+
+    if( v >= 0xc000 )
+      mon_addsym( v, SYMF_ROMDIS1, linetmp );
+    else
+      mon_addsym( v, SYMF_ROMDIS0|SYMF_ROMDIS1, linetmp );
+  }
+
+  fclose( f );
+  return SDL_TRUE;
+}
+
 SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 {
   int i, j, k, l;
@@ -1192,6 +1798,34 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
   switch( cmd[i] )
   {
+    case 's': // Symbols
+      lastcmd = 0;
+      i++;
+      switch( cmd[i] )
+      {
+        case 'z':  // Zap
+          numsyms = 0;
+          defaultsyms = NULL;
+          break;
+
+        case 'l':  // Load
+          if( cmd[i+1] != 32 )
+          {
+            mon_str( "???" );
+            break;
+          }
+
+          i+=2;
+
+          mon_new_symbols( &cmd[i] );
+          break;
+        
+        default:
+          mon_str( "???" );
+          break;
+      }
+      break;
+
     case 'b':
       lastcmd = 0;
       i++;
@@ -1223,7 +1857,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           }
 
           i++;
-          if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_TRUE, SDL_TRUE ) )
+          if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_TRUE, SDL_TRUE, SDL_TRUE ) )
           {
             mon_str( "Address expected" );
             break;
@@ -1236,7 +1870,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
         case 'c':
           i++;
-          if( !mon_getnum( oric, &v, cmd, &i, SDL_FALSE, SDL_FALSE, SDL_FALSE ) )
+          if( !mon_getnum( oric, &v, cmd, &i, SDL_FALSE, SDL_FALSE, SDL_FALSE, SDL_FALSE ) )
           {
             mon_str( "Breakpoint ID expected" );
             break;
@@ -1275,7 +1909,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
     case 'm':
       lastcmd = cmd[i];
       i++;
-      if( mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE ) )
+      if( mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
         mon_addr = v;
 
       for( j=0; j<16; j++ )
@@ -1303,7 +1937,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
     case 'd':
       lastcmd = cmd[i];
       i++;
-      if( mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE ) )
+      if( mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
         mon_addr = v;
 
       for( j=0; j<16; j++ )
@@ -1321,7 +1955,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
         break;
       }
       
-      if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_TRUE, SDL_TRUE ) )
+      if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_TRUE, SDL_TRUE, SDL_TRUE ) )
       {
         mon_str( "Expression expected" );
         break;
@@ -1465,13 +2099,13 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
       {
         case 'm':
           i++;
-          if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_TRUE, SDL_TRUE ) )
+          if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_TRUE, SDL_TRUE, SDL_TRUE ) )
           {
             mon_str( "Address expected" );
             break;
           }
 
-          if( !mon_getnum( oric, &w, cmd, &i, SDL_TRUE, SDL_TRUE, SDL_TRUE ) )
+          if( !mon_getnum( oric, &w, cmd, &i, SDL_TRUE, SDL_TRUE, SDL_TRUE, SDL_TRUE ) )
           {
             mon_str( "Size expected" );
             break;
@@ -1540,6 +2174,38 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
   return done;
 }
 
+static void mon_write_ibuf( void )
+{
+  char ibtmp[CONS_WIDTH+1];
+
+  strncpy( ibtmp, &ibuf[iloff], CONS_WIDTH );
+  ibtmp[CONS_WIDTH] = 0;
+
+  tzstrpos( tz[TZ_MONITOR], 1, 19, iloff > 0 ? "\x16" : "]" );
+  tzstrpos( tz[TZ_MONITOR], 2, 19, ibtmp );
+  if( strlen( &ibuf[iloff] ) > CONS_WIDTH )
+  {
+    tzstrpos( tz[TZ_MONITOR], 2+CONS_WIDTH, 19, "\x16" );
+  } else {
+    tzstr( tz[TZ_MONITOR], " " );
+    tzstrpos( tz[TZ_MONITOR], 2+CONS_WIDTH, 19, " " );
+  }
+}
+
+static void mon_set_curs_to_end( void )
+{
+  cursx = ilen;
+  iloff = ilen-CONS_WIDTH;
+  if( iloff < 0 ) iloff = 0;
+}
+
+static void mon_set_iloff( void )
+{
+  if( cursx < iloff ) iloff = cursx;
+  if( cursx >= (iloff+CONS_WIDTH) ) iloff = cursx-CONS_WIDTH;
+  if( iloff < 0 ) iloff =0;
+}
+
 static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 {
   int i;
@@ -1553,9 +2219,10 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
       mon_hide_curs();
       strcpy( ibuf, &history[++histp][0] );
       ilen = strlen( ibuf );
-      cursx = ilen;
+      mon_set_curs_to_end();
+      mon_set_iloff();
       tzstrpos( tz[TZ_MONITOR], 2, 19, "                                               " );
-      tzstrpos( tz[TZ_MONITOR], 2, 19, ibuf );
+      mon_write_ibuf();
       mon_show_curs();
       *needrender = SDL_TRUE;
       break;
@@ -1567,16 +2234,41 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
         histp = -1;
         ibuf[0] = 0;
         ilen = 0;
+        iloff = 0;
         cursx = 0;
       } else {
         strcpy( ibuf, &history[--histp][0] );
-        ilen = strlen( ibuf );
-        cursx = ilen;
+        mon_set_curs_to_end();
+        mon_set_iloff();
       }
       tzstrpos( tz[TZ_MONITOR], 2, 19, "                                               " );
-      tzstrpos( tz[TZ_MONITOR], 2, 19, ibuf );
+      mon_write_ibuf();
       mon_show_curs();
       *needrender = SDL_TRUE;
+      break;
+    
+    case SDLK_LEFT:
+      if( cursx > 0 )
+      {
+        mon_hide_curs();
+        cursx--;
+        mon_set_iloff();
+        mon_write_ibuf();
+        mon_show_curs();
+        *needrender = SDL_TRUE;
+      }
+      break;
+
+    case SDLK_RIGHT:
+      if( cursx < ilen )
+      {
+        mon_hide_curs();
+        cursx++;
+        mon_set_iloff();
+        mon_write_ibuf();
+        mon_show_curs();
+        *needrender = SDL_TRUE;
+      }
       break;
     
     default:
@@ -1593,28 +2285,8 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
           ibuf[i] = ibuf[i+1];
         cursx--;
         ilen = strlen( ibuf );
-        tzstrpos( tz[TZ_MONITOR], 2, 19, ibuf );
-        tzstr( tz[TZ_MONITOR], " " );
-        mon_show_curs();
-        *needrender = SDL_TRUE;
-      }
-      break;
-    
-    case SDLK_LEFT:
-      if( cursx > 0 )
-      {
-        mon_hide_curs();
-        cursx--;
-        mon_show_curs();
-        *needrender = SDL_TRUE;
-      }
-      break;
-
-    case SDLK_RIGHT:
-      if( cursx < ilen )
-      {
-        mon_hide_curs();
-        cursx++;
+        mon_set_iloff();
+        mon_write_ibuf();
         mon_show_curs();
         *needrender = SDL_TRUE;
       }
@@ -1660,7 +2332,7 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
     default:
       if( ( ev->key.keysym.unicode > 31 ) && ( ev->key.keysym.unicode < 127 ) )
       {
-        if( ilen >= 47 ) break;
+        if( ilen >= MAX_CONS_INPUT ) break;
 
         mon_hide_curs();
         for( i=ilen+1; i>cursx; i-- )
@@ -1668,8 +2340,8 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
         ibuf[cursx] = ev->key.keysym.unicode;
         cursx++;
         ilen++;
-        tzstrpos( tz[TZ_MONITOR], 2, 19, ibuf );
-        tzstr( tz[TZ_MONITOR], " " );
+        mon_set_iloff();
+        mon_write_ibuf();
         mon_show_curs();
         *needrender = SDL_TRUE;
       }
@@ -1712,7 +2384,7 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
       mw_ibuf[5] = 0;
       mw_mode = 0;
       i = 0;
-      if( mon_getnum( oric, &v, mw_ibuf, &i, SDL_FALSE, SDL_FALSE, SDL_FALSE ) )
+      if( mon_getnum( oric, &v, mw_ibuf, &i, SDL_FALSE, SDL_FALSE, SDL_FALSE, SDL_FALSE ) )
         mw_addr = v;
       *needrender = SDL_TRUE;
       break;

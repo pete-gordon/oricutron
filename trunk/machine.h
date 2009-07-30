@@ -88,6 +88,7 @@ struct machine
   int tapelen, tapeoffs, tapecount, tapetime, tapedupbytes;
   unsigned char *tapebuf;
   SDL_bool tapemotor, tapenoise, tapeturbo, autorewind, autoinsert;
+  SDL_bool symbolsautoload, symbolscase;
   char tapename[16];
 };
 

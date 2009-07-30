@@ -24,3 +24,6 @@ void mon_render( struct machine *oric );
 void mon_update_regs( struct machine *oric );
 SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender );
 void dbg_printf( char *fmt, ... );
+void mon_enter( struct machine *oric );
+void mon_shut( void );
+SDL_bool mon_new_symbols( char *fname );

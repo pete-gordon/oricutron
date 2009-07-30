@@ -45,7 +45,7 @@ main.o: main.c 6502.h machine.h via.h 8912.h
 6502.o: 6502.c 6502.h
 	$(CC) -c 6502.c -o 6502.o $(CFLAGS)
 
-machine.o: machine.c 6502.h via.h 8912.h disk.h
+machine.o: machine.c 6502.h via.h 8912.h disk.h monitor.h
 	$(CC) -c machine.c -o machine.o $(CFLAGS)
 
 gui.o: gui.c gui.h machine.h 6502.h via.h monitor.h 8912.h
