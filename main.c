@@ -46,6 +46,7 @@ SDL_bool init( struct machine *oric )
 
   if( !init_gui( oric ) ) return SDL_FALSE;
   if( !init_machine( oric, MACH_ATMOS ) ) return SDL_FALSE;
+
   mon_init( oric );
 
   return SDL_TRUE;
@@ -54,6 +55,7 @@ SDL_bool init( struct machine *oric )
 void shut( struct machine *oric )
 {
   shut_machine( oric );
+  mon_shut();
   shut_gui();
 }
 

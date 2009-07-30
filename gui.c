@@ -122,50 +122,59 @@ void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void toggletapeturbo( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void toggleautowind( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void toggleautoinsrt( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void togglesymbolsauto( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void togglecasesyms( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 
 // Menu definitions. Name, function, parameter
-struct osdmenuitem mainitems[] = { { "Insert tape...",      inserttape,      0 },
-                                   { "Insert disk 0...",    insertdisk,      0 },
-                                   { "Insert disk 1...",    insertdisk,      1 },
-                                   { "Insert disk 2...",    insertdisk,      2 },
-                                   { "Insert disk 3...",    insertdisk,      3 },
-                                   { OSDMENUBAR,            NULL,            0 },
-                                   { "Hardware options...", gotomenu,        1 },
-                                   { "Audio options...",    gotomenu,        2 },
-                                   { "Video options...",    NULL,            0 },
-                                   { OSDMENUBAR,            NULL,            0 },
-                                   { "Reset",               resetoric,       0 },
-                                   { "Monitor",             setemumode,      EM_DEBUG },
-                                   { "Back",                setemumode,      EM_RUNNING },
-                                   { OSDMENUBAR,            NULL,            0 },
-                                   { "Quit",                setemumode,      EM_PLEASEQUIT },
+struct osdmenuitem mainitems[] = { { "Insert tape...",         inserttape,      0 },
+                                   { "Insert disk 0...",       insertdisk,      0 },
+                                   { "Insert disk 1...",       insertdisk,      1 },
+                                   { "Insert disk 2...",       insertdisk,      2 },
+                                   { "Insert disk 3...",       insertdisk,      3 },
+                                   { OSDMENUBAR,               NULL,            0 },
+                                   { "Hardware options...",    gotomenu,        1 },
+                                   { "Audio options...",       gotomenu,        2 },
+                                   { "Video options...",       NULL,            0 },
+                                   { "Debug options...",       gotomenu,        3 },
+                                   { OSDMENUBAR,               NULL,            0 },
+                                   { "Reset",                  resetoric,       0 },
+                                   { "Monitor",                setemumode,      EM_DEBUG },
+                                   { "Back",                   setemumode,      EM_RUNNING },
+                                   { OSDMENUBAR,               NULL,            0 },
+                                   { "Quit",                   setemumode,      EM_PLEASEQUIT },
                                    { NULL, } };
 
-struct osdmenuitem hwopitems[] = { { " Oric-1",             swapmach,        (0xffff<<16)|MACH_ORIC1 },
-                                   { " Atmos",              swapmach,        (0xffff<<16)|MACH_ATMOS },
-                                   { " Telestrat",          NULL,            0 },
-                                   { OSDMENUBAR,            NULL,            0 },
-                                   { " No disk",            setdrivetype,    DRV_NONE },
-                                   { " Microdisc",          setdrivetype,    DRV_MICRODISC },
-                                   { " Jasmin",             setdrivetype,    DRV_JASMIN },
-                                   { OSDMENUBAR,            NULL,            0 },
-                                   { " Turbo tape",         toggletapeturbo, 0 },
-                                   { " Autoinsert tape",    toggleautoinsrt, 0 },
-                                   { " Autorewind tape",    toggleautowind,  0 },
-                                   { OSDMENUBAR,            NULL,            0 },
-                                   { "Back",                gotomenu,        0 },
+struct osdmenuitem hwopitems[] = { { " Oric-1",                swapmach,        (0xffff<<16)|MACH_ORIC1 },
+                                   { " Atmos",                 swapmach,        (0xffff<<16)|MACH_ATMOS },
+                                   { " Telestrat",             NULL,            0 },
+                                   { OSDMENUBAR,               NULL,            0 },
+                                   { " No disk",               setdrivetype,    DRV_NONE },
+                                   { " Microdisc",             setdrivetype,    DRV_MICRODISC },
+                                   { " Jasmin",                setdrivetype,    DRV_JASMIN },
+                                   { OSDMENUBAR,               NULL,            0 },
+                                   { " Turbo tape",            toggletapeturbo, 0 },
+                                   { " Autoinsert tape",       toggleautoinsrt, 0 },
+                                   { " Autorewind tape",       toggleautowind,  0 },
+                                   { OSDMENUBAR,               NULL,            0 },
+                                   { "Back",                   gotomenu,        0 },
                                    { NULL, } };
 
-struct osdmenuitem auopitems[] = { { " Sound enabled",      togglesound,     0 },
-                                   { " Tape noise",         toggletapenoise, 0 },
-                                   { OSDMENUBAR,            NULL,            0 },
-                                   { "Back",                gotomenu,        0 },
+struct osdmenuitem auopitems[] = { { " Sound enabled",         togglesound,     0 },
+                                   { " Tape noise",            toggletapenoise, 0 },
+                                   { OSDMENUBAR,               NULL,            0 },
+                                   { "Back",                   gotomenu,        0 },
                                    { NULL, } };
                                   
+struct osdmenuitem dbopitems[] = { { " Autoload symbols file", togglesymbolsauto, 0 },
+                                   { " Case-sensitive symbols",togglecasesyms,  0 },
+                                   { OSDMENUBAR,               NULL,            0 },
+                                   { "Back",                   gotomenu,        0 },
+                                   { NULL, } };
 
 struct osdmenu menus[] = { { "Main Menu",        12, mainitems },
                            { "Hardware options",  8, hwopitems },
-                           { "Audio options",     3, auopitems } };
+                           { "Audio options",     3, auopitems },
+                           { "Debug options",     3, dbopitems } };
 
 // Info popups
 static int popuptime=0;
@@ -1002,6 +1011,7 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   odir = getcwd( NULL, 0 );
   chdir( tapepath );
   tape_load_tap( oric, tapefile );
+  if( oric->symbolsautoload ) mon_new_symbols( "symbols" );
   chdir( odir );
   free( odir );
   setemumode( oric, NULL, EM_RUNNING );
@@ -1085,6 +1095,34 @@ void toggletapeturbo( struct machine *oric, struct osdmenuitem *mitem, int dummy
 
   oric->tapeturbo = SDL_TRUE;
   mitem->name = "\x0e""Turbo tape";
+}
+
+// Toggle symbols autoload
+void togglesymbolsauto( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+  if( oric->symbolsautoload )
+  {
+    oric->symbolsautoload = SDL_FALSE;
+    mitem->name = " Autoload symbols file";
+    return;
+  }
+
+  oric->symbolsautoload = SDL_TRUE;
+  mitem->name = "\x0e""Autoload symbols file";
+}
+
+// Toggle case sensitive symbols
+void togglecasesyms( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+  if( oric->symbolscase )
+  {
+    oric->symbolscase = SDL_FALSE;
+    mitem->name = " Case-sensitive symbols";
+    return;
+  }
+
+  oric->symbolscase = SDL_TRUE;
+  mitem->name = "\x0e"" Case-sensitive symbols";
 }
 
 // Toggle autorewind on/off
@@ -1295,6 +1333,15 @@ void setmenutoggles( struct machine *oric )
   else
     hwopitems[10].name = " Autorewind tape";
 
+  if( oric->symbolsautoload )
+    dbopitems[0].name = "\x0e""Autoload symbols file";
+  else
+    dbopitems[0].name = " Autoload symbols file";
+
+  if( oric->symbolscase )
+    dbopitems[1].name = "\x0e""Case-sensitive symbols";
+  else
+    dbopitems[1].name = " Case-sensitive symbols";
 
   hwopitems[5].func = microdiscrom_valid ? setdrivetype : NULL;
   hwopitems[6].func = jasminrom_valid ? setdrivetype : NULL;
@@ -1343,7 +1390,7 @@ SDL_bool init_gui( struct machine *oric )
     soundavailable = SDL_TRUE;
   }
 
-  SDL_WM_SetCaption( "Oriculator 0.0.2", "Oriculator 0.0.2" );
+  SDL_WM_SetCaption( "Oriculator WIP", "Oriculator WIP" );
 
   // Get the GUI palette
   for( i=0; i<NUM_GUI_COLS; i++ )

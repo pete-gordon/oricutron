@@ -31,6 +31,7 @@
 #include "gui.h"
 #include "disk.h"
 #include "machine.h"
+#include "monitor.h"
 
 extern SDL_Surface *screen;
 extern int pixpitch;
@@ -65,6 +66,7 @@ void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode )
       gotomenu( oric, NULL, 0 );
 
     case EM_DEBUG:
+      mon_enter( oric );
       SDL_EnableKeyRepeat( SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL );
       SDL_EnableUNICODE( SDL_TRUE );
       oric->ay.soundon = SDL_FALSE;
@@ -443,6 +445,8 @@ void preinit_machine( struct machine *oric )
   oric->tapeturbo = SDL_TRUE;
   oric->autorewind = SDL_FALSE;
   oric->autoinsert = SDL_TRUE;
+  oric->symbolsautoload = SDL_TRUE;
+  oric->symbolscase = SDL_FALSE;
   oric->tapename[0] = 0;
 
   oric->drivetype = DRV_NONE;

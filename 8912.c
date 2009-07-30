@@ -327,6 +327,10 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
   for( i=0; i<8; i++ )
     ay->keystates[i] = SDL_FALSE;
 
+  // Reset all regs to 0
+  for( i=0; i<AY_LAST; i++ )
+    ay->regs[i] = 0;
+
   // Reset the three audio channels
   for( i=0; i<3; i++ )
   {
