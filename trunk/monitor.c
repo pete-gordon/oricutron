@@ -77,6 +77,7 @@ static unsigned short mw_addr;
 static int mw_mode=0, mw_koffs=0;
 static char mw_ibuf[8];
 static SDL_bool kshifted = SDL_FALSE;
+static int helpcount=0;
 
 static int numsyms=0, symspace=0;
 static struct msym *defaultsyms = NULL, *syms = NULL;
@@ -1809,6 +1810,9 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
   i=0;
   while( isws( cmd[i] ) ) i++;
+  
+  if( cmd[i] != '?' )
+    helpcount = 0;
 
   switch( cmd[i] )
   {
@@ -1934,6 +1938,23 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
     case 'm':
       lastcmd = cmd[i];
       i++;
+      
+      if( cmd[i] == 'w' )
+      {
+        lastcmd = 0;
+        i++;
+
+        if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+        {
+          mon_str( "Bad address" );
+          break;
+        }
+        
+        mw_addr = v;
+        cshow = CSHOW_MWATCH;
+        break;
+      }
+      
       if( mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
         mon_addr = v;
 
@@ -2171,23 +2192,40 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
     case '?':
       lastcmd = cmd[i];
-      mon_str( "KEYS:" );
-      //          |          -          |          -          |
-      mon_str( "  F2 : Quit Monitor     F3 : Toggle Console" );
-      mon_str( "  F4 : Toggle info      F9 : Reset cycles" );
-      mon_str( "  F10: Step CPU" );
-      mon_str( " " );
-      mon_str( "COMMANDS:" );
-      mon_str( "  bs <addr>             - Set breakpoint" );
-      mon_str( "  bc <bp id>            - Clear breakpoint" );
-      mon_str( "  bz                    - Zap breakpoints" );
-      mon_str( "  bl                    - List breakpoints" );
-      mon_str( "  m <addr>              - Dump memory" );
-      mon_str( "  d <addr>              - Disassemble" );
-      mon_str( "  r <reg> <val>         - Set <reg> to <val>" );
-      mon_str( "  q, x or qm            - Quit monitor" );
-      mon_str( "  qe                    - Quit emulator" );
-      mon_str( "  wm <addr> <len> <file>- Write mem to disk" );
+      switch( helpcount )
+      {
+        case 0:
+          mon_str( "KEYS:" );
+          //          |          -          |          -          |
+          mon_str( "  F2 : Quit Monitor     F3 : Toggle Console" );
+          mon_str( "  F4 : Toggle info      F9 : Reset cycles" );
+          mon_str( "  F10: Step CPU" );
+          mon_str( " " );
+          mon_str( "COMMANDS:" );
+          mon_str( "  bs <addr>             - Set breakpoint" );
+          mon_str( "  bc <bp id>            - Clear breakpoint" );
+          mon_str( "  bz                    - Zap breakpoints" );
+          mon_str( "  bl                    - List breakpoints" );
+          mon_str( "  sc                    - Symbols not case-sens." );
+          mon_str( "  sC                    - Symbols case-sensitive" );
+          mon_str( "  sl <file>             - Load symbols" );
+          mon_str( "  sz                    - Zap symbols" );
+          mon_str( "  m <addr>              - Dump memory" );
+          mon_str( "  mw <addr>             - Memory watch at addr" );
+          mon_str( "  d <addr>              - Disassemble" );
+          mon_str( "---- MORE" );
+          helpcount++;
+          break;
+        
+        case 1:
+          mon_str( "  r <reg> <val>         - Set <reg> to <val>" );
+          mon_str( "  q, x or qm            - Quit monitor" );
+          mon_str( "  qe                    - Quit emulator" );
+          mon_str( "  wm <addr> <len> <file>- Write mem to disk" );
+          helpcount = 0;
+          lastcmd = 0;
+          break;
+      }
       break;
 
     default:
@@ -2324,6 +2362,7 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
       {
         switch( lastcmd )
         {
+          case '?':
           case 'm':
           case 'd':
             ibuf[cursx++] = lastcmd;
