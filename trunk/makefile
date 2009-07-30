@@ -1,5 +1,5 @@
-# PLATFORM = os4
-PLATFORM = win32
+PLATFORM = os4
+# PLATFORM = win32
 
 ####### DEFAULT SETTINGS HERE #######
 
