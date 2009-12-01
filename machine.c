@@ -112,11 +112,11 @@ void video_decode_attr( struct machine *oric, int attr )
       // Set up pointers for new mode
       if( oric->vid_mode & 4 )
       {
-        oric->vid_addr = 0xa000;
-        oric->vid_ch_base = &oric->mem[0x9800];
+        oric->vid_addr = oric->vidbases[0];
+        oric->vid_ch_base = &oric->mem[oric->vidbases[1]];
       } else {
-        oric->vid_addr = 0xbb80;
-        oric->vid_ch_base = &oric->mem[0xb400];
+        oric->vid_addr = oric->vidbases[2];
+        oric->vid_ch_base = &oric->mem[oric->vidbases[3]];
       }
 
       video_refresh_charset( oric );
@@ -253,7 +253,7 @@ SDL_bool video_doraster( struct machine *oric )
       hires = SDL_FALSE;
 
 //      read_addr = oric->vid_addr + b + ((y-200)>>3);
-      read_addr = 0xbb80 + b + cy;   // bb80 = bf68 - (200/8*40)
+      read_addr = oric->vidbases[2] + b + cy;   // bb80 = bf68 - (200/8*40)
     }
     
     c = oric->mem[ read_addr ];
@@ -305,6 +305,20 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
     return;
   }
   oric->mem[addr] = data;
+}
+
+// 16k oric-1 CPU write
+void o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
+{
+  struct machine *oric = (struct machine *)cpu->userdata;
+  if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
+  if( ( addr & 0xff00 ) == 0x0300 )
+  {
+    via_write( &oric->via, addr, data );
+    return;
+  }
+
+  oric->mem[addr&0x3fff] = data;
 }
 
 // Atmos + jasmin
@@ -362,6 +376,20 @@ unsigned char atmosread( struct m6502 *cpu, unsigned short addr )
     return oric->rom[addr-0xc000];
 
   return oric->mem[addr];
+}
+
+// Oric-1 16K CPU read
+unsigned char o16kread( struct m6502 *cpu, unsigned short addr )
+{
+  struct machine *oric = (struct machine *)cpu->userdata;
+
+  if( ( addr & 0xff00 ) == 0x0300 )
+    return via_read( &oric->via, addr );
+
+  if( ( !oric->romdis ) && ( addr >= 0xc000 ) )
+    return oric->rom[addr-0xc000];
+
+  return oric->mem[addr&0x3fff];
 }
 
 // Atmos + jasmin
@@ -513,15 +541,68 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
 SDL_bool init_machine( struct machine *oric, int type )
 {
+  int i;
+
   oric->type = type;
   m6502_init( &oric->cpu, (void*)oric );
-  
+
+  oric->vidbases[0] = 0xa000;
+  oric->vidbases[1] = 0x9800;
+  oric->vidbases[2] = 0xbb80;
+  oric->vidbases[3] = 0xb400;
+
   switch( type )
   {
+    case MACH_ORIC1_16K:
+      for( i=0; i<4; i++ )
+        oric->vidbases[i] &= 0x7fff;
+      hwopitems[0].name = " Oric-1";
+      hwopitems[1].name = "\x0e""Oric-1 16K";
+      hwopitems[2].name = " Atmos";
+      hwopitems[3].name = " Telestrat";
+      oric->mem = malloc( 16384 + 16384 );
+      if( !oric->mem )
+      {
+        printf( "Out of memory\n" );
+        return SDL_FALSE;
+      }
+
+      oric->rom = &oric->mem[16384];
+
+      oric->cpu.read = o16kread;
+      oric->cpu.write = o16kwrite;
+
+      if( !load_rom( "roms/basic10.rom", 16384, &oric->rom[0] ) )
+        return SDL_FALSE;
+
+      oric->pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
+      oric->pal[1] = SDL_MapRGB( screen->format, 0xff, 0x00, 0x00 );
+      oric->pal[2] = SDL_MapRGB( screen->format, 0x00, 0xff, 0x00 );
+      oric->pal[3] = SDL_MapRGB( screen->format, 0xff, 0xff, 0x00 );
+      oric->pal[4] = SDL_MapRGB( screen->format, 0x00, 0x00, 0xff );
+      oric->pal[5] = SDL_MapRGB( screen->format, 0xff, 0x00, 0xff );
+      oric->pal[6] = SDL_MapRGB( screen->format, 0x00, 0xff, 0xff );
+      oric->pal[7] = SDL_MapRGB( screen->format, 0xff, 0xff, 0xff );
+
+      oric->scr = (Uint16 *)malloc( 240*224*2 );
+      if( !oric->scr ) return SDL_FALSE;
+
+      oric->cyclesperraster = 64;
+      oric->vid_start = 65;
+      oric->vid_maxrast = 312;
+      oric->vid_special = oric->vid_start + 200;
+      oric->vid_end     = oric->vid_start + 224;
+      oric->vid_raster  = 0;
+      video_decode_attr( oric, 0x18 );
+
+      oric->romdis = SDL_FALSE;
+      break;
+    
     case MACH_ORIC1:
       hwopitems[0].name = "\x0e""Oric-1";
-      hwopitems[1].name = " Atmos";
-      hwopitems[2].name = " Telestrat";
+      hwopitems[1].name = " Oric-1 16K";
+      hwopitems[2].name = " Atmos";
+      hwopitems[3].name = " Telestrat";
       oric->mem = malloc( 65536 + 16384 );
       if( !oric->mem )
       {
@@ -562,8 +643,9 @@ SDL_bool init_machine( struct machine *oric, int type )
     
     case MACH_ATMOS:
       hwopitems[0].name = " Oric-1";
-      hwopitems[1].name = "\x0e""Atmos";
-      hwopitems[2].name = " Telestrat";
+      hwopitems[1].name = " Oric-1 16K";
+      hwopitems[2].name = "\x0e""Atmos";
+      hwopitems[3].name = " Telestrat";
       oric->mem = malloc( 65536 + 16384 );
       if( !oric->mem )
       {
@@ -621,8 +703,9 @@ SDL_bool init_machine( struct machine *oric, int type )
 
     case MACH_TELESTRAT:
       hwopitems[0].name = " Oric-1";
-      hwopitems[1].name = " Atmos";
-      hwopitems[2].name = "\x0e""Telestrat";
+      hwopitems[1].name = " Oric-1 16K";
+      hwopitems[2].name = " Atmos";
+      hwopitems[3].name = "\x0e""Telestrat";
       printf( "Telestrat not implimented yet\n" );
       return SDL_FALSE;
   }

@@ -35,6 +35,7 @@ enum
 enum
 {
 	MACH_ORIC1 = 0,
+  MACH_ORIC1_16K,
 	MACH_ATMOS,
 	MACH_TELESTRAT
 };
@@ -84,6 +85,8 @@ struct machine
   Uint16 pal[8]; // Palette
   Uint16 *scrpt;
   Uint16 *scr;
+
+  Uint16 vidbases[4];
 
   int drivetype;
   struct wd17xx    wddisk;

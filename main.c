@@ -34,6 +34,7 @@
 
 extern SDL_bool warpspeed, soundon;
 Uint32 lastframetimes[8], frametimeave;
+extern char mon_bpmsg[];
 
 SDL_bool init( struct machine *oric )
 {
@@ -122,7 +123,7 @@ int main( int argc, char *argv[] )
           {
             while( oric.cpu.rastercycles > 0 )
             {
-              breaky = m6502_inst( &oric.cpu, SDL_TRUE );
+              breaky = m6502_inst( &oric.cpu, SDL_TRUE, mon_bpmsg );
               via_clock( &oric.via, oric.cpu.icycles );
               ay_ticktock( &oric.ay, oric.cpu.icycles );
               if( oric.drivetype ) wd17xx_ticktock( &oric.wddisk, oric.cpu.icycles );
