@@ -173,7 +173,7 @@ struct osdmenuitem dbopitems[] = { { " Autoload symbols file", togglesymbolsauto
                                    { NULL, } };
 
 struct osdmenu menus[] = { { "Main Menu",        12, mainitems },
-                           { "Hardware options",  8, hwopitems },
+                           { "Hardware options",  9, hwopitems },
                            { "Audio options",     3, auopitems },
                            { "Debug options",     3, dbopitems } };
 
