@@ -78,9 +78,13 @@ pass an address, you can also use a symbol.
 Commands:
 
   bs <address>               - Set breakpoint
+  bsm [rwc] <address>        - Set mem breakpoint
   bc <bp id>                 - Clear breakpoint
+  bcm <bp id>                - Clear mem breakpoint
   bz                         - Zap breakpoints
+  bzm                        - Zap mem breakpoint
   bl                         - List breakpoints
+  blm                        - List mem breakpoints
   m <address>                - Dump memory
   mw <address>               - Memory watch at <address>
   sc                         - Symbols are not case sensitive
@@ -92,3 +96,24 @@ Commands:
   q, x or qm                 - Quit monitor (back to emulator)
   qe                         - Quit emulator
   wm <addr> <len> <filename> - Write Oric memory to disk (as seen from the 6502).
+
+
+Breakpoints
+-----------
+
+There are two types of breakpoints. "Normal" breakpoints trigger when the CPU
+is about to execute an instruction at the breakpoint address. "Memory" breakpoints
+trigger when the breakpoint address is accessed or modified.
+
+There are three ways a memory breakpoint can be triggered; when the CPU is about
+to read the address (r), and the CPU is about to write the address (w), or after the
+value at the address changes for any reason (c).
+
+You specify which ways you'd like the breakpoint to trigger when you set the memory
+breakpoint:
+
+bsm r $0c00        <-- Break when the CPU is about to read from $0c00
+bsm rw $0c00       <-- Break when the CPU is about to access $0c00
+bsm c $0c00        <-- Break after then contents of $0c00 change
+bsm rwc $0c00      <-- Break just before the CPU accesses $0c00, or just after it
+                       changes for any reason.

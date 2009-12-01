@@ -145,6 +145,7 @@ struct osdmenuitem mainitems[] = { { "Insert tape...",         inserttape,      
                                    { NULL, } };
 
 struct osdmenuitem hwopitems[] = { { " Oric-1",                swapmach,        (0xffff<<16)|MACH_ORIC1 },
+                                   { " Oric-1 16K",            swapmach,        (0xffff<<16)|MACH_ORIC1_16K },
                                    { " Atmos",                 swapmach,        (0xffff<<16)|MACH_ATMOS },
                                    { " Telestrat",             NULL,            0 },
                                    { OSDMENUBAR,               NULL,            0 },
@@ -1319,19 +1320,19 @@ void setmenutoggles( struct machine *oric )
     auopitems[1].name = " Tape noise";
 
   if( oric->tapeturbo )
-    hwopitems[8].name = "\x0e""Turbo tape";
+    hwopitems[9].name = "\x0e""Turbo tape";
   else
-    hwopitems[8].name = " Turbo tape";
+    hwopitems[9].name = " Turbo tape";
 
   if( oric->autoinsert )
-    hwopitems[9].name = "\x0e""Autoinsert tape";
+    hwopitems[10].name = "\x0e""Autoinsert tape";
   else
-    hwopitems[9].name = " Autoinsert tape";
+    hwopitems[10].name = " Autoinsert tape";
 
   if( oric->autorewind )
-    hwopitems[10].name = "\x0e""Autorewind tape";
+    hwopitems[11].name = "\x0e""Autorewind tape";
   else
-    hwopitems[10].name = " Autorewind tape";
+    hwopitems[11].name = " Autorewind tape";
 
   if( oric->symbolsautoload )
     dbopitems[0].name = "\x0e""Autoload symbols file";
@@ -1343,12 +1344,12 @@ void setmenutoggles( struct machine *oric )
   else
     dbopitems[1].name = " Case-sensitive symbols";
 
-  hwopitems[5].func = microdiscrom_valid ? setdrivetype : NULL;
-  hwopitems[6].func = jasminrom_valid ? setdrivetype : NULL;
+  hwopitems[6].func = microdiscrom_valid ? setdrivetype : NULL;
+  hwopitems[7].func = jasminrom_valid ? setdrivetype : NULL;
 
-  hwopitems[4].name = oric->drivetype==DRV_NONE      ? "\x0e""No disk"   : " No disk";
-  hwopitems[5].name = oric->drivetype==DRV_MICRODISC ? "\x0e""Microdisc" : " Microdisc";
-  hwopitems[6].name = oric->drivetype==DRV_JASMIN    ? "\x0e""Jasmin"    : " Jasmin";
+  hwopitems[5].name = oric->drivetype==DRV_NONE      ? "\x0e""No disk"   : " No disk";
+  hwopitems[6].name = oric->drivetype==DRV_MICRODISC ? "\x0e""Microdisc" : " Microdisc";
+  hwopitems[7].name = oric->drivetype==DRV_JASMIN    ? "\x0e""Jasmin"    : " Jasmin";
 }
 
 // Initialise the GUI

@@ -57,8 +57,12 @@ void m6502_init( struct m6502 *cpu, void *userdata )
   cpu->read  = nullread;
 
   for( i=0; i<16; i++ )
+  {
     cpu->breakpoints[i] = -1;
+    cpu->membreakpoints[i].flags = 0;
+  }
   cpu->anybp = SDL_FALSE;
+  cpu->anymbp = SDL_FALSE;
   cpu->userdata = userdata;
 }
 
@@ -160,16 +164,50 @@ void m6502_reset( struct m6502 *cpu )
                  cpu->a = r;\
                }
 
+#define BADDR_ZP  baddr = cpu->read( cpu, cpu->pc )
+#define BADDR_ZPX baddr = (cpu->read( cpu, cpu->pc++ ) + cpu->x)&0xff
+#define BADDR_ZPY baddr = (cpu->read( cpu, cpu->pc++ ) + cpu->y)&0xff
+#define BADDR_ABS baddr = (cpu->read( cpu, cpu->pc+1 )<<8) | cpu->read( cpu, cpu->pc )
+#define BADDR_ABX baddr = ((cpu->read( cpu, cpu->pc+1 )<<8) | cpu->read( cpu, cpu->pc ))+cpu->x
+#define BADDR_ABY baddr = ((cpu->read( cpu, cpu->pc+1 )<<8) | cpu->read( cpu, cpu->pc ))+cpu->y
+#define BADDR_ZIX baddr = (unsigned char)(cpu->read( cpu, cpu->pc++ )+cpu->x); baddr = (cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr )
+#define BADDR_ZIY baddr = cpu->read( cpu, cpu->pc++ ); baddr = ((cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr ))+cpu->y
+
+#define R_BADDR_ZP   BADDR_ZP; raddr = baddr; rlen = 1
+#define W_BADDR_ZP   BADDR_ZP; waddr = baddr; wlen = 1
+#define RW_BADDR_ZP  BADDR_ZP; waddr = raddr = baddr; wlen = rlen = 1
+#define R_BADDR_ZPX  BADDR_ZPX; raddr = baddr; rlen = 1
+#define W_BADDR_ZPX  BADDR_ZPX; waddr = baddr; wlen = 1
+#define RW_BADDR_ZPX BADDR_ZPX; waddr = raddr = baddr; wlen = rlen = 1
+#define R_BADDR_ZPY  BADDR_ZPY; raddr = baddr; rlen = 1
+#define W_BADDR_ZPY  BADDR_ZPY; waddr = baddr; wlen = 1
+#define RW_BADDR_ZPY BADDR_ZPY; waddr = raddr = baddr; wlen = rlen = 1
+#define R_BADDR_ABS  BADDR_ABS; raddr = baddr; rlen = 1
+#define W_BADDR_ABS  BADDR_ABS; waddr = baddr; wlen = 1
+#define RW_BADDR_ABS BADDR_ABS; waddr = raddr = baddr; wlen = rlen = 1
+#define R_BADDR_ABX  BADDR_ABX; raddr = baddr; rlen = 1
+#define W_BADDR_ABX  BADDR_ABX; waddr = baddr; wlen = 1
+#define RW_BADDR_ABX BADDR_ABX; waddr = raddr = baddr; wlen = rlen = 1
+#define R_BADDR_ABY  BADDR_ABY; raddr = baddr; rlen = 1
+#define W_BADDR_ABY  BADDR_ABY; waddr = baddr; wlen = 1
+#define RW_BADDR_ABY BADDR_ABY; waddr = raddr = baddr; wlen = rlen = 1
+#define R_BADDR_ZIX  BADDR_ZIX; raddr = baddr; rlen = 1
+#define W_BADDR_ZIX  BADDR_ZIX; waddr = baddr; wlen = 1
+#define RW_BADDR_ZIX BADDR_ZIX; waddr = raddr = baddr; wlen = rlen = 1
+#define R_BADDR_ZIY  BADDR_ZIY; raddr = baddr; rlen = 1
+#define W_BADDR_ZIY  BADDR_ZIY; waddr = baddr; wlen = 1
+#define RW_BADDR_ZIY BADDR_ZIY; waddr = raddr = baddr; wlen = rlen = 1
+
 // Macros for each addressing mode of the 6502
 #define READ_IMM v=cpu->read( cpu, cpu->pc++ )
 #define READ_ZP  v=cpu->read( cpu, cpu->read( cpu, cpu->pc++ ) )
 #define READ_ZPX v=cpu->read( cpu, (cpu->read( cpu, cpu->pc++ ) + cpu->x)&0xff )
 #define READ_ZPY v=cpu->read( cpu, (cpu->read( cpu, cpu->pc++ ) + cpu->y)&0xff )
 #define READ_ABS v=cpu->read( cpu, (cpu->read( cpu, cpu->pc+1 )<<8) | cpu->read( cpu, cpu->pc ) ); cpu->pc+=2
-#define READ_ABX baddr = ((cpu->read( cpu, cpu->pc+1 )<<8) | cpu->read( cpu, cpu->pc )); v = cpu->read( cpu, baddr + cpu->x ); cpu->pc+=2
-#define READ_ABY baddr = ((cpu->read( cpu, cpu->pc+1 )<<8) | cpu->read( cpu, cpu->pc )); v = cpu->read( cpu, baddr + cpu->y ); cpu->pc+=2
-#define READ_ZIX baddr = (unsigned char)(cpu->read( cpu, cpu->pc++ )+cpu->x); v = cpu->read( cpu, (cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr ) )
-#define READ_ZIY baddr = cpu->read( cpu, cpu->pc++ ); baddr = (cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr ); v = cpu->read( cpu, baddr + cpu->y )
+#define READ_ABX BADDR_ABX; v = cpu->read( cpu, baddr ); cpu->pc+=2
+#define READ_ABY BADDR_ABY; v = cpu->read( cpu, baddr ); cpu->pc+=2
+#define READ_ZIX BADDR_ZIX; v = cpu->read( cpu, baddr )
+#define READ_ZIY BADDR_ZIY; v = cpu->read( cpu, baddr )
 
 #define KREAD_ZP  baddr = cpu->read( cpu, cpu->pc++ ); v = cpu->read( cpu, baddr )
 #define KREAD_ZPX baddr = (unsigned char)(cpu->read( cpu, cpu->pc++ )+cpu->x); v = cpu->read( cpu, baddr )
@@ -232,9 +270,8 @@ static inline void cycleit( struct m6502 *cpu, int cycles )
 }
 
 // Execute one 6502 instruction
-// Returns TRUE if we're about to execute the instruction
-// at an active breakpoint
-SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp )
+// Returns TRUE if we've hit some kind of breakpoint
+SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
 {
   unsigned char op, v;
   signed char offs;
@@ -242,15 +279,6 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp )
   int i;
 
   cpu->icycles = 0;
-
-  if( ( dobp ) && ( cpu->anybp ) )
-  {
-    for( i=0; i<16; i++ )
-    {
-      if( ( cpu->breakpoints[i] != -1 ) && ( cpu->pc == cpu->breakpoints[i] ) )
-        return SDL_TRUE;
-    }
-  }
 
   if( ( cpu->nmi ) ||
       ( ( (cpu->irql)||(cpu->irq) ) && ( cpu->f_i == 0 ) ) )
@@ -267,6 +295,266 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp )
       cpu->pc = (cpu->read( cpu, 0xffff )<<8)|cpu->read( cpu, 0xfffe );
       cpu->irql = SDL_FALSE;
       cpu->f_i = 1;
+    }
+  }
+
+  if( dobp )
+  {
+    unsigned short savepc;
+
+    if( cpu->anybp )
+    {
+      for( i=0; i<16; i++ )
+      {
+        if( ( cpu->breakpoints[i] != -1 ) && ( cpu->pc == cpu->breakpoints[i] ) )
+          return SDL_TRUE;
+      }
+    }
+
+    if( cpu->anymbp )
+    {
+      unsigned short waddr, raddr, wlen, rlen;
+
+      savepc = cpu->pc;
+      op = cpu->read( cpu, cpu->pc++ );
+
+      waddr = raddr = 0;
+      wlen = rlen = 0;
+    
+      // Going to read or write?
+      switch( op )
+      {
+        case 0x00: // { "BRK", AM_IMP },  // 00
+          waddr = (cpu->sp+0x100)-3;
+          wlen  = 3;
+          break;
+
+        case 0x40: // { "RTI", AM_IMP },  // 40
+          waddr = (cpu->sp+0x100);
+          wlen = 3;
+          break;
+
+        case 0x08: // { "PHP", AM_IMP },  // 08
+        case 0x48: // { "PHA", AM_IMP },  // 48
+          waddr = (cpu->sp+0x100)-1;
+          wlen = 1;
+          break;
+
+        case 0x28: // { "PLP", AM_IMP },  // 28
+        case 0x68: // { "PLA", AM_IMP },  // 68
+          raddr = cpu->sp+0x100;
+          rlen = 1;
+          break;
+
+        case 0x60: // { "RTS", AM_IMP },  // 60
+          raddr = cpu->sp+0x100;
+          rlen = 2;
+          break;
+
+        case 0x20: // { "JSR", AM_ABS },  // 20
+          waddr = (cpu->sp+0x100)-2;
+          wlen = 2;
+          break;
+
+        case 0x06: // { "ASL", AM_ZP  },  // 06
+        case 0x26: // { "ROL", AM_ZP  },  // 26
+        case 0x46: // { "LSR", AM_ZP  },  // 46
+        case 0x66: // { "ROR", AM_ZP  },  // 66
+        case 0xC6: // { "DEC", AM_ZP  },  // C6
+        case 0xE6: // { "INC", AM_ZP  },  // E6
+          RW_BADDR_ZP;
+          break;
+
+        case 0x0E: // { "ASL", AM_ABS },  // 0E
+        case 0x2E: // { "ROL", AM_ABS },  // 2E
+        case 0x4E: // { "LSR", AM_ABS },  // 4E
+        case 0x6E: // { "ROR", AM_ABS },  // 6E
+        case 0xCE: // { "DEC", AM_ABS },  // CE
+        case 0xEE: // { "INC", AM_ABS },  // EE
+          RW_BADDR_ABS;
+          break;
+
+        case 0x1E: // { "ASL", AM_ABX },  // 1E
+        case 0x3E: // { "ROL", AM_ABX },  // 3E
+        case 0x5E: // { "LSR", AM_ABX },  // 5E
+        case 0x7E: // { "ROR", AM_ABX },  // 7E
+        case 0xDE: // { "DEC", AM_ABX },  // DE
+        case 0xFE: // { "INC", AM_ABX },  // FE
+          RW_BADDR_ABX;
+          break;
+
+        case 0x16: // { "ASL", AM_ZPX },  // 16
+        case 0x36: // { "ROL", AM_ZPX },  // 36
+        case 0x56: // { "LSR", AM_ZPX },  // 56
+        case 0x76: // { "ROR", AM_ZPX },  // 76
+        case 0xD6: // { "DEC", AM_ZPX },  // D6
+        case 0xF6: // { "INC", AM_ZPX },  // F6
+          RW_BADDR_ZPX;
+          break;
+
+        case 0x01: // { "ORA", AM_ZIX },  // 01
+        case 0x21: // { "AND", AM_ZIX },  // 21
+        case 0x41: // { "EOR", AM_ZIX },  // 41
+        case 0x61: // { "ADC", AM_ZIX },  // 61
+        case 0xA1: // { "LDA", AM_ZIX },  // A1
+        case 0xC1: // { "CMP", AM_ZIX },  // C1
+        case 0xE1: // { "SBC", AM_ZIX },  // E1
+          R_BADDR_ZIX;
+          break;
+
+        case 0x11: // { "ORA", AM_ZIY },  // 11
+        case 0x31: // { "AND", AM_ZIY },  // 31
+        case 0x51: // { "EOR", AM_ZIY },  // 51
+        case 0x71: // { "ADC", AM_ZIY },  // 71
+        case 0xB1: // { "LDA", AM_ZIY },  // B1
+        case 0xD1: // { "CMP", AM_ZIY },  // D1
+        case 0xF1: // { "SBC", AM_ZIY },  // F1
+          R_BADDR_ZIY;
+          break;
+
+        case 0x05: // { "ORA", AM_ZP  },  // 05
+        case 0x24: // { "BIT", AM_ZP  },  // 24
+        case 0x25: // { "AND", AM_ZP  },  // 25
+        case 0x45: // { "EOR", AM_ZP  },  // 45
+        case 0x65: // { "ADC", AM_ZP  },  // 65
+        case 0xA4: // { "LDY", AM_ZP  },  // A4
+        case 0xA5: // { "LDA", AM_ZP  },  // A5
+        case 0xA6: // { "LDX", AM_ZP  },  // A6
+        case 0xC4: // { "CPY", AM_ZP  },  // C4
+        case 0xC5: // { "CMP", AM_ZP  },  // C5
+        case 0xE4: // { "CPX", AM_ZP  },  // E4
+        case 0xE5: // { "SBC", AM_ZP  },  // E5
+          R_BADDR_ZP;
+          break;
+
+        case 0x0D: // { "ORA", AM_ABS },  // 0D
+        case 0x2C: // { "BIT", AM_ABS },  // 2C
+        case 0x2D: // { "AND", AM_ABS },  // 2D
+        case 0x4D: // { "EOR", AM_ABS },  // 4D
+        case 0x6D: // { "ADC", AM_ABS },  // 6D
+        case 0xAC: // { "LDY", AM_ABS },  // AC
+        case 0xAD: // { "LDA", AM_ABS },  // AD
+        case 0xAE: // { "LDX", AM_ABS },  // AE
+        case 0xCC: // { "CPY", AM_ABS },  // CC
+        case 0xCD: // { "CMP", AM_ABS },  // CD
+        case 0xEC: // { "CPX", AM_ABS },  // EC
+        case 0xED: // { "SBC", AM_ABS },  // ED
+          R_BADDR_ABS;
+          break;
+
+        case 0x15: // { "ORA", AM_ZPX },  // 15
+        case 0x35: // { "AND", AM_ZPX },  // 35
+        case 0x55: // { "EOR", AM_ZPX },  // 55
+        case 0x75: // { "ADC", AM_ZPX },  // 75
+        case 0xB4: // { "LDY", AM_ZPX },  // B4
+        case 0xB5: // { "LDA", AM_ZPX },  // B5
+        case 0xD5: // { "CMP", AM_ZPX },  // D5
+        case 0xF5: // { "SBC", AM_ZPX },  // F5
+          R_BADDR_ZPX;
+          break;
+
+        case 0x19: // { "ORA", AM_ABY },  // 19
+        case 0x39: // { "AND", AM_ABY },  // 39
+        case 0x59: // { "EOR", AM_ABY },  // 59
+        case 0x79: // { "ADC", AM_ABY },  // 79
+        case 0xB9: // { "LDA", AM_ABY },  // B9
+        case 0xBE: // { "LDX", AM_ABY },  // BE
+        case 0xD9: // { "CMP", AM_ABY },  // D9
+        case 0xF9: // { "SBC", AM_ABY },  // F9
+          R_BADDR_ABY;
+          break;    
+
+        case 0x1D: // { "ORA", AM_ABX },  // 1D
+        case 0x3D: // { "AND", AM_ABX },  // 3D
+        case 0x5D: // { "EOR", AM_ABX },  // 5D
+        case 0x7D: // { "ADC", AM_ABX },  // 7D
+        case 0xBC: // { "LDY", AM_ABX },  // BC
+        case 0xBD: // { "LDA", AM_ABX },  // BD
+        case 0xDD: // { "CMP", AM_ABX },  // DD
+        case 0xFD: // { "SBC", AM_ABX },  // FD
+          R_BADDR_ABX;
+          break;    
+
+        case 0xB6: // { "LDX", AM_ZPY },  // B6
+          R_BADDR_ZPY;
+          break;
+
+        case 0x6C: // { "JMP", AM_IND },  // 6C
+          raddr = (cpu->read( cpu, cpu->pc+1 )<<8)|cpu->read( cpu, cpu->pc );
+          rlen = 2;
+          break;
+          
+        case 0x81: // { "STA", AM_ZIX },  // 81
+          W_BADDR_ZIX;
+          break;
+
+        case 0x84: // { "STY", AM_ZP  },  // 84
+        case 0x85: // { "STA", AM_ZP  },  // 85
+        case 0x86: // { "STX", AM_ZP  },  // 86
+          W_BADDR_ZP;
+          break;
+         
+        case 0x8C: // { "STY", AM_ABS },  // 8C
+        case 0x8D: // { "STA", AM_ABS },  // 8D
+        case 0x8E: // { "STX", AM_ABS },  // 8E
+          W_BADDR_ABS;
+          break;
+
+        case 0x91: // { "STA", AM_ZIY },  // 91
+          W_BADDR_ZIY;
+          break;
+
+        case 0x94: // { "STY", AM_ZPX },  // 94
+        case 0x95: // { "STA", AM_ZPX },  // 95
+          W_BADDR_ZPX;
+          break;
+
+        case 0x96: // { "STX", AM_ZPY },  // 96
+          W_BADDR_ZPY;
+          break;
+
+        case 0x99: // { "STA", AM_ABY },  // 99
+          W_BADDR_ABY;
+          break;
+
+        case 0x9D: // { "STA", AM_ABX },  // 9D
+          W_BADDR_ABX;
+          break;
+      }
+      cpu->pc = savepc;
+
+      for( i=0; i<16; i++ )
+      {
+        if( ( wlen != 0 ) && ( cpu->membreakpoints[i].flags & MBPF_WRITE ) )
+        {
+          if( ( cpu->membreakpoints[i].addr >= waddr ) &&
+              ( cpu->membreakpoints[i].addr < (waddr+wlen) ) )
+          {
+            sprintf( bpmsg, "Break on WRITE to $%04X", cpu->membreakpoints[i].addr );
+            return SDL_TRUE;
+          }
+        }
+
+        if( ( rlen != 0 ) && ( cpu->membreakpoints[i].flags & MBPF_READ ) )
+        {
+          if( ( cpu->membreakpoints[i].addr >= raddr ) &&
+              ( cpu->membreakpoints[i].addr < (raddr+rlen) ) )
+          {
+            sprintf( bpmsg, "Break on READ from $%04X", cpu->membreakpoints[i].addr );
+            return SDL_TRUE;
+          }
+        }
+
+        if( cpu->membreakpoints[i].flags & MBPF_CHANGE )
+        {
+          if( cpu->membreakpoints[i].lastval != cpu->read( cpu, cpu->membreakpoints[i].addr ) )
+          {
+            cpu->membreakpoints[i].lastval = cpu->read( cpu, cpu->membreakpoints[i].addr );
+            sprintf( bpmsg, "Break after $%04X changed", cpu->membreakpoints[i].addr );
+            return SDL_TRUE;
+          }
+        }
+      }
     }
   }
 

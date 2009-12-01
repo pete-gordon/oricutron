@@ -46,6 +46,21 @@
 #define IRQB_DISK 1
 #define IRQF_DISK (1<<IRQB_DISK)
 
+// Memory access breakpoints
+#define MBPB_READ 0
+#define MBPF_READ (1<<MBPB_READ)
+#define MBPB_WRITE 1
+#define MBPF_WRITE (1<<MBPB_WRITE)
+#define MBPB_CHANGE 2
+#define MBPF_CHANGE (1<<MBPB_CHANGE)
+
+struct membreakpoint
+{
+  unsigned char  flags;
+  unsigned char  lastval;
+  unsigned short addr;
+};
+
 struct m6502
 {
   int rastercycles;
@@ -60,11 +75,12 @@ struct m6502
   int irq;
   void (*write)(struct m6502 *,unsigned short, unsigned char);
   unsigned char (*read)(struct m6502 *,unsigned short);
-  SDL_bool anybp;
+  SDL_bool anybp, anymbp;
   int breakpoints[16];
+  struct membreakpoint membreakpoints[16];
   void *userdata;
 };
 
 void m6502_init( struct m6502 *cpu, void *userdata );
 void m6502_reset( struct m6502 *cpu );
-SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp );
+SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg );

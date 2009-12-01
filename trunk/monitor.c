@@ -20,6 +20,7 @@
 */
 
 #define MAX_CONS_INPUT 127        // Max line length in console
+#define MAX_ASM_INPUT 36
 #define CONS_WIDTH 46             // Actual console width for input
 #define SNAME_LEN 11              // Short name for symbols (with ...)
 #define SSNAME_LEN (SNAME_LEN-3)  // Short short name :)
@@ -44,6 +45,12 @@ struct disinf
 {
   char *name;
   int amode;
+};
+
+struct asminf
+{
+  char *name;
+  short imp, imm, zp, zpx, zpy, abs, abx, aby, zix, ziy, rel, ind;
 };
 
 #define SYMB_ROMDIS0   0
@@ -72,7 +79,7 @@ static char distmp[80];
 static char ibuf[128], lastcmd;
 static char history[10][128];
 static int ilen, iloff=0, cursx, histu=0, histp=-1;
-static unsigned short mon_addr;
+static unsigned short mon_addr, mon_asmmode = SDL_FALSE;
 static unsigned short mw_addr;
 static int mw_mode=0, mw_koffs=0;
 static char mw_ibuf[8];
@@ -81,6 +88,8 @@ static int helpcount=0;
 
 static int numsyms=0, symspace=0;
 static struct msym *defaultsyms = NULL, *syms = NULL;
+
+char mon_bpmsg[80];
 
 //                                                             12345678901    12345678 
 static struct msym defsym_oric1[] = { { 0xc000, SYMF_ROMDIS0, "ROMStart"   , "ROMStart", "ROMStart" },
@@ -370,6 +379,79 @@ enum
   AM_IND
 };
 
+#define AMF_IMP (1<<AM_IMP)
+#define AMF_IMM (1<<AM_IMM)
+#define AMF_ZP  (1<<AM_ZP)
+#define AMF_ZPX (1<<AM_ZPX)
+#define AMF_ZPY (1<<AM_ZPY)
+#define AMF_ABS (1<<AM_ABS)
+#define AMF_ABX (1<<AM_ABX)
+#define AMF_ABY (1<<AM_ABY)
+#define AMF_ZIX (1<<AM_ZIX)
+#define AMF_ZIY (1<<AM_ZIY)
+#define AMF_REL (1<<AM_REL)
+#define AMF_IND (1<<AM_IND)
+
+//                                          imp   imm    zp   zpx   zpy   abs   abx   aby   zix   ziy   rel   ind
+static struct asminf asmtab[] = { { "BRK", 0x00,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "ORA",   -1, 0x09, 0x05, 0x15,   -1, 0x0d, 0x1d, 0x19, 0x01, 0x11,   -1,   -1 },
+                                  { "ASL", 0x0a,   -1, 0x06, 0x16,   -1, 0x0e, 0x1e,   -1,   -1,   -1,   -1,   -1 },
+                                  { "PHP", 0x08,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "BPL",   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1, 0x10,   -1 },
+                                  { "CLC", 0x18,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "JSR",   -1,   -1,   -1,   -1,   -1, 0x20,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "AND",   -1,   -1,   -1, 0x35,   -1,   -1, 0x3d, 0x39, 0x21, 0x31,   -1,   -1 },
+                                  { "BIT",   -1,   -1, 0x24,   -1,   -1, 0x2c,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "AND",   -1, 0x29, 0x25,   -1,   -1, 0x2d,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "ROL", 0x2a,   -1, 0x26, 0x36,   -1, 0x2e, 0x3e,   -1,   -1,   -1,   -1,   -1 },
+                                  { "PLP", 0x28,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "BMI",   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1, 0x30,   -1 },
+                                  { "SEC", 0x38,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "RTI", 0x40,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "EOR",   -1, 0x49, 0x45, 0x55,   -1, 0x4d, 0x5d, 0x59, 0x41, 0x51,   -1,   -1 },
+                                  { "LSR", 0x4a,   -1, 0x46, 0x56,   -1, 0x4e, 0x5e,   -1,   -1,   -1,   -1,   -1 },
+                                  { "PHA", 0x48,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "JMP",   -1,   -1,   -1,   -1,   -1, 0x4c,   -1,   -1,   -1,   -1,   -1, 0x6c },
+                                  { "BVC",   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1, 0x50,   -1 },
+                                  { "CLI", 0x58,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "RTS", 0x60,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "ADC",   -1, 0x69, 0x65, 0x75,   -1, 0x6d, 0x7d, 0x79, 0x61, 0x71,   -1,   -1 },
+                                  { "ROR", 0x6a,   -1, 0x66, 0x76,   -1, 0x6e, 0x7e,   -1,   -1,   -1,   -1,   -1 },
+                                  { "PLA", 0x68,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "BVS",   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1, 0x70,   -1 },
+                                  { "SEI", 0x78,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "STY",   -1,   -1, 0x84, 0x94,   -1, 0x8c,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "STA",   -1,   -1, 0x85, 0x95,   -1, 0x8d, 0x9d, 0x99, 0x81, 0x91,   -1,   -1 },
+                                  { "STX",   -1,   -1, 0x86, 0x96,   -1, 0x8e,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "DEY", 0x88,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "TXA", 0x8a,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "BCC",   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1, 0x90,   -1 },
+                                  { "TYA", 0x98,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "TXS", 0x9a,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "LDY",   -1, 0xa0, 0xa4, 0xb4,   -1, 0xac, 0xbc,   -1,   -1,   -1,   -1,   -1 },
+                                  { "LDA",   -1, 0xa9, 0xa5, 0xb5,   -1, 0xad, 0xbd, 0xb9, 0xa1, 0xb1,   -1,   -1 },
+                                  { "LDX",   -1, 0xa2, 0xa6,   -1, 0xb6, 0xae,   -1, 0xbe,   -1,   -1,   -1,   -1 },
+                                  { "TAY", 0xa8,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "TAX", 0xaa,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "BCS",   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1, 0xb0,   -1 },
+                                  { "CLV", 0xb8,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "TSX", 0xba,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "CPY",   -1, 0xc0, 0xc4,   -1,   -1, 0xcc,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "CMP",   -1, 0xc9, 0xc5, 0xd5,   -1, 0xcd, 0xdd, 0xd9, 0xc1, 0xd1,   -1,   -1 },
+                                  { "DEC",   -1,   -1, 0xc6, 0xd6,   -1, 0xce, 0xde,   -1, 0xc1,   -1,   -1,   -1 },
+                                  { "INY", 0xc8,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "DEX", 0xca,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "BNE",   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1, 0xd0,   -1 },
+                                  { "CLD", 0xd8,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "CPX",   -1, 0xe0, 0xe4,   -1,   -1, 0xec,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "SBC",   -1, 0xe9, 0xe5, 0xf5,   -1, 0xed, 0xfd, 0xf9, 0xe1, 0xf1,   -1,   -1 },
+                                  { "INC",   -1,   -1, 0xe6, 0xf6,   -1, 0xee, 0xfe,   -1,   -1,   -1,   -1,   -1 },
+                                  { "INX", 0xe8,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "NOP", 0xea,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "BEQ",   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1, 0xf0,   -1 },
+                                  { "SED", 0xf8,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { NULL, } };
+
 static struct disinf distab[] = { { "BRK", AM_IMP },  // 00
                                   { "ORA", AM_ZIX },  // 01
                                   { "???", AM_IMP },  // 02
@@ -653,10 +735,16 @@ SDL_bool ishex( char c )
   return SDL_FALSE;
 }
 
-SDL_bool issymstart( char c )
+SDL_bool isalph( char c )
 {
   if( ( c >= 'a' ) && ( c <= 'z' ) ) return SDL_TRUE;
   if( ( c >= 'A' ) && ( c <= 'Z' ) ) return SDL_TRUE;
+  return SDL_FALSE;
+}
+
+SDL_bool issymstart( char c )
+{
+  if( isalph( c ) ) return SDL_TRUE;
   if( c == '_' ) return SDL_TRUE;
   return SDL_FALSE;
 }
@@ -1263,6 +1351,14 @@ void mon_hide_curs( void )
 {
   struct textzone *ptz = tz[TZ_MONITOR];
   int x = cursx-iloff;
+
+  if( mon_asmmode )
+  {
+    ptz->fc[ptz->w*19+8+x] = 2;
+    ptz->bc[ptz->w*19+8+x] = 3;
+    return;
+  }
+
   if( ( x < 0 ) || ( x > CONS_WIDTH ) ) return;
   ptz->fc[ptz->w*19+2+x] = 2;
   ptz->bc[ptz->w*19+2+x] = 3;
@@ -1272,6 +1368,14 @@ void mon_show_curs( void )
 {
   struct textzone *ptz = tz[TZ_MONITOR];
   int x = cursx-iloff;
+
+  if( mon_asmmode )
+  {
+    ptz->fc[ptz->w*19+8+x] = 3;
+    ptz->bc[ptz->w*19+8+x] = 2;
+    return;
+  }
+
   if( ( x < 0 ) || ( x > CONS_WIDTH ) ) return;
   ptz->fc[ptz->w*19+2+x] = 3;
   ptz->bc[ptz->w*19+2+x] = 2;
@@ -1304,6 +1408,30 @@ void mon_scroll( SDL_bool above )
     ptz->fc[d] = 2;
     ptz->bc[d++] = 3;
   }
+}
+
+void mon_oprintf( char *fmt, ... )
+{
+  va_list ap;
+  int i;
+  char stmp[48];
+
+  va_start( ap, fmt );
+  if( vsnprintf( vsptmp, VSPTMPSIZE, fmt, ap ) != -1 )
+  {
+    vsptmp[VSPTMPSIZE-1] = 0;
+    i = 0;
+    while( strlen( &vsptmp[i] ) > 47 )
+    {
+      strncpy( stmp, &vsptmp[i], 47 );
+      stmp[47] = 0;
+      tzstrpos( tz[TZ_MONITOR], 1, 19, stmp );
+      mon_scroll( SDL_FALSE );
+      i += 47;
+    }
+    tzstrpos( tz[TZ_MONITOR], 1, 19, &vsptmp[i] );
+  }
+  va_end( ap );
 }
 
 void mon_printf( char *fmt, ... )
@@ -1377,14 +1505,23 @@ void mon_start_input( void )
   ilen = 0;
   iloff = 0;
   cursx = 0;
+
+  if( mon_asmmode )
+  {
+    tzsetcol( tz[TZ_MONITOR], 1, 3 );
+    tzprintfpos( tz[TZ_MONITOR], 1, 19, " %04X:", mon_addr );
+    return;
+  }
   tzsetcol( tz[TZ_MONITOR], 1, 3 );
   tzstrpos( tz[TZ_MONITOR], 1, 19, "]" ); 
 }
 
 void mon_init( struct machine *oric )
 {
+  mon_bpmsg[0] = 0;
   mshow = MSHOW_VIA;
   cshow = CSHOW_CONSOLE;
+  mon_asmmode = SDL_FALSE;
   mon_start_input();
   mon_show_curs();
   mon_addr = oric->cpu.pc;
@@ -1606,10 +1743,11 @@ SDL_bool mon_getnum( struct machine *oric, unsigned int *num, char *buf, int *of
 
     for( j=0; issymchar( buf[i+j] ); j++ ) ;
     c = buf[i+j];
-    if( isws( c ) || ( c == 13 ) || ( c == 10 ) || ( c == 0 ) || ( c == ',' ) )
+    if( isws( c ) || ( c == 13 ) || ( c == 10 ) || ( c == 0 ) || ( c == ',' ) || ( c == ')' ) )
     {
       buf[i+j] = 0;
       fsym = mon_find_sym_by_name( oric, &buf[i] );
+      buf[i+j] = c;
       if( fsym )
       {
         (*num) = fsym->addr;
@@ -1816,6 +1954,16 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
   switch( cmd[i] )
   {
+    case 'a':
+      lastcmd = cmd[i];
+      i++;
+
+      if( mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+        mon_addr = v;
+
+      mon_asmmode = SDL_TRUE;
+      break;
+
     case 's': // Symbols
       lastcmd = 0;
       i++;
@@ -1825,7 +1973,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           oric->symbolscase = SDL_FALSE;
           mon_str( "Symbols are not case-sensitive" );
           break;
-        
+
         case 'C':  // Case sensitive
           oric->symbolscase = SDL_TRUE;
           mon_str( "Symbols are case-sensitive" );
@@ -1861,6 +2009,25 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
       switch( cmd[i] )
       {
         case 'l':
+          if( cmd[i+1] == 'm' )
+          {
+            oric->cpu.anymbp = SDL_FALSE;
+            for( j=0; j<16; j++ )
+            {
+              if( oric->cpu.membreakpoints[j].flags )
+              {
+                mon_printf( "%02d: $04X %c%c%c",
+                  j,
+                  oric->cpu.membreakpoints[j].addr,
+                  (oric->cpu.membreakpoints[j].flags&MBPF_READ) ? 'r' : ' ',
+                  (oric->cpu.membreakpoints[j].flags&MBPF_WRITE) ? 'w' : ' ',
+                  (oric->cpu.membreakpoints[j].flags&MBPF_CHANGE) ? 'c' : ' ' );
+                oric->cpu.anymbp = SDL_TRUE;
+              }
+            }
+            break;
+          }
+
           oric->cpu.anybp = SDL_FALSE;
           for( j=0; j<16; j++ )
           {
@@ -1873,6 +2040,66 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           break;
         
         case 's':
+          if( cmd[i+1] == 'm' )
+          {
+            for( j=0; j<16; j++ )
+            {
+              if( oric->cpu.membreakpoints[j].flags == 0 )
+                break;
+            }
+
+            if( j == 16 )
+            {
+              mon_str( "Max 16 breakpoints" );
+              break;
+            }
+
+            i += 2;
+            if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_TRUE, SDL_TRUE, SDL_TRUE ) )
+            {
+              mon_str( "Address expected" );
+              break;
+            }
+
+            oric->cpu.membreakpoints[j].addr = v & 0xffff;
+            oric->cpu.membreakpoints[j].lastval = oric->cpu.read( &oric->cpu, v&0xffff );
+            oric->cpu.membreakpoints[j].flags = 0;
+
+            while( isws( cmd[i] ) ) i++;
+
+            for( ;; )
+            {
+              switch( cmd[i] )
+              {
+                case 'r':
+                  oric->cpu.membreakpoints[j].flags |= MBPF_READ;
+                  i++;
+                  continue;
+
+                case 'w':
+                  oric->cpu.membreakpoints[j].flags |= MBPF_WRITE;
+                  i++;
+                  continue;
+
+                case 'c':
+                  oric->cpu.membreakpoints[j].flags |= MBPF_CHANGE;
+                  i++;
+                  continue;
+              }
+              break;
+            }
+
+            if( !oric->cpu.membreakpoints[j].flags )
+              oric->cpu.membreakpoints[j].flags = MBPF_READ|MBPF_WRITE;
+            oric->cpu.anymbp = SDL_TRUE;
+
+            mon_printf( "m%02d: $%04X %s%s%s", j, oric->cpu.membreakpoints[j].addr,
+              (oric->cpu.membreakpoints[j].flags&MBPF_READ) ? "r" : "",
+              (oric->cpu.membreakpoints[j].flags&MBPF_WRITE) ? "w" : "",
+              (oric->cpu.membreakpoints[j].flags&MBPF_CHANGE) ? "c" : "" );
+            break;
+          }
+
           for( j=0; j<16; j++ )
           {
             if( oric->cpu.breakpoints[j] == -1 )
@@ -1898,6 +2125,13 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           break;
 
         case 'c':
+          j = 0;
+          if( cmd[i+1] == 'm' )
+          {
+            j = 1;
+            i++;
+          }
+
           i++;
           if( !mon_getnum( oric, &v, cmd, &i, SDL_FALSE, SDL_FALSE, SDL_FALSE, SDL_FALSE ) )
           {
@@ -1911,11 +2145,26 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
             break;
           }
 
+          if( j )
+          {
+            oric->cpu.membreakpoints[v].flags = 0;
+            oric->cpu.anymbp = SDL_FALSE;
+            for( j=0; j<16; j++ )
+            {
+              if( oric->cpu.membreakpoints[j].flags != 0 )
+              {
+                oric->cpu.anymbp = SDL_TRUE;
+                break;
+              }
+            }
+            break;
+          }
+
           oric->cpu.breakpoints[v] = -1;
           oric->cpu.anybp = SDL_FALSE;
           for( j=0; j<16; j++ )
           {
-            if( oric->cpu.breakpoints[i] != -1 )
+            if( oric->cpu.breakpoints[j] != -1 )
             {
               oric->cpu.anybp = SDL_TRUE;
               break;
@@ -1924,6 +2173,14 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           break;
         
         case 'z':
+          if( cmd[i+1] == 'm' )
+          {
+            for( i=0; i<16; i++ )
+              oric->cpu.membreakpoints[i].flags = 0;
+            oric->cpu.anymbp = SDL_FALSE;
+            break;
+          }
+
           for( i=0; i<16; i++ )
             oric->cpu.breakpoints[i] = -1;
           oric->cpu.anybp = SDL_FALSE;
@@ -2202,25 +2459,30 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "  F10: Step CPU" );
           mon_str( " " );
           mon_str( "COMMANDS:" );
-          mon_str( "  bs <addr>             - Set breakpoint" );
+          mon_str( "  a <addr>              - Assemble" );
           mon_str( "  bc <bp id>            - Clear breakpoint" );
-          mon_str( "  bz                    - Zap breakpoints" );
+          mon_str( "  bcm <bp id>           - Clear mem breakpoint" );
           mon_str( "  bl                    - List breakpoints" );
-          mon_str( "  sc                    - Symbols not case-sens." );
-          mon_str( "  sC                    - Symbols case-sensitive" );
-          mon_str( "  sl <file>             - Load symbols" );
-          mon_str( "  sz                    - Zap symbols" );
-          mon_str( "  m <addr>              - Dump memory" );
-          mon_str( "  mw <addr>             - Memory watch at addr" );
+          mon_str( "  blm                   - List mem breakpoints" );
+          mon_str( "  bs <addr>             - Set breakpoint" );
+          mon_str( "  bsm [rwc] <addr>      - Set mem breakpoint" );
+          mon_str( "  bz                    - Zap breakpoints" );
+          mon_str( "  bzm                   - Zap mem breakpoints" );
           mon_str( "  d <addr>              - Disassemble" );
+          mon_str( "  m <addr>              - Dump memory" );
           mon_str( "---- MORE" );
           helpcount++;
           break;
         
         case 1:
+          mon_str( "  mw <addr>             - Memory watch at addr" );
           mon_str( "  r <reg> <val>         - Set <reg> to <val>" );
           mon_str( "  q, x or qm            - Quit monitor" );
           mon_str( "  qe                    - Quit emulator" );
+          mon_str( "  sc                    - Symbols not case-sens." );
+          mon_str( "  sC                    - Symbols case-sensitive" );
+          mon_str( "  sl <file>             - Load symbols" );
+          mon_str( "  sz                    - Zap symbols" );
           mon_str( "  wm <addr> <len> <file>- Write mem to disk" );
           helpcount = 0;
           lastcmd = 0;
@@ -2255,6 +2517,17 @@ static void mon_write_ibuf( void )
   }
 }
 
+static void mon_write_ibuf_asm( void )
+{
+  char ibtmp[CONS_WIDTH+1];
+
+  strncpy( ibtmp, ibuf, CONS_WIDTH );
+  ibtmp[CONS_WIDTH] = 0;
+
+  tzstrpos( tz[TZ_MONITOR], 8, 19, ibtmp );
+  tzstr( tz[TZ_MONITOR], " " );
+}
+
 static void mon_set_curs_to_end( void )
 {
   cursx = ilen;
@@ -2269,12 +2542,324 @@ static void mon_set_iloff( void )
   if( iloff < 0 ) iloff =0;
 }
 
+/*
+- AM_IMP=0,
+- AM_IMM,
+  AM_ZP,   <-- AM_ABS
+  AM_ZPX,  <-- AM_ABX
+  AM_ZPY,  <-- AM_ABY
+  AM_ABS, nnnn
+  AM_ABX, nnnn,x
+  AM_ABY, nnnn,y
+- AM_ZIX, (nn,x)
+- AM_ZIY, (nn),y
+  AM_REL,   <-- AM_ABS
+- AM_IND  (nnnn)
+*/
+static SDL_bool mon_decodeoperand( struct machine *oric, char *ptr, int *type, unsigned short *val )
+{
+  int i;
+  unsigned int v;
+
+  i=0;
+  while( isws( ptr[i] ) ) i++;
+
+  // Implied
+  if( ptr[i] == 0 )
+  {
+    (*type) = AM_IMP;
+    return SDL_TRUE;
+  }
+
+  // Immediate
+  if( ptr[i] == '#' )
+  {
+    i++;
+    if( !mon_getnum( oric, &v, ptr, &i, SDL_FALSE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+      return SDL_FALSE;
+    (*type) = AM_IMM;
+    (*val)  = v;
+    return SDL_TRUE;
+  }
+
+  // ZIX, ZIY, IND
+  if( ptr[i] == '(' )
+  {
+    i++;
+    if( !mon_getnum( oric, &v, ptr, &i, SDL_TRUE, SDL_TRUE, SDL_FALSE, SDL_TRUE ) )
+      return SDL_FALSE;
+
+    if( strncasecmp( &ptr[i], ",X)", 3 ) == 0 )
+    {
+      (*type) = AM_ZIX;
+      (*val)  = v&0xff;
+      return SDL_TRUE;
+    }
+    
+    if( strncasecmp( &ptr[i], "),Y", 3 ) == 0 )
+    {
+      (*type) = AM_ZIY;
+      (*val)  = v&0xff;
+      return SDL_TRUE;
+    }
+
+    if( ptr[i] == ')' )
+    {
+      (*type) = AM_IND;
+      (*val)  = v;
+      return SDL_TRUE;
+    }
+    
+    return SDL_FALSE;
+  }
+
+  if( !mon_getnum( oric, &v, ptr, &i, SDL_TRUE, SDL_TRUE, SDL_FALSE, SDL_TRUE ) )
+    return SDL_FALSE;
+
+  if( strncasecmp( &ptr[i], ",X", 2 ) == 0 )
+  {
+    (*type) = AM_ABX;
+    (*val)  = v;
+    return SDL_TRUE;
+  }
+
+  if( strncasecmp( &ptr[i], ",Y", 2 ) == 0 )
+  {
+    (*type) = AM_ABY;
+    (*val)  = v;
+    return SDL_TRUE;
+  }
+ 
+  (*type) = AM_ABS;
+  (*val)  = v;
+  return SDL_TRUE;
+}
+
+static SDL_bool mon_assemble_line( struct machine *oric )
+{
+  int i, j, amode;
+  unsigned short val;
+
+  i=0;
+  while( isws( ibuf[i] ) ) i++;
+
+  if( ibuf[i] == 0 ) return SDL_TRUE;
+
+  for( j=0; asmtab[j].name; j++ )
+  {
+    if( strncasecmp( asmtab[j].name, &ibuf[i], 3 ) == 0 )
+      break;
+  }
+
+  if( !asmtab[j].name )
+  {
+    mon_oprintf( " %04X  %c%c%c  ???           ", mon_addr, ibuf[i], ibuf[i+1], ibuf[i+2] );
+    return SDL_FALSE;
+  }
+
+  i += 3;
+  if( !mon_decodeoperand( oric, &ibuf[i], &amode, &val ) )
+  {
+    mon_str( "Illegal operand" );
+    return SDL_FALSE;
+  }
+
+  switch( amode )
+  {
+    case AM_IMP:
+      if( asmtab[j].imp == -1 ) { mon_str( "Operand expected" ); return SDL_FALSE; }
+      oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].imp );
+      break;
+    
+    case AM_IMM:
+      if( asmtab[j].imm == -1 ) { mon_str( "Illegal operand" ); return SDL_FALSE; }
+      oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].imm );
+      oric->cpu.write( &oric->cpu, mon_addr+1, val );
+      break;
+    
+    case AM_ABS:
+      if( asmtab[j].rel != -1 )
+      {
+        i = ((int)val)-((int)(mon_addr+2));
+        if( ( i < -128 ) || ( i > 127 ) )
+        {
+          mon_str( "Branch out of range" );
+          return SDL_FALSE;
+        }
+        oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].rel );
+        oric->cpu.write( &oric->cpu, mon_addr+1, i&0xff );        
+        break;
+      }
+
+      if( ( asmtab[j].zp != -1 ) && ( (val&0xff00)==0 ) )
+      {
+        oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].zp );
+        oric->cpu.write( &oric->cpu, mon_addr+1, val );
+        break;
+      }
+
+      if( asmtab[j].abs == -1 ) { mon_str( "Illegal operand" ); return SDL_FALSE; }
+      oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].abs );
+      oric->cpu.write( &oric->cpu, mon_addr+1, val&0xff );
+      oric->cpu.write( &oric->cpu, mon_addr+2, (val>>8)&0xff );
+      break;
+
+    case AM_IND:
+      if( asmtab[j].ind == -1 ) { mon_str( "Illegal operand" ); return SDL_FALSE; }
+      oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].ind );
+      oric->cpu.write( &oric->cpu, mon_addr+1, val&0xff );
+      oric->cpu.write( &oric->cpu, mon_addr+2, (val>>8)&0xff );
+      break;
+
+    case AM_ZPX:
+      if( asmtab[j].zpx == -1 ) { mon_str( "Illegal operand" ); return SDL_FALSE; }
+      oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].zpx );
+      oric->cpu.write( &oric->cpu, mon_addr+1, val );
+      break;
+
+    case AM_ZPY:
+      if( asmtab[j].zpy == -1 ) { mon_str( "Illegal operand" ); return SDL_FALSE; }
+      oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].zpy );
+      oric->cpu.write( &oric->cpu, mon_addr+1, val );
+      break;
+
+    case AM_ZIX:
+      if( asmtab[j].zix == -1 ) { mon_str( "Illegal operand" ); return SDL_FALSE; }
+      oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].zix );
+      oric->cpu.write( &oric->cpu, mon_addr+1, val );
+      break;
+
+    case AM_ZIY:
+      if( asmtab[j].ziy == -1 ) { mon_str( "Illegal operand" ); return SDL_FALSE; }
+      oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].ziy );
+      oric->cpu.write( &oric->cpu, mon_addr+1, val );
+      break;
+
+    case AM_ABX:
+      if( ( asmtab[j].zpx != -1 ) && ( (val&0xff00)==0 ) )
+      {
+        oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].zpx );
+        oric->cpu.write( &oric->cpu, mon_addr+1, val );
+        break;
+      }
+
+      if( asmtab[j].abx == -1 ) { mon_str( "Illegal operand" ); return SDL_FALSE; }
+      oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].abx );
+      oric->cpu.write( &oric->cpu, mon_addr+1, val&0xff );
+      oric->cpu.write( &oric->cpu, mon_addr+2, (val>>8)&0xff );
+      break;
+
+    case AM_ABY:
+      if( ( asmtab[j].zpy != -1 ) && ( (val&0xff00)==0 ) )
+      {
+        oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].zpy );
+        oric->cpu.write( &oric->cpu, mon_addr+1, val );
+        break;
+      }
+
+      if( asmtab[j].aby == -1 ) { mon_str( "Illegal operand" ); return SDL_FALSE; }
+      oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].aby );
+      oric->cpu.write( &oric->cpu, mon_addr+1, val&0xff );
+      oric->cpu.write( &oric->cpu, mon_addr+2, (val>>8)&0xff );
+      break;
+  }
+
+  mon_oprintf( mon_disassemble( oric, &mon_addr ) );
+  return SDL_FALSE;
+}
+
 static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 {
   int i;
   SDL_bool done;
 
   done = SDL_FALSE;
+
+  if( mon_asmmode )
+  {
+    switch( ev->key.keysym.sym )
+    {
+      case SDLK_LEFT:
+        if( cursx > 0 )
+        {
+          mon_hide_curs();
+          cursx--;
+          mon_write_ibuf_asm();
+          mon_show_curs();
+          *needrender = SDL_TRUE;
+        }
+        break;
+
+      case SDLK_RIGHT:
+        if( cursx < ilen )
+        {
+          mon_hide_curs();
+          cursx++;
+          mon_write_ibuf_asm();
+          mon_show_curs();
+          *needrender = SDL_TRUE;
+        }
+        break;
+      
+      default:
+        break;
+    }
+
+    switch( ev->key.keysym.unicode )
+    {
+      case SDLK_BACKSPACE:
+        if( cursx > 0 )
+        {
+          mon_hide_curs();
+          for( i=cursx-1; i<ilen; i++ )
+            ibuf[i] = ibuf[i+1];
+          cursx--;
+          ilen = strlen( ibuf );
+          mon_set_iloff();
+          mon_write_ibuf_asm();
+          mon_show_curs();
+          *needrender = SDL_TRUE;
+        }
+        break;
+      
+      case SDLK_RETURN:
+        mon_hide_curs();
+        ibuf[ilen] = 0;
+
+        if( mon_assemble_line( oric ) )
+        {
+          mon_asmmode = SDL_FALSE;
+          mon_start_input();
+          mon_show_curs();
+          *needrender = SDL_TRUE;
+          break;
+        }
+
+        mon_start_input();
+        mon_show_curs();
+        *needrender = SDL_TRUE;
+        break;
+
+      default:
+        if( ( ev->key.keysym.unicode > 31 ) && ( ev->key.keysym.unicode < 127 ) )
+        {
+          if( ilen >= MAX_ASM_INPUT ) break;
+
+          mon_hide_curs();
+          for( i=ilen+1; i>cursx; i-- )
+            ibuf[i] = ibuf[i-1];
+          ibuf[cursx] = ev->key.keysym.unicode;
+          cursx++;
+          ilen++;
+          mon_write_ibuf_asm();
+          mon_show_curs();
+          *needrender = SDL_TRUE;
+        }
+        break;
+    }
+    return done;
+  }
+
   switch( ev->key.keysym.sym )
   {
     case SDLK_UP:
@@ -2515,7 +3100,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
         case SDLK_F2:
           // In case we're on a breakpoint
-          m6502_inst( &oric->cpu, SDL_FALSE );
+          m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
           via_clock( &oric->via, oric->cpu.icycles );
           ay_ticktock( &oric->ay, oric->cpu.icycles );
           if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
@@ -2555,7 +3140,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           break;
 
         case SDLK_F10:
-          m6502_inst( &oric->cpu, SDL_FALSE );
+          m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
           via_clock( &oric->via, oric->cpu.icycles );
           ay_ticktock( &oric->ay, oric->cpu.icycles );
           if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
