@@ -36,11 +36,6 @@
 
 extern char diskfile[], diskpath[];
 
-// Track size, ID mark, Data mark, Deleted data mark
-static struct densityinfo dinf[] = { { 0, },          // ?
-                                     { 0, },          // High density
-                                     { 0x1900, 0xfe, 0xfb, 0xf8 } };
-
 // Pop up disk image information for a couple of seconds
 void disk_popup( struct machine *oric, int drive )
 {
@@ -93,7 +88,7 @@ struct diskimage *diskimage_alloc( Uint32 rawimglen )
 
   dimg->numtracks   = 0;
   dimg->numsides    = 0;
-  dimg->density     = 0;
+  dimg->geometry    = 0;
   dimg->cachedtrack = -1;
   dimg->cachedside  = -1;
   dimg->numsectors  = 0;
@@ -121,14 +116,14 @@ void diskimage_cachetrack( struct diskimage *dimg, int track, int side )
       ( dimg->cachedside == side ) )
     return;
 
-  ptr = &dimg->rawimage[HEADERSIZE+(dimg->dinf->tracksize*((track*dimg->numsides)+side))];
-  eot = &ptr[dimg->dinf->tracksize];
+  ptr = &dimg->rawimage[(side*dimg->numtracks+track)*6400+256];
+  eot = &ptr[6400];
 
   sectorcount = 0;
   while( ptr < eot )
   {
     // Search for ID mark
-    while( (ptr<eot) && (ptr[0]!=dimg->dinf->idmark) ) ptr++;
+    while( (ptr<eot) && (ptr[0]!=0xfe) ) ptr++;
     if( ptr >= eot ) break;
     
     // Store pointer
@@ -143,7 +138,7 @@ void diskimage_cachetrack( struct diskimage *dimg, int track, int side )
     ptr+=7;
 
     // Search for data ID
-    while( (ptr<eot) && (ptr[0]!=dimg->dinf->datamark) && (ptr[0]!=dimg->dinf->deldatamark) ) ptr++;
+    while( (ptr<eot) && (ptr[0]!=0xfb) && (ptr[0]!=0xf8) ) ptr++;
     if( ptr >= eot ) break;
 
     // Store pointer
@@ -207,25 +202,24 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
     return SDL_FALSE;
   }
 
+  oric->wddisk.disk[drive]->numsides  = diskimage_rawint( oric->wddisk.disk[drive], 8 );
   oric->wddisk.disk[drive]->numtracks = diskimage_rawint( oric->wddisk.disk[drive], 12 );
-  oric->wddisk.disk[drive]->numsides  = diskimage_rawint( oric->wddisk.disk[drive], 16 );
-  oric->wddisk.disk[drive]->density   = diskimage_rawint( oric->wddisk.disk[drive], 8 );
+  oric->wddisk.disk[drive]->geometry  = diskimage_rawint( oric->wddisk.disk[drive], 16 );
 
-  if( oric->wddisk.disk[drive]->density != DOUBLE_DENSITY )
+  if( ( oric->wddisk.disk[drive]->numsides < 1 ) &&
+      ( oric->wddisk.disk[drive]->numsides > 2 ) )
   {
     SDL_WM_SetCaption( "Fail 4", "Fail 4" );
     disk_eject( oric, drive );
     return SDL_FALSE;
   }
 
-  oric->wddisk.disk[drive]->dinf      = &dinf[oric->wddisk.disk[drive]->density];
-
   {
     char deleteme[128];
-    sprintf( deleteme, "Tracks: %u, Sides: %u, Density: %u",
+    sprintf( deleteme, "Tracks: %u, Sides: %u, Geometry: %u",
       oric->wddisk.disk[drive]->numtracks,
       oric->wddisk.disk[drive]->numsides,
-      oric->wddisk.disk[drive]->density );
+      oric->wddisk.disk[drive]->geometry );
     SDL_WM_SetCaption( deleteme, deleteme );
   }
 
@@ -282,7 +276,7 @@ void wd17xx_ticktock( struct wd17xx *wd, int cycles )
     {
       wd->delayeddrq = 0;
       wd->setdrq( wd->drqarg );
-      dbg_printf( "DISK: Delayed DRQ" );
+//      dbg_printf( "DISK: Delayed DRQ" );
     }
   }
 }
