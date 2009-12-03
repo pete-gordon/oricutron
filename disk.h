@@ -71,11 +71,6 @@
 #define WSB_NOTREADY 7
 #define WSF_NOTREADY (1<<WSB_NOTREADY)
 
-#define SINGLE_DENSITY 1
-#define DOUBLE_DENSITY 2
-
-#define HEADERSIZE 0x100
-
 // Current operation
 enum
 {
@@ -104,7 +99,7 @@ struct diskimage
 {
   Uint32   numtracks;
   Uint32   numsides;
-  Uint32   density;
+  Uint32   geometry;
   int      cachedtrack, cachedside;
   Uint32   numsectors;
   struct   mfmsector sector[32];
