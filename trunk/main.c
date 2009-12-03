@@ -24,6 +24,11 @@
 
 #include <SDL/SDL.h>
 
+#ifdef __amigaos4__
+#include <proto/exec.h>
+#include <proto/dos.h>
+#endif
+
 #include "6502.h"
 #include "via.h"
 #include "8912.h"
@@ -36,6 +41,12 @@ extern SDL_bool warpspeed, soundon;
 Uint32 lastframetimes[8], frametimeave;
 extern char mon_bpmsg[];
 
+#ifdef __amigaos4__
+int32 timersigbit = -1;
+uint32 timersig;
+struct Task *maintask;
+#endif
+
 SDL_bool init( struct machine *oric )
 {
   Sint32 i;
@@ -44,6 +55,14 @@ SDL_bool init( struct machine *oric )
   frametimeave = 0;
   preinit_machine( oric );
   preinit_gui();
+
+#ifdef __amigaos4__
+  timersigbit = IExec->AllocSignal( -1 );
+  if( timersigbit == -1 ) return SDL_FALSE;
+  timersig = 1L<<timersigbit;
+  
+  maintask = IExec->FindTask( NULL );
+#endif
 
   if( !init_gui( oric ) ) return SDL_FALSE;
   if( !init_machine( oric, MACH_ATMOS ) ) return SDL_FALSE;
@@ -58,6 +77,9 @@ void shut( struct machine *oric )
   shut_machine( oric );
   mon_shut();
   shut_gui();
+#ifdef __amigaos4__
+  IExec->FreeSignal( timersigbit );
+#endif
 }
 
 Uint32 nosoundtiming( Uint32 interval, void *userdata )
@@ -66,6 +88,9 @@ Uint32 nosoundtiming( Uint32 interval, void *userdata )
   if( ( oric->emu_mode == EM_RUNNING ) &&
       ( !soundon ) )
   {
+#if __amigaos4__
+    IExec->Signal( maintask, timersig );
+#else
     SDL_Event     event;
     SDL_UserEvent userevent;
 
@@ -78,6 +103,7 @@ Uint32 nosoundtiming( Uint32 interval, void *userdata )
     event.user = userevent;
     
     SDL_PushEvent( &event );
+#endif
   }
 
   return (oric->cyclesperraster == 64) ? 1000/50 : 1000/60;
@@ -86,7 +112,7 @@ Uint32 nosoundtiming( Uint32 interval, void *userdata )
 int main( int argc, char *argv[] )
 {
   void *thetimer;
-  Sint32 i;
+  Sint32 i, foo;
   struct machine oric;
 
   if( init( &oric ) )
@@ -94,6 +120,7 @@ int main( int argc, char *argv[] )
     SDL_bool done, needrender, framedone;
 
     thetimer = SDL_AddTimer( 1000/50, (SDL_NewTimerCallback)nosoundtiming, (void *)&oric );
+    foo = 0;
 
     done = SDL_FALSE;
     needrender = SDL_TRUE;
@@ -171,7 +198,20 @@ int main( int argc, char *argv[] )
           {
             if( !SDL_PollEvent( &event ) ) continue;
           } else {
+#ifdef __amigaos4__
+            uint32 gotsigs;
+
+            gotsigs = IExec->Wait( timersig | SIGBREAKF_CTRL_C );
+            if( gotsigs & SIGBREAKF_CTRL_C ) done = TRUE;
+            if( gotsigs & timersig )
+            {
+              needrender = SDL_TRUE;
+              framedone  = SDL_FALSE;
+              if( !SDL_PollEvent( &event ) ) continue;
+            }
+#else
             if( !SDL_WaitEvent( &event ) ) break;
+#endif
           }
         }
       } else {
@@ -209,5 +249,5 @@ int main( int argc, char *argv[] )
   }
   shut( &oric );
 
-	return 0;
+  return 0;
 }

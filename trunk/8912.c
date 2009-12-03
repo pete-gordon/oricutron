@@ -36,6 +36,13 @@
 #include "disk.h"
 #include "machine.h"
 
+#ifdef __amigaos4__
+#include <proto/exec.h>
+
+extern struct Task *maintask;
+extern uint32 timersig;
+#endif
+
 #define AUDIOBUFFERS 4
 
 static Sint16 sndbuf[AUDIOBUFFERS][AUDIO_BUFLEN];
@@ -125,8 +132,10 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
 {
   Sint16 *out;
   Sint32 i, j;
+#ifndef __amigaos4__
   SDL_Event     event;
   SDL_UserEvent userevent;
+#endif
   
   /* Dump the current sound buffer into the SDL audio buffer */
   out = (Sint16 *)stream;
@@ -137,6 +146,9 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
   }
 
   /* Tell the main loop to emulate another frame */
+#ifdef __amigaos4__
+  IExec->Signal( maintask, timersig );
+#else
   userevent.type  = SDL_USEREVENT;
   userevent.code  = 0;
   userevent.data1 = NULL;
@@ -146,6 +158,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
   event.user = userevent;
   
   SDL_PushEvent( &event );
+#endif
 
   /* We're done with the current sound buffer */
   swapaudio = SDL_TRUE;
