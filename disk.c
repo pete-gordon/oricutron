@@ -254,6 +254,7 @@ void wd17xx_init( struct wd17xx *wd )
   wd->currentop = COP_NUFFINK;
   wd->delayedint = 0;
   wd->delayeddrq = 0;
+  wd->distatus   = -1;
 }
 
 void wd17xx_ticktock( struct wd17xx *wd, int cycles )
@@ -264,6 +265,8 @@ void wd17xx_ticktock( struct wd17xx *wd, int cycles )
     if( wd->delayedint <= 0 )
     {
       wd->delayedint = 0;
+      if( wd->distatus != -1 )
+        wd->r_status = wd->distatus;
       wd->setintrq( wd->intrqarg );
       dbg_printf( "DISK: Delayed INTRQ" );
     }
@@ -275,6 +278,7 @@ void wd17xx_ticktock( struct wd17xx *wd, int cycles )
     if( wd->delayeddrq <= 0 )
     {
       wd->delayeddrq = 0;
+      wd->r_status |= WSF_DRQ;
       wd->setdrq( wd->drqarg );
 //      dbg_printf( "DISK: Delayed DRQ" );
     }
@@ -285,14 +289,22 @@ void wd17xx_seek_track( struct wd17xx *wd, Uint8 track )
 {
   if( wd->disk[wd->c_drive] )
   {
+    if( track >= wd->disk[wd->c_drive]->numtracks )
+    {
+      wd->distatus = WSFI_SEEKERR;
+      if( wd->c_track == 0 ) wd->distatus |= WSFI_TRK0;
+      wd->delayedint = 100;
+      dbg_printf( "DISK: track %u doesn't exist", track );
+      return;
+    }
     diskimage_cachetrack( wd->disk[wd->c_drive], track, wd->c_side );
-    wd->r_status = 0;
     wd->c_track = track;
     wd->c_sector = 0;
     wd->r_track = track;
     if( track == 0 ) wd->r_status |= WSFI_TRK0;
     wd->delayedint = 100;
-    dbg_printf( "DISK: At track %u", track );
+    wd->distatus = 0;
+    dbg_printf( "DISK: At track %u (%u sectors)", track, wd->disk[wd->c_drive]->numsectors );
     return;
   }
 
@@ -325,8 +337,40 @@ struct mfmsector *wd17xx_find_sector( struct wd17xx *wd, Uint8 secid )
       return &dimg->sector[wd->c_sector];
   }
 
-  dbg_printf( "Couldn't find sector %02X", secid );
+  dbg_printf( "Couldn't find sector %u", secid );
   return NULL;
+}
+
+struct mfmsector *wd17xx_first_sector( struct wd17xx *wd )
+{
+  struct diskimage *dimg;
+
+  dimg = wd->disk[wd->c_drive];
+  
+  if( !dimg ) return NULL;
+  diskimage_cachetrack( dimg, wd->c_track, wd->c_side );
+  
+  if( dimg->numsectors < 1 )
+    return NULL;
+
+  wd->c_sector = 0;
+  return &dimg->sector[wd->c_sector];
+}
+
+struct mfmsector *wd17xx_next_sector( struct wd17xx *wd )
+{
+  struct diskimage *dimg;
+
+  dimg = wd->disk[wd->c_drive];
+  
+  if( !dimg ) return NULL;
+  diskimage_cachetrack( dimg, wd->c_track, wd->c_side );
+  
+  if( dimg->numsectors < 1 )
+    return NULL;
+
+  wd->c_sector = (wd->c_sector+1)%dimg->numsectors;
+  return &dimg->sector[wd->c_sector];
 }
 
 unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
@@ -349,21 +393,40 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
         case COP_READ_SECTOR:
           if( !wd->currsector )
           {
+            wd->r_status &= ~WSF_DRQ;
             wd->clrdrq( wd->drqarg );
             wd->currentop = COP_NUFFINK;
             break;
           }
+          if( wd->curroffs == 0 ) wd->sectype = (wd->currsector->data_ptr[wd->curroffs++]==0xf8)?0x20:0x00;
           wd->r_data = wd->currsector->data_ptr[wd->curroffs++];
           wd->clrdrq( wd->drqarg );
-//          printf( "%02X", wd->r_data );
-          printf( "%c", ((wd->r_data>=32)&&(wd->r_data<128))?wd->r_data:'.' );
-          if( wd->curroffs >= wd->currseclen )
+          if( wd->curroffs > wd->currseclen )
           {
-            wd->clrdrq( wd->drqarg );
             wd->delayedint = 100;
+            wd->distatus   = wd->sectype;
             wd->currentop = COP_NUFFINK;
-            wd->r_status = 0;
-            printf( "\n\n" );
+          } else {
+            wd->delayeddrq = 10;
+          }
+          break;
+        
+        case COP_READ_ADDRESS:
+          if( !wd->currsector )
+          {
+            wd->r_status &= ~WSF_DRQ;
+            wd->clrdrq( wd->drqarg );
+            wd->currentop = COP_NUFFINK;
+            break;
+          }
+          if( wd->curroffs == 0 ) wd->r_sector = wd->currsector->id_ptr[1];
+          wd->r_data = wd->currsector->id_ptr[++wd->curroffs];
+          wd->clrdrq( wd->drqarg );
+          if( wd->curroffs >= 6 )
+          {
+            wd->delayedint = 100;
+            wd->distatus   = 0;
+            wd->currentop = COP_NUFFINK;
           } else {
             wd->delayeddrq = 10;
           }
@@ -412,7 +475,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           break;
         
         case 0x40:  // Step-in (Type I)
-          dbg_printf( "DISK: Step-In" );
+          dbg_printf( "DISK: (%04X) Step-In (%d,%d)", oric->cpu.pc-1, wd->c_track, wd->c_track+1 );
           wd17xx_seek_track( wd, wd->c_track+1 );
           last_step_in = SDL_TRUE;
           wd->currentop = COP_NUFFINK;
@@ -427,22 +490,23 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           break;
         
         case 0x80:  // Read sector (Type II)
-          printf( "TRACK: %d, SECTOR: %d\n", wd->r_track, wd->r_sector );
-          dbg_printf( "DISK: (%04X) Read sector", oric->cpu.pc-1 );
+          dbg_printf( "DISK: (%04X) Read sector %u", oric->cpu.pc-1, wd->r_sector );
           wd->curroffs   = 0;
           wd->currsector = wd17xx_find_sector( wd, wd->r_sector );
           if( !wd->currsector )
           {
             wd->r_status = WSF_RNF;
             wd->clrdrq( wd->drqarg );
+            wd->setintrq( wd->intrqarg );
             wd->currentop = COP_NUFFINK;
+            dbg_printf( "DISK: Sector %d not found.", wd->r_sector );
+            setemumode( oric, NULL, EM_DEBUG );
             break;
           }
 
           wd->currseclen = 1<<(wd->currsector->id_ptr[4]+7);
           wd->r_status = WSF_BUSY|WSF_DRQ;
           wd->setdrq( wd->drqarg );
-          wd->setintrq( wd->intrqarg );
           wd->currentop = COP_READ_SECTOR;
           break;
         
@@ -456,6 +520,32 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           {
             case 0x00: // Read address (Type III)
               dbg_printf( "DISK: (%04X) Read address", oric->cpu.pc-1 );
+              wd->curroffs = 0;
+              if( !wd->currsector )
+                wd->currsector = wd17xx_first_sector( wd );
+              else
+                wd->currsector = wd17xx_next_sector( wd );
+              
+              if( !wd->currsector )
+              {
+                wd->r_status = WSF_RNF;
+                wd->clrdrq( wd->drqarg );
+                wd->currentop = COP_NUFFINK;
+                wd->setintrq( wd->intrqarg );
+                dbg_printf( "DISK: No sectors on this track?" );
+                break;
+              }
+              
+              dbg_printf( "DISK: %02X,%02X,%02X,%02X,%02X,%02X",
+                wd->currsector->id_ptr[1],
+                wd->currsector->id_ptr[2],
+                wd->currsector->id_ptr[3],
+                wd->currsector->id_ptr[4],
+                wd->currsector->id_ptr[5],
+                wd->currsector->id_ptr[6] );
+              wd->r_status = WSF_BUSY|WSF_DRQ;
+              wd->setdrq( wd->drqarg );
+              wd->currentop = COP_READ_ADDRESS;
               break;
             
             case 0x10: // Force IRQ (Type IV)

@@ -340,6 +340,26 @@ void jasmin_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char da
   oric->mem[addr] = data;
 }
 
+// 16k + jasmin
+void jasmin_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
+{
+  struct machine *oric = (struct machine *)cpu->userdata;
+  if( oric->romdis )
+  {
+    if( addr >= 0xf800 ) return; // Can't write to ROM!
+  } else {
+    if( addr >= 0xc000 ) return;
+  }
+
+  if( ( addr & 0xff00 ) == 0x0300 )
+  {
+    via_write( &oric->via, addr, data );
+    return;
+  }
+
+  oric->mem[addr&0x3fff] = data;
+}
+
 // Atmos + microdisc
 void microdisc_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
@@ -362,6 +382,30 @@ void microdisc_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char
     return;
   }
   oric->mem[addr] = data;
+}
+
+// Atmos + microdisc
+void microdisc_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
+{
+  struct machine *oric = (struct machine *)cpu->userdata;
+  if( oric->romdis )
+  {
+    if( ( oric->md.diskrom ) && ( addr >= 0xe000 ) ) return; // Can't write to ROM!
+  } else {
+    if( addr >= 0xc000 ) return;
+  }
+
+  if( ( addr & 0xff00 ) == 0x0300 )
+  {
+    if( ( addr >= 0x310 ) && ( addr < 0x31c ) )
+    {
+      microdisc_write( &oric->md, addr, data );
+    } else {
+      via_write( &oric->via, addr, data );
+    }
+    return;
+  }
+  oric->mem[addr&0x3fff] = data;
 }
 
 // Oric Atmos CPU read
@@ -412,6 +456,26 @@ unsigned char jasmin_atmosread( struct m6502 *cpu, unsigned short addr )
   return oric->mem[addr];
 }
 
+// 16k + jasmin
+unsigned char jasmin_o16kread( struct m6502 *cpu, unsigned short addr )
+{
+  struct machine *oric = (struct machine *)cpu->userdata;
+
+  if( oric->romdis )
+  {
+    if( addr >= 0xf800 )
+      return rom_jasmin[addr-0xf800];
+  } else {
+    if( addr >= 0xc000 )
+      return oric->rom[addr-0xc000];
+  }
+
+  if( ( addr & 0xff00 ) == 0x0300 )
+    return via_read( &oric->via, addr );
+
+  return oric->mem[addr&0x3fff];
+}
+
 // Atmos + microdisc
 unsigned char microdisc_atmosread( struct m6502 *cpu, unsigned short addr )
 {
@@ -435,6 +499,31 @@ unsigned char microdisc_atmosread( struct m6502 *cpu, unsigned short addr )
   }
 
   return oric->mem[addr];
+}
+
+// Atmos + microdisc
+unsigned char microdisc_o16kread( struct m6502 *cpu, unsigned short addr )
+{
+  struct machine *oric = (struct machine *)cpu->userdata;
+
+  if( oric->romdis )
+  {
+    if( ( oric->md.diskrom ) && ( addr >= 0xe000 ) )
+      return rom_microdisc[addr-0xe000];
+  } else {
+    if( addr >= 0xc000 )
+      return oric->rom[addr-0xc000];
+  }
+
+  if( ( addr & 0xff00 ) == 0x0300 )
+  {
+    if( ( addr >= 0x310 ) && ( addr < 0x31c ) )
+      return microdisc_read( &oric->md, addr );
+
+    return via_read( &oric->via, addr );
+  }
+
+  return oric->mem[addr&0x3fff];
 }
 
 static SDL_bool load_rom( char *fname, int size, unsigned char *where )
@@ -569,8 +658,27 @@ SDL_bool init_machine( struct machine *oric, int type )
 
       oric->rom = &oric->mem[16384];
 
-      oric->cpu.read = o16kread;
-      oric->cpu.write = o16kwrite;
+      switch( oric->drivetype )
+      {
+        case DRV_MICRODISC:
+          oric->cpu.read = microdisc_o16kread;
+          oric->cpu.write = microdisc_o16kwrite;
+          oric->romdis = SDL_TRUE;
+          microdisc_init( &oric->md, &oric->wddisk, oric );
+          break;
+        
+        case DRV_JASMIN:
+          oric->cpu.read = jasmin_o16kread;
+          oric->cpu.write = jasmin_o16kwrite;
+          oric->romdis = SDL_TRUE;
+          break;
+
+        default:
+          oric->cpu.read = o16kread;
+          oric->cpu.write = o16kwrite;
+          oric->romdis = SDL_FALSE;
+          break;
+      }
 
       if( !load_rom( "roms/basic10.rom", 16384, &oric->rom[0] ) )
         return SDL_FALSE;
@@ -594,8 +702,6 @@ SDL_bool init_machine( struct machine *oric, int type )
       oric->vid_end     = oric->vid_start + 224;
       oric->vid_raster  = 0;
       video_decode_attr( oric, 0x18 );
-
-      oric->romdis = SDL_FALSE;
       break;
     
     case MACH_ORIC1:
@@ -612,8 +718,27 @@ SDL_bool init_machine( struct machine *oric, int type )
 
       oric->rom = &oric->mem[65536];
 
-      oric->cpu.read = atmosread;
-      oric->cpu.write = atmoswrite;
+      switch( oric->drivetype )
+      {
+        case DRV_MICRODISC:
+          oric->cpu.read = microdisc_atmosread;
+          oric->cpu.write = microdisc_atmoswrite;
+          oric->romdis = SDL_TRUE;
+          microdisc_init( &oric->md, &oric->wddisk, oric );
+          break;
+        
+        case DRV_JASMIN:
+          oric->cpu.read = jasmin_atmosread;
+          oric->cpu.write = jasmin_atmoswrite;
+          oric->romdis = SDL_TRUE;
+          break;
+
+        default:
+          oric->cpu.read = atmosread;
+          oric->cpu.write = atmoswrite;
+          oric->romdis = SDL_FALSE;
+          break;
+      }
 
       if( !load_rom( "roms/basic10.rom", 16384, &oric->rom[0] ) )
         return SDL_FALSE;
@@ -637,8 +762,6 @@ SDL_bool init_machine( struct machine *oric, int type )
       oric->vid_end     = oric->vid_start + 224;
       oric->vid_raster  = 0;
       video_decode_attr( oric, 0x18 );
-
-      oric->romdis = SDL_FALSE;
       break;
     
     case MACH_ATMOS:

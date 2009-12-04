@@ -1034,7 +1034,7 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
   if( oric->drivetype == DRV_NONE )
   {
     swapmach( oric, NULL, (DRV_MICRODISC<<16)|oric->type );
-    setemumode( oric, NULL, EM_DEBUG );
+//    setemumode( oric, NULL, EM_DEBUG );
     return;
   }
   setemumode( oric, NULL, EM_RUNNING );
@@ -1043,6 +1043,9 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
 // Reset the oric
 void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
+  if( ( oric->drivetype == DRV_MICRODISC ) ||
+      ( oric->drivetype == DRV_JASMIN ) )
+    oric->romdis = SDL_TRUE;
   m6502_reset( &oric->cpu );
   via_init( &oric->via, oric );
   ay_init( &oric->ay, oric );
