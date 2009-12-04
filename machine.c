@@ -587,6 +587,11 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
       *needrender = SDL_TRUE;
       break;
 */
+    case SDL_MOUSEBUTTONDOWN:
+      setemumode( oric, NULL, EM_MENU );
+      *needrender = SDL_TRUE;
+      break;
+
     case SDL_KEYUP:
       switch( ev->key.keysym.sym )
       {
