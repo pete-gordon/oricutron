@@ -814,7 +814,11 @@ void dbg_printf( char *fmt, ... )
     vsptmp[VSPTMPSIZE-1] = 0;
     tzstrpos( tz[TZ_DEBUG], 1, 19, vsptmp );
 #if LOG_DEBUG
-    if( debug_logfile ) fprintf( debug_logfile, "%s\n", vsptmp );
+    if( debug_logfile )
+    {
+      fprintf( debug_logfile, "%s\n", vsptmp );
+      fflush( debug_logfile );
+    }
 #endif
   }
   va_end( ap );
