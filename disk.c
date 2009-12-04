@@ -149,12 +149,6 @@ void diskimage_cachetrack( struct diskimage *dimg, int track, int side )
   }
 
   dimg->numsectors = sectorcount;
-
-  {
-    char tmp[128];
-    sprintf( tmp, "Track %d, Side %d, Sectors %d", track, side, dimg->numsectors );
-    do_popup( tmp );
-  }
 }
 
 SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
@@ -292,7 +286,6 @@ void wd17xx_seek_track( struct wd17xx *wd, Uint8 track )
     if( track >= wd->disk[wd->c_drive]->numtracks )
     {
       wd->distatus = WSFI_SEEKERR;
-      if( wd->c_track == 0 ) wd->distatus |= WSFI_TRK0;
       wd->delayedint = 100;
       dbg_printf( "DISK: track %u doesn't exist", track );
       return;
@@ -304,6 +297,7 @@ void wd17xx_seek_track( struct wd17xx *wd, Uint8 track )
     if( track == 0 ) wd->r_status |= WSFI_TRK0;
     wd->delayedint = 100;
     wd->distatus = 0;
+    if( wd->c_track == 0 ) wd->distatus |= WSFI_TRK0;
     dbg_printf( "DISK: At track %u (%u sectors)", track, wd->disk[wd->c_drive]->numsectors );
     return;
   }
