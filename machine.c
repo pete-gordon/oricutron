@@ -588,7 +588,9 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
       break;
 */
     case SDL_MOUSEBUTTONDOWN:
-      setemumode( oric, NULL, EM_MENU );
+      if( ( ev->button.button == SDL_BUTTON_LEFT ) ||
+          ( ev->button.button == SDL_BUTTON_RIGHT ) )
+        setemumode( oric, NULL, EM_MENU );
       *needrender = SDL_TRUE;
       break;
 
