@@ -1043,9 +1043,21 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
 // Reset the oric
 void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
-  if( ( oric->drivetype == DRV_MICRODISC ) ||
-      ( oric->drivetype == DRV_JASMIN ) )
-    oric->romdis = SDL_TRUE;
+  switch( oric->drivetype )
+  {
+    case DRV_MICRODISC:
+      oric->romdis = SDL_TRUE;
+      microdisc_init( &oric->md, &oric->wddisk, oric );
+      break;
+    
+    case DRV_JASMIN:
+      oric->romdis = SDL_TRUE;
+      break;
+    
+    default:
+      oric->romdis = SDL_FALSE;
+      break;
+  }
   m6502_reset( &oric->cpu );
   via_init( &oric->via, oric );
   ay_init( &oric->ay, oric );

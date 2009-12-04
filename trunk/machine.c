@@ -655,6 +655,8 @@ SDL_bool init_machine( struct machine *oric, int type )
         printf( "Out of memory\n" );
         return SDL_FALSE;
       }
+      
+      memset( oric->mem, 0, 16384+16384 );
 
       oric->rom = &oric->mem[16384];
 
@@ -716,6 +718,8 @@ SDL_bool init_machine( struct machine *oric, int type )
         return SDL_FALSE;
       }
 
+      memset( oric->mem, 0, 65536+16384 );
+
       oric->rom = &oric->mem[65536];
 
       switch( oric->drivetype )
@@ -775,6 +779,8 @@ SDL_bool init_machine( struct machine *oric, int type )
         printf( "Out of memory\n" );
         return SDL_FALSE;
       }
+
+      memset( oric->mem, 0, 65536+16384 );
 
       oric->rom = &oric->mem[65536];
 
@@ -861,7 +867,10 @@ void shut_machine( struct machine *oric )
 void shut( void );
 void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
 {
-  int oldtype = oric->drivetype;
+  if( oric->drivetype == type )
+    return;
+
+  shut_machine( oric );
 
   switch( type )
   {
@@ -875,26 +884,32 @@ void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
       break;
   }
 
-  setmenutoggles( oric );
-  if( oldtype == oric->type )
-    return;
-
-  shut_machine( oric );
   if( !init_machine( oric, oric->type ) )
   {
     shut();
     exit(0);
   }
+
+  setmenutoggles( oric );
 }
 
 void swapmach( struct machine *oric, struct osdmenuitem *mitem, int which )
 {
+  int curr_drivetype;
+  
+  curr_drivetype = oric->drivetype;
+
   shut_machine( oric );
+
   if( ((which>>16)&0xffff) != 0xffff )
-    oric->drivetype = (which>>16)&0xffff;
+    curr_drivetype = (which>>16)&0xffff;
+
+  oric->drivetype = curr_drivetype;
+
   if( !init_machine( oric, which&0xffff ) )
   {
     shut();
     exit(0);
   }
 }
+
