@@ -1248,7 +1248,9 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
       cmenu->citem = y;
 
-      if( ev->type == SDL_MOUSEBUTTONDOWN )
+      if( ( ev->type == SDL_MOUSEBUTTONDOWN ) &&
+          ( (ev->button.button==SDL_BUTTON_LEFT) ||
+            (ev->button.button==SDL_BUTTON_RIGHT) ) )
         cmenu->items[cmenu->citem].func( oric, &cmenu->items[cmenu->citem], cmenu->items[cmenu->citem].arg );
 
       drawitems();
