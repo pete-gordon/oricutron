@@ -41,6 +41,17 @@
 #include "machine.h"
 #include "monitor.h"
 
+#define LOG_DEBUG 1
+
+#if LOG_DEBUG
+#ifdef __amigaos4__ 
+static char *debug_logname = "RAM:debug.log";
+#else
+static char *debug_logname = "debug_log.txt";
+#endif
+FILE *debug_logfile = NULL;
+#endif
+
 struct disinf
 {
   char *name;
@@ -802,6 +813,9 @@ void dbg_printf( char *fmt, ... )
   {
     vsptmp[VSPTMPSIZE-1] = 0;
     tzstrpos( tz[TZ_DEBUG], 1, 19, vsptmp );
+#if LOG_DEBUG
+    if( debug_logfile ) fprintf( debug_logfile, "%s\n", vsptmp );
+#endif
   }
   va_end( ap );
 }
@@ -1526,6 +1540,9 @@ void mon_init( struct machine *oric )
   mon_show_curs();
   mon_addr = oric->cpu.pc;
   lastcmd = 0;
+#if LOG_DEBUG
+  debug_logfile = fopen( debug_logname, "w" );
+#endif
 }
 
 void mon_shut( void )
@@ -1538,6 +1555,10 @@ void mon_shut( void )
     free( syms );
   }
   syms = NULL;
+#if LOG_DEBUG
+  if( debug_logfile ) fclose( debug_logfile );
+  debug_logfile = NULL;
+#endif
 }
 
 int mon_getreg( char *buf, int *off, SDL_bool addrregs, SDL_bool nregs, SDL_bool viaregs )

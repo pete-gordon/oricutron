@@ -78,7 +78,8 @@ enum
   COP_READ_TRACK,     // Reading a track
   COP_READ_SECTOR,    // Reading a sector
   COP_WRITE_TRACK,    // Writing a track
-  COP_WRITE_SECTOR    // Writing a sector
+  COP_WRITE_SECTOR,   // Writing a sector
+  COP_READ_ADDRESS    // Reading a sector header
 };
 
 struct densityinfo
@@ -119,6 +120,7 @@ struct wd17xx
   Uint8             c_side;
   Uint8             c_track;
   Uint8             c_sector;
+  Uint8             sectype;
   SDL_bool          last_step_in;
   void            (*setintrq)(void *);
   void            (*clrintrq)(void *);
@@ -133,6 +135,7 @@ struct wd17xx
   int               curroffs;
   int               delayedint;
   int               delayeddrq;
+  int               distatus;
 };
 
 struct microdisc
