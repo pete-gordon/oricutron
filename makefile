@@ -68,3 +68,6 @@ font.o: font.c
 
 clean:
 	rm -f $(TARGET) *.bak *.o
+
+
+# torpor: added to test commit status
