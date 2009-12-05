@@ -1283,6 +1283,7 @@ void mon_update_disk( struct machine *oric )
         oric->md.status,
         oric->md.intrq!=0,
         oric->md.drq!=0 );
+      tzprintfpos( tz[TZ_DISK], 2, 6, "EPROM=%1X", oric->md.diskrom );
       break;
     
     case DRV_JASMIN:
