@@ -3100,6 +3100,21 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
   return done;
 }
 
+static unsigned int steppy_step( struct machine *oric )
+{
+  m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
+  via_clock( &oric->via, oric->cpu.icycles );
+  ay_ticktock( &oric->ay, oric->cpu.icycles );
+  if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
+  if( oric->cpu.rastercycles <= 0 )
+  {
+    video_doraster( oric );
+    oric->cpu.rastercycles += oric->cyclesperraster;
+  }
+  
+  return oric->cpu.icycles;
+}
+
 SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 {
   SDL_bool done;
@@ -3164,16 +3179,24 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           donkey = SDL_TRUE;
           break;
 
-        case SDLK_F10:
-          m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
-          via_clock( &oric->via, oric->cpu.icycles );
-          ay_ticktock( &oric->ay, oric->cpu.icycles );
-          if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
-          if( oric->cpu.rastercycles <= 0 )
+        case SDLK_F11:
+          if( oric->cpu.read( &oric->cpu, oric->cpu.pc ) == 0x20 ) // JSR instruction?
           {
-            video_doraster( oric );
-            oric->cpu.rastercycles += oric->cyclesperraster;
+            Uint16 newpc;
+            unsigned int cycles;
+
+            newpc = oric->cpu.pc+3;
+            cycles = 0;
+            while( ( oric->cpu.pc != newpc ) && ( cycles < 10000 ) )
+              cycles += steppy_step( oric );
+
+            *needrender = SDL_TRUE;
+            donkey = SDL_TRUE;
+            break;
           }
+        
+        case SDLK_F10:
+          steppy_step( oric );
           *needrender = SDL_TRUE;
           donkey = SDL_TRUE;
           break;
