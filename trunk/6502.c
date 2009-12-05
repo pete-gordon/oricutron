@@ -567,6 +567,7 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
       cpu->f_i = 1;
       cpu->f_d = 0;
       cpu->pc = (cpu->read( cpu, 0xffff )<<8) | cpu->read( cpu, 0xfffe );
+      cycleit( cpu, 7 );
       break;
 
     case 0x01: // { "ORA", AM_ZIX },  // 01
@@ -793,6 +794,7 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
       v = POPB;
       SETFLAGS(v);
       POPW( cpu->pc );
+      cycleit( cpu, 6 );
       break;
 
     case 0x41: // { "EOR", AM_ZIX },  // 41
