@@ -3183,12 +3183,13 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           if( oric->cpu.read( &oric->cpu, oric->cpu.pc ) == 0x20 ) // JSR instruction?
           {
             Uint16 newpc;
-            unsigned int cycles;
+            unsigned int endticks;
 
             newpc = oric->cpu.pc+3;
-            cycles = 0;
-            while( ( oric->cpu.pc != newpc ) && ( cycles < 100000 ) )
-              cycles += steppy_step( oric );
+            
+            endticks = SDL_GetTicks()+5000; // 5 seconds to comply
+            while( ( oric->cpu.pc != newpc ) && ( SDL_GetTicks() < endticks ) )
+              steppy_step( oric );
 
             *needrender = SDL_TRUE;
             donkey = SDL_TRUE;
