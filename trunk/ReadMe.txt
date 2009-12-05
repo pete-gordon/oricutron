@@ -50,6 +50,8 @@ In Debugger/Monitor
   F3      - Toggle VIA/AY information
   F9      - Reset cycle count
   F10     - Step over code
+  F11     - Step over code without tracing into
+            subroutines.
 
   In the console:
   ---------------
