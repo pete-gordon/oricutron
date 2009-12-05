@@ -284,17 +284,19 @@ void wd17xx_seek_track( struct wd17xx *wd, Uint8 track )
   if( wd->disk[wd->c_drive] )
   {
     if( track >= wd->disk[wd->c_drive]->numtracks )
-    {
+//    {
+      track = (wd->disk[wd->c_drive]->numtracks>0)?wd->disk[wd->c_drive]->numtracks-1:0;
+/*      
       wd->distatus = WSFI_SEEKERR;
       wd->delayedint = 100;
       dbg_printf( "DISK: track %u doesn't exist", track );
       return;
     }
+*/
     diskimage_cachetrack( wd->disk[wd->c_drive], track, wd->c_side );
     wd->c_track = track;
     wd->c_sector = 0;
     wd->r_track = track;
-    if( track == 0 ) wd->r_status |= WSFI_TRK0;
     wd->delayedint = 100;
     wd->distatus = 0;
     if( wd->c_track == 0 ) wd->distatus |= WSFI_TRK0;
@@ -653,6 +655,9 @@ unsigned char microdisc_read( struct microdisc *md, unsigned short addr )
 
     case 0x318:
       return md->drq;
+
+    default:
+      return via_read( &md->oric->via, addr );
   }
 
   return 0;
@@ -679,6 +684,10 @@ void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char d
 
     case 0x318:
       md->drq = (data&MF_DRQ);
+      break;
+    
+    default:
+      via_write( &md->oric->via, addr, data );
       break;
   }
 }
