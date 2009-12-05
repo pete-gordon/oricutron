@@ -3187,7 +3187,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
             newpc = oric->cpu.pc+3;
             cycles = 0;
-            while( ( oric->cpu.pc != newpc ) && ( cycles < 10000 ) )
+            while( ( oric->cpu.pc != newpc ) && ( cycles < 100000 ) )
               cycles += steppy_step( oric );
 
             *needrender = SDL_TRUE;
