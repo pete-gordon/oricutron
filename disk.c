@@ -651,10 +651,10 @@ unsigned char microdisc_read( struct microdisc *md, unsigned short addr )
   switch( addr )
   {
     case 0x314:
-      return md->intrq;
+      return md->intrq|0x7f;
 
     case 0x318:
-      return md->drq;
+      return md->drq|0x7f;
 
     default:
       return via_read( &md->oric->via, addr );
@@ -679,7 +679,7 @@ void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char d
       md->wd->c_drive = (data&MDSF_DRIVE)>>5;
 
       md->oric->romdis = (md->status&MDSF_ROMDIS) ? SDL_FALSE : SDL_TRUE;
-      md->diskrom = (md->status&MDSF_EPROM) ? SDL_FALSE : SDL_TRUE;
+      md->diskrom      = (md->status&MDSF_EPROM) ? SDL_FALSE : SDL_TRUE;
       break;
 
     case 0x318:
