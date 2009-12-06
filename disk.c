@@ -40,6 +40,14 @@
 
 extern char diskfile[], diskpath[];
 
+#define GENERAL_DISK_DEBUG 1
+#define DEBUG_SECTOR_DUMP  1
+
+#if DEBUG_SECTOR_DUMP
+static unsigned char sectordumpstr[64];
+static int sectordumpcount;
+#endif
+
 // Pop up disk image information for a couple of seconds
 void disk_popup( struct machine *oric, int drive )
 {
@@ -266,7 +274,9 @@ void wd17xx_ticktock( struct wd17xx *wd, int cycles )
       if( wd->distatus != -1 )
         wd->r_status = wd->distatus;
       wd->setintrq( wd->intrqarg );
+#if GENERAL_DISK_DEBUG
       dbg_printf( "DISK: Delayed INTRQ" );
+#endif
     }
   }
 
@@ -304,7 +314,9 @@ void wd17xx_seek_track( struct wd17xx *wd, Uint8 track )
     wd->delayedint = 100;
     wd->distatus = 0;
     if( wd->c_track == 0 ) wd->distatus |= WSFI_TRK0;
+#if GENERAL_DISK_DEBUG
     dbg_printf( "DISK: At track %u (%u sectors)", track, wd->disk[wd->c_drive]->numsectors );
+#endif
     return;
   }
 
@@ -312,7 +324,9 @@ void wd17xx_seek_track( struct wd17xx *wd, Uint8 track )
   wd->setintrq( wd->intrqarg );
   wd->r_status = WSF_NOTREADY|WSFI_SEEKERR;
   wd->r_track = 0;
+#if GENERAL_DISK_DEBUG
   dbg_printf( "DISK: Seek fail" );
+#endif
 }
 
 struct mfmsector *wd17xx_find_sector( struct wd17xx *wd, Uint8 secid )
@@ -337,7 +351,9 @@ struct mfmsector *wd17xx_find_sector( struct wd17xx *wd, Uint8 secid )
       return &dimg->sector[wd->c_sector];
   }
 
+#if GENERAL_DISK_DEBUG
   dbg_printf( "Couldn't find sector %u", secid );
+#endif
   return NULL;
 }
 
@@ -401,8 +417,36 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
           if( wd->curroffs == 0 ) wd->sectype = (wd->currsector->data_ptr[wd->curroffs++]==0xf8)?0x20:0x00;
           wd->r_data = wd->currsector->data_ptr[wd->curroffs++];
           wd->clrdrq( wd->drqarg );
+
+#if DEBUG_SECTOR_DUMP
+          sprintf( &sectordumpstr[sectordumpcount*2], "%02X", wd->r_data );
+          sectordumpstr[34+sectordumpcount] = ((wd->r_data>31)&&(wd->r_data<127)) ? wd->r_data : '.';
+          sectordumpcount++;
+          if( sectordumpcount >= 16 )
+          {
+            sectordumpstr[32] = ' ';
+            sectordumpstr[33] = '\'';
+            sectordumpstr[50] = '\'';
+            sectordumpstr[51] = 0;
+            dbg_printf( sectordumpstr );
+            sectordumpcount = 0;
+          }
+#endif
+
           if( wd->curroffs > wd->currseclen )
           {
+#if DEBUG_SECTOR_DUMP
+            if( sectordumpcount )
+            {
+              sectordumpstr[33] = '\'';
+              sectordumpstr[34+sectordumpcount] = '\'';
+              sectordumpstr[35+sectordumpcount] = 0;
+              for( sectordumpcount*=2; sectordumpcount<33; sectordumpcount++ )
+                sectordumpstr[sectordumpcount*2] = ' ';
+              dbg_printf( sectordumpstr );
+              sectordumpcount = 0;
+            }
+#endif
             wd->delayedint = 100;
             wd->distatus   = wd->sectype;
             wd->currentop = COP_NUFFINK;
@@ -452,13 +496,17 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           switch( data & 0x10 )
           {
             case 0x00:  // Restore (Type I)
+#if GENERAL_DISK_DEBUG
               dbg_printf( "DISK: (%04X) Restore", oric->cpu.pc-1 );
+#endif
               wd17xx_seek_track( wd, 0 );
               wd->currentop = COP_NUFFINK;
               break;
             
             case 0x10:  // Seek (Type I)
+#if GENERAL_DISK_DEBUG
               dbg_printf( "DISK: (%04X) Seek", oric->cpu.pc-1 );
+#endif
               wd17xx_seek_track( wd, wd->r_data );
               wd->currentop = COP_NUFFINK;
               break;
@@ -466,7 +514,9 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           break;
         
         case 0x20:  // Step (Type I)
+#if GENERAL_DISK_DEBUG
           dbg_printf( "DISK: (%04X) Step", oric->cpu.pc-1 );
+#endif
           if( last_step_in )
             wd17xx_seek_track( wd, wd->c_track+1 );
           else
@@ -475,14 +525,18 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           break;
         
         case 0x40:  // Step-in (Type I)
+#if GENERAL_DISK_DEBUG
           dbg_printf( "DISK: (%04X) Step-In (%d,%d)", oric->cpu.pc-1, wd->c_track, wd->c_track+1 );
+#endif
           wd17xx_seek_track( wd, wd->c_track+1 );
           last_step_in = SDL_TRUE;
           wd->currentop = COP_NUFFINK;
           break;
         
         case 0x60:  // Step-out (Type I)
+#if GENERAL_DISK_DEBUG
           dbg_printf( "DISK: Step-Out" );
+#endif
           if( wd->c_track > 0 )
             wd17xx_seek_track( wd, wd->c_track-1 );
           last_step_in = SDL_FALSE;
@@ -490,7 +544,18 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           break;
         
         case 0x80:  // Read sector (Type II)
-          dbg_printf( "DISK: (%04X) Read sector %u", oric->cpu.pc-1, wd->r_sector );
+#if GENERAL_DISK_DEBUG
+          switch( oric->drivetype )
+          {
+            case DRV_MICRODISC:
+              dbg_printf( "DISK: (%04X) Read sector %u (ROM=%s,EPROM=%s)", oric->cpu.pc-1, wd->r_sector, oric->romdis?"OFF":"ON", oric->md.diskrom?"ON":"OFF" );
+              break;
+            
+            default:
+              dbg_printf( "DISK: (%04X) Read sector %u", oric->cpu.pc-1, wd->r_sector );
+              break;
+          }
+#endif
           wd->curroffs   = 0;
           wd->currsector = wd17xx_find_sector( wd, wd->r_sector );
           if( !wd->currsector )
@@ -499,7 +564,9 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
             wd->clrdrq( wd->drqarg );
             wd->setintrq( wd->intrqarg );
             wd->currentop = COP_NUFFINK;
+#if GENERAL_DISK_DEBUG
             dbg_printf( "DISK: Sector %d not found.", wd->r_sector );
+#endif
             setemumode( oric, NULL, EM_DEBUG );
             break;
           }
@@ -508,10 +575,16 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           wd->r_status = WSF_BUSY|WSF_DRQ;
           wd->setdrq( wd->drqarg );
           wd->currentop = COP_READ_SECTOR;
+#if DEBUG_SECTOR_DUMP
+          sectordumpcount = 0;
+          sectordumpstr[0] = 0;
+#endif
           break;
         
         case 0xa0:  // Write sector (Type II)
+#if GENERAL_DISK_DEBUG
           dbg_printf( "DISK: Write sector" );
+#endif
           wd->currentop = COP_WRITE_SECTOR;
           break;
         
@@ -519,7 +592,9 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           switch( data & 0x10 )
           {
             case 0x00: // Read address (Type III)
+#if GENERAL_DISK_DEBUG
               dbg_printf( "DISK: (%04X) Read address", oric->cpu.pc-1 );
+#endif
               wd->curroffs = 0;
               if( !wd->currsector )
                 wd->currsector = wd17xx_first_sector( wd );
@@ -532,10 +607,13 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
                 wd->clrdrq( wd->drqarg );
                 wd->currentop = COP_NUFFINK;
                 wd->setintrq( wd->intrqarg );
+#if GENERAL_DISK_DEBUG
                 dbg_printf( "DISK: No sectors on this track?" );
+#endif
                 break;
               }
               
+#if GENERAL_DISK_DEBUG
               dbg_printf( "DISK: %02X,%02X,%02X,%02X,%02X,%02X",
                 wd->currsector->id_ptr[1],
                 wd->currsector->id_ptr[2],
@@ -543,13 +621,16 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
                 wd->currsector->id_ptr[4],
                 wd->currsector->id_ptr[5],
                 wd->currsector->id_ptr[6] );
+#endif
               wd->r_status = WSF_BUSY|WSF_DRQ;
               wd->setdrq( wd->drqarg );
               wd->currentop = COP_READ_ADDRESS;
               break;
             
             case 0x10: // Force IRQ (Type IV)
+#if GENERAL_DISK_DEBUG
               dbg_printf( "DISK: (%04X) Force int", oric->cpu.pc-1 );
+#endif
               wd->setintrq( wd->intrqarg );
               wd->r_status = 0;
               wd->currentop = COP_NUFFINK;
@@ -561,12 +642,16 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           switch( data & 0x10 )
           {
             case 0x00: // Read track (Type III)
+#if GENERAL_DISK_DEBUG
               dbg_printf( "DISK: (%04X) Read track", oric->cpu.pc-1 );
+#endif
               wd->currentop = COP_READ_TRACK;
               break;
             
             case 0x10: // Write track (Type III)
+#if GENERAL_DISK_DEBUG
               dbg_printf( "DISK: (%04X) Write track", oric->cpu.pc-1 );
+#endif
               wd->currentop = COP_WRITE_TRACK;
               break;
           }
