@@ -33,12 +33,14 @@ TARGET = oriculator.exe
 endif
 
 ifeq ($(PLATFORM),beos)
-LFLAGS += -lSDL
+CFLAGS += $(shell sdl-config --cflags)
+LFLAGS += $(shell sdl-config --libs)
 TARGET = oriculator
 endif
 
 ifeq ($(PLATFORM),haiku)
-LFLAGS += -lSDL
+CFLAGS += $(shell sdl-config --cflags)
+LFLAGS += $(shell sdl-config --libs)
 TARGET = oriculator
 endif
 
