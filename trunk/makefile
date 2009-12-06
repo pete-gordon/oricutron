@@ -1,7 +1,8 @@
-PLATFORM = os4
+PLATFORM ?= os4
 # PLATFORM = win32
 # PLATFORM = beos
 # PLATFORM = haiku
+# PLATFORM = osx
 
 ####### DEFAULT SETTINGS HERE #######
 
@@ -38,6 +39,12 @@ endif
 
 ifeq ($(PLATFORM),haiku)
 LFLAGS += -lSDL
+TARGET = oriculator
+endif
+
+ifeq ($(PLATFORM),osx)
+CFLAGS += $(shell sdl-config --cflags)
+LFLAGS += -lm $(shell sdl-config --libs)
 TARGET = oriculator
 endif
 

@@ -24,7 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <SDL/SDL.h>
+#include <SDL.h>
 
 #include "6502.h"
 #include "via.h"
