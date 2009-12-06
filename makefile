@@ -27,7 +27,7 @@ endif
 
 # Windows 32bit
 ifeq ($(PLATFORM),win32)
-CFLAGS += -Dmain=SDL_main
+CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__
 LFLAGS += -lm -mwindows -lmingw32 -lSDLmain -lSDL
 TARGET = oriculator.exe
 endif
