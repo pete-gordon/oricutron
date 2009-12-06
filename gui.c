@@ -33,7 +33,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-#include <SDL/SDL.h>
+#include <SDL.h>
 
 #include "6502.h"
 #include "via.h"

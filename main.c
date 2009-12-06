@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <SDL/SDL.h>
+#include <SDL.h>
 
 #ifdef __amigaos4__
 #include <proto/exec.h>

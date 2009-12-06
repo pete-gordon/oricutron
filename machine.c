@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <SDL/SDL.h>
+#include <SDL.h>
 
 #include "6502.h"
 #include "via.h"
