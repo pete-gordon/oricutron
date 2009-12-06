@@ -169,13 +169,13 @@ void m6502_reset( struct m6502 *cpu )
                }
 
 #define BADDR_ZP  baddr = cpu->read( cpu, cpu->pc )
-#define BADDR_ZPX baddr = (cpu->read( cpu, cpu->pc++ ) + cpu->x)&0xff
-#define BADDR_ZPY baddr = (cpu->read( cpu, cpu->pc++ ) + cpu->y)&0xff
+#define BADDR_ZPX baddr = (cpu->read( cpu, cpu->pc ) + cpu->x)&0xff
+#define BADDR_ZPY baddr = (cpu->read( cpu, cpu->pc ) + cpu->y)&0xff
 #define BADDR_ABS baddr = (cpu->read( cpu, cpu->pc+1 )<<8) | cpu->read( cpu, cpu->pc )
 #define BADDR_ABX baddr = ((cpu->read( cpu, cpu->pc+1 )<<8) | cpu->read( cpu, cpu->pc ))+cpu->x
 #define BADDR_ABY baddr = ((cpu->read( cpu, cpu->pc+1 )<<8) | cpu->read( cpu, cpu->pc ))+cpu->y
-#define BADDR_ZIX baddr = (unsigned char)(cpu->read( cpu, cpu->pc++ )+cpu->x); baddr = (cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr )
-#define BADDR_ZIY baddr = cpu->read( cpu, cpu->pc++ ); baddr = ((cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr ))+cpu->y
+#define BADDR_ZIX baddr = (unsigned char)(cpu->read( cpu, cpu->pc )+cpu->x); baddr = (cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr )
+#define BADDR_ZIY baddr = cpu->read( cpu, cpu->pc ); baddr = ((cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr ))+cpu->y
 
 #define R_BADDR_ZP   BADDR_ZP; raddr = baddr; rlen = 1
 #define W_BADDR_ZP   BADDR_ZP; waddr = baddr; wlen = 1
@@ -210,8 +210,8 @@ void m6502_reset( struct m6502 *cpu )
 #define READ_ABS v=cpu->read( cpu, (cpu->read( cpu, cpu->pc+1 )<<8) | cpu->read( cpu, cpu->pc ) ); cpu->pc+=2
 #define READ_ABX BADDR_ABX; v = cpu->read( cpu, baddr ); cpu->pc+=2
 #define READ_ABY BADDR_ABY; v = cpu->read( cpu, baddr ); cpu->pc+=2
-#define READ_ZIX BADDR_ZIX; v = cpu->read( cpu, baddr )
-#define READ_ZIY BADDR_ZIY; v = cpu->read( cpu, baddr )
+#define READ_ZIX BADDR_ZIX; v = cpu->read( cpu, baddr ); cpu->pc++
+#define READ_ZIY BADDR_ZIY; v = cpu->read( cpu, baddr ); cpu->pc++
 
 #define KREAD_ZP  baddr = cpu->read( cpu, cpu->pc++ ); v = cpu->read( cpu, baddr )
 #define KREAD_ZPX baddr = (unsigned char)(cpu->read( cpu, cpu->pc++ )+cpu->x); v = cpu->read( cpu, baddr )

@@ -816,7 +816,6 @@ void dbg_printf( char *fmt, ... )
   if( vsnprintf( vsptmp, VSPTMPSIZE, fmt, ap ) != -1 )
   {
     vsptmp[VSPTMPSIZE-1] = 0;
-    tzstrpos( tz[TZ_DEBUG], 1, 19, vsptmp );
 #if LOG_DEBUG
     if( debug_logfile )
     {
@@ -824,6 +823,8 @@ void dbg_printf( char *fmt, ... )
       fflush( debug_logfile );
     }
 #endif
+    vsptmp[48] = 0;
+    tzstrpos( tz[TZ_DEBUG], 1, 19, vsptmp );
   }
   va_end( ap );
 }
