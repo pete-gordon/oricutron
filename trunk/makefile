@@ -4,6 +4,14 @@ PLATFORM ?= os4
 # PLATFORM = haiku
 # PLATFORM = osx
 
+VERSION_MAJ = 0
+VERSION_MIN = 0
+VERSION_REV = x
+VERSION_FULL = $(VERSION_MAJ).$(VERSION_MIN).$(VERSION_REV)
+APP_NAME = Oriculator
+VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) (c)2009 Peter Gordon (pete@petergordon.org.uk)"
+#COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) ©2009 Peter Gordon (pete@petergordon.org.uk)"
+
 ####### DEFAULT SETTINGS HERE #######
 
 CFLAGS = -Wall -O3
@@ -33,15 +41,24 @@ TARGET = oriculator.exe
 endif
 
 ifeq ($(PLATFORM),beos)
-CFLAGS += $(shell sdl-config --cflags)
-LFLAGS += $(shell sdl-config --libs)
-TARGET = oriculator
+PLATFORMTYPE = beos
 endif
 
 ifeq ($(PLATFORM),haiku)
+PLATFORMTYPE = beos
+endif
+
+ifeq ($(PLATFORMTYPE),beos)
 CFLAGS += $(shell sdl-config --cflags)
 LFLAGS += $(shell sdl-config --libs)
 TARGET = oriculator
+BEOS_BERES := beres
+BEOS_RC := rc
+BEOS_XRES := xres
+BEOS_SETVER := setversion
+BEOS_MIMESET := mimeset
+#RSRC_BEOS = 
+#RESOURCES = $(RSRC_BEOS)
 endif
 
 ifeq ($(PLATFORM),osx)
@@ -59,6 +76,15 @@ run: $(TARGET)
 
 $(TARGET): main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o
 	$(CXX) -o $(TARGET) main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o $(LFLAGS)
+ifeq ($(PLATFORMTYPE),beos)
+	#$(BEOS_XRES) -o $(TARGET) $(RSRC_BEOS)
+	$(BEOS_SETVER) $(TARGET) \
+                -app $(VERSION_MAJ) $(VERSION_MIN) 0 d 0 \
+                -short "$(APP_NAME) $(VERSION_FULL)" \
+                -long $(VERSION_COPYRIGHTS)
+	$(BEOS_MIMESET) $(TARGET)
+endif
+
 
 main.o: main.c 6502.h machine.h via.h 8912.h
 	$(CC) -c main.c -o main.o $(CFLAGS)
