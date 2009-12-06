@@ -216,7 +216,6 @@ void m6502_reset( struct m6502 *cpu )
 #define KREAD_ZP  baddr = cpu->read( cpu, cpu->pc++ ); v = cpu->read( cpu, baddr )
 #define KREAD_ZPX baddr = (unsigned char)(cpu->read( cpu, cpu->pc++ )+cpu->x); v = cpu->read( cpu, baddr )
 #define KREAD_ABS baddr = (cpu->read( cpu, cpu->pc+1 )<<8) | cpu->read( cpu, cpu->pc ); v=cpu->read( cpu, baddr ); cpu->pc+=2
-#define KREAD_ABX baddr = ((cpu->read( cpu, cpu->pc+1 )<<8) | cpu->read( cpu, cpu->pc ))+cpu->x; v=cpu->read( cpu, baddr ); cpu->pc+=2
 
 // .. and for writing
 #define WRITE_ZP(n)  cpu->write( cpu, cpu->read( cpu, cpu->pc++ ), n )
@@ -666,7 +665,7 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
       break;    
 
     case 0x1E: // { "ASL", AM_ABX },  // 1E
-      KREAD_ABX;
+      READ_ABX;
       DO_ASL(v);
       cpu->write( cpu, baddr, v );
       cycleit( cpu, 7 );
@@ -788,7 +787,7 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
       break;    
 
     case 0x3E: // { "ROL", AM_ABX },  // 3E
-      KREAD_ABX;
+      READ_ABX;
       DO_ROL(v);
       cpu->write( cpu, baddr, v );
       cycleit( cpu, 7 );
@@ -898,7 +897,7 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
       break;    
 
     case 0x5E: // { "LSR", AM_ABX },  // 5E
-      KREAD_ABX;
+      READ_ABX;
       DO_LSR(v);
       cpu->write( cpu, baddr, v );
       cycleit( cpu, 7 );
@@ -1009,7 +1008,7 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
       break;
     
     case 0x7E: // { "ROR", AM_ABX },  // 7E
-      KREAD_ABX;
+      READ_ABX;
       DO_ROR(v);
       cpu->write( cpu, baddr, v );
       cycleit( cpu, 7 );
@@ -1378,7 +1377,7 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
       break;
 
     case 0xDE: // { "DEC", AM_ABX },  // DE
-      KREAD_ABX;
+      READ_ABX;
       cpu->write( cpu, baddr, --v );
       FLAG_ZN(v);
       cycleit( cpu, 7 );
@@ -1494,7 +1493,7 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
       break;
 
     case 0xFE: // { "INC", AM_ABX },  // FE
-      KREAD_ABX;
+      READ_ABX;
       cpu->write( cpu, baddr, ++v );
       FLAG_ZN(v);
       cycleit( cpu, 7 );
