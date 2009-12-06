@@ -1,10 +1,12 @@
 PLATFORM = os4
 # PLATFORM = win32
+# PLATFORM = beos
+# PLATFORM = haiku
 
 ####### DEFAULT SETTINGS HERE #######
 
 CFLAGS = -Wall -O3
-LFLAGS = -lm
+LFLAGS = 
 
 CC = gcc
 CXX = g++
@@ -18,15 +20,25 @@ TARGET = oriculator
 # Amiga OS4
 ifeq ($(PLATFORM),os4)
 CFLAGS += -mcrt=newlib -gstabs -I/SDK/Local/common/include/ -I/SDK/Local/common/include/SDL/ -I/SDK/Local/newlib/include/ -I/SDK/Local/newlib/include/SDL/
-LFLAGS += `sdl-config --libs` -lm -mcrt=newlib -gstabs
+LFLAGS += -lm `sdl-config --libs` -lm -mcrt=newlib -gstabs
 BDBLFLAGS += -lunix
 endif
 
 # Windows 32bit
 ifeq ($(PLATFORM),win32)
 CFLAGS += -Dmain=SDL_main
-LFLAGS += -mwindows -lmingw32 -lSDLmain -lSDL
+LFLAGS += -lm -mwindows -lmingw32 -lSDLmain -lSDL
 TARGET = oriculator.exe
+endif
+
+ifeq ($(PLATFORM),beos)
+LFLAGS += -lSDL
+TARGET = oriculator
+endif
+
+ifeq ($(PLATFORM),haiku)
+LFLAGS += -lSDL
+TARGET = oriculator
 endif
 
 ####### SHOULDN'T HAVE TO CHANGE THIS STUFF #######
