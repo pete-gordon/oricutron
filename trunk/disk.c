@@ -24,7 +24,11 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef __SPECIFY_SDL_DIR__
+#include <SDL/SDL.h>
+#else
 #include <SDL.h>
+#endif
 
 #include "6502.h"
 #include "via.h"

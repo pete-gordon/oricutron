@@ -23,7 +23,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef __SPECIFY_SDL_DIR__
+#include <SDL/SDL.h>
+#else
 #include <SDL.h>
+#endif
 
 #include "6502.h"
 
