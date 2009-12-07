@@ -82,7 +82,7 @@ pass an address, you can also use a symbol.
 Commands:
 
   bs <address>               - Set breakpoint
-  bsm [rwc] <address>        - Set mem breakpoint
+  bsm <address> [rwc]        - Set mem breakpoint
   bc <bp id>                 - Clear breakpoint
   bcm <bp id>                - Clear mem breakpoint
   bz                         - Zap breakpoints
