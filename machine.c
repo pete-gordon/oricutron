@@ -266,19 +266,12 @@ SDL_bool video_doraster( struct machine *oric )
     if( ( c & 0x60 ) == 0 )
     {
       video_decode_attr( oric, c );
-      video_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, c & 0x80, 0 );
-      if( oric->vid_raster < oric->vid_special )
-      {
-        if( oric->vid_mode & 0x04 )
-          hires = SDL_TRUE;
-        else
-          hires = SDL_FALSE;
-      }
+      video_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, 0 );
     } else {
       bitmask = (oric->frames&0x10)?0x3f:oric->vid_blinkmask;
       if( hires )
       {
-        video_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, c & 0x80, c & bitmask );
+        video_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, c & bitmask );
       } else {
         int ch_ix, ch_dat, ch_line;
           
@@ -290,7 +283,7 @@ SDL_bool video_doraster( struct machine *oric )
           
         ch_dat = oric->vid_ch_data[ (ch_ix<<3) | ch_line ] & bitmask;
         
-        video_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, c & 0x80, ch_dat  );
+        video_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, ch_dat  );
       }
     }
   }
