@@ -2560,7 +2560,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "  bl                    - List breakpoints" );
           mon_str( "  blm                   - List mem breakpoints" );
           mon_str( "  bs <addr>             - Set breakpoint" );
-          mon_str( "  bsm [rwc] <addr>      - Set mem breakpoint" );
+          mon_str( "  bsm <addr> [rwc]      - Set mem breakpoint" );
           mon_str( "  bz                    - Zap breakpoints" );
           mon_str( "  bzm                   - Zap mem breakpoints" );
           mon_str( "  d <addr>              - Disassemble" );
