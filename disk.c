@@ -44,7 +44,7 @@ extern char diskfile[], diskpath[];
 #define DEBUG_SECTOR_DUMP  1
 
 #if DEBUG_SECTOR_DUMP
-static unsigned char sectordumpstr[64];
+static char sectordumpstr[64];
 static int sectordumpcount;
 #endif
 

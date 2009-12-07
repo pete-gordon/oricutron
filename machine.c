@@ -412,6 +412,29 @@ void microdisc_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char 
   oric->mem[addr&0x3fff] = data;
 }
 
+// VIA is returned as RAM since it isn't ROM
+SDL_bool isram( struct machine *oric, unsigned short addr )
+{
+  if( addr < 0xc000 ) return SDL_TRUE;
+  
+  if( !oric->romdis ) return SDL_FALSE;
+  
+  switch( oric->drivetype )
+  {
+    case DRV_MICRODISC:
+      if( !oric->md.diskrom ) return SDL_TRUE;
+      if( addr >= 0xe000 ) return SDL_FALSE;
+      break;
+    
+    case DRV_JASMIN:
+      // Todo: map
+      if( addr >= 0xf800 ) return SDL_FALSE;
+      break;
+  }
+  
+  return SDL_TRUE;
+}
+
 // Oric Atmos CPU read
 unsigned char atmosread( struct m6502 *cpu, unsigned short addr )
 {
