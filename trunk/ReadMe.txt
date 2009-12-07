@@ -46,8 +46,8 @@ In Debugger/Monitor
 -------------------
 
   F2      - Return to the emulator
-  F4      - Toggle console/debug output/memwatch
-  F3      - Toggle VIA/AY information
+  F3      - Toggle console/debug output/memwatch
+  F4      - Toggle VIA/AY information
   F9      - Reset cycle count
   F10     - Step over code
   F11     - Step over code without tracing into
