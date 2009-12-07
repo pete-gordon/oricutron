@@ -3100,7 +3100,7 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
   unsigned int v;
   int i, page;
 
-  page = mw_split ? 8*7 : 8*18;
+  page = mw_split ? 8*8 : 8*18;
 
   done = SDL_FALSE;
   switch( ev->key.keysym.sym )
