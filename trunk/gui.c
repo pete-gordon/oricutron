@@ -84,7 +84,7 @@ static int freqf_clicktime=0;
 extern unsigned char thefont[];
 
 // Believe it or not, i have defined more than 2 shades of blue :)
-#define NUM_GUI_COLS 8
+#define NUM_GUI_COLS 9
 
 // Text zone (and other gui area) colours
 unsigned char sgpal[] = { 0x00, 0x00, 0x00,     // 0 = black
@@ -94,7 +94,8 @@ unsigned char sgpal[] = { 0x00, 0x00, 0x00,     // 0 = black
                           0x00, 0x00, 0x40,     // 4 = very dark blue
                           0x70, 0x70, 0xff,     // 5 = mid blue
                           0x80, 0x80, 0x80,     // 6 = grey
-                          0xa0, 0xa0, 0x00 };   // 7 = yellow
+                          0xa0, 0xa0, 0x00,     // 7 = yellow
+                          0x80, 0x00, 0x00 };   // 8 = dark red
 
 // GUI colours in display format
 Uint16 gpal[NUM_GUI_COLS];

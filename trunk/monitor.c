@@ -95,9 +95,6 @@ static char ibuf[128], lastcmd;
 static char history[10][128];
 static int ilen, iloff=0, cursx, histu=0, histp=-1;
 static unsigned short mon_addr, mon_asmmode = SDL_FALSE;
-static unsigned short mw_addr;
-static int mw_mode=0, mw_koffs=0;
-static char mw_ibuf[8];
 static SDL_bool kshifted = SDL_FALSE;
 static int helpcount=0;
 
@@ -105,6 +102,14 @@ static int numsyms=0, symspace=0;
 static struct msym *defaultsyms = NULL, *syms = NULL;
 
 char mon_bpmsg[80];
+
+static SDL_bool mw_split = SDL_FALSE;
+static int mw_which = 0;
+static unsigned short mw_addr[2];
+static int mw_mode=0, mw_koffs=0;
+static char mw_ibuf[8];
+static unsigned char mwatch_old[65536];
+static SDL_bool mwatch_oldvalid = SDL_FALSE;
 
 //                                                             12345678901    12345678 
 static struct msym defsym_oric1[] = { { 0xc000, SYMF_ROMDIS0, "ROMStart"   , "ROMStart", "ROMStart" },
@@ -1301,10 +1306,36 @@ void mon_update_mwatch( struct machine *oric )
   unsigned short addr;
   int j,k,l;
   unsigned int v;
-
-  addr = mw_addr;
-  for( j=0; j<19; j++ )
+  
+  if( mw_split )
   {
+    tz[TZ_MEMWATCH]->tx[ 50] = mw_which==0 ? 14 : 5;
+    tz[TZ_MEMWATCH]->tx[550] = mw_which==1 ? 14 : 5;
+  } else {
+    int offs = 10*tz[TZ_MEMWATCH]->w+1;
+    for( k=0; k<48; k++ )
+      tz[TZ_MEMWATCH]->tx[offs+k] = 32;
+    tz[TZ_MEMWATCH]->tx[ 50] = 5;
+    tz[TZ_MEMWATCH]->tx[550] = 5;
+    
+  }
+
+  addr = mw_addr[0];
+  for( j=0; j<19; j++, addr+=8 )
+  {
+    if( ( mw_split ) && ( j == 9 ) )
+    {
+      int offs = 10*tz[TZ_MEMWATCH]->w+1;
+      for( k=0; k<48; k++ )
+      {
+        tz[TZ_MEMWATCH]->tx[offs+k] = 2;
+        tz[TZ_MEMWATCH]->bc[offs+k] = 3;
+        tz[TZ_MEMWATCH]->fc[offs+k] = 2;
+      }
+      j++;
+      addr = mw_addr[1];
+    }
+        
     sprintf( vsptmp, "%04X  ", addr );
     for( k=0; k<8; k++ )
     {
@@ -1316,13 +1347,37 @@ void mon_update_mwatch( struct machine *oric )
     vsptmp[l++] = '\'';
     for( k=0; k<8; k++ )
     {
-      v = oric->cpu.read( &oric->cpu, addr++ );
+      v = oric->cpu.read( &oric->cpu, addr+k );
       vsptmp[l++] = ((v>31)&&(v<128))?v:'.';
     }
     vsptmp[l++] = '\'';
     vsptmp[l++] = 0;
     tzstrpos( tz[TZ_MEMWATCH], 1, j+1, vsptmp );
+    
+    if( mwatch_oldvalid )
+    {
+      for( k=0; k<8; k++ )
+      {
+        if( isram( oric, addr+k ) && ( mwatch_old[addr+k] != oric->cpu.read( &oric->cpu, addr+k ) ) )
+        {
+          int offs = (j+1)*tz[TZ_MEMWATCH]->w;
+          tz[TZ_MEMWATCH]->fc[offs+(k*3+7)] = 1;
+          tz[TZ_MEMWATCH]->fc[offs+(k*3+8)] = 1;
+          tz[TZ_MEMWATCH]->fc[offs+(k+33)]  = 1;
+          tz[TZ_MEMWATCH]->bc[offs+(k*3+7)] = 8;
+          tz[TZ_MEMWATCH]->bc[offs+(k*3+8)] = 8;
+          tz[TZ_MEMWATCH]->bc[offs+(k+33)]  = 8;
+        }
+      }
+    }
   }
+  
+  for( k=0; k<65536; k++ )
+  {
+    if( isram( oric, k ) )
+      mwatch_old[k] = oric->cpu.read( &oric->cpu, k );
+  }
+  mwatch_oldvalid = SDL_TRUE;
 
   if( mw_mode == 0 ) return;
 
@@ -1550,6 +1605,9 @@ void mon_init( struct machine *oric )
   mon_show_curs();
   mon_addr = oric->cpu.pc;
   lastcmd = 0;
+  mw_split = SDL_FALSE;
+  mw_which = 0;
+  mwatch_oldvalid = SDL_FALSE;
 #if LOG_DEBUG
   debug_logfile = fopen( debug_logname, "w" );
 #endif
@@ -2238,7 +2296,13 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           break;
         }
         
-        mw_addr = v;
+        if( mw_split )
+        {
+          mw_addr[mw_which] = v;
+        } else {
+          mw_which = 0;
+          mw_addr[0] = v;
+        }
         cshow = CSHOW_MWATCH;
         break;
       }
@@ -3034,28 +3098,30 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
 {
   SDL_bool done;
   unsigned int v;
-  int i;
+  int i, page;
+
+  page = mw_split ? 8*7 : 8*18;
 
   done = SDL_FALSE;
   switch( ev->key.keysym.sym )
   {
     case SDLK_UP:
-      mw_addr -= kshifted ? 8*18 : 8;
+      mw_addr[mw_which] -= kshifted ? page : 8;
       *needrender = SDL_TRUE;
       break;
 
     case SDLK_DOWN:
-      mw_addr += kshifted ? 8*18 : 8;
+      mw_addr[mw_which] += kshifted ? page : 8;
       *needrender = SDL_TRUE;
       break;
 
     case SDLK_PAGEUP:
-      mw_addr -= 8*18;
+      mw_addr[mw_which] -= page;
       *needrender = SDL_TRUE;
       break;
 
     case SDLK_PAGEDOWN:
-      mw_addr += 8*18;
+      mw_addr[mw_which] += page;
       *needrender = SDL_TRUE;
       break;
     
@@ -3065,7 +3131,7 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
       mw_mode = 0;
       i = 0;
       if( mon_getnum( oric, &v, mw_ibuf, &i, SDL_FALSE, SDL_FALSE, SDL_FALSE, SDL_FALSE ) )
-        mw_addr = v;
+        mw_addr[mw_which] = v;
       *needrender = SDL_TRUE;
       break;
     
@@ -3077,6 +3143,22 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
       if( mw_mode != 1 ) break;
       if( mw_koffs <= 0 ) break;
       mw_ibuf[mw_koffs--] = 0;
+      *needrender = SDL_TRUE;
+      break;
+    
+    case 's':
+    case 'S':
+      if( mw_mode != 0 ) break;
+      mw_split = !mw_split;
+      if( ( !mw_split ) && ( mw_which != 0 ) )
+        mw_which = 0;
+      *needrender = SDL_TRUE;
+      break;
+    
+    case SDLK_TAB:
+      if( !mw_split ) break;
+      if( mw_mode != 0 ) mw_mode = 0;
+      mw_which ^= 1;
       *needrender = SDL_TRUE;
       break;
 

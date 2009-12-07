@@ -111,3 +111,5 @@ SDL_bool init_machine( struct machine *oric, int type );
 void shut_machine( struct machine *oric );
 void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type );
 void swapmach( struct machine *oric, struct osdmenuitem *mitem, int which );
+SDL_bool isram( struct machine *oric, unsigned short addr );
+

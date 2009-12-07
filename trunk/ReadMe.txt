@@ -65,6 +65,8 @@ In Debugger/Monitor
   Up/Down           - Scroll (+shift for page up/down)
   Page Up/Page Down - Page up/down
   Hex digits        - Enter address
+  S                 - Toggle split mode
+  Tab               - Switch windows in split mode
 
 
 Monitor instructions
