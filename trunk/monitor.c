@@ -3245,7 +3245,6 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
 
 static unsigned int steppy_step( struct machine *oric )
 {
-  mon_store_state( oric );
   m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
   via_clock( &oric->via, oric->cpu.icycles );
   ay_ticktock( &oric->ay, oric->cpu.icycles );
@@ -3339,6 +3338,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
             newpc = oric->cpu.pc+3;
             
+            mon_store_state( oric );
             endticks = SDL_GetTicks()+5000; // 5 seconds to comply
             while( ( oric->cpu.pc != newpc ) && ( SDL_GetTicks() < endticks ) )
               steppy_step( oric );
@@ -3349,6 +3349,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           }
         
         case SDLK_F10:
+          mon_store_state( oric );
           steppy_step( oric );
           *needrender = SDL_TRUE;
           donkey = SDL_TRUE;
