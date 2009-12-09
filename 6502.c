@@ -49,7 +49,7 @@ static unsigned char nullread( struct m6502 *cpu, unsigned short addr )
 ** The userdata param is just used to fill in the
 ** cpu->userdata field.
 */
-void m6502_init( struct m6502 *cpu, void *userdata )
+void m6502_init( struct m6502 *cpu, void *userdata, SDL_bool nukebreakpoints )
 {
   int i;
   cpu->rastercycles = 0;
@@ -60,13 +60,16 @@ void m6502_init( struct m6502 *cpu, void *userdata )
   cpu->write = nullwrite;
   cpu->read  = nullread;
 
-  for( i=0; i<16; i++ )
+  if( nukebreakpoints )
   {
-    cpu->breakpoints[i] = -1;
-    cpu->membreakpoints[i].flags = 0;
+    for( i=0; i<16; i++ )
+    {
+      cpu->breakpoints[i] = -1;
+      cpu->membreakpoints[i].flags = 0;
+	}
+    cpu->anybp = SDL_FALSE;
+    cpu->anymbp = SDL_FALSE;
   }
-  cpu->anybp = SDL_FALSE;
-  cpu->anymbp = SDL_FALSE;
   cpu->userdata = userdata;
 }
 
@@ -728,7 +731,7 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
       cpu->f_n = v&0x80 ? 1 : 0;
       cpu->f_v = v&0x40 ? 1 : 0;
       cpu->f_z = (cpu->a&v)==0;
-      cycleit( cpu, 3 );
+      cycleit( cpu, 4 );
       break;
 
     case 0x2D: // { "AND", AM_ABS },  // 2D

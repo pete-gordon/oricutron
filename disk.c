@@ -773,7 +773,7 @@ void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char d
 
     case 0x318:
       md->drq = (data&MF_DRQ);
-      break;
+	  break;
     
     default:
       via_write( &md->oric->via, addr, data );

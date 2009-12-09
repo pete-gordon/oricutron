@@ -541,6 +541,50 @@ void via_write( struct via *v, int offset, unsigned char data )
   }
 }
 
+// Read without side-effects for monitor
+unsigned char via_mon_read( struct via *v, int offset )
+{
+  offset &= 0xf;
+
+  switch( offset )
+  {
+    case VIA_IORB:
+      return (v->orb&v->ddrb)|(v->irbl&(~v->ddrb));
+    case VIA_IORA:
+      return (v->ora&v->ddra)|(v->iral&(~v->ddra));
+    case VIA_DDRB:
+      return v->ddrb;
+    case VIA_DDRA:
+      return v->ddra;
+    case VIA_T1C_L:
+      return v->t1c&0xff;
+    case VIA_T1C_H:
+      return v->t1c>>8;
+    case VIA_T1L_L:
+      return v->t1l_l;
+    case VIA_T1L_H:
+      return v->t1l_h;
+    case VIA_T2C_L:
+      return v->t2c&0xff;
+    case VIA_T2C_H:
+      return v->t2c>>8;
+    case VIA_SR:
+      return v->sr;
+    case VIA_ACR:
+      return v->acr;
+    case VIA_PCR:
+      return v->pcr;
+    case VIA_IFR:
+      return v->ifr;
+    case VIA_IER:
+      return v->ier&0x7f;
+    case VIA_IORA2:
+      return (v->ora&v->ddra)|(v->iral&(~v->ddra));
+  }
+
+  return 0;
+}
+
 // Read VIA from CPU
 unsigned char via_read( struct via *v, int offset )
 {
