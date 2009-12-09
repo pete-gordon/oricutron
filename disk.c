@@ -414,8 +414,9 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
             wd->currentop = COP_NUFFINK;
             break;
           }
-          if( wd->curroffs == 0 ) wd->sectype = (wd->currsector->data_ptr[wd->curroffs++]==0xf8)?0x20:0x00;
+          if( wd->curroffs == 0 ) wd->sectype = (wd->currsector->data_ptr[wd->curroffs++]==0xf8)?WSFR_RECTYP:0x00;
           wd->r_data = wd->currsector->data_ptr[wd->curroffs++];
+          wd->r_status &= ~WSF_DRQ;
           wd->clrdrq( wd->drqarg );
 
 #if DEBUG_SECTOR_DUMP
@@ -448,7 +449,8 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
             }
 #endif
             wd->delayedint = 100;
-            wd->distatus   = wd->sectype;
+            wd->distatus   = wd->r_status & ~(WSF_BUSY|WSFR_RECTYP|WSF_RNF|WSF_CRCERR|WSF_LOSTDAT|WSF_BUSY);
+            wd->distatus  |= wd->sectype;
             wd->currentop = COP_NUFFINK;
           } else {
             wd->delayeddrq = 10;
@@ -465,6 +467,7 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
           }
           if( wd->curroffs == 0 ) wd->r_sector = wd->currsector->id_ptr[1];
           wd->r_data = wd->currsector->id_ptr[++wd->curroffs];
+          wd->r_status &= ~WSF_DRQ;
           wd->clrdrq( wd->drqarg );
           if( wd->curroffs >= 6 )
           {
@@ -489,6 +492,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
   switch( addr )
   {
     case 0: // Command register
+      wd->clrintrq( wd->intrqarg );
       wd->cmd = data;
       switch( data & 0xe0 )
       {
@@ -755,6 +759,8 @@ unsigned char microdisc_read( struct microdisc *md, unsigned short addr )
 void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char data )
 {
 //  dbg_printf( "DISK: (%04X) Write %02X to %04X", md->oric->cpu.pc-1, data, addr );
+  SDL_bool wasen;
+
   if( ( addr >= 0x310 ) && ( addr < 0x314 ) )
   {
     wd17xx_write( md->oric, md->wd, addr&3, data );
@@ -764,16 +770,28 @@ void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char d
   switch( addr )
   {
     case 0x314:
-      md->status = data;
-      md->wd->c_drive = (data&MDSF_DRIVE)>>5;
+      wasen = (md->status&MDSF_INTENA) ? SDL_TRUE : SDL_FALSE;    // Currently enabled?
 
-      md->oric->romdis = (md->status&MDSF_ROMDIS) ? SDL_FALSE : SDL_TRUE;
-      md->diskrom      = (md->status&MDSF_EPROM) ? SDL_FALSE : SDL_TRUE;
+      md->status = data;
+
+      // Interrupts enabled, and /INTRQ == 0 ?
+      if( ( data&MDSF_INTENA ) && ( md->intrq == 0 ) )
+      {
+        md->oric->cpu.irq |= IRQF_DISK;
+        if( !wasen ) md->oric->cpu.irql = SDL_TRUE;
+      } else {
+        md->oric->cpu.irq &= ~IRQF_DISK;
+      }
+      
+      md->wd->c_drive  = (data&MDSF_DRIVE)>>5;
+      md->wd->c_side   = (data&MDSF_SIDE) ? 1 : 0;
+      md->oric->romdis = (data&MDSF_ROMDIS) ? SDL_FALSE : SDL_TRUE;
+      md->diskrom      = (data&MDSF_EPROM) ? SDL_FALSE : SDL_TRUE;
       break;
 
     case 0x318:
       md->drq = (data&MF_DRQ);
-	  break;
+	    break;
     
     default:
       via_write( &md->oric->via, addr, data );
