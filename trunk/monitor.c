@@ -844,9 +844,21 @@ unsigned char mon_read( struct machine *oric, unsigned short addr )
     {
       case 0x310:
         return oric->wddisk.r_status;
+      
+      case 0x311:
+        return oric->wddisk.r_track;
+
+      case 0x312:
+        return oric->wddisk.r_sector;
 
       case 0x313:
         return oric->wddisk.r_data;
+      
+      case 0x314:
+        return oric->md.intrq|0x7f;
+
+      case 0x318:
+        return oric->md.drq|0x7f;    
     }
   }
 
