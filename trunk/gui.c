@@ -1017,7 +1017,7 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   odir = getcwd( NULL, 0 );
   chdir( tapepath );
   tape_load_tap( oric, tapefile );
-  if( oric->symbolsautoload ) mon_new_symbols( "symbols" );
+  if( oric->symbolsautoload ) mon_new_symbols( "symbols", SDL_TRUE );
   chdir( odir );
   free( odir );
   setemumode( oric, NULL, EM_RUNNING );

@@ -81,6 +81,6 @@ struct m6502
   void *userdata;
 };
 
-void m6502_init( struct m6502 *cpu, void *userdata );
+void m6502_init( struct m6502 *cpu, void *userdata, SDL_bool nukebreakpoints );
 void m6502_reset( struct m6502 *cpu );
 SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg );

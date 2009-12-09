@@ -136,3 +136,6 @@ void via_write_portb( struct via *v, unsigned char mask, unsigned char data );
 
 // Write to IFR from the monitor
 void via_mon_write_ifr( struct via *v, unsigned char data );
+
+// Read without side-effects for monitor
+unsigned char via_mon_read( struct via *v, int offset );

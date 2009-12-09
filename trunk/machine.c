@@ -655,12 +655,12 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
   return SDL_FALSE;
 }
 
-SDL_bool init_machine( struct machine *oric, int type )
+SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints )
 {
   int i;
 
   oric->type = type;
-  m6502_init( &oric->cpu, (void*)oric );
+  m6502_init( &oric->cpu, (void*)oric, nukebreakpoints );
 
   oric->vidbases[0] = 0xa000;
   oric->vidbases[1] = 0x9800;
@@ -911,7 +911,8 @@ void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
       break;
   }
 
-  if( !init_machine( oric, oric->type ) )
+  mon_watch_reset( oric );
+  if( !init_machine( oric, oric->type, SDL_FALSE ) )
   {
     shut();
     exit(0);
@@ -931,9 +932,12 @@ void swapmach( struct machine *oric, struct osdmenuitem *mitem, int which )
   if( ((which>>16)&0xffff) != 0xffff )
     curr_drivetype = (which>>16)&0xffff;
 
+  which &= 0xffff;
+
   oric->drivetype = curr_drivetype;
 
-  if( !init_machine( oric, which&0xffff ) )
+  mon_watch_reset( oric );
+  if( !init_machine( oric, which, which!=oric->type ) )
   {
     shut();
     exit(0);
