@@ -573,6 +573,7 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
       PUSHB( MAKEFLAGS );
       cpu->f_i = 1;
       cpu->f_d = 0;
+      cpu->f_b = 1;
       cpu->pc = (cpu->read( cpu, 0xffff )<<8) | cpu->read( cpu, 0xfffe );
       cycleit( cpu, 7 );
       break;
