@@ -252,7 +252,7 @@ void m6502_reset( struct m6502 *cpu )
 #define PUSHB(n) cpu->write( cpu, (cpu->sp--)+0x100, n )
 #define POPB cpu->read( cpu, (++cpu->sp)+0x100 )
 #define PUSHW(n) PUSHB( n>>8 ); PUSHB( n )
-#define POPW(n)  n = (cpu->read(cpu,cpu->sp+0x102)<<8)|cpu->read(cpu,cpu->sp+0x101); cpu->sp+=2
+#define POPW(n)  n = (cpu->read(cpu,((cpu->sp+2)&0xff)+0x100)<<8)|cpu->read(cpu,((cpu->sp+1)&0xff)+0x100); cpu->sp+=2
 
 // Merge the seperate flag stores into a 6502 status register form
 #define MAKEFLAGS ((cpu->f_n<<7)|(cpu->f_v<<6)|(1<<5)|(cpu->f_b<<4)|(cpu->f_d<<3)|(cpu->f_i<<2)|(cpu->f_z<<1)|cpu->f_c)
@@ -570,10 +570,9 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
   {
     case 0x00: // { "BRK", AM_IMP },  // 00
       PUSHW( cpu->pc );
-      PUSHB( MAKEFLAGS );
+      PUSHB( MAKEFLAGS | (1<<4) );   // Set B on the stack
       cpu->f_i = 1;
       cpu->f_d = 0;
-      cpu->f_b = 1;
       cpu->pc = (cpu->read( cpu, 0xffff )<<8) | cpu->read( cpu, 0xfffe );
       cycleit( cpu, 7 );
       break;
@@ -711,7 +710,7 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
       break;
 
     case 0x28: // { "PLP", AM_IMP },  // 28
-      v = POPB;
+      v = POPB|(1<<4);
       SETFLAGS(v);
       cycleit( cpu, 4 );
       break;
