@@ -118,6 +118,7 @@ int main( int argc, char *argv[] )
   void *thetimer;
   Sint32 i, foo;
   struct machine oric;
+  Uint32 framestart;
 
   if( init( &oric ) )
   {
@@ -125,6 +126,7 @@ int main( int argc, char *argv[] )
 
     thetimer = SDL_AddTimer( 1000/50, (SDL_NewTimerCallback)nosoundtiming, (void *)&oric );
     foo = 0;
+    framestart = 0;
 
     done = SDL_FALSE;
     needrender = SDL_TRUE;
@@ -147,7 +149,18 @@ int main( int argc, char *argv[] )
         if( !framedone )
         {
           SDL_bool breaky;
-          Uint32 framestart;
+
+          if( framestart != 0 )
+          {
+            frametimeave = 0;
+            for( i=7; i>0; i-- )
+            {
+              lastframetimes[i] = lastframetimes[i-1];
+              frametimeave += lastframetimes[i];
+            }
+            lastframetimes[0] = SDL_GetTicks() - framestart;
+            frametimeave = (frametimeave+lastframetimes[0])/8;
+          }
 
           framestart = SDL_GetTicks();
           while( ( !framedone ) && ( !needrender ) )
@@ -179,14 +192,6 @@ int main( int argc, char *argv[] )
               oric.cpu.rastercycles += oric.cyclesperraster;
             }
           }
-          frametimeave = 0;
-          for( i=7; i>0; i-- )
-          {
-            lastframetimes[i] = lastframetimes[i-1];
-            frametimeave += lastframetimes[i];
-          }
-          lastframetimes[0] = SDL_GetTicks() - framestart;
-          frametimeave = (frametimeave+lastframetimes[0])/8;
         }
 
         if( warpspeed )

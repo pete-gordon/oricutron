@@ -151,9 +151,12 @@ void video_show( struct machine *oric )
 {
   int x, y;
   Uint16 *sptr, *dptr;
+  Uint32 *dptr2, *dptr3, c, pp2;
 
   if( !oric->scr )
     return;
+    
+  pp2 = pixpitch/2;
 
   if( ( oric->vid_double ) && ( oric->emu_mode != EM_DEBUG ) )
   {
@@ -164,26 +167,24 @@ void video_show( struct machine *oric )
       {
         for( x=0; x<640; x++ )
           *(dptr++) = gpal[4];
+        *dptr += pixpitch-640;
       }
       needclr = SDL_FALSE;
     }
     sptr = oric->scr;
-    dptr = &((Uint16 *)screen->pixels)[320-240+pixpitch*(240-224)];
+    dptr2 = (Uint32 *)(&((Uint16 *)screen->pixels)[320-240+pixpitch*(240-224)]);
+    dptr3 = dptr2+pp2;
     for( y=0; y<224; y++ )
     {
       for( x=0; x<240; x++ )
       {
-        *(dptr++) = *sptr;
-        *(dptr++) = *(sptr++);
+        c = *(sptr++);
+        c = (c<<16)|c;
+        *(dptr2++) = c;
+        *(dptr3++) = c;
       }
-      dptr += pixpitch-480;
-      sptr -= 240;
-      for( x=0; x<240; x++ )
-      {
-        *(dptr++) = *sptr;
-        *(dptr++) = *(sptr++);
-      }
-      dptr += pixpitch-480;
+      dptr2 += pixpitch-240;
+      dptr3 += pixpitch-240;
     }
     return;
   }
@@ -241,32 +242,49 @@ SDL_bool video_doraster( struct machine *oric )
 //  if( oric->vid_raster == oric->vid_special )
 //    oric->vid_addr = 0xbf68;
   
-  for( b=0; b<40; b++ )
+  if( oric->vid_raster < oric->vid_special )
   {
-    if( oric->vid_raster < oric->vid_special )
+    if( oric->vid_mode & 0x04 ) // HIRES?
     {
-      if( oric->vid_mode & 0x04 ) // HIRES?
-      {
-        hires = SDL_TRUE;
-        read_addr = oric->vid_addr + b + y*40;
-      } else {
-        hires = SDL_FALSE;
-        read_addr = oric->vid_addr + b + cy;
-      }
+      hires = SDL_TRUE;
+      read_addr = oric->vid_addr + y*40 -1;
     } else {
       hires = SDL_FALSE;
+      read_addr = oric->vid_addr + cy -1;
+    }
+  } else {
+    hires = SDL_FALSE;
 
 //      read_addr = oric->vid_addr + b + ((y-200)>>3);
-      read_addr = oric->vidbases[2] + b + cy;   // bb80 = bf68 - (200/8*40)
-    }
+    read_addr = oric->vidbases[2] + cy -1;   // bb80 = bf68 - (200/8*40)
+  }
     
-    c = oric->mem[ read_addr ];
+  for( b=0; b<40; b++ )
+  {
+    c = oric->mem[ ++read_addr ];
 
     /* if bits 6 and 5 are zero, the byte contains a serial attribute */
     if( ( c & 0x60 ) == 0 )
     {
       video_decode_attr( oric, c );
       video_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, 0 );
+      if( oric->vid_raster < oric->vid_special )
+      {
+        if( oric->vid_mode & 0x04 ) // HIRES?
+        {
+          hires = SDL_TRUE;
+          read_addr = oric->vid_addr + b + y*40;
+        } else {
+          hires = SDL_FALSE;
+          read_addr = oric->vid_addr + b + cy;
+        }
+      } else {
+        hires = SDL_FALSE;
+
+//        read_addr = oric->vid_addr + b + ((y-200)>>3);
+        read_addr = oric->vidbases[2] + b + cy;   // bb80 = bf68 - (200/8*40)
+      }
+    
     } else {
       bitmask = (oric->frames&0x10)?0x3f:oric->vid_blinkmask;
       if( hires )
