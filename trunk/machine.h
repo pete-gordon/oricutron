@@ -83,8 +83,9 @@ struct machine
   unsigned char *vid_ch_base;
 
   Uint16 pal[8]; // Palette
-  Uint16 *scrpt;
-  Uint16 *scr;
+  Uint32 dpal[8];
+  Uint8  *scrpt;
+  Uint8  *scr;
 
   Uint16 vidbases[4];
 
