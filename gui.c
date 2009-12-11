@@ -214,14 +214,9 @@ void render( struct machine *oric )
     case EM_RUNNING:
       if( showfps )
       {
-        if( ( warpspeed ) || ( frametimeave > 20 ) )
-        {
-          fps = 100000/(frametimeave?frametimeave:1);
-          perc = 200000/(frametimeave?frametimeave:1);
-          sprintf( tmp, "%4d.%02d%% - %4dFPS - %3d ms/frame ", perc/100, perc%100, fps/100, frametimeave );
-        } else {
-          sprintf( tmp, " 100.00%% -   50FPS - %3d ms/frame", frametimeave );
-        }
+        fps = 100000/(frametimeave?frametimeave:1);
+        perc = 200000/(frametimeave?frametimeave:1);
+        sprintf( tmp, "%4d.%02d%% - %4dFPS", perc/100, perc%100, fps/100 );
       }
       video_show( oric );
       if( showfps ) printstr( 0, 0, gpal[1], gpal[4], tmp );
