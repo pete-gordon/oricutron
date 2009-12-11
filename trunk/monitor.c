@@ -335,6 +335,10 @@ static struct msym defsym_atmos[] = { { 0xc000, SYMF_ROMDIS0, "ROMStart"      , 
                                       { 0xfc5e, SYMF_ROMDIS0, "MusicData"     , "MusicDa\x16", "MusicData" },
                                       { 0xfc78, SYMF_ROMDIS0, "CharSet"       , "CharSet"    , "CharSet" },
                                       { 0xff78, SYMF_ROMDIS0, "KeyCodeTab"    , "KeyCode\x16", "KeyCodeTab" },
+                                      { 0xe000, SYMF_ROMDIS1|SYMF_MICRODISC, "MdRomStart"    , "MdRomSt\x16", "MdRomStart" },
+                                      { 0xe3c0, SYMF_ROMDIS1|SYMF_MICRODISC, "MdIrq"         , "MdIrq"      , "MdIrq" },
+                                      { 0xeb78, SYMF_ROMDIS1|SYMF_MICRODISC, "MdEntry"       , "MdEntry"    , "MdEntry" },
+                                      { 0xeeae, SYMF_ROMDIS1|SYMF_MICRODISC, "MdRamTest"     , "MdRamTe\x16", "MdRamTest" },
                                       { 0, 0, { 0, }, { 0, }, NULL } };
 
 enum
@@ -874,8 +878,11 @@ struct msym *mon_find_sym_by_addr( struct machine *oric, unsigned short addr )
 
   for( i=0; i<numsyms; i++ )
   {
-    if( (syms[i].flags&SYMF_MICRODISC) && ( oric->drivetype != DRV_MICRODISC ) )
-      continue;
+    if( syms[i].flags&SYMF_MICRODISC )
+    {
+      if( ( oric->drivetype != DRV_MICRODISC ) || ( !oric->md.diskrom ) )
+        continue;
+    }
 
     if( (syms[i].flags&SYMF_JASMIN) && ( oric->drivetype != DRV_JASMIN ) )
       continue;
@@ -1038,7 +1045,7 @@ SDL_bool mon_addsym( unsigned short addr, unsigned short flags, char *name )
   return SDL_TRUE;
 }
 
-char *mon_disassemble( struct machine *oric, unsigned short *paddr )
+char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *looped )
 {
   unsigned short iaddr, addr;
   unsigned char op, a1, a2;
@@ -1048,6 +1055,7 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr )
   struct msym *csym;
 
   iaddr = *paddr;
+  if( looped ) *looped = SDL_FALSE;
 
   tmpsname = "";
   csym = mon_find_sym_by_addr( oric, iaddr );
@@ -1158,6 +1166,9 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr )
   if( iaddr == oric->cpu.pc )
     distmp[SNAME_LEN+2] = '>';
 
+  if( ( looped ) && ( iaddr > *paddr ) )
+    *looped = SDL_TRUE;
+
   return distmp;
 }
 
@@ -1209,7 +1220,7 @@ void mon_update_regs( struct machine *oric )
   {
     tzsetcol( tz[TZ_REGS], (addr==oric->cpu.pc) ? 1 : 2, 3 );
     tzstrpos( tz[TZ_REGS], 23, 7+i, "        " );
-    tzstrpos( tz[TZ_REGS],  2, 7+i, mon_disassemble( oric, &addr ) );
+    tzstrpos( tz[TZ_REGS],  2, 7+i, mon_disassemble( oric, &addr, NULL ) );
   }
 }
 
@@ -2386,13 +2397,55 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
       break;
     
     case 'd':
+      if( cmd[i+1] == 'f' )
+      {
+        i+=2;
+
+        if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+        {
+          mon_str( "Start address expected\n" );
+          break;
+        }
+
+        mon_addr = v;
+        if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+        {
+          mon_str( "End address expected\n" );
+          break;
+        }
+
+        while( isws( cmd[i] ) ) i++;
+        if( !cmd[i] )
+        {
+          mon_str( "Filename expected" );
+          break;
+        }
+
+        f = fopen( &cmd[i], "w" );
+        if( !f )
+        {
+          mon_printf( "Unable to open '%s'", &cmd[i] );
+          break;
+        }
+
+        while( mon_addr <= v )
+        {
+          SDL_bool looped;
+          fprintf( f, "%s\n", mon_disassemble( oric, &mon_addr, &looped ) );
+          if( looped ) break;
+        }
+
+        fclose( f );
+        break;
+      }
+
       lastcmd = cmd[i];
       i++;
       if( mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
         mon_addr = v;
 
       for( j=0; j<16; j++ )
-        mon_str( mon_disassemble( oric, &mon_addr ) );
+        mon_str( mon_disassemble( oric, &mon_addr, NULL ) );
       break;
 
     case 'r':
@@ -2619,12 +2672,13 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "  bz                    - Zap breakpoints" );
           mon_str( "  bzm                   - Zap mem breakpoints" );
           mon_str( "  d <addr>              - Disassemble" );
-          mon_str( "  m <addr>              - Dump memory" );
+          mon_str( "  df <addr> <end> <file>- Disassemble to file" );
           mon_str( "---- MORE" );
           helpcount++;
           break;
         
         case 1:
+          mon_str( "  m <addr>              - Dump memory" );
           mon_str( "  mw <addr>             - Memory watch at addr" );
           mon_str( "  r <reg> <val>         - Set <reg> to <val>" );
           mon_str( "  q, x or qm            - Quit monitor" );
@@ -2914,7 +2968,7 @@ static SDL_bool mon_assemble_line( struct machine *oric )
       break;
   }
 
-  mon_oprintf( mon_disassemble( oric, &mon_addr ) );
+  mon_oprintf( mon_disassemble( oric, &mon_addr, NULL ) );
   return SDL_FALSE;
 }
 
