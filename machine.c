@@ -141,7 +141,7 @@ void video_render_block( struct machine *oric, int fg, int bg, SDL_bool inverted
   
   for( i=0; i<6; i++ )
   {
-    *(oric->scrpt++) = oric->pal[ (data & 0x20) ? fg : bg ];
+    *(oric->scrpt++) = /*oric->pal[*/ (data & 0x20) ? fg : bg /*]*/;
     data <<= 1;
   }
 }
@@ -150,7 +150,8 @@ void video_render_block( struct machine *oric, int fg, int bg, SDL_bool inverted
 void video_show( struct machine *oric )
 {
   int x, y;
-  Uint16 *sptr, *dptr;
+  Uint8 *sptr;
+  Uint16 *dptr;
   Uint32 *dptr2, *dptr3, c, pp2;
 
   if( !oric->scr )
@@ -167,7 +168,7 @@ void video_show( struct machine *oric )
       {
         for( x=0; x<640; x++ )
           *(dptr++) = gpal[4];
-        *dptr += pixpitch-640;
+        dptr += pixpitch-640;
       }
       needclr = SDL_FALSE;
     }
@@ -178,8 +179,7 @@ void video_show( struct machine *oric )
     {
       for( x=0; x<240; x++ )
       {
-        c = *(sptr++);
-        c = (c<<16)|c;
+        c = oric->dpal[*(sptr++)];
         *(dptr2++) = c;
         *(dptr3++) = c;
       }
@@ -201,9 +201,9 @@ void video_show( struct machine *oric )
   }
   for( ; y<228; y++ )
   {
-    memcpy( dptr, sptr, 240*2 );
-    sptr += 240;
-    dptr += pixpitch;
+    for( x=0; x<240; x++ )
+      *(dptr++) = oric->pal[*(sptr++)];
+    dptr += pixpitch-240;
   }
 }
 
@@ -212,7 +212,8 @@ SDL_bool video_doraster( struct machine *oric )
 {
   int b, c, bitmask;
   SDL_bool hires, needrender;
-  unsigned long read_addr, y, cy;
+  unsigned int y, cy;
+  Uint8 *rptr;
 
   needrender = SDL_FALSE;
 
@@ -247,21 +248,22 @@ SDL_bool video_doraster( struct machine *oric )
     if( oric->vid_mode & 0x04 ) // HIRES?
     {
       hires = SDL_TRUE;
-      read_addr = oric->vid_addr + y*40 -1;
+      rptr = &oric->mem[oric->vid_addr + y*40 -1];
     } else {
       hires = SDL_FALSE;
-      read_addr = oric->vid_addr + cy -1;
+      rptr = &oric->mem[oric->vid_addr + cy -1];
     }
   } else {
     hires = SDL_FALSE;
 
 //      read_addr = oric->vid_addr + b + ((y-200)>>3);
-    read_addr = oric->vidbases[2] + cy -1;   // bb80 = bf68 - (200/8*40)
+    rptr = &oric->mem[oric->vidbases[2] + cy -1];  // bb80 = bf68 - (200/8*40)
   }
+  bitmask = (oric->frames&0x10)?0x3f:oric->vid_blinkmask;
     
   for( b=0; b<40; b++ )
   {
-    c = oric->mem[ ++read_addr ];
+    c = *(++rptr);
 
     /* if bits 6 and 5 are zero, the byte contains a serial attribute */
     if( ( c & 0x60 ) == 0 )
@@ -273,20 +275,20 @@ SDL_bool video_doraster( struct machine *oric )
         if( oric->vid_mode & 0x04 ) // HIRES?
         {
           hires = SDL_TRUE;
-          read_addr = oric->vid_addr + b + y*40;
+          rptr = &oric->mem[oric->vid_addr + b + y*40];
         } else {
           hires = SDL_FALSE;
-          read_addr = oric->vid_addr + b + cy;
+          rptr = &oric->mem[oric->vid_addr + b + cy];
         }
       } else {
         hires = SDL_FALSE;
 
 //        read_addr = oric->vid_addr + b + ((y-200)>>3);
-        read_addr = oric->vidbases[2] + b + cy;   // bb80 = bf68 - (200/8*40)
+        rptr = &oric->mem[oric->vidbases[2] + b + cy];   // bb80 = bf68 - (200/8*40)
       }
+      bitmask = (oric->frames&0x10)?0x3f:oric->vid_blinkmask;
     
     } else {
-      bitmask = (oric->frames&0x10)?0x3f:oric->vid_blinkmask;
       if( hires )
       {
         video_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, c & bitmask );
@@ -739,7 +741,10 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->pal[6] = SDL_MapRGB( screen->format, 0x00, 0xff, 0xff );
       oric->pal[7] = SDL_MapRGB( screen->format, 0xff, 0xff, 0xff );
 
-      oric->scr = (Uint16 *)malloc( 240*224*2 );
+      for( i=0; i<8; i++ )
+        oric->dpal[i] = (oric->pal[i]<<16)|oric->pal[i];
+
+      oric->scr = (Uint8 *)malloc( 240*224 );
       if( !oric->scr ) return SDL_FALSE;
 
       oric->cyclesperraster = 64;
@@ -801,7 +806,10 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->pal[6] = SDL_MapRGB( screen->format, 0x00, 0xff, 0xff );
       oric->pal[7] = SDL_MapRGB( screen->format, 0xff, 0xff, 0xff );
 
-      oric->scr = (Uint16 *)malloc( 240*224*2 );
+      for( i=0; i<8; i++ )
+        oric->dpal[i] = (oric->pal[i]<<16)|oric->pal[i];
+
+      oric->scr = (Uint8 *)malloc( 240*224 );
       if( !oric->scr ) return SDL_FALSE;
 
       oric->cyclesperraster = 64;
@@ -863,7 +871,10 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->pal[6] = SDL_MapRGB( screen->format, 0x00, 0xff, 0xff );
       oric->pal[7] = SDL_MapRGB( screen->format, 0xff, 0xff, 0xff );
 
-      oric->scr = (Uint16 *)malloc( 240*224*2 );
+      for( i=0; i<8; i++ )
+        oric->dpal[i] = (oric->pal[i]<<16)|oric->pal[i];
+
+      oric->scr = (Uint8 *)malloc( 240*224 );
       if( !oric->scr ) return SDL_FALSE;
 
       oric->cyclesperraster = 64;
