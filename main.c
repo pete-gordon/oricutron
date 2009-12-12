@@ -41,8 +41,10 @@
 #include "machine.h"
 #include "monitor.h"
 
+#define FRAMES_TO_AVERAGE 50
+
 extern SDL_bool warpspeed, soundon;
-Uint32 lastframetimes[8], frametimeave;
+Uint32 lastframetimes[FRAMES_TO_AVERAGE], frametimeave;
 extern char mon_bpmsg[];
 
 #ifdef __amigaos4__
@@ -153,13 +155,13 @@ int main( int argc, char *argv[] )
           if( framestart != 0 )
           {
             frametimeave = 0;
-            for( i=7; i>0; i-- )
+            for( i=(FRAMES_TO_AVERAGE-1); i>0; i-- )
             {
               lastframetimes[i] = lastframetimes[i-1];
               frametimeave += lastframetimes[i];
             }
             lastframetimes[0] = SDL_GetTicks() - framestart;
-            frametimeave = (frametimeave+lastframetimes[0])/8;
+            frametimeave = (frametimeave+lastframetimes[0])/FRAMES_TO_AVERAGE;
           }
 
           framestart = SDL_GetTicks();
