@@ -302,7 +302,7 @@ void wd17xx_seek_track( struct wd17xx *wd, Uint8 track )
       track = (wd->disk[wd->c_drive]->numtracks>0)?wd->disk[wd->c_drive]->numtracks-1:0;
 /*      
       wd->distatus = WSFI_SEEKERR;
-      wd->delayedint = 100;
+      wd->delayedint = 20;
       dbg_printf( "DISK: track %u doesn't exist", track );
       return;
     }
@@ -311,7 +311,7 @@ void wd17xx_seek_track( struct wd17xx *wd, Uint8 track )
     wd->c_track = track;
     wd->c_sector = 0;
     wd->r_track = track;
-    wd->delayedint = 100;
+    wd->delayedint = 20;
     wd->distatus = 0;
     if( wd->c_track == 0 ) wd->distatus |= WSFI_TRK0;
 #if GENERAL_DISK_DEBUG
@@ -448,7 +448,7 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
               sectordumpcount = 0;
             }
 #endif
-            wd->delayedint = 100;
+            wd->delayedint = 20;
             wd->distatus   = wd->r_status & ~(WSF_BUSY|WSFR_RECTYP|WSF_RNF|WSF_CRCERR|WSF_LOSTDAT|WSF_BUSY);
             wd->distatus  |= wd->sectype;
             wd->currentop = COP_NUFFINK;
@@ -471,7 +471,7 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
           wd->clrdrq( wd->drqarg );
           if( wd->curroffs >= 6 )
           {
-            wd->delayedint = 100;
+            wd->delayedint = 20;
             wd->distatus   = 0;
             wd->currentop = COP_NUFFINK;
           } else {
