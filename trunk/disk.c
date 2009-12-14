@@ -220,15 +220,6 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
     return SDL_FALSE;
   }
 
-  {
-    char deleteme[128];
-    sprintf( deleteme, "Tracks: %u, Sides: %u, Geometry: %u",
-      oric->wddisk.disk[drive]->numtracks,
-      oric->wddisk.disk[drive]->numsides,
-      oric->wddisk.disk[drive]->geometry );
-    SDL_WM_SetCaption( deleteme, deleteme );
-  }
-
   strncpy( oric->diskname[drive], fname, 16 );
   oric->diskname[drive][15] = 0;
   disk_popup( oric, drive );
@@ -345,7 +336,11 @@ struct mfmsector *wd17xx_find_sector( struct wd17xx *wd, Uint8 secid )
   while( revs < 2 )
   {
     wd->c_sector = (wd->c_sector+1)%dimg->numsectors;
-    if( !wd->c_sector ) revs++;
+    if( !wd->c_sector )
+    {
+      revs++;
+      wd->r_status |= WSFI_PULSE;
+    }
 
     if( dimg->sector[wd->c_sector].id_ptr[3] == secid )
       return &dimg->sector[wd->c_sector];
@@ -370,6 +365,7 @@ struct mfmsector *wd17xx_first_sector( struct wd17xx *wd )
     return NULL;
 
   wd->c_sector = 0;
+  wd->r_status = WSFI_PULSE;
   return &dimg->sector[wd->c_sector];
 }
 
@@ -386,6 +382,7 @@ struct mfmsector *wd17xx_next_sector( struct wd17xx *wd )
     return NULL;
 
   wd->c_sector = (wd->c_sector+1)%dimg->numsectors;
+  if( !wd->c_sector ) wd->r_status |= WSFI_PULSE;
   return &dimg->sector[wd->c_sector];
 }
 
@@ -503,6 +500,8 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
 #if GENERAL_DISK_DEBUG
               dbg_printf( "DISK: (%04X) Restore", oric->cpu.pc-1 );
 #endif
+              wd->r_status |= WSF_BUSY;
+              wd->r_status &= ~(WSF_NOTREADY|WSFI_PULSE|WSFI_SEEKERR|WSF_CRCERR|WSFI_TRK0);
               wd17xx_seek_track( wd, 0 );
               wd->currentop = COP_NUFFINK;
               break;
@@ -511,6 +510,8 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
 #if GENERAL_DISK_DEBUG
               dbg_printf( "DISK: (%04X) Seek", oric->cpu.pc-1 );
 #endif
+              wd->r_status |= WSF_BUSY;
+              wd->r_status &= ~(WSF_NOTREADY|WSFI_PULSE|WSFI_SEEKERR|WSF_CRCERR|WSFI_TRK0);
               wd17xx_seek_track( wd, wd->r_data );
               wd->currentop = COP_NUFFINK;
               break;
@@ -521,6 +522,8 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
 #if GENERAL_DISK_DEBUG
           dbg_printf( "DISK: (%04X) Step", oric->cpu.pc-1 );
 #endif
+          wd->r_status |= WSF_BUSY;
+          wd->r_status &= ~(WSF_NOTREADY|WSFI_PULSE|WSFI_SEEKERR|WSF_CRCERR|WSFI_TRK0);
           if( last_step_in )
             wd17xx_seek_track( wd, wd->c_track+1 );
           else
@@ -532,6 +535,8 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
 #if GENERAL_DISK_DEBUG
           dbg_printf( "DISK: (%04X) Step-In (%d,%d)", oric->cpu.pc-1, wd->c_track, wd->c_track+1 );
 #endif
+          wd->r_status |= WSF_BUSY;
+          wd->r_status &= ~(WSF_NOTREADY|WSFI_PULSE|WSFI_SEEKERR|WSF_CRCERR|WSFI_TRK0);
           wd17xx_seek_track( wd, wd->c_track+1 );
           last_step_in = SDL_TRUE;
           wd->currentop = COP_NUFFINK;
@@ -541,6 +546,8 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
 #if GENERAL_DISK_DEBUG
           dbg_printf( "DISK: Step-Out" );
 #endif
+          wd->r_status |= WSF_BUSY;
+          wd->r_status &= ~(WSF_NOTREADY|WSFI_PULSE|WSFI_SEEKERR|WSF_CRCERR|WSFI_TRK0);
           if( wd->c_track > 0 )
             wd17xx_seek_track( wd, wd->c_track-1 );
           last_step_in = SDL_FALSE;
@@ -791,7 +798,7 @@ void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char d
 
     case 0x318:
       md->drq = (data&MF_DRQ);
-	    break;
+      break;
     
     default:
       via_write( &md->oric->via, addr, data );
