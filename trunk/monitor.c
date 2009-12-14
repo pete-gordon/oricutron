@@ -337,7 +337,7 @@ static struct msym defsym_atmos[] = { { 0xc000, SYMF_ROMDIS0, "ROMStart"      , 
                                       { 0xff78, SYMF_ROMDIS0, "KeyCodeTab"    , "KeyCode\x16", "KeyCodeTab" },
                                       { 0xe000, SYMF_ROMDIS1|SYMF_MICRODISC, "MdRomStart"    , "MdRomSt\x16", "MdRomStart" },
                                       { 0xe3c0, SYMF_ROMDIS1|SYMF_MICRODISC, "MdIrq"         , "MdIrq"      , "MdIrq" },
-                                      { 0xeb78, SYMF_ROMDIS1|SYMF_MICRODISC, "MdEntry"       , "MdEntry"    , "MdEntry" },
+                                      { 0xeb7e, SYMF_ROMDIS1|SYMF_MICRODISC, "MdEntry"       , "MdEntry"    , "MdEntry" },
                                       { 0xeeae, SYMF_ROMDIS1|SYMF_MICRODISC, "MdRamTest"     , "MdRamTe\x16", "MdRamTest" },
                                       { 0, 0, { 0, }, { 0, }, NULL } };
 
