@@ -3,6 +3,7 @@ PLATFORM ?= os4
 # PLATFORM = beos
 # PLATFORM = haiku
 # PLATFORM = osx
+# PLATFORM = linux
 
 VERSION_MAJ = 0
 VERSION_MIN = 0
@@ -62,6 +63,12 @@ BEOS_MIMESET := mimeset
 endif
 
 ifeq ($(PLATFORM),osx)
+CFLAGS += $(shell sdl-config --cflags)
+LFLAGS += -lm $(shell sdl-config --libs)
+TARGET = oriculator
+endif
+
+ifeq ($(PLATFORM),linux)
 CFLAGS += $(shell sdl-config --cflags)
 LFLAGS += -lm $(shell sdl-config --libs)
 TARGET = oriculator
