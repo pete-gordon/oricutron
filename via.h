@@ -107,7 +107,6 @@ void tape_ticktock( struct machine *oric, int cycles );
 
 // Init/Reset
 void via_init( struct via *v, struct machine *oric );
-void via_reset( struct via *v );
 
 // Move timers on etc.
 void via_clock( struct via *v, unsigned int cycles );

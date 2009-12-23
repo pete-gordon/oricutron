@@ -300,10 +300,6 @@ void via_init( struct via *v, struct machine *oric )
   v->oric = oric;
 }
 
-void via_reset( struct via *v )
-{
-}
-
 static inline void via_set_irq( struct via *v, unsigned char bit )
 {
   v->ifr |= bit;
