@@ -186,16 +186,16 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
   oric->wddisk.disk[drive] = diskimage_alloc( len );
   if( !oric->wddisk.disk[drive] )
   {
-    SDL_WM_SetCaption( "Fail 1", "Fail 1" );
+    do_popup( "\x14\x15""Out of memory" );
     fclose( f );
     return SDL_FALSE;
   }
 
   if( fread( oric->wddisk.disk[drive]->rawimage, len, 1, f ) != 1 )
   {
-    SDL_WM_SetCaption( "Fail 2", "Fail 2" );
     fclose( f );
     disk_eject( oric, drive );
+    do_popup( "\x14\x15""Read error" );
     return SDL_FALSE;
   }
 
@@ -203,8 +203,8 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
 
   if( strncmp( (char *)oric->wddisk.disk[drive]->rawimage, "MFM_DISK", 8 ) != 0 )
   {
-    SDL_WM_SetCaption( "Fail 3", "Fail 3" );
     disk_eject( oric, drive );
+    do_popup( "\x14\x15""Invalid disk image" );
     return SDL_FALSE;
   }
 
@@ -215,8 +215,8 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
   if( ( oric->wddisk.disk[drive]->numsides < 1 ) &&
       ( oric->wddisk.disk[drive]->numsides > 2 ) )
   {
-    SDL_WM_SetCaption( "Fail 4", "Fail 4" );
     disk_eject( oric, drive );
+    do_popup( "\x14\x15""Invalid disk image" );
     return SDL_FALSE;
   }
 
