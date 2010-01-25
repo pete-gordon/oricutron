@@ -3,11 +3,8 @@ Oriculator 0.0.x
 
 All code (c)2009 Peter Gordon (pete@petergordon.org.uk)
 
-This is a very early preview of my upcoming portable Oric emulator. Every
-part of this emulator has been written from scratch.
+This is a work in progress.
 
-It is not really ready for release, I just thought i'd upload a preview for
-people to look at.
 
 Current status:
 
@@ -16,13 +13,58 @@ Current status:
   AY:    I/O done. Sound works, but isn't great.
   Video: Almost done. 60Hz mode missing.
   Tape:  ".TAP" file support (no WAV yet)
-  Disk:  Nowhere near working yet
+  Disk:  Microdisc reading is partially working. Jasmin is not done at all.
 
 The Telestrat is not emulated at all yet. Also, "Turbo Tape" only works in
 Atmos mode. Tape noise only works if Turbo Tape is disabled.
 
 
-Keys:
+
+Command line
+============
+
+You can specify certain options on the command line. All options have
+both short and long versions. For example:
+
+  -mblah
+
+  or
+
+  --machine blah
+
+Is the same thing. Note that the short version doesn't have a space, but
+the long version does.
+
+Here are all the options:
+
+
+  -m / --machine    = Specify machine type. Valid types are:
+
+                      "atmos" or "a" for Oric atmos
+		      "oric1" or "1" for Oric 1
+		      "o16k" for Oric 1 16k
+
+  -d / --disk       = Specify a disk image to use in drive 0
+  -t / --tape       = Specify a tape image to use
+  -k / --drive      = Specify a disk drive controller. Valid types are:
+  
+                      "microdisc" or "m" for Microdisc
+		      "jasmin" or "j" for Jasmin
+
+  -s / --symbols    = Load symbols from a file
+
+
+Examples:
+
+oriculator --machine atmos --tape "tape files/foo.tap" --symbols "my files/symbols"
+oriculator -m1 -tBUILD/foo.tap -sBUILD/symbols
+oriculator --drive microdisc --disk demos/barbitoric.dsk
+oriculator -ddemos/barbitoric.dsk
+
+
+
+Keys
+====
 
 In emulator
 -----------
@@ -70,7 +112,7 @@ In Debugger/Monitor
 
 
 Monitor instructions
---------------------
+====================
 
 In the monitor, number arguments are decimal by default, or prefixed with $ for
 hex or % for binary. Pretty much everything is output in hex.
@@ -103,7 +145,7 @@ Commands:
 
 
 Breakpoints
------------
+===========
 
 There are two types of breakpoints. "Normal" breakpoints trigger when the CPU
 is about to execute an instruction at the breakpoint address. "Memory" breakpoints

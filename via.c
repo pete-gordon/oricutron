@@ -136,7 +136,13 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
 
   fclose( f );
   tape_rewind( oric );
-  strncpy( oric->tapename, fname, 16 );
+  if( strlen( fname ) > 15 )
+  {
+    strncpy( oric->tapename, &fname[strlen(fname)-15], 16 );
+    oric->tapename[0] = 22;
+  } else {
+    strncpy( oric->tapename, fname, 16 );
+  }
   oric->tapename[15] = 0;
   tape_popup( oric );
   return SDL_TRUE;
@@ -177,7 +183,7 @@ void tape_ticktock( struct machine *oric, int cycles )
   if( ( oric->tapeoffs < 0 ) || ( oric->tapeoffs >= oric->tapelen ) )
     return;
 
-  if( ( oric->type == MACH_ATMOS ) && ( oric->tapeturbo ) )
+  if( ( oric->type == MACH_ATMOS ) && ( oric->tapeturbo ) && ( oric->romdis == 0 ) )
   {
     switch( oric->cpu.pc )
     {
