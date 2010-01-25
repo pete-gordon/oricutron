@@ -12,6 +12,7 @@ Oriculator ChangeLog
  * Implimented help command (?) in monitor
  * Added memory access breakpoints
  * Added a 16k Oric-1 mode
+ * Added commandline options
 
 
 0.0.2 (06-Apr-2009)
