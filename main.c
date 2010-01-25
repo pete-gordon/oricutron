@@ -46,8 +46,6 @@
 extern SDL_bool warpspeed, soundon;
 Uint32 lastframetimes[FRAMES_TO_AVERAGE], frametimeave;
 extern char mon_bpmsg[];
-extern char *keyqueue;
-extern int keysqueued, kqoffs;
 
 #ifdef __amigaos4__
 int32 timersigbit = -1;
@@ -163,11 +161,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   if( start_tape )
   {
     if( tape_load_tap( oric, start_tape ) )
-    {
-      keyqueue   = "CLOAD\"\"\x0d";
-      keysqueued = 8;
-      kqoffs     = 0;
-    }
+      queuekeys( "CLOAD\"\"\x0d" );
   }
 
   mon_init( oric );
