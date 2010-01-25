@@ -56,6 +56,11 @@ volatile Sint32 nextsndbuf=2, nextsndpos=0;
 volatile SDL_bool swapaudio=SDL_FALSE;
 extern SDL_bool soundavailable, soundon, warpspeed;
 
+// To insert keypresses into the queue, set these vars
+// (only works for ROM routines)
+char *keyqueue = NULL;
+int keysqueued = 0, kqoffs = 0;
+
 // Volume levels
 Sint32 voltab[] = { 0, /*62/4,*/161/4,265/4,377/4,580/4,774/4,1155/4,1575/4,2260/4,3088/4,4570/4,6233/4,9330/4,13187/4,21220/4,32767/4 };
 
@@ -178,6 +183,34 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
   Sint32 oldrendpos, oldnextpos, endsamples;
   Sint32 i, j;
   Sint32 output;
+
+  // Need to do queued keys?
+  if( ( keyqueue ) && ( keysqueued ) )
+  {
+    if( kqoffs >= keysqueued )
+    {
+      keyqueue = NULL;
+      keysqueued = 0;
+      kqoffs = 0;
+    } else {
+      switch( ay->oric->type )
+      {
+        case MACH_ATMOS:
+          if( ( ay->oric->cpu.pc == 0xeb78 ) && ( ay->oric->romdis == 0 ) )
+          {
+            ay->oric->cpu.a = keyqueue[kqoffs++];
+            ay->oric->cpu.write( &ay->oric->cpu, 0x2df, 0 );
+            ay->oric->cpu.f_n = 1;
+            ay->oric->cpu.pc = 0xeb88;
+          }
+          break;
+        
+        case MACH_ORIC1:
+        case MACH_ORIC1_16K:
+          break;
+      }
+    }
+  }
 
   // Has the audio interrupt kicked in?
   if( swapaudio )

@@ -46,6 +46,8 @@
 extern SDL_bool warpspeed, soundon;
 Uint32 lastframetimes[FRAMES_TO_AVERAGE], frametimeave;
 extern char mon_bpmsg[];
+extern char *keyqueue;
+extern int keysqueued, kqoffs;
 
 #ifdef __amigaos4__
 int32 timersigbit = -1;
@@ -53,9 +55,92 @@ uint32 timersig;
 struct Task *maintask;
 #endif
 
-SDL_bool init( struct machine *oric )
+SDL_bool init( struct machine *oric, int argc, char *argv[] )
 {
   Sint32 i;
+  Sint32 start_machine, start_disktype;
+  char *start_disk, *start_tape, *start_syms;
+  char opt_type, *opt_arg, *tmp;
+
+  // Defaults
+  start_machine  = MACH_ATMOS;
+  start_disktype = DRV_NONE;
+  start_disk     = NULL;
+  start_tape     = NULL;
+  start_syms     = NULL;
+
+  for( i=1; i<argc; i++ )
+  {
+    opt_type = 0;
+    if( argv[i][0] == '-' )
+    {
+      switch( argv[i][1] )
+      {
+        case '-':  // Long argument types
+          tmp = &argv[i][2];
+          if( i<(argc-1) )
+            opt_arg = argv[i+1];
+          else
+            opt_arg = NULL;
+          i++;
+
+          if( strcasecmp( tmp, "machine" ) == 0 ) { opt_type = 'm'; break; }
+          if( strcasecmp( tmp, "disk"    ) == 0 ) { opt_type = 'd'; break; }
+          if( strcasecmp( tmp, "tape"    ) == 0 ) { opt_type = 't'; break; }
+          if( strcasecmp( tmp, "drive"   ) == 0 ) { opt_type = 'k'; break; }
+          if( strcasecmp( tmp, "symbols" ) == 0 ) { opt_type = 's'; break; }
+          break;
+        
+        default:
+          opt_type = argv[i][1];
+          opt_arg = &argv[i][2];
+          break;
+      }
+
+      switch( opt_type )
+      {
+        case 'm':  // Machine type
+          if( opt_arg )
+          {
+            if( strcasecmp( opt_arg, "atmos" ) == 0 ) { start_machine = MACH_ATMOS;     break; }
+            if( strcasecmp( opt_arg, "a"     ) == 0 ) { start_machine = MACH_ATMOS;     break; }
+            if( strcasecmp( opt_arg, "oric1" ) == 0 ) { start_machine = MACH_ORIC1;     break; }
+            if( strcasecmp( opt_arg, "1"     ) == 0 ) { start_machine = MACH_ORIC1;     break; }
+            if( strcasecmp( opt_arg, "o16k"  ) == 0 ) { start_machine = MACH_ORIC1_16K; break; }
+          }
+          
+          printf( "Invalid machine type\n" );
+          break;
+        
+        case 'd':  // Disk image
+          start_disk = opt_arg;
+          break;
+        
+        case 't':  // Tape image
+          start_tape = opt_arg;
+          break;
+   
+        case 'k':  // Drive controller type
+          if( opt_arg )
+          {
+            if( strcasecmp( opt_arg, "microdisc" ) == 0 ) { start_disktype = DRV_MICRODISC; break; }
+            if( strcasecmp( opt_arg, "m"         ) == 0 ) { start_disktype = DRV_MICRODISC; break; }
+            if( strcasecmp( opt_arg, "jasmin"    ) == 0 ) { start_disktype = DRV_JASMIN;    break; }
+            if( strcasecmp( opt_arg, "j"         ) == 0 ) { start_disktype = DRV_JASMIN;    break; }
+          }
+
+          printf( "Invalid drive type\n" );
+          break;
+        
+        case 's':  // Pre-load symbols file
+          start_syms = opt_arg;
+          break;
+      }        
+    }
+  }
+
+  if( ( start_disk ) && ( start_disktype == DRV_NONE ) )
+    start_disktype = DRV_MICRODISC;
 
   for( i=0; i<8; i++ ) lastframetimes[i] = 0;
   frametimeave = 0;
@@ -71,9 +156,24 @@ SDL_bool init( struct machine *oric )
 #endif
 
   if( !init_gui( oric ) ) return SDL_FALSE;
-  if( !init_machine( oric, MACH_ATMOS, SDL_TRUE ) ) return SDL_FALSE;
+  oric->drivetype = start_disktype;
+  if( !init_machine( oric, start_machine, SDL_TRUE ) ) return SDL_FALSE;
+
+  if( start_disk ) diskimage_load( oric, start_disk, 0 );
+  if( start_tape )
+  {
+    if( tape_load_tap( oric, start_tape ) )
+    {
+      keyqueue   = "CLOAD\"\"\x0d";
+      keysqueued = 8;
+      kqoffs     = 0;
+    }
+  }
 
   mon_init( oric );
+
+  if( start_syms )
+    mon_new_symbols( start_syms, SDL_TRUE );
 
   return SDL_TRUE;
 }
@@ -122,7 +222,7 @@ int main( int argc, char *argv[] )
   struct machine oric;
   Uint32 framestart;
 
-  if( init( &oric ) )
+  if( init( &oric, argc, argv ) )
   {
     SDL_bool done, needrender, framedone;
 

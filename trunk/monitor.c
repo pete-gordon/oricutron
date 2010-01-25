@@ -2073,7 +2073,7 @@ SDL_bool mon_new_symbols( char *fname, SDL_bool above )
       linetmp[j] = linetmp[i];
     linetmp[j] = 0;
 
-    printf( "'%s' = %04X\n", linetmp, v );
+//    printf( "'%s' = %04X\n", linetmp, v );
     fflush( stdout );
 
     if( v >= 0xc000 )
