@@ -74,6 +74,8 @@ struct ay8912
   Uint32 currnoise, rndrack;
 };
 
+void queuekeys( char *str );
+
 SDL_bool ay_init( struct ay8912 *ay, struct machine *oric );
 void ay_callback( void *dummy, Sint8 *stream, int length );
 void ay_ticktock( struct ay8912 *ay, int cycles );

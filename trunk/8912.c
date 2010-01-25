@@ -105,6 +105,13 @@ static unsigned short keytab[] = { '7'        , 'n'        , '5'        , 'v'   
                                    'y'        , 'h'        , 'g'        , 'e'        , SDLK_RALT  , 'a'        , 's'        , 'w'        ,
                                    '8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, 0          , SDLK_EQUALS };
 
+void queuekeys( char *str )
+{
+  keyqueue   = str;
+  keysqueued = strlen( str );
+  kqoffs     = 0;
+}
+
 /*
 ** Low pass filter for the audio output
 */
