@@ -207,6 +207,13 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
         
         case MACH_ORIC1:
         case MACH_ORIC1_16K:
+          if( ( ay->oric->cpu.pc == 0xe905 ) && ( ay->oric->romdis == 0 ) )
+          {
+            ay->oric->cpu.a = keyqueue[kqoffs++];
+            ay->oric->cpu.write( &ay->oric->cpu, 0x2df, 0 );
+            ay->oric->cpu.f_n = 1;
+            ay->oric->cpu.pc = 0xe915;
+          }
           break;
       }
     }
