@@ -1112,7 +1112,6 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
 
     case 0x9A: // { "TXS", AM_IMP },  // 9A
       cpu->sp = cpu->x;
-      FLAG_ZN(cpu->sp);
       cycleit( cpu, 2 );
       break;
 
