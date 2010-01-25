@@ -94,6 +94,8 @@ In Debugger/Monitor
   F10     - Step over code
   F11     - Step over code without tracing into
             subroutines.
+  F12     - Skip instruction
+
 
   In the console:
   ---------------

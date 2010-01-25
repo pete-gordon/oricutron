@@ -3409,6 +3409,36 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           donkey = SDL_TRUE;
           break;
         
+        case SDLK_F12:
+          switch( distab[mon_read( oric, oric->cpu.pc )].amode )
+          {
+            case AM_IMM:
+            case AM_ZP:
+            case AM_ZPX:
+            case AM_ZPY:
+            case AM_ZIX:
+            case AM_ZIY:
+            case AM_REL:
+              oric->cpu.pc += 2;
+              break;
+            
+            case AM_ABS:
+            case AM_ABX:
+            case AM_ABY:
+            case AM_IND:
+              oric->cpu.pc += 3;
+              break;
+            
+
+            case AM_IMP:
+            default:
+              oric->cpu.pc++;
+              break;
+          }
+          *needrender = SDL_TRUE;
+          donkey = SDL_TRUE;
+          break;
+        
         default:
           break;
       }
