@@ -534,9 +534,19 @@ static void ay_modeset( struct ay8912 *ay )
         case AY_ENV_PER_L:
         case AY_ENV_PER_H:
         case AY_ENV_CYCLE:
+          if( ( !soundon ) || ( warpspeed ) )
+          {
+            int i;
+            for( i=0; i<ay->logged; i++ )
+              ay_dowrite( ay, &ay->writelog[i] );
+            ay->logged = 0;
+            ay->regs[ay->creg] = v;
+            break;
+          }
+
           if( ay->logged >= AUDIO_BUFLEN )
           {
-            SDL_WM_SetCaption( "AUDIO BASTARD", "AUDIO BASTARD" ); // Debug :-)
+            SDL_WM_SetCaption( "AUDIO BASTARD", "AUDIO BASTARD" ); // Debug
             break;
           }
           ay->writelog[ay->logged  ].cycle = ay->logcycle;
