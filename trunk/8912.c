@@ -549,9 +549,11 @@ static void ay_modeset( struct ay8912 *ay )
             SDL_WM_SetCaption( "AUDIO BASTARD", "AUDIO BASTARD" ); // Debug
             break;
           }
+          SDL_LockAudio();
           ay->writelog[ay->logged  ].cycle = ay->logcycle;
           ay->writelog[ay->logged  ].reg   = ay->creg;
           ay->writelog[ay->logged++].val   = v;
+          SDL_UnlockAudio();
           break;
 
         case AY_PORT_A:
