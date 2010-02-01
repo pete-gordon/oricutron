@@ -42,7 +42,6 @@ extern int pixpitch;
 SDL_bool needclr = SDL_TRUE;
 extern Uint16 gpal[];
 extern SDL_bool showfps, warpspeed, soundavailable, soundon;
-extern volatile Sint32 currsndpos, rendsndpos, nextsndpos;
 
 extern struct osdmenuitem hwopitems[];
 
@@ -59,8 +58,6 @@ void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode )
     case EM_RUNNING:
       SDL_EnableKeyRepeat( 0, 0 );
       SDL_EnableUNICODE( SDL_FALSE );
-      rendsndpos = 0;
-      nextsndpos = 0;
       oric->ay.soundon = soundavailable && soundon && (!warpspeed);
       if( oric->ay.soundon )
         SDL_PauseAudio( 0 );
@@ -121,6 +118,31 @@ void video_decode_attr( struct machine *oric, int attr )
       } else {
         oric->vid_addr = oric->vidbases[2];
         oric->vid_ch_base = &oric->mem[oric->vidbases[3]];
+      }
+
+      // PAL50 = 50Hz = 1,000,000/50 = 20000 cpu cycles/frame
+      // 312 scanlines/frame, so 20000/312 = 64 cpu cycles / scanline
+
+      // PAL60 = 60Hz = 1,000,000/60 = 16666 cpu cycles/frame
+      // 312 scanlines/frame, so 16666/312 = 53 cpu cycles / scanline
+
+      // NTSC = 60Hz = 1,000,000/60 = 16666 cpu cycles/frame
+      // 262 scanlines/frame, so 16667/262 = 64 cpu cycles / scanline
+      if( oric->vid_mode & 2 )
+      {
+        // PAL50
+        oric->cyclesperraster = 64;
+        oric->vid_start       = 65;
+        oric->vid_maxrast     = 312;
+        oric->vid_special     = oric->vid_start + 200;
+        oric->vid_end         = oric->vid_start + 224;
+      } else {
+        // PAL60
+        oric->cyclesperraster = 64;
+        oric->vid_start       = 32;
+        oric->vid_maxrast     = 262;
+        oric->vid_special     = oric->vid_start + 200;
+        oric->vid_end         = oric->vid_start + 224;
       }
 
       video_refresh_charset( oric );
@@ -753,7 +775,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->vid_special = oric->vid_start + 200;
       oric->vid_end     = oric->vid_start + 224;
       oric->vid_raster  = 0;
-      video_decode_attr( oric, 0x18 );
+      video_decode_attr( oric, 0x1a );
       break;
     
     case MACH_ORIC1:
@@ -818,7 +840,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->vid_special = oric->vid_start + 200;
       oric->vid_end     = oric->vid_start + 224;
       oric->vid_raster  = 0;
-      video_decode_attr( oric, 0x18 );
+      video_decode_attr( oric, 0x1a );
       break;
     
     case MACH_ATMOS:
@@ -883,7 +905,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->vid_special = oric->vid_start + 200;
       oric->vid_end     = oric->vid_start + 224;
       oric->vid_raster  = 0;
-      video_decode_attr( oric, 0x18 );
+      video_decode_attr( oric, 0x1a );
       break;
 
     case MACH_TELESTRAT:

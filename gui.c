@@ -215,7 +215,10 @@ void render( struct machine *oric )
       if( showfps )
       {
         fps = 100000/(frametimeave?frametimeave:1);
-        perc = 200000/(frametimeave?frametimeave:1);
+        if( oric->vid_mode & 2 )
+          perc = 200000/(frametimeave?frametimeave:1);
+        else
+          perc = 160000/(frametimeave?frametimeave:1);
         sprintf( tmp, "%4d.%02d%% - %4dFPS", perc/100, perc%100, fps/100 );
       }
       video_show( oric );
@@ -1398,7 +1401,7 @@ SDL_bool init_gui( struct machine *oric )
   wanted.samples  = AUDIO_BUFLEN;
 
   wanted.callback = (void*)ay_callback;
-  wanted.userdata = 0;
+  wanted.userdata = &oric->ay;
 
   soundavailable = SDL_FALSE;
   soundon = SDL_FALSE;
