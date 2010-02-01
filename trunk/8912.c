@@ -47,13 +47,6 @@ extern struct Task *maintask;
 extern uint32 timersig;
 #endif
 
-#define AUDIOBUFFERS 4
-
-static Sint16 sndbuf[AUDIOBUFFERS][AUDIO_BUFLEN];
-volatile Sint32 currsndbuf=0, currsndpos=0;
-volatile Sint32 rendsndbuf=1, rendsndpos=0;
-volatile Sint32 nextsndbuf=2, nextsndpos=0;
-volatile SDL_bool swapaudio=SDL_FALSE;
 extern SDL_bool soundavailable, soundon, warpspeed;
 
 // To insert keypresses into the queue, set these vars
@@ -136,108 +129,11 @@ static Uint32 ayrand( struct ay8912 *ay )
   return rbit ? 0 : 0xffff;
 }
 
-/*
-** This is the SDL audio callback. It is called by SDL
-** when it needs a sound buffer to be filled.
-**
-** The audio buffers are 1/50th of a second long, so
-** we use this callback to wait after rendering each
-** frame. This way we get 50FPS display and synced audio.
-*/
-void ay_callback( void *dummy, Sint8 *stream, int length )
-{
-  Sint16 *out;
-  Sint32 i, j;
-#ifndef __amigaos4__
-  SDL_Event     event;
-  SDL_UserEvent userevent;
-#endif
-  
-  /* Dump the current sound buffer into the SDL audio buffer */
-  out = (Sint16 *)stream;
-  for( i=0,j=0; i<AUDIO_BUFLEN; i++ )
-  {
-    out[j++] = sndbuf[currsndbuf][i];
-    out[j++] = sndbuf[currsndbuf][i];
-  }
-
-  /* Tell the main loop to emulate another frame */
-#ifdef __amigaos4__
-  IExec->Signal( maintask, timersig );
-#else
-  userevent.type  = SDL_USEREVENT;
-  userevent.code  = 0;
-  userevent.data1 = NULL;
-  userevent.data2 = NULL;
-  
-  event.type = SDL_USEREVENT;
-  event.user = userevent;
-  
-  SDL_PushEvent( &event );
-#endif
-
-  /* We're done with the current sound buffer */
-  swapaudio = SDL_TRUE;
-}
-
-/*
-** Emulate the AY for some clock cycles
-** Output is cycle-exact.
-*/
-void ay_ticktock( struct ay8912 *ay, int cycles )
+void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
 {
   SDL_bool newout[3], newnoise;
-  Sint32 oldrendpos, oldnextpos, endsamples;
   Sint32 i, j;
   Sint32 output;
-
-  // Need to do queued keys?
-  if( ( keyqueue ) && ( keysqueued ) )
-  {
-    if( kqoffs >= keysqueued )
-    {
-      keyqueue = NULL;
-      keysqueued = 0;
-      kqoffs = 0;
-    } else {
-      switch( ay->oric->type )
-      {
-        case MACH_ATMOS:
-          if( ( ay->oric->cpu.pc == 0xeb78 ) && ( ay->oric->romdis == 0 ) )
-          {
-            ay->oric->cpu.a = keyqueue[kqoffs++];
-            ay->oric->cpu.write( &ay->oric->cpu, 0x2df, 0 );
-            ay->oric->cpu.f_n = 1;
-            ay->oric->cpu.pc = 0xeb88;
-          }
-          break;
-        
-        case MACH_ORIC1:
-        case MACH_ORIC1_16K:
-          if( ( ay->oric->cpu.pc == 0xe905 ) && ( ay->oric->romdis == 0 ) )
-          {
-            ay->oric->cpu.a = keyqueue[kqoffs++];
-            ay->oric->cpu.write( &ay->oric->cpu, 0x2df, 0 );
-            ay->oric->cpu.f_n = 1;
-            ay->oric->cpu.pc = 0xe915;
-          }
-          break;
-      }
-    }
-  }
-
-  // Has the audio interrupt kicked in?
-  if( swapaudio )
-  {
-    // Swap to the next buffer
-    currsndbuf = rendsndbuf;
-    currsndpos = rendsndpos;
-    rendsndbuf = nextsndbuf;
-    rendsndpos = nextsndpos;
-    nextsndbuf = (nextsndbuf+1)%AUDIOBUFFERS;
-    nextsndpos = 0;
-    swapaudio = SDL_FALSE;
-  }
 
   // No new audio from any channels (yet)
   for( i=0; i<3; i++ )
@@ -311,72 +207,209 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
       }
     }
 
-    // "Output" accumulates the audio data from all sources
-    output = 0;
-
-    // Loop through the channels
-    for( i=0; i<3; i++ )
-    {
-      // Has the channel changed?
-      if( newout[i] )
-      {
-        // Yep, so calculate the squarewave signal...
-        j = ay->sign[i]*ay->toneon[i]*ay->vol[i];
-
-        // .. and optionally bring the noise
-        if( ay->noiseon[i] ) j += (ay->currnoise*ay->vol[i])>>16;
-
-        // Store the new output level for the channel
-        ay->out[i] = j;
-
-        // and mark that we don't need to recalculate unless
-        // anything changes
-        newout[i] = 0;
-      }
-
-      // Mix in the output of this channel
-      output += ay->out[i];
-    }
-
-    // Mix in the tape noise if enabled
-    if( ( ay->oric->tapemotor ) && ( ay->oric->tapenoise ) )
-      output += ay->oric->tapeout ? 8192 : -8192;
-
-    // Clamp the output
-    if( output > 32767 ) output = 32767;
-    if( output < -32768 ) output = -32768;
-    
-    // Get the current audio buffer position
-    oldrendpos = rendsndpos;
-    oldnextpos = nextsndpos;
-    
-    // Increment the audio buffer position enough for 1 clock cycle
-    rendsndpos += SAMPLESPERCYCLE;
-    if( rendsndpos > (AUDIO_BUFLEN<<FPBITS) )
-    {
-      // If we've exceeded the current audio buffer, increment the buffer position of the NEXT
-      // audio buffer, and clamp the position for this one
-      nextsndpos += rendsndpos-(AUDIO_BUFLEN<<FPBITS);
-      rendsndpos = AUDIO_BUFLEN<<FPBITS;
-
-      // Just stop if we fill 2 buffers, since something must be seriously wrong...
-      if( nextsndpos > (AUDIO_BUFLEN<<FPBITS ) )
-        nextsndpos = AUDIO_BUFLEN<<FPBITS;
-    }
-
-    // Render the output into the audio stream
-    endsamples = rendsndpos>>FPBITS;
-    for( i=oldrendpos>>FPBITS; i<endsamples; i++ )
-      sndbuf[rendsndbuf][i] = lowpass(output);
-
-    // ... and any excess ones in to the next buffer
-    endsamples = nextsndpos>>FPBITS;
-    for( i=oldnextpos>>FPBITS; i<endsamples; i++ )
-      sndbuf[nextsndbuf][i] = lowpass(output);    
-
     // Done one cycle!
     cycles--;
   }
+
+  // "Output" accumulates the audio data from all sources
+  output = 0;
+
+  // Loop through the channels
+  for( i=0; i<3; i++ )
+  {
+    // Has the channel changed?
+    if( newout[i] )
+    {
+      // Yep, so calculate the squarewave signal...
+      j = ay->sign[i]*ay->toneon[i]*ay->vol[i];
+
+      // .. and optionally bring the noise
+      if( ay->noiseon[i] ) j += (ay->currnoise*ay->vol[i])>>16;
+
+      // Store the new output level for the channel
+      ay->out[i] = j;
+
+      // and mark that we don't need to recalculate unless
+      // anything changes
+      newout[i] = 0;
+    }
+
+    // Mix in the output of this channel
+    output += ay->out[i];
+  }
+
+  // Clamp the output
+  if( output > 32767 ) output = 32767;
+  if( output < -32768 ) output = -32768;
+  ay->output = output;
+}
+
+void ay_dowrite( struct ay8912 *ay, struct aywrite *aw )
+{
+  Sint32 i, j;
+
+  ay->regs[aw->reg] = aw->val;
+
+  switch( aw->reg )
+  {
+    case AY_CHA_PER_L:   // Channel A period
+    case AY_CHA_PER_H:
+      ay->ct[0] = (((ay->regs[AY_CHA_PER_H]&0xf)<<8)|ay->regs[AY_CHA_PER_L])*TONETIME;
+      break;
+
+    case AY_CHB_PER_L:   // Channel B period
+    case AY_CHB_PER_H:
+      ay->ct[1] = (((ay->regs[AY_CHB_PER_H]&0xf)<<8)|ay->regs[AY_CHB_PER_L])*TONETIME;
+      break;
+
+    case AY_CHC_PER_L:   // Channel C period
+    case AY_CHC_PER_H:
+      ay->ct[2] = (((ay->regs[AY_CHC_PER_H]&0xf)<<8)|ay->regs[AY_CHC_PER_L])*TONETIME;
+      break;
+    
+    case AY_STATUS:      // Status
+      ay->toneon[0]  = (aw->val&0x01)?0:1;
+      ay->toneon[1]  = (aw->val&0x02)?0:1;
+      ay->toneon[2]  = (aw->val&0x04)?0:1;
+      ay->noiseon[0] = (aw->val&0x08)?0:1;
+      ay->noiseon[1] = (aw->val&0x10)?0:1;
+      ay->noiseon[2] = (aw->val&0x20)?0:1;
+      for( i=0; i<3; i++ )
+      {
+        j = ay->sign[i]*ay->toneon[i]*ay->vol[i];
+        if( ay->noiseon[i] ) j += (ay->currnoise*ay->vol[i])>>16;
+        ay->out[i] = j;
+      }
+      break;
+
+    case AY_NOISE_PER:   // Noise period
+      ay->ctn = (aw->val&0x1f)*NOISETIME;
+      break;
+    
+    case AY_CHA_AMP:
+    case AY_CHB_AMP:
+    case AY_CHC_AMP:
+      i = aw->reg-AY_CHA_AMP;
+      if( (aw->val&0x10)==0 )
+        ay->vol[i] = voltab[aw->val&0xf];
+      else
+        ay->vol[i] = voltab[ay->envtab[ay->envpos]];
+      ay->out[i] = ay->sign[i]*ay->vol[i]*ay->toneon[i];
+      break;
+    
+    case AY_ENV_PER_L:
+    case AY_ENV_PER_H:
+      ay->cte = ((ay->regs[AY_ENV_PER_H]<<8)|ay->regs[AY_ENV_PER_L])*ENVTIME;
+      for( i=0; i<3; i++ )
+      {
+        if( ay->regs[AY_CHA_AMP+i]&0x10 )
+        {
+          ay->vol[i] = voltab[ay->envtab[ay->envpos]];
+          ay->out[i] = ay->sign[i]*ay->vol[i]*ay->toneon[i];
+        }
+      }
+      break;
+
+    case AY_ENV_CYCLE:
+      ay->envtab = eshapes[aw->val&0xf];
+      ay->envpos = 0;
+      for( i=0; i<3; i++ )
+      {
+        if( ay->regs[AY_CHA_AMP+i]&0x10 )
+        {
+          ay->vol[i] = voltab[ay->envtab[ay->envpos]];
+          ay->out[i] = ay->sign[i]*ay->vol[i]*ay->toneon[i];
+        }
+      }
+      break;
+  }
+}
+
+/*
+** This is the SDL audio callback. It is called by SDL
+** when it needs a sound buffer to be filled.
+*/
+void ay_callback( void *dummy, Sint8 *stream, int length )
+{
+  Sint16 *out;
+  Sint32 i, j, logc;
+  Uint32 ccycle, ccyc, lastcyc;
+  struct ay8912 *ay = (struct ay8912 *)dummy;
+
+  ccycle  = 0;
+  ccyc    = 0;
+  lastcyc = 0;
+  logc    = 0;
+
+  out = (Sint16 *)stream;
+  for( i=0,j=0; i<AUDIO_BUFLEN; i++ )
+  {
+    ccyc = ccycle>>FPBITS;
+
+    while( ( logc < ay->logged ) && ( ccyc >= ay->writelog[logc].cycle ) )
+      ay_dowrite( ay, &ay->writelog[logc++] );
+
+    if( ccyc > lastcyc )
+    {
+      ay_audioticktock( ay, ccyc-lastcyc );
+      lastcyc = ccyc;
+    }
+
+    out[j++] = ay->output;
+    out[j++] = ay->output;
+
+    ccycle += CYCLESPERSAMPLE;
+  }
+
+  while( logc < ay->logged )
+    ay_dowrite( ay, &ay->writelog[logc++] );
+
+  ay->logcycle = 0;
+  ay->logged   = 0;
+}
+
+/*
+** Emulate the AY for some clock cycles
+** Output is cycle-exact.
+*/
+void ay_ticktock( struct ay8912 *ay, int cycles )
+{
+  // Need to do queued keys?
+  if( ( keyqueue ) && ( keysqueued ) )
+  {
+    if( kqoffs >= keysqueued )
+    {
+      keyqueue = NULL;
+      keysqueued = 0;
+      kqoffs = 0;
+    } else {
+      switch( ay->oric->type )
+      {
+        case MACH_ATMOS:
+          if( ( ay->oric->cpu.pc == 0xeb78 ) && ( ay->oric->romdis == 0 ) )
+          {
+            ay->oric->cpu.a = keyqueue[kqoffs++];
+            ay->oric->cpu.write( &ay->oric->cpu, 0x2df, 0 );
+            ay->oric->cpu.f_n = 1;
+            ay->oric->cpu.pc = 0xeb88;
+          }
+          break;
+        
+        case MACH_ORIC1:
+        case MACH_ORIC1_16K:
+          if( ( ay->oric->cpu.pc == 0xe905 ) && ( ay->oric->romdis == 0 ) )
+          {
+            ay->oric->cpu.a = keyqueue[kqoffs++];
+            ay->oric->cpu.write( &ay->oric->cpu, 0x2df, 0 );
+            ay->oric->cpu.f_n = 1;
+            ay->oric->cpu.pc = 0xe915;
+          }
+          break;
+      }
+    }
+  }
+
+  ay->logcycle += cycles;
 }
 
 /*
@@ -417,6 +450,9 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
   ay->soundon = soundavailable && soundon && (!warpspeed);
   ay->currnoise = 0xffff;
   ay->rndrack = 1;
+  ay->logged  = 0;
+  ay->logcycle = 0;
+  ay->output  = 0;
   if( soundavailable )
     SDL_PauseAudio( 0 );
 
@@ -431,7 +467,7 @@ void ay_update_keybits( struct ay8912 *ay )
   int offset;
 
   offset = via_read_portb( &ay->oric->via ) & 0x7;
-  if( ay->keystates[offset] & (ay->regs[AY_PORT_A]^0xff) )
+  if( ay->keystates[offset] & (ay->eregs[AY_PORT_A]^0xff) )
     via_write_portb( &ay->oric->via, 0x08, 0x08 );
   else
     via_write_portb( &ay->oric->via, 0x08, 0x00 );
@@ -470,95 +506,46 @@ void ay_keypress( struct ay8912 *ay, unsigned short key, SDL_bool down )
 static void ay_modeset( struct ay8912 *ay )
 {
   unsigned char v;
-  Sint32 i, j;
 
   switch( ay->bmode )
   {
     case 0x01: // Read AY register
-      via_write_porta( &ay->oric->via, 0xff, (ay->creg>=AY_LAST) ? 0 : ay->regs[ay->creg] );
+      via_write_porta( &ay->oric->via, 0xff, (ay->creg>=AY_LAST) ? 0 : ay->eregs[ay->creg] );
       break;
     
     case 0x02: // Write AY register
       if( ay->creg >= AY_LAST ) break;
       v = via_read_porta( &ay->oric->via );
-      ay->regs[ay->creg] = v;
+      ay->eregs[ay->creg] = v;
 
       switch( ay->creg )
       {
         case AY_CHA_PER_L:   // Channel A period
         case AY_CHA_PER_H:
-          ay->ct[0] = (((ay->regs[AY_CHA_PER_H]&0xf)<<8)|ay->regs[AY_CHA_PER_L])*TONETIME;
-          break;
-
         case AY_CHB_PER_L:   // Channel B period
         case AY_CHB_PER_H:
-          ay->ct[1] = (((ay->regs[AY_CHB_PER_H]&0xf)<<8)|ay->regs[AY_CHB_PER_L])*TONETIME;
-          break;
-
         case AY_CHC_PER_L:   // Channel C period
         case AY_CHC_PER_H:
-          ay->ct[2] = (((ay->regs[AY_CHC_PER_H]&0xf)<<8)|ay->regs[AY_CHC_PER_L])*TONETIME;
-          break;
-        
         case AY_STATUS:      // Status
-          ay->toneon[0]  = (ay->regs[AY_STATUS]&0x01)?0:1;
-          ay->toneon[1]  = (ay->regs[AY_STATUS]&0x02)?0:1;
-          ay->toneon[2]  = (ay->regs[AY_STATUS]&0x04)?0:1;
-          ay->noiseon[0] = (ay->regs[AY_STATUS]&0x08)?0:1;
-          ay->noiseon[1] = (ay->regs[AY_STATUS]&0x10)?0:1;
-          ay->noiseon[2] = (ay->regs[AY_STATUS]&0x20)?0:1;
-          for( i=0; i<3; i++ )
-          {
-            j = ay->sign[i]*ay->toneon[i]*ay->vol[i];
-            if( ay->noiseon[i] ) j += (ay->currnoise*ay->vol[i])>>16;
-            ay->out[i] = j;
-          }
-          break;
-
         case AY_NOISE_PER:   // Noise period
-          ay->ctn = (ay->regs[AY_NOISE_PER]&0x1f)*NOISETIME;
-          break;
-        
         case AY_CHA_AMP:
         case AY_CHB_AMP:
         case AY_CHC_AMP:
-          i = ay->creg-AY_CHA_AMP;
-          if( (v&0x10)==0 )
-            ay->vol[i] = voltab[v&0xf];
-          else
-            ay->vol[i] = voltab[ay->envtab[ay->envpos]];
-          ay->out[i] = ay->sign[i]*ay->vol[i]*ay->toneon[i];
-          break;
-        
         case AY_ENV_PER_L:
         case AY_ENV_PER_H:
-          ay->cte = ((ay->regs[AY_ENV_PER_H]<<8)|ay->regs[AY_ENV_PER_L])*ENVTIME;
-          for( i=0; i<3; i++ )
-          {
-            if( ay->regs[AY_CHA_AMP+i]&0x10 )
-            {
-              ay->vol[i] = voltab[ay->envtab[ay->envpos]];
-              ay->out[i] = ay->sign[i]*ay->vol[i]*ay->toneon[i];
-            }
-          }
-          break;
-
         case AY_ENV_CYCLE:
-          ay->envtab = eshapes[v&0xf];
-          ay->envpos = 0;
-          for( i=0; i<3; i++ )
+          if( ay->logged >= AUDIO_BUFLEN )
           {
-            if( ay->regs[AY_CHA_AMP+i]&0x10 )
-            {
-              ay->vol[i] = voltab[ay->envtab[ay->envpos]];
-              ay->out[i] = ay->sign[i]*ay->vol[i]*ay->toneon[i];
-            }
+            SDL_WM_SetCaption( "AUDIO BASTARD", "AUDIO BASTARD" ); // Debug :-)
+            break;
           }
+          ay->writelog[ay->logged  ].cycle = ay->logcycle;
+          ay->writelog[ay->logged  ].reg   = ay->creg;
+          ay->writelog[ay->logged++].val   = v;
           break;
 
         case AY_PORT_A:
-          if( ay->creg == AY_PORT_A )
-            ay_update_keybits( ay );
+          ay_update_keybits( ay );
           break;
       }
       break;

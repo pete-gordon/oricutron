@@ -41,7 +41,7 @@
 #include "machine.h"
 #include "monitor.h"
 
-#define FRAMES_TO_AVERAGE 50
+#define FRAMES_TO_AVERAGE 14
 
 extern SDL_bool warpspeed, soundon;
 Uint32 lastframetimes[FRAMES_TO_AVERAGE], frametimeave;
@@ -182,11 +182,15 @@ void shut( struct machine *oric )
 #endif
 }
 
-Uint32 nosoundtiming( Uint32 interval, void *userdata )
+// Stupid 10ms granularity bastard.
+static Uint32 time50[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
+static Uint32 time60[] = { 20, 10, 20, 10, 20, 10, 20, 10, 20, 20, 20, 10 };
+static int tmoffs = 0;
+
+Uint32 systemtiming( Uint32 interval, void *userdata )
 {
   struct machine *oric = (struct machine *)userdata;
-  if( ( oric->emu_mode == EM_RUNNING ) &&
-      ( !soundon ) )
+  if( oric->emu_mode == EM_RUNNING )
   {
 #if __amigaos4__
     IExec->Signal( maintask, timersig );
@@ -206,7 +210,8 @@ Uint32 nosoundtiming( Uint32 interval, void *userdata )
 #endif
   }
 
-  return (oric->cyclesperraster == 64) ? 1000/50 : 1000/60;
+  tmoffs = (tmoffs+1)%10;
+  return (oric->vid_mode & 2) ? time50[tmoffs] : time60[tmoffs];
 }
 
 int main( int argc, char *argv[] )
@@ -220,7 +225,7 @@ int main( int argc, char *argv[] )
   {
     SDL_bool done, needrender, framedone;
 
-    thetimer = SDL_AddTimer( 1000/50, (SDL_NewTimerCallback)nosoundtiming, (void *)&oric );
+    thetimer = SDL_AddTimer( 1000/50, (SDL_NewTimerCallback)systemtiming, (void *)&oric );
     foo = 0;
     framestart = 0;
 

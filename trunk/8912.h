@@ -21,16 +21,16 @@
 
 // Integer fraction bits to use when mapping
 // clock cycles to audio samples
-#define FPBITS 16
+#define FPBITS 10
 
 // Output audio frequency
 #define AUDIO_FREQ   44100
 
-// Audio buffer size (50Hz)
-#define AUDIO_BUFLEN (AUDIO_FREQ/50)
+// Audio buffer size
+#define AUDIO_BUFLEN 4096
 
-// Audio samples per clock cycle
-#define SAMPLESPERCYCLE (((AUDIO_BUFLEN<<FPBITS)/(64*312))+1)  // Samples per frame / Cycles per frame (in fixed point) Rounded up a bit.
+#define CYCLESPERSECOND (312*64*50)
+#define CYCLESPERSAMPLE ((CYCLESPERSECOND<<FPBITS)/AUDIO_FREQ)
 
 // GI addressing
 #define AYBMB_BC1  0
@@ -59,19 +59,30 @@ enum
   AY_LAST
 };
 
+struct aywrite
+{
+  Uint32 cycle;
+  Uint8  reg;
+  Uint8  val;
+};
+
 struct ay8912
 {
   unsigned char bmode;
   unsigned char creg;
-  unsigned char regs[AY_LAST];
+  unsigned char regs[AY_LAST], eregs[AY_LAST];
   SDL_bool keystates[8];
   SDL_bool soundon;
+  int logged;
+  Uint32 logcycle;
+  struct aywrite writelog[AUDIO_BUFLEN];
   Sint32 toneon[3], noiseon[3], vol[3];
   int ct[3], ctn, cte;
   Sint32 sign[3], out[3], envpos;
   unsigned char *envtab;
   struct machine *oric;
   Uint32 currnoise, rndrack;
+  Sint16 output;
 };
 
 void queuekeys( char *str );
