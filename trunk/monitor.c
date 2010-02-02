@@ -1260,7 +1260,7 @@ void mon_update_via( struct machine *oric )
     oric->tapetime == TAPE_1_PULSE );
   tzprintfpos( tz[TZ_VIA], 2, 15, "MOTOR = %1X", oric->tapemotor );
 
-  tzprintfpos( tz[TZ_VIA], 2, 18, "REFRESH = %dHz", (oric->vid_mode&2) ? 50 : 60 );
+  tzprintfpos( tz[TZ_VIA], 2, 18, "REFRESH = %dHz", oric->vid_freq ? 50 : 60 );
 }
 
 void mon_update_ay( struct machine *oric )

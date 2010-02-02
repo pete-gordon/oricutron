@@ -120,31 +120,6 @@ void video_decode_attr( struct machine *oric, int attr )
         oric->vid_ch_base = &oric->mem[oric->vidbases[3]];
       }
 
-      // PAL50 = 50Hz = 1,000,000/50 = 20000 cpu cycles/frame
-      // 312 scanlines/frame, so 20000/312 = 64 cpu cycles / scanline
-
-      // PAL60 = 60Hz = 1,000,000/60 = 16666 cpu cycles/frame
-      // 312 scanlines/frame, so 16666/312 = 53 cpu cycles / scanline
-
-      // NTSC = 60Hz = 1,000,000/60 = 16666 cpu cycles/frame
-      // 262 scanlines/frame, so 16667/262 = 64 cpu cycles / scanline
-      if( oric->vid_mode & 2 )
-      {
-        // PAL50
-        oric->cyclesperraster = 64;
-        oric->vid_start       = 65;
-        oric->vid_maxrast     = 312;
-        oric->vid_special     = oric->vid_start + 200;
-        oric->vid_end         = oric->vid_start + 224;
-      } else {
-        // PAL60
-        oric->cyclesperraster = 64;
-        oric->vid_start       = 32;
-        oric->vid_maxrast     = 262;
-        oric->vid_special     = oric->vid_start + 200;
-        oric->vid_end         = oric->vid_start + 224;
-      }
-
       video_refresh_charset( oric );
       break;
   }   
@@ -245,6 +220,36 @@ SDL_bool video_doraster( struct machine *oric )
     oric->vid_raster = 0;
     needrender = SDL_TRUE;
     oric->frames++;
+
+    if( oric->vid_freq != (oric->vid_mode&2) )
+    {
+      oric->vid_freq = oric->vid_mode&2;
+
+      // PAL50 = 50Hz = 1,000,000/50 = 20000 cpu cycles/frame
+      // 312 scanlines/frame, so 20000/312 = ~64 cpu cycles / scanline
+
+      // PAL60 = 60Hz = 1,000,000/60 = 16667 cpu cycles/frame
+      // 312 scanlines/frame, so 16667/312 = ~53 cpu cycles / scanline
+
+      // NTSC = 60Hz = 1,000,000/60 = 16667 cpu cycles/frame
+      // 262 scanlines/frame, so 16667/262 = ~64 cpu cycles / scanline
+      if( oric->vid_freq )
+      {
+        // PAL50
+        oric->cyclesperraster = 64;
+        oric->vid_start       = 65;
+        oric->vid_maxrast     = 312;
+        oric->vid_special     = oric->vid_start + 200;
+        oric->vid_end         = oric->vid_start + 224;
+      } else {
+        // PAL60
+        oric->cyclesperraster = 64;
+        oric->vid_start       = 32;
+        oric->vid_maxrast     = 262;
+        oric->vid_special     = oric->vid_start + 200;
+        oric->vid_end         = oric->vid_start + 224;
+      }
+    }
   }
 
   // Are we on a visible rasterline?

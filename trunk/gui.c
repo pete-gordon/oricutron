@@ -212,17 +212,17 @@ void render( struct machine *oric )
       break;
 
     case EM_RUNNING:
+      video_show( oric );
       if( showfps )
       {
         fps = 100000/(frametimeave?frametimeave:1);
-        if( oric->vid_mode & 2 )
+        if( oric->vid_freq )
           perc = 200000/(frametimeave?frametimeave:1);
         else
-          perc = 160000/(frametimeave?frametimeave:1);
+          perc = 166667/(frametimeave?frametimeave:1);
         sprintf( tmp, "%4d.%02d%% - %4dFPS", perc/100, perc%100, fps/100 );
+        printstr( 0, 0, gpal[1], gpal[4], tmp );
       }
-      video_show( oric );
-      if( showfps ) printstr( 0, 0, gpal[1], gpal[4], tmp );
       if( popuptime > 0 )
       {
         popuptime--;

@@ -41,7 +41,7 @@
 #include "machine.h"
 #include "monitor.h"
 
-#define FRAMES_TO_AVERAGE 14
+#define FRAMES_TO_AVERAGE 15
 
 extern SDL_bool warpspeed, soundon;
 Uint32 lastframetimes[FRAMES_TO_AVERAGE], frametimeave;
@@ -183,8 +183,8 @@ void shut( struct machine *oric )
 }
 
 // Stupid 10ms granularity bastard.
-static Uint32 time50[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
-static Uint32 time60[] = { 20, 10, 20, 10, 20, 10, 20, 10, 20, 20, 20, 10 };
+static Uint32 time50[] = { 20, 20, 20 };
+static Uint32 time60[] = { 20, 20, 10 };
 static int tmoffs = 0;
 
 Uint32 systemtiming( Uint32 interval, void *userdata )
@@ -210,8 +210,8 @@ Uint32 systemtiming( Uint32 interval, void *userdata )
 #endif
   }
 
-  tmoffs = (tmoffs+1)%10;
-  return (oric->vid_mode & 2) ? time50[tmoffs] : time60[tmoffs];
+  tmoffs = (tmoffs+1)%3;
+  return oric->vid_freq ? time50[tmoffs] : time60[tmoffs];
 }
 
 int main( int argc, char *argv[] )

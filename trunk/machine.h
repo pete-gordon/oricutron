@@ -69,6 +69,7 @@ struct machine
   int vid_fg_col;
   int vid_bg_col;
   int vid_mode;
+  int vid_freq;
   int vid_textattrs;
   int vid_blinkmask;
   int frames;
