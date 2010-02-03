@@ -219,7 +219,7 @@ int main( int argc, char *argv[] )
   void *thetimer;
   Sint32 i, foo;
   struct machine oric;
-  Uint32 framestart;
+  Uint32 framestart, nextframe;
 
   if( init( &oric, argc, argv ) )
   {
@@ -264,6 +264,7 @@ int main( int argc, char *argv[] )
           }
 
           framestart = SDL_GetTicks();
+          nextframe = framestart + 20;
           while( ( !framedone ) && ( !needrender ) )
           {
             while( oric.cpu.rastercycles > 0 )
