@@ -3386,6 +3386,16 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           donkey = SDL_TRUE;
           break;
 
+        case SDLK_F10:
+          if( !kshifted )
+          {
+            mon_store_state( oric );
+            steppy_step( oric );
+            *needrender = SDL_TRUE;
+            donkey = SDL_TRUE;
+            break;
+          }
+        
         case SDLK_F11:
           if( mon_read( oric, oric->cpu.pc ) == 0x20 ) // JSR instruction?
           {
@@ -3403,8 +3413,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             donkey = SDL_TRUE;
             break;
           }
-        
-        case SDLK_F10:
+
           mon_store_state( oric );
           steppy_step( oric );
           *needrender = SDL_TRUE;
