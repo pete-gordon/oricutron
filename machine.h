@@ -93,6 +93,7 @@ struct machine
   int drivetype;
   struct wd17xx    wddisk;
   struct microdisc md;
+  struct jasmin jasmin;
   char diskname[MAX_DRIVES][16];
 
   unsigned char tapebit, tapeout, tapeparity;
