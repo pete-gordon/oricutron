@@ -371,13 +371,19 @@ void jasmin_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char da
   struct machine *oric = (struct machine *)cpu->userdata;
   if( oric->romdis )
   {
-    if( addr >= 0xf800 ) return; // Can't write to ROM!
+    if( ( oric->jasmin.olay == 0 ) && ( addr >= 0xf800 ) ) return; // Can't write to ROM
   } else {
     if( addr >= 0xc000 ) return;
   }
 
   if( ( addr & 0xff00 ) == 0x0300 )
   {
+    if( ( addr >= 0x3f4 ) && ( addr < 0x400 ) )
+    {
+      jasmin_write( &oric->jasmin, addr, data );
+      return;
+    }
+
     via_write( &oric->via, addr, data );
     return;
   }
@@ -390,13 +396,19 @@ void jasmin_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char dat
   struct machine *oric = (struct machine *)cpu->userdata;
   if( oric->romdis )
   {
-    if( addr >= 0xf800 ) return; // Can't write to ROM!
+    if( ( oric->jasmin.olay == 0 ) && ( addr >= 0xf800 ) ) return; // Can't write to ROM
   } else {
     if( addr >= 0xc000 ) return;
   }
 
   if( ( addr & 0xff00 ) == 0x0300 )
   {
+    if( ( addr >= 0x3f4 ) && ( addr < 0x400 ) )
+    {
+      jasmin_write( &oric->jasmin, addr, data );
+      return;
+    }
+
     via_write( &oric->via, addr, data );
     return;
   }
@@ -467,7 +479,7 @@ SDL_bool isram( struct machine *oric, unsigned short addr )
       break;
     
     case DRV_JASMIN:
-      // Todo: map
+      if( oric->jasmin.olay ) return SDL_TRUE;
       if( addr >= 0xf800 ) return SDL_FALSE;
       break;
   }
@@ -510,7 +522,7 @@ unsigned char jasmin_atmosread( struct m6502 *cpu, unsigned short addr )
 
   if( oric->romdis )
   {
-    if( addr >= 0xf800 )
+    if( ( oric->jasmin.olay == 0 ) && ( addr >= 0xf800 ) )
       return rom_jasmin[addr-0xf800];
   } else {
     if( addr >= 0xc000 )
@@ -518,7 +530,12 @@ unsigned char jasmin_atmosread( struct m6502 *cpu, unsigned short addr )
   }
 
   if( ( addr & 0xff00 ) == 0x0300 )
+  {
+    if( ( addr >= 0x3f4 ) && ( addr < 0x400 ) )
+      return jasmin_read( &oric->jasmin, addr );
+
     return via_read( &oric->via, addr );
+  }
 
   return oric->mem[addr];
 }
@@ -530,7 +547,7 @@ unsigned char jasmin_o16kread( struct m6502 *cpu, unsigned short addr )
 
   if( oric->romdis )
   {
-    if( addr >= 0xf800 )
+    if( ( oric->jasmin.olay == 0 ) && ( addr >= 0xf800 ) )
       return rom_jasmin[addr-0xf800];
   } else {
     if( addr >= 0xc000 )
@@ -538,7 +555,12 @@ unsigned char jasmin_o16kread( struct m6502 *cpu, unsigned short addr )
   }
 
   if( ( addr & 0xff00 ) == 0x0300 )
+  {
+    if( ( addr >= 0x3f4 ) && ( addr < 0x400 ) )
+      return jasmin_read( &oric->jasmin, addr );
+
     return via_read( &oric->via, addr );
+  }
 
   return oric->mem[addr&0x3fff];
 }
@@ -747,6 +769,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           oric->cpu.read = jasmin_o16kread;
           oric->cpu.write = jasmin_o16kwrite;
           oric->romdis = SDL_TRUE;
+          jasmin_init( &oric->jasmin, &oric->wddisk, oric );
           break;
 
         default:
@@ -812,6 +835,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           oric->cpu.read = jasmin_atmosread;
           oric->cpu.write = jasmin_atmoswrite;
           oric->romdis = SDL_TRUE;
+          jasmin_init( &oric->jasmin, &oric->wddisk, oric );
           break;
 
         default:
@@ -877,6 +901,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           oric->cpu.read = jasmin_atmosread;
           oric->cpu.write = jasmin_atmoswrite;
           oric->romdis = SDL_TRUE;
+          jasmin_init( &oric->jasmin, &oric->wddisk, oric );
           break;
 
         default:
@@ -943,6 +968,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
 void shut_machine( struct machine *oric )
 {
   if( oric->drivetype == DRV_MICRODISC ) { microdisc_free( &oric->md ); oric->drivetype = DRV_NONE; }
+  if( oric->drivetype == DRV_JASMIN )    { jasmin_free( &oric->jasmin ); oric->drivetype = DRV_NONE; }
   if( oric->mem ) { free( oric->mem ); oric->mem = NULL; oric->rom = NULL; }
   if( oric->scr ) { free( oric->scr ); oric->scr = NULL; }
 }

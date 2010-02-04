@@ -450,7 +450,7 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
             wd->distatus  |= wd->sectype;
             wd->currentop = COP_NUFFINK;
           } else {
-            wd->delayeddrq = 10;
+            wd->delayeddrq = 32;
           }
           break;
         
@@ -472,7 +472,7 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
             wd->distatus   = 0;
             wd->currentop = COP_NUFFINK;
           } else {
-            wd->delayeddrq = 10;
+            wd->delayeddrq = 32;
           }
           break;
       }
@@ -578,7 +578,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
 #if GENERAL_DISK_DEBUG
             dbg_printf( "DISK: Sector %d not found.", wd->r_sector );
 #endif
-            setemumode( oric, NULL, EM_DEBUG );
+//            setemumode( oric, NULL, EM_DEBUG );
             break;
           }
 
@@ -802,6 +802,127 @@ void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char d
     
     default:
       via_write( &md->oric->via, addr, data );
+      break;
+  }
+}
+
+void jasmin_setdrq( void *j )
+{
+  struct jasmin *jp = (struct jasmin *)j;
+  jp->oric->cpu.irq |= IRQF_DISK;
+  jp->oric->cpu.irql = SDL_TRUE;
+}
+
+void jasmin_clrdrq( void *j )
+{
+  struct jasmin *jp = (struct jasmin *)j;
+  jp->oric->cpu.irq &= ~IRQF_DISK;
+}
+
+void jasmin_setintrq( void *j )
+{
+  struct jasmin *jp = (struct jasmin *)j;
+  jp->oric->cpu.irq |= IRQF_DISK;
+  jp->oric->cpu.irql = SDL_TRUE;
+}
+
+void jasmin_clrintrq( void *j )
+{
+  struct jasmin *jp = (struct jasmin *)j;
+  jp->oric->cpu.irq &= ~IRQF_DISK;
+}
+
+void jasmin_init( struct jasmin *j, struct wd17xx *wd, struct machine *oric )
+{
+  wd17xx_init( wd );
+  wd->setintrq = jasmin_setintrq;
+  wd->clrintrq = jasmin_clrintrq;
+  wd->intrqarg = (void*)j;
+  wd->setdrq   = jasmin_setdrq;
+  wd->clrdrq   = jasmin_clrdrq;
+  wd->drqarg   = (void*)j;
+
+  j->olay     = 0;
+  j->romdis   = 1;
+  j->wd       = wd;
+  j->oric     = oric;
+}
+
+void jasmin_free( struct jasmin *j )
+{
+  int i;
+  for( i=0; i<MAX_DRIVES; i++ )
+    disk_eject( j->oric, i );
+}
+
+unsigned char jasmin_read( struct jasmin *j, unsigned short addr )
+{
+//  dbg_printf( "DISK: (%04X) Read from %04X", md->oric->cpu.pc-1, addr );
+  if( ( addr >= 0x3f4 ) && ( addr < 0x3f8 ) )
+    return wd17xx_read( j->wd, addr&3 );
+
+  switch( addr )
+  {
+    case 0x3f8:  // Side select
+      return j->wd->c_side ? 1 : 0;
+   
+    case 0x3f9:  // Disk controller reset
+    case 0x3fc:
+    case 0x3fd:
+    case 0x3fe:
+    case 0x3ff:
+      return 0;
+   
+    case 0x3fa:  // Overlay RAM
+      return j->olay;
+
+    case 0x3fb:
+      return j->romdis;
+    
+
+    default:
+      return via_read( &j->oric->via, addr );
+  }
+
+  return 0;
+}
+
+void jasmin_write( struct jasmin *j, unsigned short addr, unsigned char data )
+{
+  if( ( addr >= 0x3f4 ) && ( addr < 0x3f8 ) )
+  {
+    wd17xx_write( j->oric, j->wd, addr&3, data );
+    return;
+  }
+
+  switch( addr )
+  {
+    case 0x3f8: // side select
+      j->wd->c_side = data&1;
+      break;
+    
+    case 0x3f9: // reset
+      // ...
+      break;
+    
+    case 0x3fa: // overlay RAM
+      j->olay = data&1;
+      break;
+    
+    case 0x3fb: // romdis
+      j->romdis = data&1;
+      j->oric->romdis = (data!=0) ? SDL_TRUE : SDL_FALSE;
+      break;
+    
+    case 0x3fc: // Drive 0
+    case 0x3fd: // Drive 1
+    case 0x3fe: // Drive 2
+    case 0x3ff: // Drive 3
+      j->wd->c_drive = addr&3;
+      break;
+
+    default:
+      via_write( &j->oric->via, addr, data );
       break;
   }
 }

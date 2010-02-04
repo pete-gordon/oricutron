@@ -147,6 +147,14 @@ struct microdisc
   SDL_bool diskrom;
 };
 
+struct jasmin
+{
+  Uint8 olay;     // 0x3fa
+  Uint8 romdis;   // 0x3fb
+  struct wd17xx *wd;
+  struct machine *oric;
+};
+
 SDL_bool diskimage_load( struct machine *oric, char *fname, int drive );
 
 void wd17xx_ticktock( struct wd17xx *wd, int cycles );
@@ -155,3 +163,8 @@ void microdisc_init( struct microdisc *md, struct wd17xx *wd, struct machine *or
 void microdisc_free( struct microdisc *md );
 unsigned char microdisc_read( struct microdisc *md, unsigned short addr );
 void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char data );
+
+void jasmin_init( struct jasmin *j, struct wd17xx *wd, struct machine *oric );
+void jasmin_free( struct jasmin *j );
+unsigned char jasmin_read( struct jasmin *j, unsigned short addr );
+void jasmin_write( struct jasmin *j, unsigned short addr, unsigned char data );
