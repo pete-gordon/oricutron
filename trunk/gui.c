@@ -47,6 +47,7 @@
 #include "machine.h"
 #include "monitor.h"
 
+extern SDL_bool fullscreen;
 SDL_Surface *screen = NULL;
 SDL_bool need_sdl_quit = SDL_FALSE;
 SDL_bool soundavailable, soundon;
@@ -1386,8 +1387,7 @@ SDL_bool init_gui( struct machine *oric )
   }
   need_sdl_quit = SDL_TRUE;
 
-//  screen = SDL_SetVideoMode( 640, 480, 16, SDL_DOUBLEBUF | SDL_FULLSCREEN );
-  screen = SDL_SetVideoMode( 640, 480, 16, SDL_DOUBLEBUF );
+  screen = SDL_SetVideoMode( 640, 480, 16, fullscreen ? (SDL_DOUBLEBUF|SDL_FULLSCREEN) : SDL_DOUBLEBUF );
   if( !screen )
   {
     printf( "SDL video failed\n" );

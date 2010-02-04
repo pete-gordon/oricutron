@@ -52,6 +52,8 @@ Here are all the options:
 		      "jasmin" or "j" for Jasmin
 
   -s / --symbols    = Load symbols from a file
+  -f / --fullscreen = Run oriculator fullscreen
+  -w / --window     = Run oriculator in a window
 
 
 Examples:

@@ -43,6 +43,7 @@
 
 #define FRAMES_TO_AVERAGE 15
 
+SDL_bool fullscreen;
 extern SDL_bool warpspeed, soundon;
 Uint32 lastframetimes[FRAMES_TO_AVERAGE], frametimeave;
 extern char mon_bpmsg[];
@@ -66,6 +67,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   start_disk     = NULL;
   start_tape     = NULL;
   start_syms     = NULL;
+  fullscreen     = SDL_FALSE;
 
   for( i=1; i<argc; i++ )
   {
@@ -75,18 +77,21 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
       switch( argv[i][1] )
       {
         case '-':  // Long argument types
+          opt_arg = NULL;
           tmp = &argv[i][2];
+
+          if( strcasecmp( tmp, "fullscreen" ) == 0 ) { opt_type = 'f'; break; }
+          if( strcasecmp( tmp, "window"     ) == 0 ) { opt_type = 'w'; break; }
+
           if( i<(argc-1) )
             opt_arg = argv[i+1];
-          else
-            opt_arg = NULL;
           i++;
 
-          if( strcasecmp( tmp, "machine" ) == 0 ) { opt_type = 'm'; break; }
-          if( strcasecmp( tmp, "disk"    ) == 0 ) { opt_type = 'd'; break; }
-          if( strcasecmp( tmp, "tape"    ) == 0 ) { opt_type = 't'; break; }
-          if( strcasecmp( tmp, "drive"   ) == 0 ) { opt_type = 'k'; break; }
-          if( strcasecmp( tmp, "symbols" ) == 0 ) { opt_type = 's'; break; }
+          if( strcasecmp( tmp, "machine"    ) == 0 ) { opt_type = 'm'; break; }
+          if( strcasecmp( tmp, "disk"       ) == 0 ) { opt_type = 'd'; break; }
+          if( strcasecmp( tmp, "tape"       ) == 0 ) { opt_type = 't'; break; }
+          if( strcasecmp( tmp, "drive"      ) == 0 ) { opt_type = 'k'; break; }
+          if( strcasecmp( tmp, "symbols"    ) == 0 ) { opt_type = 's'; break; }
           break;
         
         default:
@@ -132,6 +137,14 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
         
         case 's':  // Pre-load symbols file
           start_syms = opt_arg;
+          break;
+        
+        case 'f':
+          fullscreen = SDL_TRUE;
+          break;
+        
+        case 'w':
+          fullscreen = SDL_FALSE;
           break;
       }        
     }
