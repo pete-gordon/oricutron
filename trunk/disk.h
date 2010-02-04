@@ -77,8 +77,10 @@ enum
   COP_NUFFINK=0,      // Not doing anything, guv
   COP_READ_TRACK,     // Reading a track
   COP_READ_SECTOR,    // Reading a sector
+  COP_READ_SECTORS,   // Reading multiple sectors
   COP_WRITE_TRACK,    // Writing a track
   COP_WRITE_SECTOR,   // Writing a sector
+  COP_WRITE_SECTORS,  // Writing multiple sectors
   COP_READ_ADDRESS    // Reading a sector header
 };
 

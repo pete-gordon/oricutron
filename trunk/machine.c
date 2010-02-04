@@ -696,6 +696,13 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           *needrender = SDL_TRUE;
           break;
         
+        case SDLK_F4:
+          if( oric->drivetype != DRV_JASMIN ) break;
+          
+          oric->cpu.write( &oric->cpu, 0x3fb, 1 ); // ROMDIS
+          m6502_reset( &oric->cpu );
+          break;
+        
         case SDLK_F5:
           showfps = showfps ? SDL_FALSE : SDL_TRUE;
           if( !showfps ) needclr = SDL_TRUE;
@@ -768,7 +775,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         case DRV_JASMIN:
           oric->cpu.read = jasmin_o16kread;
           oric->cpu.write = jasmin_o16kwrite;
-          oric->romdis = SDL_TRUE;
+          oric->romdis = SDL_FALSE;
           jasmin_init( &oric->jasmin, &oric->wddisk, oric );
           break;
 
@@ -834,7 +841,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         case DRV_JASMIN:
           oric->cpu.read = jasmin_atmosread;
           oric->cpu.write = jasmin_atmoswrite;
-          oric->romdis = SDL_TRUE;
+          oric->romdis = SDL_FALSE;
           jasmin_init( &oric->jasmin, &oric->wddisk, oric );
           break;
 
@@ -900,7 +907,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         case DRV_JASMIN:
           oric->cpu.read = jasmin_atmosread;
           oric->cpu.write = jasmin_atmoswrite;
-          oric->romdis = SDL_TRUE;
+          oric->romdis = SDL_FALSE;
           jasmin_init( &oric->jasmin, &oric->wddisk, oric );
           break;
 
@@ -956,7 +963,6 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   oric->frames = 0;
   oric->vid_double = SDL_TRUE;
   setemumode( oric, NULL, EM_RUNNING );
-//  setemumode( oric, NULL, EM_DEBUG );
 
   if( oric->autorewind ) tape_rewind( oric );
 

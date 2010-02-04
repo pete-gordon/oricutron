@@ -57,13 +57,14 @@ struct Task *maintask;
 SDL_bool init( struct machine *oric, int argc, char *argv[] )
 {
   Sint32 i;
-  Sint32 start_machine, start_disktype;
+  Sint32 start_machine, start_disktype, start_mode;
   char *start_disk, *start_tape, *start_syms;
   char opt_type, *opt_arg, *tmp;
 
   // Defaults
   start_machine  = MACH_ATMOS;
   start_disktype = DRV_NONE;
+  start_mode     = EM_RUNNING;
   start_disk     = NULL;
   start_tape     = NULL;
   start_syms     = NULL;
@@ -82,6 +83,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 
           if( strcasecmp( tmp, "fullscreen" ) == 0 ) { opt_type = 'f'; break; }
           if( strcasecmp( tmp, "window"     ) == 0 ) { opt_type = 'w'; break; }
+          if( strcasecmp( tmp, "debug"      ) == 0 ) { opt_type = 'b'; break; }
 
           if( i<(argc-1) )
             opt_arg = argv[i+1];
@@ -146,6 +148,10 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
         case 'w':
           fullscreen = SDL_FALSE;
           break;
+        
+        case 'b':
+          start_mode = EM_DEBUG;
+          break; 
       }        
     }
   }
@@ -169,6 +175,9 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   if( !init_gui( oric ) ) return SDL_FALSE;
   oric->drivetype = start_disktype;
   if( !init_machine( oric, start_machine, SDL_TRUE ) ) return SDL_FALSE;
+
+  if( start_mode != EM_RUNNING )
+    setemumode( oric, NULL, start_mode );
 
   if( start_disk ) diskimage_load( oric, start_disk, 0 );
   if( start_tape )
