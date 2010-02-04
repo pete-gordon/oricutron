@@ -303,7 +303,7 @@ void wd17xx_seek_track( struct wd17xx *wd, Uint8 track )
     wd->c_sector = 0;
     wd->r_track = track;
     wd->delayedint = 20;
-    wd->distatus = 0;
+    wd->distatus = WSFI_HEADL;
     if( wd->c_track == 0 ) wd->distatus |= WSFI_TRK0;
 #if GENERAL_DISK_DEBUG
     dbg_printf( "DISK: At track %u (%u sectors)", track, wd->disk[wd->c_drive]->numsectors );
@@ -404,6 +404,7 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
       switch( wd->currentop )
       {
         case COP_READ_SECTOR:
+        case COP_READ_SECTORS:
           if( !wd->currsector )
           {
             wd->r_status &= ~WSF_DRQ;
@@ -445,10 +446,36 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
               sectordumpcount = 0;
             }
 #endif
+            if( wd->currentop == COP_READ_SECTORS )
+            {
+#if GENERAL_DISK_DEBUG
+              dbg_printf( "Next sector..." );
+#endif
+              // Get the next sector, and carry on!
+              wd->r_sector++;
+              wd->curroffs   = 0;
+              wd->currsector = wd17xx_find_sector( wd, wd->r_sector );
+              
+              if( !wd->currsector )
+              {
+                wd->delayedint = 20;
+                wd->distatus   = wd->r_status & ~(WSF_BUSY|WSFR_RECTYP|WSF_RNF|WSF_CRCERR|WSF_LOSTDAT|WSF_BUSY|WSF_DRQ);
+                wd->distatus  |= wd->sectype;
+                wd->currentop = COP_NUFFINK;
+                wd->r_status &= (~WSF_DRQ);
+                wd->clrdrq( wd->drqarg );
+                break;
+              }
+              wd->delayeddrq = 32;
+              break;
+            }
+
             wd->delayedint = 20;
-            wd->distatus   = wd->r_status & ~(WSF_BUSY|WSFR_RECTYP|WSF_RNF|WSF_CRCERR|WSF_LOSTDAT|WSF_BUSY);
+            wd->distatus   = wd->r_status & ~(WSF_BUSY|WSFR_RECTYP|WSF_RNF|WSF_CRCERR|WSF_LOSTDAT|WSF_BUSY|WSF_DRQ);
             wd->distatus  |= wd->sectype;
             wd->currentop = COP_NUFFINK;
+            wd->r_status &= (~WSF_DRQ);
+            wd->clrdrq( wd->drqarg );
           } else {
             wd->delayeddrq = 32;
           }
@@ -501,7 +528,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
               dbg_printf( "DISK: (%04X) Restore", oric->cpu.pc-1 );
 #endif
               wd->r_status |= WSF_BUSY;
-              wd->r_status &= ~(WSF_NOTREADY|WSFI_PULSE|WSFI_SEEKERR|WSF_CRCERR|WSFI_TRK0);
+              wd->r_status &= ~(WSF_NOTREADY|WSFI_PULSE|WSFI_SEEKERR|WSF_CRCERR|WSFI_TRK0|WSFI_HEADL);
               wd17xx_seek_track( wd, 0 );
               wd->currentop = COP_NUFFINK;
               break;
@@ -559,7 +586,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           switch( oric->drivetype )
           {
             case DRV_MICRODISC:
-              dbg_printf( "DISK: (%04X) Read sector %u (ROM=%s,EPROM=%s)", oric->cpu.pc-1, wd->r_sector, oric->romdis?"OFF":"ON", oric->md.diskrom?"ON":"OFF" );
+              dbg_printf( "DISK: (%04X) Read sector %u (CODE=%02X,ROM=%s,EPROM=%s)", oric->cpu.pc-1, wd->r_sector, data, oric->romdis?"OFF":"ON", oric->md.diskrom?"ON":"OFF" );
               break;
             
             default:
@@ -585,7 +612,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           wd->currseclen = 1<<(wd->currsector->id_ptr[4]+7);
           wd->r_status = WSF_BUSY|WSF_DRQ;
           wd->setdrq( wd->drqarg );
-          wd->currentop = COP_READ_SECTOR;
+          wd->currentop = (data&0x10) ? COP_READ_SECTORS : COP_READ_SECTOR;
 #if DEBUG_SECTOR_DUMP
           sectordumpcount = 0;
           sectordumpstr[0] = 0;
@@ -638,7 +665,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
               wd->currentop = COP_READ_ADDRESS;
               break;
             
-            case 0x10: // Force IRQ (Type IV)
+            case 0x10: // Force Interrupt (Type IV)
 #if GENERAL_DISK_DEBUG
               dbg_printf( "DISK: (%04X) Force int", oric->cpu.pc-1 );
 #endif
@@ -821,15 +848,10 @@ void jasmin_clrdrq( void *j )
 
 void jasmin_setintrq( void *j )
 {
-  struct jasmin *jp = (struct jasmin *)j;
-  jp->oric->cpu.irq |= IRQF_DISK;
-  jp->oric->cpu.irql = SDL_TRUE;
 }
 
 void jasmin_clrintrq( void *j )
 {
-  struct jasmin *jp = (struct jasmin *)j;
-  jp->oric->cpu.irq &= ~IRQF_DISK;
 }
 
 void jasmin_init( struct jasmin *j, struct wd17xx *wd, struct machine *oric )
@@ -843,7 +865,7 @@ void jasmin_init( struct jasmin *j, struct wd17xx *wd, struct machine *oric )
   wd->drqarg   = (void*)j;
 
   j->olay     = 0;
-  j->romdis   = 1;
+  j->romdis   = 0;
   j->wd       = wd;
   j->oric     = oric;
 }
