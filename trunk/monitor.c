@@ -1316,26 +1316,50 @@ void mon_update_ay( struct machine *oric )
 */
 void mon_update_disk( struct machine *oric )
 {
+  char *opname;
+
   if( oric->drivetype == DRV_NONE )
     return;
+
+  opname = "Unknown      ";
+  switch( oric->wddisk.currentop )
+  {
+    case COP_NUFFINK:       opname = "Idle         "; break;
+    case COP_READ_TRACK:    opname = "Read track   "; break;
+    case COP_READ_SECTOR:   opname = "Read sector  "; break;
+    case COP_READ_SECTORS:  opname = "Read sectors "; break;
+    case COP_WRITE_TRACK:   opname = "Write track  "; break;
+    case COP_WRITE_SECTOR:  opname = "Write sector "; break;
+    case COP_WRITE_SECTORS: opname = "Write sectors"; break;
+    case COP_READ_ADDRESS:  opname = "Read address "; break;
+  }
 
   tzprintfpos( tz[TZ_DISK], 2, 2, "STATUS=%02X        ROMDIS=%1X", oric->wddisk.r_status, oric->romdis );
   tzprintfpos( tz[TZ_DISK], 2, 3, "DRIVE=%02X SIDE=%02X TRACK=%02X",
     oric->wddisk.c_drive,
     oric->wddisk.c_side,
     oric->wddisk.c_track );
+  tzprintfpos( tz[TZ_DISK], 2, 4, "SECTR=%02X DATA=%02X CMD  =%02X",
+    oric->wddisk.r_sector,
+    oric->wddisk.r_data,
+    oric->wddisk.cmd );
+  tzprintfpos( tz[TZ_DISK], 2, 5, "OP=%s", opname );
+  tzprintfpos( tz[TZ_DISK], 2, 6, "IRQC=%03d DRQC=%03d",
+    oric->wddisk.delayedint,
+    oric->wddisk.delayeddrq );
 
   switch( oric->drivetype )
   {
     case DRV_MICRODISC:
-      tzprintfpos( tz[TZ_DISK], 2, 5, "MDSTAT=%02X INTRQ=%1X DRQ=%1X",
+      tzprintfpos( tz[TZ_DISK], 2, 8, "MDSTAT=%02X INTRQ=%1X DRQ=%1X",
         oric->md.status,
         oric->md.intrq!=0,
         oric->md.drq!=0 );
-      tzprintfpos( tz[TZ_DISK], 2, 6, "EPROM=%1X", oric->md.diskrom );
+      tzprintfpos( tz[TZ_DISK], 2, 9, "EPROM=%1X", oric->md.diskrom );
       break;
     
     case DRV_JASMIN:
+      tzprintfpos( tz[TZ_DISK], 2, 8, "OVRAM=%s", oric->jasmin.olay ? "ON" : "OFF" );
       break;
   }
 }

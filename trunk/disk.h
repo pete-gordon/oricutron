@@ -138,6 +138,7 @@ struct wd17xx
   int               delayedint;
   int               delayeddrq;
   int               distatus;
+  int               ddstatus;
 };
 
 struct microdisc

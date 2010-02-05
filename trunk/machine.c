@@ -369,13 +369,17 @@ void o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 void jasmin_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
-  if( oric->romdis )
-  {
-    if( ( oric->jasmin.olay == 0 ) && ( addr >= 0xf800 ) ) return; // Can't write to ROM
-  } else {
-    if( addr >= 0xc000 ) return;
-  }
 
+  if( oric->jasmin.olay == 0 )
+  {
+    if( oric->romdis )
+    {
+      if( addr >= 0xf800 ) return; // Can't write to jasmin rom
+    } else {
+      if( addr >= 0xc000 ) return; // Can't write to BASIC rom
+    }
+  }
+  
   if( ( addr & 0xff00 ) == 0x0300 )
   {
     if( ( addr >= 0x3f4 ) && ( addr < 0x400 ) )
@@ -394,11 +398,15 @@ void jasmin_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char da
 void jasmin_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
-  if( oric->romdis )
+
+  if( oric->jasmin.olay == 0 )
   {
-    if( ( oric->jasmin.olay == 0 ) && ( addr >= 0xf800 ) ) return; // Can't write to ROM
-  } else {
-    if( addr >= 0xc000 ) return;
+    if( oric->romdis )
+    {
+      if( addr >= 0xf800 ) return; // Can't write to jasmin rom
+    } else {
+      if( addr >= 0xc000 ) return; // Can't write to BASIC rom
+    }
   }
 
   if( ( addr & 0xff00 ) == 0x0300 )
@@ -520,15 +528,16 @@ unsigned char jasmin_atmosread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
 
-  if( oric->romdis )
+  if( oric->jasmin.olay == 0 )
   {
-    if( ( oric->jasmin.olay == 0 ) && ( addr >= 0xf800 ) )
-      return rom_jasmin[addr-0xf800];
-  } else {
-    if( addr >= 0xc000 )
-      return oric->rom[addr-0xc000];
+    if( oric->romdis )
+    {
+      if( addr >= 0xf800 ) return rom_jasmin[addr-0xf800];
+    } else {
+      if( addr >= 0xc000 ) return oric->rom[addr-0xc000];
+    }
   }
-
+  
   if( ( addr & 0xff00 ) == 0x0300 )
   {
     if( ( addr >= 0x3f4 ) && ( addr < 0x400 ) )
@@ -545,13 +554,14 @@ unsigned char jasmin_o16kread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
 
-  if( oric->romdis )
+  if( oric->jasmin.olay == 0 )
   {
-    if( ( oric->jasmin.olay == 0 ) && ( addr >= 0xf800 ) )
-      return rom_jasmin[addr-0xf800];
-  } else {
-    if( addr >= 0xc000 )
-      return oric->rom[addr-0xc000];
+    if( oric->romdis )
+    {
+      if( addr >= 0xf800 ) return rom_jasmin[addr-0xf800];
+    } else {
+      if( addr >= 0xc000 ) return oric->rom[addr-0xc000];
+    }
   }
 
   if( ( addr & 0xff00 ) == 0x0300 )
