@@ -436,7 +436,7 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
             sectordumpstr[33] = '\'';
             sectordumpstr[50] = '\'';
             sectordumpstr[51] = 0;
-            dbg_printf( sectordumpstr );
+            dbg_printf( "%s", sectordumpstr );
             sectordumpcount = 0;
           }
 #endif
@@ -451,7 +451,7 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
               sectordumpstr[35+sectordumpcount] = 0;
               for( sectordumpcount*=2; sectordumpcount<33; sectordumpcount++ )
                 sectordumpstr[sectordumpcount*2] = ' ';
-              dbg_printf( sectordumpstr );
+              dbg_printf( "%s", sectordumpstr );
               sectordumpcount = 0;
             }
 #endif
