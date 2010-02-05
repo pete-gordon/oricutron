@@ -881,7 +881,11 @@ unsigned char mon_read( struct machine *oric, unsigned short addr )
 
 struct msym *mon_find_sym_by_addr( struct machine *oric, unsigned short addr )
 {
-  int i;
+  int i, romdis;
+
+  romdis = oric->romdis;
+  if( ( oric->drivetype == DRV_JASMIN ) && ( oric->jasmin.olay ) )
+    romdis = 1;
 
   for( i=0; i<numsyms; i++ )
   {
@@ -893,8 +897,8 @@ struct msym *mon_find_sym_by_addr( struct machine *oric, unsigned short addr )
 
     if( (syms[i].flags&SYMF_JASMIN) && ( oric->drivetype != DRV_JASMIN ) )
       continue;
-
-    if( oric->romdis )
+    
+    if( romdis )
     {
       if( (syms[i].flags&SYMF_ROMDIS1) == 0 )
         continue;
@@ -917,7 +921,7 @@ struct msym *mon_find_sym_by_addr( struct machine *oric, unsigned short addr )
     if( (defaultsyms[i].flags&SYMF_JASMIN) && ( oric->drivetype != DRV_JASMIN ) )
       continue;
 
-    if( oric->romdis )
+    if( romdis )
     {
       if( (defaultsyms[i].flags&SYMF_ROMDIS1) == 0 )
         continue;
@@ -935,7 +939,11 @@ struct msym *mon_find_sym_by_addr( struct machine *oric, unsigned short addr )
 
 struct msym *mon_find_sym_by_name( struct machine *oric, char *name )
 {
-  int i;
+  int i, romdis;
+
+  romdis = oric->romdis;
+  if( ( oric->drivetype == DRV_JASMIN ) && ( oric->jasmin.olay ) )
+    romdis = 1;
 
   for( i=0; i<numsyms; i++ )
   {
@@ -945,7 +953,7 @@ struct msym *mon_find_sym_by_name( struct machine *oric, char *name )
     if( (syms[i].flags&SYMF_JASMIN) && ( oric->drivetype != DRV_JASMIN ) )
       continue;
 
-    if( oric->romdis )
+    if( romdis )
     {
       if( (syms[i].flags&SYMF_ROMDIS1) == 0 )
         continue;
@@ -974,7 +982,7 @@ struct msym *mon_find_sym_by_name( struct machine *oric, char *name )
     if( (defaultsyms[i].flags&SYMF_JASMIN) && ( oric->drivetype != DRV_JASMIN ) )
       continue;
 
-    if( oric->romdis )
+    if( romdis )
     {
       if( (defaultsyms[i].flags&SYMF_ROMDIS1) == 0 )
         continue;
@@ -1212,8 +1220,12 @@ void mon_update_regs( struct machine *oric )
   tzprintfpos( tz[TZ_REGS], 2, 4, "CY=%08d", oric->cpu.cycles );
   tzprintfpos( tz[TZ_REGS], 2, 5, "FM=%06d RS=%03d", oric->frames, oric->vid_raster );
 #endif
-  tzstrpos( tz[TZ_REGS], 30, 4, "NV-BDIZC" );
-  tzprintfpos( tz[TZ_REGS], 30, 5, "%01X%01X1%01X%01X%01X%01X%01X",
+
+  tzstrpos( tz[TZ_REGS], 35, 4, (oric->cpu.irq&IRQF_VIA)  ? "VIA"  : "   "  );
+  tzstrpos( tz[TZ_REGS], 35, 5, (oric->cpu.irq&IRQF_DISK) ? "DISK" : "    " );
+
+  tzstrpos( tz[TZ_REGS], 25, 4, "NV-BDIZC" );
+  tzprintfpos( tz[TZ_REGS], 25, 5, "%01X%01X1%01X%01X%01X%01X%01X",
     oric->cpu.f_n,
     oric->cpu.f_v,
     oric->cpu.f_b,

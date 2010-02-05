@@ -678,8 +678,10 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
 #if GENERAL_DISK_DEBUG
               dbg_printf( "DISK: (%04X) Force int", oric->cpu.pc-1 );
 #endif
-              wd->setintrq( wd->intrqarg );
               wd->r_status = 0;
+              wd->clrdrq( wd->drqarg );
+              wd->delayedint = 0;
+              wd->delayeddrq = 0;
               wd->currentop = COP_NUFFINK;
               break;
           }
