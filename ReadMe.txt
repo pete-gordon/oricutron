@@ -11,9 +11,9 @@ Current status:
   6502:  100% done (apart from any unknown bugs :)
   VIA:   All done except shift register (which is on my todo list)
   AY:    I/O done. Sound works, but isn't great.
-  Video: Almost done. 60Hz mode missing.
+  Video: 100% done
   Tape:  ".TAP" file support (no WAV yet)
-  Disk:  Microdisc reading is partially working. Jasmin is not done at all.
+  Disk:  Microdisc/Jasmin reading is partially working. No write support.
 
 The Telestrat is not emulated at all yet. Also, "Turbo Tape" only works in
 Atmos mode. Tape noise only works if Turbo Tape is disabled.
@@ -41,27 +41,28 @@ Here are all the options:
   -m / --machine    = Specify machine type. Valid types are:
 
                       "atmos" or "a" for Oric atmos
-		      "oric1" or "1" for Oric 1
-		      "o16k" for Oric 1 16k
+                      "oric1" or "1" for Oric 1
+                      "o16k" for Oric 1 16k
 
   -d / --disk       = Specify a disk image to use in drive 0
   -t / --tape       = Specify a tape image to use
   -k / --drive      = Specify a disk drive controller. Valid types are:
   
                       "microdisc" or "m" for Microdisc
-		      "jasmin" or "j" for Jasmin
+                      "jasmin" or "j" for Jasmin
 
   -s / --symbols    = Load symbols from a file
   -f / --fullscreen = Run oriculator fullscreen
   -w / --window     = Run oriculator in a window
+  -b / --debug      = Start oriculator in the debugger
 
 
 Examples:
 
 oriculator --machine atmos --tape "tape files/foo.tap" --symbols "my files/symbols"
-oriculator -m1 -tBUILD/foo.tap -sBUILD/symbols
-oriculator --drive microdisc --disk demos/barbitoric.dsk
-oriculator -ddemos/barbitoric.dsk
+oriculator -m1 -tBUILD/foo.tap -sBUILD/symbols -b
+oriculator --drive microdisc --disk demos/barbitoric.dsk --fullscreen
+oriculator -ddemos/barbitoric.dsk -f
 
 
 
@@ -73,6 +74,7 @@ In emulator
 
   F1 - Bring up the menu
   F2 - Go to debugger/monitor
+  F4 - Jasmin reset (only when jasmin drive selected)
   F5 - Toggle FPS
   F6 - Toggle warp speed
 
