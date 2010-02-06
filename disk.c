@@ -312,7 +312,7 @@ void wd17xx_seek_track( struct wd17xx *wd, Uint8 track )
     wd->c_sector = 0;
     wd->r_track = track;
     wd->delayedint = 20;
-    wd->distatus = (wd->r_status&WSFI_HEADL)|WSFI_PULSE;
+    wd->distatus = WSFI_HEADL|WSFI_PULSE;
     if( wd->c_track == 0 ) wd->distatus |= WSFI_TRK0;
 #if GENERAL_DISK_DEBUG
     dbg_printf( "DISK: At track %u (%u sectors)", track, wd->disk[wd->c_drive]->numsectors );
