@@ -1,5 +1,5 @@
 /*
-**  Oriculator
+**  Oricutron
 **  Copyright (C) 2009 Peter Gordon
 **
 **  This program is free software; you can redistribute it and/or
