@@ -1,5 +1,5 @@
-Oriculator 0.0.x
-----------------
+Oricutron 0.1
+-------------
 
 All code (c)2009 Peter Gordon (pete@petergordon.org.uk)
 
@@ -10,10 +10,10 @@ Current status:
 
   6502:  100% done (apart from any unknown bugs :)
   VIA:   All done except shift register (which is on my todo list)
-  AY:    I/O done. Sound works, but isn't great.
+  AY:    I/O done. The sound works, but is total crap (for now)
   Video: 100% done
   Tape:  ".TAP" file support (no WAV yet)
-  Disk:  Microdisc/Jasmin reading is partially working. No write support.
+  Disk:  Reading sectors works. No write support.
 
 The Telestrat is not emulated at all yet. Also, "Turbo Tape" only works in
 Atmos mode. Tape noise only works if Turbo Tape is disabled.
@@ -52,17 +52,17 @@ Here are all the options:
                       "jasmin" or "j" for Jasmin
 
   -s / --symbols    = Load symbols from a file
-  -f / --fullscreen = Run oriculator fullscreen
-  -w / --window     = Run oriculator in a window
-  -b / --debug      = Start oriculator in the debugger
+  -f / --fullscreen = Run oricutron fullscreen
+  -w / --window     = Run oricutron in a window
+  -b / --debug      = Start oricutron in the debugger
 
 
 Examples:
 
-oriculator --machine atmos --tape "tape files/foo.tap" --symbols "my files/symbols"
-oriculator -m1 -tBUILD/foo.tap -sBUILD/symbols -b
-oriculator --drive microdisc --disk demos/barbitoric.dsk --fullscreen
-oriculator -ddemos/barbitoric.dsk -f
+oricutron --machine atmos --tape "tape files/foo.tap" --symbols "my files/symbols"
+oricutron -m1 -tBUILD/foo.tap -sBUILD/symbols -b
+oricutron --drive microdisc --disk demos/barbitoric.dsk --fullscreen
+oricutron -ddemos/barbitoric.dsk -f
 
 
 

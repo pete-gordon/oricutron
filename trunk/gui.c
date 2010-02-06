@@ -1,5 +1,5 @@
 /*
-**  Oriculator
+**  Oricutron
 **  Copyright (C) 2009 Peter Gordon
 **
 **  This program is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 */
 
 /*
-** The GUI in Oriculator is built on the basic element of the "textzone". This
+** The GUI in Oricutron is built on the basic element of the "textzone". This
 ** is a simple structure containing the position, size and contents of an area
 ** of text, which you can render onto an SDL surface whenever you like.
 */
@@ -167,7 +167,7 @@ struct osdmenuitem hwopitems[] = { { " Oric-1",                swapmach,        
                                    { NULL, } };
 
 struct osdmenuitem auopitems[] = { { " Sound enabled",         togglesound,     0 },
-                                   { " Tape noise",            toggletapenoise, 0 },
+/*                                   { " Tape noise",            toggletapenoise, 0 }, */
                                    { OSDMENUBAR,               NULL,            0 },
                                    { "Back",                   gotomenu,        0 },
                                    { NULL, } };
@@ -1072,6 +1072,7 @@ void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 }
 
 // Turn tape noise on/off
+/*
 void toggletapenoise( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
   if( oric->tapenoise )
@@ -1084,6 +1085,7 @@ void toggletapenoise( struct machine *oric, struct osdmenuitem *mitem, int dummy
   oric->tapenoise = SDL_TRUE;
   mitem->name = "\x0e""Tape noise";
 }
+*/
 
 // Toggle sound on/off
 void togglesound( struct machine *oric, struct osdmenuitem *mitem, int dummy )
@@ -1335,10 +1337,12 @@ void setmenutoggles( struct machine *oric )
   else
     auopitems[0].name = " Sound enabled";
 
+/*
   if( oric->tapenoise )
     auopitems[1].name = "\x0e""Tape noise";
   else
     auopitems[1].name = " Tape noise";
+*/
 
   if( oric->tapeturbo )
     hwopitems[9].name = "\x0e""Turbo tape";
@@ -1411,7 +1415,7 @@ SDL_bool init_gui( struct machine *oric )
     soundavailable = SDL_TRUE;
   }
 
-  SDL_WM_SetCaption( "Oriculator WIP", "Oriculator WIP" );
+  SDL_WM_SetCaption( "Oricutron 0.1", "Oricutron 0.1" );
 
   // Get the GUI palette
   for( i=0; i<NUM_GUI_COLS; i++ )

@@ -6,12 +6,12 @@ PLATFORM ?= os4
 # PLATFORM = linux
 
 VERSION_MAJ = 0
-VERSION_MIN = 0
-VERSION_REV = x
+VERSION_MIN = 1
+VERSION_REV = 0
 VERSION_FULL = $(VERSION_MAJ).$(VERSION_MIN).$(VERSION_REV)
-APP_NAME = Oriculator
-VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) (c)2009 Peter Gordon (pete@petergordon.org.uk)"
-#COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) ©2009 Peter Gordon (pete@petergordon.org.uk)"
+APP_NAME = Oricutron
+VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) (c)2010 Peter Gordon (pete@petergordon.org.uk)"
+#COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) ©2010 Peter Gordon (pete@petergordon.org.uk)"
 
 ####### DEFAULT SETTINGS HERE #######
 
@@ -23,7 +23,7 @@ CXX = g++
 AR = ar
 RANLIB = ranlib
 DEBUGLIB =
-TARGET = oriculator
+TARGET = oricutron
 
 ####### PLATFORM SPECIFIC STUFF HERE #######
 
@@ -38,7 +38,7 @@ endif
 ifeq ($(PLATFORM),win32)
 CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__
 LFLAGS += -lm -mwindows -lmingw32 -lSDLmain -lSDL
-TARGET = oriculator.exe
+TARGET = oricutron.exe
 endif
 
 ifeq ($(PLATFORM),beos)
@@ -52,7 +52,7 @@ endif
 ifeq ($(PLATFORMTYPE),beos)
 CFLAGS += $(shell sdl-config --cflags)
 LFLAGS += $(shell sdl-config --libs)
-TARGET = oriculator
+TARGET = oricutron
 BEOS_BERES := beres
 BEOS_RC := rc
 BEOS_XRES := xres
@@ -65,13 +65,13 @@ endif
 ifeq ($(PLATFORM),osx)
 CFLAGS += $(shell sdl-config --cflags)
 LFLAGS += -lm $(shell sdl-config --libs)
-TARGET = oriculator
+TARGET = oricutron
 endif
 
 ifeq ($(PLATFORM),linux)
 CFLAGS += $(shell sdl-config --cflags)
 LFLAGS += -lm $(shell sdl-config --libs)
-TARGET = oriculator
+TARGET = oricutron
 endif
 
 ####### SHOULDN'T HAVE TO CHANGE THIS STUFF #######
