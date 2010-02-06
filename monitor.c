@@ -45,7 +45,7 @@
 #include "machine.h"
 #include "monitor.h"
 
-#define LOG_DEBUG 1
+#define LOG_DEBUG 0
 
 #if LOG_DEBUG
 #ifdef __amigaos4__ 
