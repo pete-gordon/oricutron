@@ -306,6 +306,18 @@ void via_init( struct via *v, struct machine *oric )
   v->oric = oric;
 }
 
+static inline void via_check_irq( struct via *v )
+{
+  if( ( v->ier & v->ifr )&0x7f )
+  {
+    v->oric->cpu.irq  |= IRQF_VIA;
+    v->ifr |= 0x80;
+  } else {
+    v->oric->cpu.irq &= ~IRQF_VIA;
+    v->ifr &= 0x7f;
+  }
+}
+
 static inline void via_set_irq( struct via *v, unsigned char bit )
 {
   v->ifr |= bit;
@@ -314,7 +326,6 @@ static inline void via_set_irq( struct via *v, unsigned char bit )
 
   if( ( v->ier & bit ) == 0 ) return;
   v->oric->cpu.irq |= IRQF_VIA;
-  v->oric->cpu.irql = SDL_TRUE;
 }
 
 static inline void via_clr_irq( struct via *v, unsigned char bit )
@@ -411,6 +422,7 @@ void via_clock( struct via *v, unsigned int cycles )
 // Write VIA from CPU
 void via_write( struct via *v, int offset, unsigned char data )
 {
+  SDL_bool wasirq;
   offset &= 0xf;
 
   switch( offset )
@@ -531,10 +543,12 @@ void via_write( struct via *v, int offset, unsigned char data )
         v->oric->cpu.irq &= ~IRQF_VIA;
       break;
     case VIA_IER:
+      wasirq = (v->ier&v->ifr) != 0;
       if( data & 0x80 )
         v->ier |= (data&0x7f);
       else
         v->ier &= ~(data&0x7f);
+      via_check_irq( v );
       break;
 
     case VIA_IORA2:

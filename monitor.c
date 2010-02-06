@@ -1190,18 +1190,23 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *lo
 void mon_update_regs( struct machine *oric )
 {
   int i;
-  unsigned short addr;
+  unsigned short addr, pc;
   struct msym *csym;
   char stmp[48];
 
+  pc = oric->cpu.pc;
+  
+  if( ( oric->cpu.irq ) && ( oric->cpu.f_i == 0 ) )
+    pc = (mon_read( oric, 0xffff )<<8) | mon_read( oric, 0xfffe );
+
   tzprintfpos( tz[TZ_REGS], 2, 2, "PC=%04X  SP=01%02X    A=%02X  X=%02X  Y=%02X",
-    oric->cpu.pc,
+    pc,
     oric->cpu.sp,
     oric->cpu.a,
     oric->cpu.x,
     oric->cpu.y );
 
-  csym = mon_find_sym_by_addr( oric, oric->cpu.pc );
+  csym = mon_find_sym_by_addr( oric, pc );
   if( csym )
   {
     if( strlen( csym->name ) > 46 )
@@ -1234,7 +1239,7 @@ void mon_update_regs( struct machine *oric )
     oric->cpu.f_z,
     oric->cpu.f_c );
 
-  addr = oric->cpu.pc;
+  addr = pc;
   for( i=0; i<10; i++ )
   {
     tzsetcol( tz[TZ_REGS], (addr==oric->cpu.pc) ? 1 : 2, 3 );

@@ -741,6 +741,33 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
   return SDL_FALSE;
 }
 
+void blank_ram( Sint32 how, Uint8 *mem, Uint32 size )
+{
+  Uint32 i, j;
+
+  switch( how )
+  {
+    case 0:
+      for( i=0; i<size; i+=256 )
+      {
+        for( j=0; j<128; j++ )
+        {
+          mem[i+j    ] = 0;
+          mem[i+j+128] = 255;
+        }
+      }
+      break;
+    
+    default:
+      for( i=0; i<size; i+=2 )
+      {
+        mem[i  ] = 0xff;
+        mem[i+1] = 0x00;
+      }
+      break;
+  }
+}
+
 SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints )
 {
   int i;
@@ -768,8 +795,8 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         printf( "Out of memory\n" );
         return SDL_FALSE;
       }
-      
-      memset( oric->mem, 0, 16384+16384 );
+
+      blank_ram( 0, oric->mem, 16384+16384 );      
 
       oric->rom = &oric->mem[16384];
 
@@ -835,7 +862,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         return SDL_FALSE;
       }
 
-      memset( oric->mem, 0, 65536+16384 );
+      blank_ram( 0, oric->mem, 65536+16384 );      
 
       oric->rom = &oric->mem[65536];
 
@@ -901,7 +928,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         return SDL_FALSE;
       }
 
-      memset( oric->mem, 0, 65536+16384 );
+      blank_ram( 0, oric->mem, 65536+16384 );      
 
       oric->rom = &oric->mem[65536];
 
