@@ -16,7 +16,7 @@ Current status:
   Disk:  Reading sectors works. No write support.
 
 The Telestrat is not emulated at all yet. Also, "Turbo Tape" only works in
-Atmos mode. Tape noise only works if Turbo Tape is disabled.
+Atmos mode.
 
 
 
