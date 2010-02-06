@@ -468,8 +468,7 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
               if( !wd->currsector )
               {
                 wd->delayedint = 20;
-                wd->distatus   = wd->r_status & ~(WSF_NOTREADY|WSF_BUSY|WSFR_RECTYP|WSF_RNF|WSF_CRCERR|WSF_LOSTDAT|WSF_BUSY|WSF_DRQ);
-                wd->distatus  |= wd->sectype;
+                wd->distatus   = wd->sectype;
                 wd->currentop = COP_NUFFINK;
                 wd->r_status &= (~WSF_DRQ);
                 wd->clrdrq( wd->drqarg );
@@ -480,8 +479,7 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
             }
 
             wd->delayedint = 32;
-            wd->distatus   = wd->r_status & ~(WSF_NOTREADY|WSF_BUSY|WSFR_RECTYP|WSF_RNF|WSF_CRCERR|WSF_LOSTDAT|WSF_BUSY|WSF_DRQ);
-            wd->distatus  |= wd->sectype;
+            wd->distatus   = wd->sectype;
             wd->currentop = COP_NUFFINK;
             wd->r_status &= (~WSF_DRQ);
             wd->clrdrq( wd->drqarg );
@@ -669,7 +667,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
                 wd->currsector->id_ptr[5],
                 wd->currsector->id_ptr[6] );
 #endif
-              wd->r_status = WSF_BUSY|WSF_DRQ;
+              wd->r_status = WSF_NOTREADY|WSF_BUSY|WSF_DRQ;
               wd->setdrq( wd->drqarg );
               wd->currentop = COP_READ_ADDRESS;
               break;
@@ -680,6 +678,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
 #endif
               wd->r_status = 0;
               wd->clrdrq( wd->drqarg );
+              wd->setintrq( wd->intrqarg );
               wd->delayedint = 0;
               wd->delayeddrq = 0;
               wd->currentop = COP_NUFFINK;
