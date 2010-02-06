@@ -312,7 +312,7 @@ void wd17xx_seek_track( struct wd17xx *wd, Uint8 track )
     wd->c_sector = 0;
     wd->r_track = track;
     wd->delayedint = 20;
-    wd->distatus = WSFI_HEADL;
+    wd->distatus = (wd->r_status&WSFI_HEADL)|WSFI_PULSE;
     if( wd->c_track == 0 ) wd->distatus |= WSFI_TRK0;
 #if GENERAL_DISK_DEBUG
     dbg_printf( "DISK: At track %u (%u sectors)", track, wd->disk[wd->c_drive]->numsectors );
@@ -739,11 +739,7 @@ void microdisc_setintrq( void *md )
   
   mdp->intrq = 0; //MDSF_INTRQ;
   if( mdp->status & MDSF_INTENA )
-  {
     mdp->oric->cpu.irq |= IRQF_DISK;
-    mdp->oric->cpu.irql = SDL_TRUE;
-  }
-
 }
 
 void microdisc_clrintrq( void *md )
@@ -803,8 +799,6 @@ unsigned char microdisc_read( struct microdisc *md, unsigned short addr )
 void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char data )
 {
 //  dbg_printf( "DISK: (%04X) Write %02X to %04X", md->oric->cpu.pc-1, data, addr );
-  SDL_bool wasen;
-
   if( ( addr >= 0x310 ) && ( addr < 0x314 ) )
   {
     wd17xx_write( md->oric, md->wd, addr&3, data );
@@ -814,15 +808,12 @@ void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char d
   switch( addr )
   {
     case 0x314:
-      wasen = (md->status&MDSF_INTENA) ? SDL_TRUE : SDL_FALSE;    // Currently enabled?
-
       md->status = data;
 
       // Interrupts enabled, and /INTRQ == 0 ?
       if( ( data&MDSF_INTENA ) && ( md->intrq == 0 ) )
       {
         md->oric->cpu.irq |= IRQF_DISK;
-        if( !wasen ) md->oric->cpu.irql = SDL_TRUE;
       } else {
         md->oric->cpu.irq &= ~IRQF_DISK;
       }
@@ -847,7 +838,6 @@ void jasmin_setdrq( void *j )
 {
   struct jasmin *jp = (struct jasmin *)j;
   jp->oric->cpu.irq |= IRQF_DISK;
-  jp->oric->cpu.irql = SDL_TRUE;
 }
 
 void jasmin_clrdrq( void *j )

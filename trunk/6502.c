@@ -88,7 +88,6 @@ void m6502_reset( struct m6502 *cpu )
   cpu->f_n = 0;
   cpu->pc = (cpu->read( cpu, 0xfffd )<<8) | cpu->read( cpu, 0xfffc );
   cpu->nmi = SDL_FALSE;
-  cpu->irql = SDL_FALSE;
   cpu->irq = 0;
 }
 
@@ -292,7 +291,7 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
   cpu->icycles = 0;
 
   if( ( cpu->nmi ) ||
-      ( ( (cpu->irql)||(cpu->irq) ) && ( cpu->f_i == 0 ) ) )
+      ( ( cpu->irq ) && ( cpu->f_i == 0 ) ) )
   {
     cycleit( cpu, 7 );
     PUSHW( cpu->pc );
@@ -304,7 +303,6 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
       cpu->nmi = SDL_FALSE;
     } else {
       cpu->pc = (cpu->read( cpu, 0xffff )<<8)|cpu->read( cpu, 0xfffe );
-      cpu->irql = SDL_FALSE;
       cpu->f_i = 1;
     }
   }

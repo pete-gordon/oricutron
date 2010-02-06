@@ -71,7 +71,7 @@ struct m6502
   unsigned char a, x, y, sp;
   unsigned char f_c, f_z, f_i, f_d, f_b, f_v, f_n;
   unsigned short pc;
-  SDL_bool nmi, irql;
+  SDL_bool nmi;
   int irq;
   void (*write)(struct m6502 *,unsigned short, unsigned char);
   unsigned char (*read)(struct m6502 *,unsigned short);
