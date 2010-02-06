@@ -1,6 +1,6 @@
-#summary Oriculator Wiki Homepage
+#summary Oricutron Wiki Homepage
 #labels Featured
 
-= Welcome to the Oriculator Wiki =
+= Welcome to the Oricutron Wiki =
 
-This Wiki will be used to build up documentation for the emulator, as well as guides for building Oriculator for various platforms.
+This Wiki will be used to build up documentation for the emulator, as well as guides for building Oricutron for various platforms.
