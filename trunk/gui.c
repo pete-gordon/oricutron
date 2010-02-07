@@ -1391,7 +1391,7 @@ SDL_bool init_gui( struct machine *oric )
   }
   need_sdl_quit = SDL_TRUE;
 
-  screen = SDL_SetVideoMode( 640, 480, 16, fullscreen ? (SDL_DOUBLEBUF|SDL_FULLSCREEN) : SDL_DOUBLEBUF );
+  screen = SDL_SetVideoMode( 640, 480, 16, fullscreen ? SDL_FULLSCREEN : SDL_SWSURFACE );
   if( !screen )
   {
     printf( "SDL video failed\n" );

@@ -422,7 +422,6 @@ void via_clock( struct via *v, unsigned int cycles )
 // Write VIA from CPU
 void via_write( struct via *v, int offset, unsigned char data )
 {
-  SDL_bool wasirq;
   offset &= 0xf;
 
   switch( offset )
@@ -543,7 +542,6 @@ void via_write( struct via *v, int offset, unsigned char data )
         v->oric->cpu.irq &= ~IRQF_VIA;
       break;
     case VIA_IER:
-      wasirq = (v->ier&v->ifr) != 0;
       if( data & 0x80 )
         v->ier |= (data&0x7f);
       else
