@@ -591,7 +591,7 @@ unsigned char via_mon_read( struct via *v, int offset )
     case VIA_IFR:
       return v->ifr;
     case VIA_IER:
-      return v->ier&0x7f;
+      return v->ier|0x80;
     case VIA_IORA2:
       return (v->ora&v->ddra)|(v->iral&(~v->ddra));
   }
@@ -667,7 +667,7 @@ unsigned char via_read( struct via *v, int offset )
     case VIA_IFR:
       return v->ifr;
     case VIA_IER:
-      return v->ier&0x7f;
+      return v->ier|0x80;
     case VIA_IORA2:
       return (v->ora&v->ddra)|(v->iral&(~v->ddra));
   }
