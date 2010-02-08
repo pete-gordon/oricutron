@@ -80,7 +80,7 @@ struct via
 #define ACRF_PALATCH (1<<ACRB_PALATCH)
 #define ACRB_PBLATCH 1
 #define ACRF_PBLATCH (1<<ACRB_PBLATCH)
-#define ACRF_SRCON   (0x18)
+#define ACRF_SRCON   (0x1c)
 #define ACRB_T2CON   5
 #define ACRF_T2CON   (1<<ACRB_T2CON)
 #define ACRF_T1CON   (0xc0)

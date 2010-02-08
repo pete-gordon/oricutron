@@ -131,19 +131,12 @@ static Uint32 ayrand( struct ay8912 *ay )
 
 void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
 {
-  SDL_bool newout[3], newnoise;
   Sint32 i, j;
   Sint32 output;
-
-  // No new audio from any channels (yet)
-  for( i=0; i<3; i++ )
-    newout[i] = SDL_FALSE;
 
   // For each clock cycle...
   while( cycles > 0 )
   {
-    newnoise = SDL_FALSE;
-
     // Count for the noise cycle counter
     if( (++ay->ctn) >= ay->noiseper )
     {
@@ -154,7 +147,7 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
       ay->ctn = 0;
 
       // Remember that the noise output changed
-      newnoise = SDL_TRUE;
+      ay->newnoise = SDL_TRUE;
     }
 
     // For each audio channel...
@@ -170,13 +163,13 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
         ay->sign[i] = -ay->sign[i];
 
         // Remember that this channels output has changed
-        newout[i] = SDL_TRUE;
+        ay->newout[i] = SDL_TRUE;
       }
 
       // If this channel is mixed with noise, and the noise changed,
       // then so did this channel.
-      if( ( newnoise ) && ( ay->noiseon[i] ) )
-        newout[i] = SDL_TRUE;        
+      if( ( ay->newnoise ) && ( ay->noiseon[i] ) )
+        ay->newout[i] = SDL_TRUE;        
     }
 
     // Count down the envelope cycle counter
@@ -202,7 +195,7 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
           ay->vol[i] = voltab[ay->envtab[ay->envpos]];
 
           // and remember that the channel has changed
-          newout[i] = SDL_TRUE;
+          ay->newout[i] = SDL_TRUE;
         }
       }
     }
@@ -218,7 +211,7 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
   for( i=0; i<3; i++ )
   {
     // Has the channel changed?
-    if( newout[i] )
+    if( ay->newout[i] )
     {
       // Yep, so calculate the squarewave signal...
       j = ay->sign[i]*ay->toneon[i]*ay->vol[i];
@@ -231,7 +224,7 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
 
       // and mark that we don't need to recalculate unless
       // anything changes
-      newout[i] = 0;
+      ay->newout[i] = 0;
     }
 
     // Mix in the output of this channel
@@ -298,7 +291,7 @@ void ay_dowrite( struct ay8912 *ay, struct aywrite *aw )
         ay->vol[i] = voltab[aw->val&0xf];
       else
         ay->vol[i] = voltab[ay->envtab[ay->envpos]];
-      ay->out[i] = ay->sign[i]*ay->vol[i]*ay->toneon[i];
+      ay->out[i] = ay->sign[i]*ay->vol[i];
       break;
     
     case AY_ENV_PER_L:
@@ -438,7 +431,9 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
     ay->toneon[i]  = 0;     // Output disabled
     ay->noiseon[i] = 0;     // Noise disabled
     ay->vol[i]     = 0;     // Zero volume
+    ay->newout[i]  = SDL_TRUE;
   }
+  ay->newnoise = SDL_TRUE;
   ay->ctn = 0; // Reset the noise counter
   ay->cte = 0; // Reset the envelope counter
 
