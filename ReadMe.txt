@@ -1,4 +1,4 @@
-Oricutron 0.1
+Oricutron 0.2
 -------------
 
 All code (c)2009 Peter Gordon (pete@petergordon.org.uk)
