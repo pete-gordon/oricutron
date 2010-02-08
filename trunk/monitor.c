@@ -2098,7 +2098,10 @@ SDL_bool mon_new_symbols( char *fname, SDL_bool above )
   f = fopen( fname, "r" );
   if( !f )
   {
-    mon_printf( "Unable to open '%s'", fname );
+    if( above )
+      mon_printf_above( "Unable to open '%s'", fname );
+    else
+      mon_printf( "Unable to open '%s'", fname );
     return SDL_FALSE;
   }
 

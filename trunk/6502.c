@@ -31,6 +31,9 @@
 
 #include "6502.h"
 
+void dbg_printf( char *fmt, ... );
+
+
 // These are the default read/write routines.
 // You need to overwrite these with your own ones if you want
 // the CPU to do anything other than constantly execute BRK
@@ -1508,6 +1511,10 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
       cpu->write( cpu, baddr, ++v );
       FLAG_ZN(v);
       cycleit( cpu, 7 );
+      break;
+    
+    default:
+      dbg_printf( "Opcode %02X executed at %04X", op, cpu->pc-1 );
       break;
   }
 
