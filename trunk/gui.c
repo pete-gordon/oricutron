@@ -1415,7 +1415,7 @@ SDL_bool init_gui( struct machine *oric )
     soundavailable = SDL_TRUE;
   }
 
-  SDL_WM_SetCaption( "Oricutron 0.1", "Oricutron 0.1" );
+  SDL_WM_SetCaption( "Oricutron 0.2", "Oricutron 0.2" );
 
   // Get the GUI palette
   for( i=0; i<NUM_GUI_COLS; i++ )
