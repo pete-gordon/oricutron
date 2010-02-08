@@ -55,7 +55,7 @@ char *keyqueue = NULL;
 int keysqueued = 0, kqoffs = 0;
 
 // Volume levels
-Sint32 voltab[] = { 0, /*62/4,*/161/4,265/4,377/4,580/4,774/4,1155/4,1575/4,2260/4,3088/4,4570/4,6233/4,9330/4,13187/4,21220/4,32767/4 };
+Sint32 voltab[] = { 0, 513/8, 828/8, 1239/8, 1923/8, 3238/8, 4926/8, 9110/8, 10344/8, 17876/8, 24682/8, 30442/8, 38844/8, 47270/8, 56402/8, 65535/8};
 
 // Envelope shape descriptions
 // Bit 7 set = go to step defined in bits 0-6
@@ -144,14 +144,14 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
   {
     newnoise = SDL_FALSE;
 
-    // Count down the noise cycle counter
-    if( (--ay->ctn) <= 0 )
+    // Count for the noise cycle counter
+    if( (++ay->ctn) >= ay->noiseper )
     {
       // Noise counter expired, calculate the next noise output level
       ay->currnoise ^= ayrand( ay );
 
       // Reset the noise counter
-      ay->ctn += (ay->regs[AY_NOISE_PER]&0x1f)*NOISETIME;
+      ay->ctn = 0;
 
       // Remember that the noise output changed
       newnoise = SDL_TRUE;
@@ -160,11 +160,11 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
     // For each audio channel...
     for( i=0; i<3; i++ )
     {
-      // Count down the square wave counter
-      if( (--ay->ct[i]) <= 0 )
+      // Count for the square wave counter
+      if( (++ay->ct[i]) >= ay->toneper[i] )
       {
         // Square wave counter expired, reset it...
-        ay->ct[i] += (((ay->regs[i*2+1]&0xf)<<8)|ay->regs[i*2])*TONETIME;
+        ay->ct[i] = 0;
 
         // ...and invert the square wave output
         ay->sign[i] = -ay->sign[i];
@@ -180,10 +180,10 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
     }
 
     // Count down the envelope cycle counter
-    if( (--ay->cte) <= 0 )
+    if( (++ay->cte) >= ay->envper )
     {
       // Counter expired, so reset it
-      ay->cte += ((ay->regs[AY_ENV_PER_H]<<8)|ay->regs[AY_ENV_PER_L])*ENVTIME;
+      ay->cte = 0;
 
       // Move to the next envelope position
       ay->envpos++;
@@ -241,33 +241,35 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
   // Clamp the output
   if( output > 32767 ) output = 32767;
   if( output < -32768 ) output = -32768;
-  ay->output = output;
+  ay->output = lowpass( output );
 }
 
 void ay_dowrite( struct ay8912 *ay, struct aywrite *aw )
 {
   Sint32 i, j;
 
-  ay->regs[aw->reg] = aw->val;
-
   switch( aw->reg )
   {
     case AY_CHA_PER_L:   // Channel A period
     case AY_CHA_PER_H:
-      ay->ct[0] = (((ay->regs[AY_CHA_PER_H]&0xf)<<8)|ay->regs[AY_CHA_PER_L])*TONETIME;
+      ay->regs[aw->reg] = aw->val;
+      ay->toneper[0] = (((ay->regs[AY_CHA_PER_H]&0xf)<<8)|ay->regs[AY_CHA_PER_L])*TONETIME;
       break;
 
     case AY_CHB_PER_L:   // Channel B period
     case AY_CHB_PER_H:
-      ay->ct[1] = (((ay->regs[AY_CHB_PER_H]&0xf)<<8)|ay->regs[AY_CHB_PER_L])*TONETIME;
+      ay->regs[aw->reg] = aw->val;
+      ay->toneper[1] = (((ay->regs[AY_CHB_PER_H]&0xf)<<8)|ay->regs[AY_CHB_PER_L])*TONETIME;
       break;
 
     case AY_CHC_PER_L:   // Channel C period
     case AY_CHC_PER_H:
-      ay->ct[2] = (((ay->regs[AY_CHC_PER_H]&0xf)<<8)|ay->regs[AY_CHC_PER_L])*TONETIME;
+      ay->regs[aw->reg] = aw->val;
+      ay->toneper[2] = (((ay->regs[AY_CHC_PER_H]&0xf)<<8)|ay->regs[AY_CHC_PER_L])*TONETIME;
       break;
     
     case AY_STATUS:      // Status
+      ay->regs[aw->reg] = aw->val;
       ay->toneon[0]  = (aw->val&0x01)?0:1;
       ay->toneon[1]  = (aw->val&0x02)?0:1;
       ay->toneon[2]  = (aw->val&0x04)?0:1;
@@ -283,12 +285,14 @@ void ay_dowrite( struct ay8912 *ay, struct aywrite *aw )
       break;
 
     case AY_NOISE_PER:   // Noise period
-      ay->ctn = (aw->val&0x1f)*NOISETIME;
+      ay->regs[aw->reg] = aw->val;
+      ay->noiseper = (ay->regs[AY_NOISE_PER]&0x1f)*NOISETIME;
       break;
     
     case AY_CHA_AMP:
     case AY_CHB_AMP:
     case AY_CHC_AMP:
+      ay->regs[aw->reg] = aw->val;
       i = aw->reg-AY_CHA_AMP;
       if( (aw->val&0x10)==0 )
         ay->vol[i] = voltab[aw->val&0xf];
@@ -299,26 +303,23 @@ void ay_dowrite( struct ay8912 *ay, struct aywrite *aw )
     
     case AY_ENV_PER_L:
     case AY_ENV_PER_H:
-      ay->cte = ((ay->regs[AY_ENV_PER_H]<<8)|ay->regs[AY_ENV_PER_L])*ENVTIME;
-      for( i=0; i<3; i++ )
-      {
-        if( ay->regs[AY_CHA_AMP+i]&0x10 )
-        {
-          ay->vol[i] = voltab[ay->envtab[ay->envpos]];
-          ay->out[i] = ay->sign[i]*ay->vol[i]*ay->toneon[i];
-        }
-      }
+      ay->regs[aw->reg] = aw->val;
+      ay->envper = ((ay->regs[AY_ENV_PER_H]<<8)|ay->regs[AY_ENV_PER_L])*ENVTIME;
       break;
 
     case AY_ENV_CYCLE:
-      ay->envtab = eshapes[aw->val&0xf];
-      ay->envpos = 0;
-      for( i=0; i<3; i++ )
+      if( aw->val != 0xff )
       {
-        if( ay->regs[AY_CHA_AMP+i]&0x10 )
+        ay->regs[aw->reg] = aw->val;
+        ay->envtab = eshapes[aw->val&0xf];
+        ay->envpos = 0;
+        for( i=0; i<3; i++ )
         {
-          ay->vol[i] = voltab[ay->envtab[ay->envpos]];
-          ay->out[i] = ay->sign[i]*ay->vol[i]*ay->toneon[i];
+          if( ay->regs[AY_CHA_AMP+i]&0x10 )
+          {
+            ay->vol[i] = voltab[ay->envtab[ay->envpos]];
+            ay->out[i] = ay->sign[i]*ay->vol[i]*ay->toneon[i];
+          }
         }
       }
       break;
@@ -516,7 +517,9 @@ static void ay_modeset( struct ay8912 *ay )
     case 0x02: // Write AY register
       if( ay->creg >= AY_LAST ) break;
       v = via_read_porta( &ay->oric->via );
-      ay->eregs[ay->creg] = v;
+
+      if( ( ay->creg != AY_ENV_CYCLE ) || ( v != 0xff ) )
+        ay->eregs[ay->creg] = v;
 
       switch( ay->creg )
       {
