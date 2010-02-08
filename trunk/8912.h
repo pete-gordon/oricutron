@@ -71,7 +71,7 @@ struct ay8912
   unsigned char bmode;
   unsigned char creg;
   unsigned char regs[AY_LAST], eregs[AY_LAST];
-  SDL_bool keystates[8];
+  SDL_bool keystates[8], newout[3], newnoise;
   SDL_bool soundon;
   int logged;
   Uint32 logcycle;

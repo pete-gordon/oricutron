@@ -1283,16 +1283,55 @@ void mon_update_via( struct machine *oric )
     (oric->tapebit+9)%10,
     oric->tapetime == TAPE_1_PULSE );
   tzprintfpos( tz[TZ_VIA], 2, 15, "MOTOR = %1X", oric->tapemotor );
+}
 
-  tzprintfpos( tz[TZ_VIA], 2, 18, "REFRESH = %dHz", oric->vid_freq ? 50 : 60 );
+static void printayregbits( char *str, Sint16 x, Sint16 y, Uint8 v, Uint8 bits )
+{
+  int i, o;
+  struct textzone *ptz = tz[TZ_AY];
+
+  tzprintfpos( ptz, x, y, str, v );
+
+  x+=18;
+  o = (y*ptz->w)+x;
+  bits = 8-bits;
+
+  for( i=0; i<8; i++ )
+  {
+    if( i >= bits )
+      ptz->tx[o] = (v&(0x80>>i)) ? '1' : '0';
+    else
+      ptz->tx[o] = ' ';
+    o++;
+  }
 }
 
 void mon_update_ay( struct machine *oric )
 {
-  tzprintfpos( tz[TZ_AY], 2, 2, "BC1=%1X BDIR=%1X REG=%02X",
+  tzprintfpos( tz[TZ_AY], 2, 1, "BC1=%1X    BDIR=%1X     REG=%02X",
     (oric->ay.bmode & AYBMF_BC1) ? 1 : 0,
     (oric->ay.bmode & AYBMF_BDIR) ? 1 : 0,
     oric->ay.creg );
+
+  printayregbits( "R0 Pitch A L $%02X \%", 2, 2, oric->ay.eregs[AY_CHA_PER_L], 8 );
+  printayregbits( "R1 Pitch A H $%02X \%", 2, 3, oric->ay.eregs[AY_CHA_PER_H], 4 );
+  printayregbits( "R2 Pitch B L $%02X \%", 2, 4, oric->ay.eregs[AY_CHB_PER_L], 8 );
+  printayregbits( "R3 Pitch B H $%02X \%", 2, 5, oric->ay.eregs[AY_CHB_PER_H], 4 );
+  printayregbits( "R4 Pitch C L $%02X \%", 2, 6, oric->ay.eregs[AY_CHC_PER_L], 8 );
+  printayregbits( "R5 Pitch C H $%02X \%", 2, 7, oric->ay.eregs[AY_CHC_PER_H], 4 );
+
+  printayregbits( "R6 Noise     $%02X \%", 2, 9, oric->ay.eregs[AY_NOISE_PER], 5 );
+  printayregbits( "R7 Status    $%02X \%", 2,10, oric->ay.eregs[AY_STATUS],    7 );
+
+  printayregbits( "R8 Volume A  $%02X \%", 2,12, oric->ay.eregs[AY_CHA_AMP],   5 );
+  printayregbits( "R9 Volume B  $%02X \%", 2,13, oric->ay.eregs[AY_CHB_AMP],   5 );
+  printayregbits( "RA Volume C  $%02X \%", 2,14, oric->ay.eregs[AY_CHC_AMP],   5 );
+
+  printayregbits( "RB Env Per L $%02X \%", 2,16, oric->ay.eregs[AY_ENV_PER_L], 8 );
+  printayregbits( "RC Env Per H $%02X \%", 2,17, oric->ay.eregs[AY_ENV_PER_L], 8 );
+  printayregbits( "RD Env Cycle $%02X \%", 2,18, oric->ay.eregs[AY_ENV_CYCLE], 4 );
+  printayregbits( "RE Key Col   $%02X \%", 2,19, oric->ay.eregs[AY_PORT_A],    8 );
+/*
   tzprintfpos( tz[TZ_AY], 2, 4, "A:P=%04X A=%02X   N:PER=%02X",
     (oric->ay.regs[AY_CHA_PER_H]<<8)|(oric->ay.regs[AY_CHA_PER_L]),
     oric->ay.regs[AY_CHA_AMP],
@@ -1309,6 +1348,7 @@ void mon_update_ay( struct machine *oric )
     oric->ay.regs[AY_STATUS] );
   tzprintfpos( tz[TZ_AY], 2, 9, "PORT=%02X",
     oric->ay.regs[AY_PORT_A] );  
+*/
 }
 
 /*
