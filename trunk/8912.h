@@ -76,8 +76,8 @@ struct ay8912
   int logged;
   Uint32 logcycle;
   struct aywrite writelog[AUDIO_BUFLEN];
-  Sint32 toneper[3], noiseper, envper;
-  Sint32 tonebit[3], noisebit[3], vol[3];
+  Uint32 toneper[3], noiseper, envper;
+  Uint16 tonebit[3], noisebit[3], vol[3];
   int ct[3], ctn, cte;
 
   Uint32 tonepos[3], tonestep[3];
