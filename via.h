@@ -44,6 +44,7 @@ struct via
   unsigned char ca1, ca2;
   unsigned char cb1, cb2;
   unsigned char srcount;
+  unsigned char t1reload;
 
   // Internal state stuff
   SDL_bool t1run, t2run;
