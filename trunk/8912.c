@@ -539,11 +539,11 @@ static void ay_modeset( struct ay8912 *ay )
 
   switch( ay->bmode )
   {
-    case 0x01: // Read AY register
+    case AYBMF_BC1: // Read AY register
       via_write_porta( &ay->oric->via, 0xff, (ay->creg>=AY_LAST) ? 0 : ay->eregs[ay->creg] );
       break;
     
-    case 0x02: // Write AY register
+    case AYBMF_BDIR: // Write AY register
       if( ay->creg >= AY_LAST ) break;
       v = via_read_porta( &ay->oric->via );
 
@@ -595,7 +595,7 @@ static void ay_modeset( struct ay8912 *ay )
       }
       break;
     
-    case 0x03: // Set register
+    case AYBMF_BC1|AYBMF_BDIR: // Set register
       ay->creg = via_read_porta( &ay->oric->via );
       break;
   }
