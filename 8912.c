@@ -132,7 +132,7 @@ static Uint32 ayrand( struct ay8912 *ay )
 void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
 {
   Sint32 i;
-  Uint32 output;
+  Sint32 output;
 
   // For each clock cycle...
   while( cycles > 0 )
@@ -233,7 +233,7 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
   ay->anynewout = SDL_FALSE;
 
   // "Output" accumulates the audio data from all sources
-  output = 0;
+  output = -32768;
 
   // Loop through the channels
   for( i=0; i<3; i++ )
@@ -254,7 +254,7 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
   }
 
   // Clamp the output
-  if( output > 65535 ) output = 65535;
+  if( output > 32767 ) output = 32767;
 //  if( output < -32768 ) output = -32768;
   ay->output = output;
 }

@@ -86,7 +86,7 @@ struct ay8912
   unsigned char *envtab;
   struct machine *oric;
   Uint32 currnoise, rndrack;
-  Uint16 output;
+  Sint16 output;
 };
 
 void queuekeys( char *str );

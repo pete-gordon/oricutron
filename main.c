@@ -291,18 +291,11 @@ int main( int argc, char *argv[] )
           {
             while( oric.cpu.rastercycles > 0 )
             {
-#if TESTING_CYCLES_MODE
               m6502_set_icycles( &oric.cpu );
               via_clock( &oric.via, oric.cpu.icycles );
               ay_ticktock( &oric.ay, oric.cpu.icycles );
               if( oric.drivetype ) wd17xx_ticktock( &oric.wddisk, oric.cpu.icycles );
               breaky = m6502_inst( &oric.cpu, SDL_TRUE, mon_bpmsg );
-#else
-              breaky = m6502_inst( &oric.cpu, SDL_TRUE, mon_bpmsg );
-              via_clock( &oric.via, oric.cpu.icycles );
-              ay_ticktock( &oric.ay, oric.cpu.icycles );
-              if( oric.drivetype ) wd17xx_ticktock( &oric.wddisk, oric.cpu.icycles );
-#endif
               if( oric.emu_mode != EM_RUNNING )
               {
                 needrender = SDL_TRUE;
