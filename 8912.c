@@ -256,7 +256,7 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
   // Clamp the output
   if( output > 65535 ) output = 65535;
 //  if( output < -32768 ) output = -32768;
-  ay->output = (Sint16)output;
+  ay->output = output;
 }
 
 void ay_dowrite( struct ay8912 *ay, struct aywrite *aw )
@@ -357,7 +357,7 @@ void ay_dowrite( struct ay8912 *ay, struct aywrite *aw )
 */
 void ay_callback( void *dummy, Sint8 *stream, int length )
 {
-  Sint16 *out;
+  Uint16 *out;
   Sint32 i, j, logc;
   Uint32 ccycle, ccyc, lastcyc;
   struct ay8912 *ay = (struct ay8912 *)dummy;
@@ -367,7 +367,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
   lastcyc = 0;
   logc    = 0;
 
-  out = (Sint16 *)stream;
+  out = (Uint16 *)stream;
   for( i=0,j=0; i<AUDIO_BUFLEN; i++ )
   {
     ccyc = ccycle>>FPBITS;
