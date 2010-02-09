@@ -71,19 +71,22 @@ struct ay8912
   unsigned char bmode;
   unsigned char creg;
   unsigned char regs[AY_LAST], eregs[AY_LAST];
-  SDL_bool keystates[8], newout[3], newnoise;
+  SDL_bool keystates[8], newout[3], newnoise, anynewout;
   SDL_bool soundon;
   int logged;
   Uint32 logcycle;
   struct aywrite writelog[AUDIO_BUFLEN];
   Sint32 toneper[3], noiseper, envper;
-  Sint32 toneon[3], noiseon[3], vol[3];
+  Sint32 tonebit[3], noisebit[3], vol[3];
   int ct[3], ctn, cte;
+
+  Uint32 tonepos[3], tonestep[3];
+
   Sint32 sign[3], out[3], envpos;
   unsigned char *envtab;
   struct machine *oric;
   Uint32 currnoise, rndrack;
-  Sint16 output;
+  Uint16 output;
 };
 
 void queuekeys( char *str );

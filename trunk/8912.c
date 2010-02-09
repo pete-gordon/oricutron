@@ -126,33 +126,53 @@ static Uint32 ayrand( struct ay8912 *ay )
 {
   Uint32 rbit = (ay->rndrack&1) ^ ((ay->rndrack>>2)&1);
   ay->rndrack = (ay->rndrack>>1)|(rbit<<16);
-  return rbit ? 0 : 0xffff;
+  return rbit&1;
 }
 
 void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
 {
-  Sint32 i, j;
-  Sint32 output;
+  Sint32 i;
+  Uint32 output;
 
   // For each clock cycle...
   while( cycles > 0 )
   {
-    // Count for the noise cycle counter
-    if( (++ay->ctn) >= ay->noiseper )
+    if( !ay->noiseper )
     {
-      // Noise counter expired, calculate the next noise output level
-      ay->currnoise ^= ayrand( ay );
+      if( !ay->currnoise )
+      {
+        ay->currnoise = 1;
+        ay->newnoise = SDL_TRUE;
+      }
+    } else {
+      // Count for the noise cycle counter
+      if( (++ay->ctn) >= ay->noiseper )
+      {
+        // Noise counter expired, calculate the next noise output level
+        ay->currnoise ^= ayrand( ay );
 
-      // Reset the noise counter
-      ay->ctn = 0;
+        // Reset the noise counter
+        ay->ctn = 0;
 
-      // Remember that the noise output changed
-      ay->newnoise = SDL_TRUE;
+        // Remember that the noise output changed
+        ay->newnoise = SDL_TRUE;
+      }
     }
 
     // For each audio channel...
     for( i=0; i<3; i++ )
     {
+      if( !ay->toneper[i] )
+      {
+        if( !ay->sign[i] )
+        {
+          ay->sign[i] = 1;
+          ay->newout[i] = SDL_TRUE;
+          ay->anynewout = SDL_TRUE;
+          continue;
+        }
+      }
+
       // Count for the square wave counter
       if( (++ay->ct[i]) >= ay->toneper[i] )
       {
@@ -160,20 +180,24 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
         ay->ct[i] = 0;
 
         // ...and invert the square wave output
-        ay->sign[i] = -ay->sign[i];
+        ay->sign[i] ^= 1;
 
         // Remember that this channels output has changed
         ay->newout[i] = SDL_TRUE;
+        ay->anynewout = SDL_TRUE;
       }
 
       // If this channel is mixed with noise, and the noise changed,
       // then so did this channel.
-      if( ( ay->newnoise ) && ( ay->noiseon[i] ) )
+      if( ( ay->newnoise ) && ( !ay->noisebit[i] ) )
+      {
         ay->newout[i] = SDL_TRUE;        
+        ay->anynewout = SDL_TRUE;
+      }
     }
 
     // Count down the envelope cycle counter
-    if( (++ay->cte) >= ay->envper )
+    if( ( ay->envper ) && ( (++ay->cte) >= ay->envper ) )
     {
       // Counter expired, so reset it
       ay->cte = 0;
@@ -196,6 +220,7 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
 
           // and remember that the channel has changed
           ay->newout[i] = SDL_TRUE;
+          ay->anynewout = SDL_TRUE;
         }
       }
     }
@@ -203,6 +228,9 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
     // Done one cycle!
     cycles--;
   }
+
+  if( !ay->anynewout ) return;
+  ay->anynewout = SDL_FALSE;
 
   // "Output" accumulates the audio data from all sources
   output = 0;
@@ -214,13 +242,7 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
     if( ay->newout[i] )
     {
       // Yep, so calculate the squarewave signal...
-      j = ay->sign[i]*ay->toneon[i]*ay->vol[i];
-
-      // .. and optionally bring the noise
-      if( ay->noiseon[i] ) j += (ay->currnoise*ay->vol[i])>>16;
-
-      // Store the new output level for the channel
-      ay->out[i] = j;
+      ay->out[i] = ((ay->tonebit[i]|ay->sign[i])&(ay->noisebit[i]|ay->currnoise)) * ay->vol[i];
 
       // and mark that we don't need to recalculate unless
       // anything changes
@@ -232,69 +254,81 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
   }
 
   // Clamp the output
-  if( output > 32767 ) output = 32767;
-  if( output < -32768 ) output = -32768;
-  ay->output = lowpass( output );
+  if( output > 65535 ) output = 65535;
+//  if( output < -32768 ) output = -32768;
+  ay->output = (Sint16)output;
 }
 
 void ay_dowrite( struct ay8912 *ay, struct aywrite *aw )
 {
-  Sint32 i, j;
+  Sint32 i;
 
   switch( aw->reg )
   {
     case AY_CHA_PER_L:   // Channel A period
     case AY_CHA_PER_H:
       ay->regs[aw->reg] = aw->val;
-      ay->toneper[0] = (((ay->regs[AY_CHA_PER_H]&0xf)<<8)|ay->regs[AY_CHA_PER_L])*TONETIME;
+      ay->toneper[0] = (((ay->regs[AY_CHA_PER_H]&0xf)<<8)|ay->regs[AY_CHA_PER_L]);
+      if( ay->toneper[0] <= 5 ) ay->toneper[0] = 0;
+      ay->toneper[0] *= TONETIME;
       break;
 
     case AY_CHB_PER_L:   // Channel B period
     case AY_CHB_PER_H:
       ay->regs[aw->reg] = aw->val;
-      ay->toneper[1] = (((ay->regs[AY_CHB_PER_H]&0xf)<<8)|ay->regs[AY_CHB_PER_L])*TONETIME;
+      ay->toneper[1] = (((ay->regs[AY_CHB_PER_H]&0xf)<<8)|ay->regs[AY_CHB_PER_L]);
+      if( ay->toneper[1] <= 5 ) ay->toneper[1] = 0;
+      ay->toneper[1] *= TONETIME;
       break;
 
     case AY_CHC_PER_L:   // Channel C period
     case AY_CHC_PER_H:
       ay->regs[aw->reg] = aw->val;
-      ay->toneper[2] = (((ay->regs[AY_CHC_PER_H]&0xf)<<8)|ay->regs[AY_CHC_PER_L])*TONETIME;
+      ay->toneper[2] = (((ay->regs[AY_CHC_PER_H]&0xf)<<8)|ay->regs[AY_CHC_PER_L]);
+      if( ay->toneper[2] <= 5 ) ay->toneper[2] = 0;
+      ay->toneper[2] *= TONETIME;
       break;
     
     case AY_STATUS:      // Status
       ay->regs[aw->reg] = aw->val;
-      ay->toneon[0]  = (aw->val&0x01)?0:1;
-      ay->toneon[1]  = (aw->val&0x02)?0:1;
-      ay->toneon[2]  = (aw->val&0x04)?0:1;
-      ay->noiseon[0] = (aw->val&0x08)?0:1;
-      ay->noiseon[1] = (aw->val&0x10)?0:1;
-      ay->noiseon[2] = (aw->val&0x20)?0:1;
-      for( i=0; i<3; i++ )
-      {
-        j = ay->sign[i]*ay->toneon[i]*ay->vol[i];
-        if( ay->noiseon[i] ) j += (ay->currnoise*ay->vol[i])>>16;
-        ay->out[i] = j;
-      }
+      ay->tonebit[0]  = (aw->val&0x01)?1:0;
+      ay->tonebit[1]  = (aw->val&0x02)?1:0;
+      ay->tonebit[2]  = (aw->val&0x04)?1:0;
+      ay->noisebit[0] = (aw->val&0x08)?1:0;
+      ay->noisebit[1] = (aw->val&0x10)?1:0;
+      ay->noisebit[2] = (aw->val&0x20)?1:0;
+      ay->newout[0] = SDL_TRUE;
+      ay->newout[1] = SDL_TRUE;
+      ay->newout[2] = SDL_TRUE;
+      ay->anynewout = SDL_TRUE;
       break;
 
     case AY_NOISE_PER:   // Noise period
       ay->regs[aw->reg] = aw->val;
-      ay->noiseper = (ay->regs[AY_NOISE_PER]&0x1f)*NOISETIME;
+      ay->noiseper = (ay->regs[AY_NOISE_PER]&0x1f);
+      if( ay->noiseper < 3 ) ay->noiseper = 0;
+      ay->noiseper *= NOISETIME;
       break;
-    
+
     case AY_CHA_AMP:
     case AY_CHB_AMP:
     case AY_CHC_AMP:
       ay->regs[aw->reg] = aw->val;
-      if(aw->val&0x10) break;
       i = aw->reg-AY_CHA_AMP;
-      ay->vol[i] = voltab[aw->val&0xf];
+      if(aw->val&0x10)
+        ay->vol[i] = voltab[ay->envtab[ay->envpos]];
+      else
+        ay->vol[i] = voltab[aw->val&0xf];
+      ay->newout[i] = SDL_TRUE;
+      ay->anynewout = SDL_TRUE;
       break;
     
     case AY_ENV_PER_L:
     case AY_ENV_PER_H:
       ay->regs[aw->reg] = aw->val;
-      ay->envper = ((ay->regs[AY_ENV_PER_H]<<8)|ay->regs[AY_ENV_PER_L])*ENVTIME;
+      ay->envper = ((ay->regs[AY_ENV_PER_H]<<8)|ay->regs[AY_ENV_PER_L]);
+      if( ay->envper < 3 ) ay->envper = 0;
+      ay->envper *= ENVTIME;
       break;
 
     case AY_ENV_CYCLE:
@@ -308,7 +342,8 @@ void ay_dowrite( struct ay8912 *ay, struct aywrite *aw )
           if( ay->regs[AY_CHA_AMP+i]&0x10 )
           {
             ay->vol[i] = voltab[ay->envtab[ay->envpos]];
-            ay->out[i] = ay->sign[i]*ay->vol[i]*ay->toneon[i];
+            ay->newout[i] = SDL_TRUE;
+            ay->anynewout = SDL_TRUE;
           }
         }
       }
@@ -346,6 +381,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
       lastcyc = ccyc;
     }
 
+    ay->output = lowpass( ay->output );
     out[j++] = ay->output;
     out[j++] = ay->output;
 
@@ -422,14 +458,15 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
   // Reset the three audio channels
   for( i=0; i<3; i++ )
   {
-    ay->ct[i]      = 0;     // Cycle counter to zero
-    ay->out[i]     = 0;     // 0v output for each channel
-    ay->sign[i]    = 1;     // Initial positive sign bit
-    ay->toneon[i]  = 0;     // Output disabled
-    ay->noiseon[i] = 0;     // Noise disabled
-    ay->vol[i]     = 0;     // Zero volume
-    ay->newout[i]  = SDL_TRUE;
+    ay->ct[i]       = 0;     // Cycle counter to zero
+    ay->out[i]      = 0;     // 0v output for each channel
+    ay->sign[i]     = 0;     // Initial sign bit
+    ay->tonebit[i]  = 1;     // Output disabled
+    ay->noisebit[i] = 1;     // Noise disabled
+    ay->vol[i]      = 0;     // Zero volume
+    ay->newout[i]   = SDL_TRUE;
   }
+  ay->anynewout = SDL_TRUE;
   ay->newnoise = SDL_TRUE;
   ay->ctn = 0; // Reset the noise counter
   ay->cte = 0; // Reset the envelope counter
@@ -441,7 +478,7 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
   ay->creg    = 0;          // Current register to 0
   ay->oric    = oric;
   ay->soundon = soundavailable && soundon && (!warpspeed);
-  ay->currnoise = 0xffff;
+  ay->currnoise = 0;
   ay->rndrack = 1;
   ay->logged  = 0;
   ay->logcycle = 0;
@@ -535,7 +572,8 @@ static void ay_modeset( struct ay8912 *ay )
             for( i=0; i<ay->logged; i++ )
               ay_dowrite( ay, &ay->writelog[i] );
             ay->logged = 0;
-            ay->regs[ay->creg] = v;
+            if( ( ay->creg != AY_ENV_CYCLE ) || ( v != 0xff ) )
+              ay->regs[ay->creg] = v;
             break;
           }
 
