@@ -19,9 +19,6 @@
 **  6502 emulation header
 */
 
-// Set to TRUE to count all CPU cycles since the emulation was started
-#define CYCLECOUNT 1
-
 // 6502 flag bits
 #define FB_C 0
 #define FF_C (1<<FB_C)
@@ -65,9 +62,7 @@ struct m6502
 {
   int rastercycles;
   unsigned int icycles;
-#if CYCLECOUNT
-  int cycles;
-#endif
+  unsigned int cycles;
   unsigned char a, x, y, sp;
   unsigned char f_c, f_z, f_i, f_d, f_b, f_v, f_n;
   unsigned short pc;

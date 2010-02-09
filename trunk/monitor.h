@@ -19,8 +19,6 @@
 **  Monitor/Debugger
 */
 
-#define TESTING_CYCLES_MODE 0
-
 void mon_init( struct machine *oric );
 void mon_render( struct machine *oric );
 void mon_update_regs( struct machine *oric );

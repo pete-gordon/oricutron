@@ -1253,10 +1253,8 @@ void mon_update_regs( struct machine *oric )
     tzprintfpos( tz[TZ_REGS], 2, 3, "%46s", " " );
   }
 
-#if CYCLECOUNT
   tzprintfpos( tz[TZ_REGS], 2, 4, "CY=%08d", oric->cpu.cycles );
   tzprintfpos( tz[TZ_REGS], 2, 5, "FM=%06d RS=%03d", oric->frames, oric->vid_raster );
-#endif
 
   tzstrpos( tz[TZ_REGS], 35, 4, (oric->cpu.irq&IRQF_VIA)  ? "VIA"  : "   "  );
   tzstrpos( tz[TZ_REGS], 35, 5, (oric->cpu.irq&IRQF_DISK) ? "DISK" : "    " );
@@ -3424,18 +3422,11 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
 
 static unsigned int steppy_step( struct machine *oric )
 {
-#if TESTING_CYCLES_MODE
   m6502_set_icycles( &oric->cpu );
   via_clock( &oric->via, oric->cpu.icycles );
   ay_ticktock( &oric->ay, oric->cpu.icycles );
   if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
   m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
-#else
-  m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
-  via_clock( &oric->via, oric->cpu.icycles );
-  ay_ticktock( &oric->ay, oric->cpu.icycles );
-  if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
-#endif
   if( oric->cpu.rastercycles <= 0 )
   {
     video_doraster( oric );
@@ -3464,12 +3455,11 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
     case SDL_KEYUP:
       switch( ev->key.keysym.sym )
       {
-#if CYCLECOUNT
         case SDLK_F9:
           oric->cpu.cycles = 0;
           *needrender = SDL_TRUE;
           break;
-#endif
+
         case SDLK_LSHIFT:
         case SDLK_RSHIFT:
           kshifted = SDL_FALSE;
@@ -3477,18 +3467,11 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
         case SDLK_F2:
           // In case we're on a breakpoint
-#if TESTING_CYCLES_MODE
           m6502_set_icycles( &oric->cpu );
           via_clock( &oric->via, oric->cpu.icycles );
           ay_ticktock( &oric->ay, oric->cpu.icycles );
           if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
           m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
-#else
-          m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
-          via_clock( &oric->via, oric->cpu.icycles );
-          ay_ticktock( &oric->ay, oric->cpu.icycles );
-          if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
-#endif
           if( oric->cpu.rastercycles <= 0 )
           {
             video_doraster( oric );
