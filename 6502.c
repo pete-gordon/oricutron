@@ -251,7 +251,7 @@ void m6502_reset( struct m6502 *cpu )
 #define BPAGECHECK ( (baddr&0xff00) != (cpu->pc&0xff00) )
 
 // Macro to perform branch logic
-#define BRANCH(condition) if( condition ) cpu->pc += (signed char)cpu->read( cpu, cpu->pc )+1;
+#define BRANCH(condition) if( condition ) cpu->pc += ((signed char)cpu->read( cpu, cpu->pc )); cpu->pc++;
 
 // Macro to calculate cycles of a branch instruction
 #define IBRANCH(condition) cpu->icycles = 2;\
