@@ -351,21 +351,20 @@ void via_clock( struct via *v, unsigned int cycles )
 
   tape_ticktock( v->oric, cycles );
 
-  if( cycles >= 1 ) // :-)
-  {
-    if( v->ca2pulse )
-    {
-      v->ca2 = 1;
-      ay_set_bc1( &v->oric->ay, 1 );
-      v->ca2pulse = SDL_FALSE;
-    }
+  if( !cycles ) return;
 
-    if( v->cb2pulse )
-    {
-      v->cb2 = 1;
-      ay_set_bdir( &v->oric->ay, 1 );
-      v->cb2pulse = SDL_FALSE;
-    }
+  if( v->ca2pulse )
+  {
+    v->ca2 = 1;
+    ay_set_bc1( &v->oric->ay, 1 );
+    v->ca2pulse = SDL_FALSE;
+  }
+
+  if( v->cb2pulse )
+  {
+    v->cb2 = 1;
+    ay_set_bdir( &v->oric->ay, 1 );
+    v->cb2pulse = SDL_FALSE;
   }
 
   // Timer 1 tick-tock
@@ -388,14 +387,29 @@ void via_clock( struct via *v, unsigned int cycles )
     case 0x40: // Continuous, no output
     case 0xc0: // Continuous, output on PB7
       crem = cycles;
+
+      if( v->t1reload )
+      {
+        crem--;
+        v->t1c = (v->t1l_h<<8)|v->t1l_l;       // Reload timer
+        v->t1reload = SDL_FALSE;
+      }
+
       while( crem > v->t1c )
       {
-        // Continuous finished
-        crem -= v->t1c;   // Done this one
+        crem -= (v->t1c+1); // Clock down to 0xffff
+        v->t1c = 0xffff;
         via_set_irq( v, VIRQF_T1 );
         if( v->acr&0x80 ) v->orb ^= 0x80;     // PB7 low now that the timer has finished
+
+        if( !crem )
+        {
+          v->t1reload = SDL_TRUE;
+          break;
+        }
+
+        crem--;
         v->t1c = (v->t1l_h<<8)|v->t1l_l;       // Reload timer
-        if( v->t1c == 0 ) break; // Avoid an infinite loop
       }
 
       if( v->t1c >= crem )
@@ -502,6 +516,12 @@ void via_write( struct via *v, int offset, unsigned char data )
       break;
     case VIA_ACR:
       v->acr = data;
+      if( ( ( data & ACRF_T1CON ) != 0x40 ) &&
+          ( ( data & ACRF_T1CON ) != 0xc0 ) )
+        v->t1reload = SDL_FALSE;
+      break;
+    case 0x40: // Continuous, no output
+    case 0xc0: // Continuous, output on PB7
       break;
     case VIA_PCR:
       v->pcr = data;

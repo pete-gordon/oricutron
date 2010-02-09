@@ -111,12 +111,44 @@ static char mw_ibuf[8];
 static unsigned char mwatch_old[65536];
 static SDL_bool mwatch_oldvalid = SDL_FALSE;
 
-//                                                             12345678901    12345678 
-static struct msym defsym_oric1[] = { { 0xc000, SYMF_ROMDIS0, "ROMStart"   , "ROMStart", "ROMStart" },
+//                                                             12345678901       12345678 
+static struct msym defsym_oric1[] = { { 0x0300, 0,            "VIA_IORB"      , "VIA_IORB"   , "VIA_IORB" },
+                                      { 0x0301, 0,            "VIA_IORA"      , "VIA_IORA"   , "VIA_IORA" },
+                                      { 0x0302, 0,            "VIA_DDRB"      , "VIA_DDRB"   , "VIA_DDRB" },
+                                      { 0x0303, 0,            "VIA_DDRA"      , "VIA_DDRA"   , "VIA_DDRA" },
+                                      { 0x0304, 0,            "VIA_T1C_L"     , "VIA_T1C\x16", "VIA_T1C_L" },
+                                      { 0x0305, 0,            "VIA_T1C_H"     , "VIA_T1C\x16", "VIA_T1C_H" },
+                                      { 0x0306, 0,            "VIA_T1L_L"     , "VIA_T1L\x16", "VIA_T1L_L" },
+                                      { 0x0307, 0,            "VIA_T1L_H"     , "VIA_T1L\x16", "VIA_T1L_H" },
+                                      { 0x0308, 0,            "VIA_T2C_L"     , "VIA_T2C\x16", "VIA_T2C_L" },
+                                      { 0x0309, 0,            "VIA_T2C_H"     , "VIA_T2C\x16", "VIA_T2C_H" },
+                                      { 0x030A, 0,            "VIA_SR"        , "VIA_SR"     , "VIA_SR" },
+                                      { 0x030B, 0,            "VIA_ACR"       , "VIA_ACR"    , "VIA_ACR" },
+                                      { 0x030C, 0,            "VIA_PCR"       , "VIA_PCR"    , "VIA_PCR" },
+                                      { 0x030D, 0,            "VIA_IFR"       , "VIA_IFR"    , "VIA_IFR" },
+                                      { 0x030E, 0,            "VIA_IER"       , "VIA_IER"    , "VIA_IER" },
+                                      { 0x030F, 0,            "VIA_IORA2"     , "VIA_IORA2"  , "VIA_IORA2" },
+                                      { 0xc000, SYMF_ROMDIS0, "ROMStart"      , "ROMStart"   , "ROMStart" },
                                       { 0, 0, { 0, }, { 0, }, NULL } };
 
-//                                                           12345678901       12345678 
-static struct msym defsym_atmos[] = { { 0xc000, SYMF_ROMDIS0, "ROMStart"      , "ROMStart"   , "ROMStart" },
+//                                                             12345678901       12345678 
+static struct msym defsym_atmos[] = { { 0x0300, 0,            "VIA_IORB"      , "VIA_IORB"   , "VIA_IORB" },
+                                      { 0x0301, 0,            "VIA_IORA"      , "VIA_IORA"   , "VIA_IORA" },
+                                      { 0x0302, 0,            "VIA_DDRB"      , "VIA_DDRB"   , "VIA_DDRB" },
+                                      { 0x0303, 0,            "VIA_DDRA"      , "VIA_DDRA"   , "VIA_DDRA" },
+                                      { 0x0304, 0,            "VIA_T1C_L"     , "VIA_T1C\x16", "VIA_T1C_L" },
+                                      { 0x0305, 0,            "VIA_T1C_H"     , "VIA_T1C\x16", "VIA_T1C_H" },
+                                      { 0x0306, 0,            "VIA_T1L_L"     , "VIA_T1L\x16", "VIA_T1L_L" },
+                                      { 0x0307, 0,            "VIA_T1L_H"     , "VIA_T1L\x16", "VIA_T1L_H" },
+                                      { 0x0308, 0,            "VIA_T2C_L"     , "VIA_T2C\x16", "VIA_T2C_L" },
+                                      { 0x0309, 0,            "VIA_T2C_H"     , "VIA_T2C\x16", "VIA_T2C_H" },
+                                      { 0x030A, 0,            "VIA_SR"        , "VIA_SR"     , "VIA_SR" },
+                                      { 0x030B, 0,            "VIA_ACR"       , "VIA_ACR"    , "VIA_ACR" },
+                                      { 0x030C, 0,            "VIA_PCR"       , "VIA_PCR"    , "VIA_PCR" },
+                                      { 0x030D, 0,            "VIA_IFR"       , "VIA_IFR"    , "VIA_IFR" },
+                                      { 0x030E, 0,            "VIA_IER"       , "VIA_IER"    , "VIA_IER" },
+                                      { 0x030F, 0,            "VIA_IORA2"     , "VIA_IORA2"  , "VIA_IORA2" },
+                                      { 0xc000, SYMF_ROMDIS0, "ROMStart"      , "ROMStart"   , "ROMStart" },
                                       { 0xc000, SYMF_ROMDIS1, "Overlay"       , "Overlay"    , "Overlay" },
                                       { 0xc006, SYMF_ROMDIS0, "JumpTab"       , "JumpTab"    , "JumpTab" },
                                       { 0xc0ea, SYMF_ROMDIS0, "Keywords"      , "Keywords"   , "Keywords" },
@@ -900,10 +932,10 @@ struct msym *mon_find_sym_by_addr( struct machine *oric, unsigned short addr )
     
     if( romdis )
     {
-      if( (syms[i].flags&SYMF_ROMDIS1) == 0 )
+      if( (syms[i].flags&SYMF_ROMDIS0) != 0 )
         continue;
     } else {
-      if( (syms[i].flags&SYMF_ROMDIS0) == 0 )
+      if( (syms[i].flags&SYMF_ROMDIS1) != 0 )
         continue;
     }
 
@@ -923,10 +955,10 @@ struct msym *mon_find_sym_by_addr( struct machine *oric, unsigned short addr )
 
     if( romdis )
     {
-      if( (defaultsyms[i].flags&SYMF_ROMDIS1) == 0 )
+      if( (defaultsyms[i].flags&SYMF_ROMDIS0) != 0 )
         continue;
     } else {
-      if( (defaultsyms[i].flags&SYMF_ROMDIS0) == 0 )
+      if( (defaultsyms[i].flags&SYMF_ROMDIS1) != 0 )
         continue;
     }
 
@@ -955,10 +987,10 @@ struct msym *mon_find_sym_by_name( struct machine *oric, char *name )
 
     if( romdis )
     {
-      if( (syms[i].flags&SYMF_ROMDIS1) == 0 )
+      if( (syms[i].flags&SYMF_ROMDIS0) != 0 )
         continue;
     } else {
-      if( (syms[i].flags&SYMF_ROMDIS0) == 0 )
+      if( (syms[i].flags&SYMF_ROMDIS1) != 0 )
         continue;
     }
 
@@ -984,10 +1016,10 @@ struct msym *mon_find_sym_by_name( struct machine *oric, char *name )
 
     if( romdis )
     {
-      if( (defaultsyms[i].flags&SYMF_ROMDIS1) == 0 )
+      if( (defaultsyms[i].flags&SYMF_ROMDIS0) != 0 )
         continue;
     } else {
-      if( (defaultsyms[i].flags&SYMF_ROMDIS0) == 0 )
+      if( (defaultsyms[i].flags&SYMF_ROMDIS1) != 0 )
         continue;
     }
 
@@ -3392,10 +3424,18 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
 
 static unsigned int steppy_step( struct machine *oric )
 {
+#if TESTING_CYCLES_MODE
+  m6502_set_icycles( &oric->cpu );
+  via_clock( &oric->via, oric->cpu.icycles );
+  ay_ticktock( &oric->ay, oric->cpu.icycles );
+  if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
+  m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
+#else
   m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
   via_clock( &oric->via, oric->cpu.icycles );
   ay_ticktock( &oric->ay, oric->cpu.icycles );
   if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
+#endif
   if( oric->cpu.rastercycles <= 0 )
   {
     video_doraster( oric );
@@ -3437,10 +3477,18 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
         case SDLK_F2:
           // In case we're on a breakpoint
+#if TESTING_CYCLES_MODE
+          m6502_set_icycles( &oric->cpu );
+          via_clock( &oric->via, oric->cpu.icycles );
+          ay_ticktock( &oric->ay, oric->cpu.icycles );
+          if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
+          m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
+#else
           m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
           via_clock( &oric->via, oric->cpu.icycles );
           ay_ticktock( &oric->ay, oric->cpu.icycles );
           if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
+#endif
           if( oric->cpu.rastercycles <= 0 )
           {
             video_doraster( oric );

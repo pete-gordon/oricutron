@@ -187,6 +187,15 @@ void m6502_reset( struct m6502 *cpu )
 #define BADDR_ZIX baddr = (unsigned char)(cpu->read( cpu, cpu->pc )+cpu->x); baddr = (cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr )
 #define BADDR_ZIY baddr = cpu->read( cpu, cpu->pc ); baddr = ((cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr ))+cpu->y
 
+#define NBADDR_ZP  baddr = cpu->read( cpu, nextpc+1 )
+#define NBADDR_ZPX baddr = (cpu->read( cpu, nextpc+1 ) + cpu->x)&0xff
+#define NBADDR_ZPY baddr = (cpu->read( cpu, nextpc+1 ) + cpu->y)&0xff
+#define NBADDR_ABS baddr = (cpu->read( cpu, nextpc+2 )<<8) | cpu->read( cpu, nextpc+1 )
+#define NBADDR_ABX baddr = ((cpu->read( cpu, nextpc+2 )<<8) | cpu->read( cpu, nextpc+1 ))+cpu->x
+#define NBADDR_ABY baddr = ((cpu->read( cpu, nextpc+2 )<<8) | cpu->read( cpu, nextpc+1 ))+cpu->y
+#define NBADDR_ZIX baddr = (unsigned char)(cpu->read( cpu, nextpc+1 )+cpu->x); baddr = (cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr )
+#define NBADDR_ZIY baddr = cpu->read( cpu, nextpc+1 ); baddr = ((cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr ))+cpu->y
+
 #define R_BADDR_ZP   BADDR_ZP; raddr = baddr; rlen = 1
 #define W_BADDR_ZP   BADDR_ZP; waddr = baddr; wlen = 1
 #define RW_BADDR_ZP  BADDR_ZP; waddr = raddr = baddr; wlen = rlen = 1
@@ -254,6 +263,16 @@ void m6502_reset( struct m6502 *cpu )
                           }\
                           cycleit( cpu, 2 )
 
+// Macro to calculate cycles of a branch instruction
+#define IBRANCH(condition) cpu->icycles = 2;\
+                           offs = (signed char)cpu->read( cpu, cpu->pc+1 );\
+                           if( condition )\
+                           {\
+                             cpu->icycles++;\
+                             baddr = cpu->pc+2+offs;\
+                             if( BPAGECHECK ) cpu->icycles++;\
+                           }\
+
 // Macros to simplify pushing and popping
 #define PUSHB(n) cpu->write( cpu, (cpu->sp--)+0x100, n )
 #define POPB cpu->read( cpu, (++cpu->sp)+0x100 )
@@ -280,6 +299,240 @@ static inline void cycleit( struct m6502 *cpu, int cycles )
 #if CYCLECOUNT
   cpu->cycles += cycles;
 #endif
+}
+
+// Get the number of cycles the NEXT cpu instruction will take
+void m6502_set_icycles( struct m6502 *cpu )
+{
+  unsigned short baddr;
+  unsigned char nextop;
+  unsigned short nextpc;
+  signed char offs;
+
+  nextpc = cpu->pc;
+  if( cpu->nmi )
+  {
+    nextpc = (cpu->read( cpu, 0xfffb )<<8)|cpu->read( cpu, 0xfffa );
+  } else if( ( cpu->irq ) && ( cpu->f_i == 0 ) ) {
+    nextpc = (cpu->read( cpu, 0xfffb )<<8)|cpu->read( cpu, 0xfffa );
+  }
+
+  nextop = cpu->read( cpu, nextpc );
+
+  switch( nextop )
+  {
+    case 0x00: // { "BRK", AM_IMP },  // 00
+    case 0x1E: // { "ASL", AM_ABX },  // 1E
+    case 0x3E: // { "ROL", AM_ABX },  // 3E
+    case 0x5E: // { "LSR", AM_ABX },  // 5E
+    case 0x7E: // { "ROR", AM_ABX },  // 7E
+    case 0xDE: // { "DEC", AM_ABX },  // DE
+    case 0xFE: // { "INC", AM_ABX },  // FE
+      cpu->icycles = 7;
+      break;
+
+    case 0x01: // { "ORA", AM_ZIX },  // 01
+    case 0x0E: // { "ASL", AM_ABS },  // 0E
+    case 0x16: // { "ASL", AM_ZPX },  // 16
+    case 0x20: // { "JSR", AM_ABS },  // 20
+    case 0x21: // { "AND", AM_ZIX },  // 21
+    case 0x2E: // { "ROL", AM_ABS },  // 2E
+    case 0x36: // { "ROL", AM_ZPX },  // 36
+    case 0x40: // { "RTI", AM_IMP },  // 40
+    case 0x41: // { "EOR", AM_ZIX },  // 41
+    case 0x4E: // { "LSR", AM_ABS },  // 4E
+    case 0x56: // { "LSR", AM_ZPX },  // 56
+    case 0x60: // { "RTS", AM_IMP },  // 60
+    case 0x61: // { "ADC", AM_ZIX },  // 61
+    case 0x6E: // { "ROR", AM_ABS },  // 6E
+    case 0x76: // { "ROR", AM_ZPX },  // 76
+    case 0x81: // { "STA", AM_ZIX },  // 81
+    case 0x91: // { "STA", AM_ZIY },  // 91
+    case 0xA1: // { "LDA", AM_ZIX },  // A1
+    case 0xC1: // { "CMP", AM_ZIX },  // C1
+    case 0xD6: // { "DEC", AM_ZPX },  // D6
+    case 0xE1: // { "SBC", AM_ZIX },  // E1
+    case 0xEE: // { "INC", AM_ABS },  // EE
+    case 0xF6: // { "INC", AM_ZPX },  // F6
+      cpu->icycles = 6;
+      break;
+
+    case 0x05: // { "ORA", AM_ZP  },  // 05
+    case 0x08: // { "PHP", AM_IMP },  // 08
+    case 0x24: // { "BIT", AM_ZP  },  // 24
+    case 0x25: // { "AND", AM_ZP  },  // 25
+    case 0x45: // { "EOR", AM_ZP  },  // 45
+    case 0x48: // { "PHA", AM_IMP },  // 48
+    case 0x4C: // { "JMP", AM_ABS },  // 4C
+    case 0x65: // { "ADC", AM_ZP  },  // 65
+    case 0x84: // { "STY", AM_ZP  },  // 84
+    case 0x85: // { "STA", AM_ZP  },  // 85
+    case 0x86: // { "STX", AM_ZP  },  // 86
+    case 0xA4: // { "LDY", AM_ZP  },  // A4
+    case 0xA5: // { "LDA", AM_ZP  },  // A5
+    case 0xA6: // { "LDX", AM_ZP  },  // A6
+    case 0xC4: // { "CPY", AM_ZP  },  // C4
+    case 0xC5: // { "CMP", AM_ZP  },  // C5
+    case 0xCE: // { "DEC", AM_ABS },  // CE
+    case 0xE4: // { "CPX", AM_ZP  },  // E4
+    case 0xE5: // { "SBC", AM_ZP  },  // E5
+      cpu->icycles = 3;
+      break;
+
+    case 0x06: // { "ASL", AM_ZP  },  // 06
+    case 0x26: // { "ROL", AM_ZP  },  // 26
+    case 0x46: // { "LSR", AM_ZP  },  // 46
+    case 0x66: // { "ROR", AM_ZP  },  // 66
+    case 0x6C: // { "JMP", AM_IND },  // 6C
+    case 0x99: // { "STA", AM_ABY },  // 99
+    case 0x9D: // { "STA", AM_ABX },  // 9D
+    case 0xC6: // { "DEC", AM_ZP  },  // C6
+      cpu->icycles = 5;
+      break;
+
+    case 0x09: // { "ORA", AM_IMM },  // 09
+    case 0x0A: // { "ASL", AM_IMP },  // 0A
+    case 0x18: // { "CLC", AM_IMP },  // 18
+    case 0x29: // { "AND", AM_IMM },  // 29
+    case 0x2A: // { "ROL", AM_IMP },  // 2A
+    case 0x38: // { "SEC", AM_IMP },  // 38
+    case 0x49: // { "EOR", AM_IMM },  // 49
+    case 0x4A: // { "LSR", AM_IMP },  // 4A
+    case 0x58: // { "CLI", AM_IMP },  // 58
+    case 0x69: // { "ADC", AM_IMM },  // 69
+    case 0x6A: // { "ROR", AM_IMP },  // 6A
+    case 0x78: // { "SEI", AM_IMP },  // 78
+    case 0x88: // { "DEY", AM_IMP },  // 88
+    case 0x8A: // { "TXA", AM_IMP },  // 8A
+    case 0x98: // { "TYA", AM_IMP },  // 98
+    case 0x9A: // { "TXS", AM_IMP },  // 9A
+    case 0xA0: // { "LDY", AM_IMM },  // A0
+    case 0xA2: // { "LDX", AM_IMM },  // A2
+    case 0xA8: // { "TAY", AM_IMP },  // A8
+    case 0xA9: // { "LDA", AM_IMM },  // A9
+    case 0xAA: // { "TAX", AM_IMP },  // AA
+    case 0xB8: // { "CLV", AM_IMP },  // B8
+    case 0xBA: // { "TSX", AM_IMP },  // BA
+    case 0xC0: // { "CPY", AM_IMM },  // C0
+    case 0xC8: // { "INY", AM_IMP },  // C8
+    case 0xC9: // { "CMP", AM_IMM },  // C9
+    case 0xCA: // { "DEX", AM_IMP },  // CA
+    case 0xD8: // { "CLD", AM_IMP },  // D8
+    case 0xE0: // { "CPX", AM_IMM },  // E0
+    case 0xE8: // { "INX", AM_IMP },  // E8
+    case 0xE9: // { "SBC", AM_IMM },  // E9
+    case 0xEA: // { "NOP", AM_IMP },  // EA
+    case 0xF8: // { "SED", AM_IMP },  // F8
+      cpu->icycles = 2;
+      break;
+
+    case 0x0D: // { "ORA", AM_ABS },  // 0D
+    case 0x15: // { "ORA", AM_ZPX },  // 15
+    case 0x28: // { "PLP", AM_IMP },  // 28
+    case 0x2C: // { "BIT", AM_ABS },  // 2C
+    case 0x2D: // { "AND", AM_ABS },  // 2D
+    case 0x35: // { "AND", AM_ZPX },  // 35
+    case 0x4D: // { "EOR", AM_ABS },  // 4D
+    case 0x55: // { "EOR", AM_ZPX },  // 55
+    case 0x6D: // { "ADC", AM_ABS },  // 6D
+    case 0x75: // { "ADC", AM_ZPX },  // 75
+    case 0x68: // { "PLA", AM_IMP },  // 68
+    case 0x8C: // { "STY", AM_ABS },  // 8C
+    case 0x8D: // { "STA", AM_ABS },  // 8D
+    case 0x8E: // { "STX", AM_ABS },  // 8E
+    case 0x94: // { "STY", AM_ZPX },  // 94
+    case 0x95: // { "STA", AM_ZPX },  // 95
+    case 0x96: // { "STX", AM_ZPY },  // 96
+    case 0xAC: // { "LDY", AM_ABS },  // AC
+    case 0xAD: // { "LDA", AM_ABS },  // AD
+    case 0xAE: // { "LDX", AM_ABS },  // AE
+    case 0xB4: // { "LDY", AM_ZPX },  // B4
+    case 0xB5: // { "LDA", AM_ZPX },  // B5
+    case 0xB6: // { "LDX", AM_ZPY },  // B6
+    case 0xCC: // { "CPY", AM_ABS },  // CC
+    case 0xCD: // { "CMP", AM_ABS },  // CD
+    case 0xD5: // { "CMP", AM_ZPX },  // D5
+    case 0xEC: // { "CPX", AM_ABS },  // EC
+    case 0xED: // { "SBC", AM_ABS },  // ED
+    case 0xF5: // { "SBC", AM_ZPX },  // F5
+      cpu->icycles = 4;
+      break;
+
+    case 0x10: // { "BPL", AM_REL },  // 10
+      IBRANCH( !cpu->f_n );
+      break;
+
+    case 0x11: // { "ORA", AM_ZIY },  // 11
+    case 0x31: // { "AND", AM_ZIY },  // 31
+    case 0x51: // { "EOR", AM_ZIY },  // 51
+    case 0x71: // { "ADC", AM_ZIY },  // 71
+    case 0xB1: // { "LDA", AM_ZIY },  // B1
+    case 0xD1: // { "CMP", AM_ZIY },  // D1
+    case 0xE6: // { "INC", AM_ZP  },  // E6
+    case 0xF1: // { "SBC", AM_ZIY },  // F1
+      NBADDR_ZIY;
+      cpu->icycles = 5;
+      if( PAGECHECK( cpu->y ) ) cpu->icycles++;
+      break;
+
+    case 0x19: // { "ORA", AM_ABY },  // 19
+    case 0x39: // { "AND", AM_ABY },  // 39
+    case 0x59: // { "EOR", AM_ABY },  // 59
+    case 0x79: // { "ADC", AM_ABY },  // 79
+    case 0xB9: // { "LDA", AM_ABY },  // B9
+    case 0xBE: // { "LDX", AM_ABY },  // BE
+    case 0xD9: // { "CMP", AM_ABY },  // D9
+    case 0xF9: // { "SBC", AM_ABY },  // F9
+      NBADDR_ABY;
+      cpu->icycles = 4;
+      if( PAGECHECK( cpu->y ) ) cpu->icycles++;
+      break;    
+
+    case 0x1D: // { "ORA", AM_ABX },  // 1D
+    case 0x3D: // { "AND", AM_ABX },  // 3D
+    case 0x5D: // { "EOR", AM_ABX },  // 5D
+    case 0x7D: // { "ADC", AM_ABX },  // 7D
+    case 0xBC: // { "LDY", AM_ABX },  // BC
+    case 0xBD: // { "LDA", AM_ABX },  // BD
+    case 0xDD: // { "CMP", AM_ABX },  // DD
+    case 0xFD: // { "SBC", AM_ABX },  // FD
+      NBADDR_ABX;
+      cpu->icycles = 4;
+      if( PAGECHECK( cpu->x ) ) cpu->icycles++;
+      break;    
+
+    case 0x30: // { "BMI", AM_REL },  // 30
+      IBRANCH( cpu->f_n );
+      break;
+
+    case 0x50: // { "BVC", AM_REL },  // 50
+      IBRANCH( !cpu->f_v );
+      break;
+
+    case 0x70: // { "BVS", AM_REL },  // 70
+      IBRANCH( cpu->f_v );
+      break;
+    
+    case 0x90: // { "BCC", AM_REL },  // 90
+      IBRANCH( !cpu->f_c );
+      break;
+
+    case 0xB0: // { "BCS", AM_REL },  // B0
+      IBRANCH( cpu->f_c );
+      break;
+
+    case 0xD0: // { "BNE", AM_REL },  // D0
+      IBRANCH( !cpu->f_z );
+      break;
+
+    case 0xF0: // { "BEQ", AM_REL },  // F0
+      IBRANCH( cpu->f_z );
+      break;
+
+    default:
+      cpu->icycles = 1;
+      break;
+  }
 }
 
 // Execute one 6502 instruction
