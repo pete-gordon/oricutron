@@ -21,7 +21,7 @@
 
 #define TONETIME     8
 #define NOISETIME    8
-#define ENVTIME     32
+#define ENVTIME     16
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -286,12 +286,9 @@ void ay_dowrite( struct ay8912 *ay, struct aywrite *aw )
     case AY_CHB_AMP:
     case AY_CHC_AMP:
       ay->regs[aw->reg] = aw->val;
+      if(aw->val&0x10) break;
       i = aw->reg-AY_CHA_AMP;
-      if( (aw->val&0x10)==0 )
-        ay->vol[i] = voltab[aw->val&0xf];
-      else
-        ay->vol[i] = voltab[ay->envtab[ay->envpos]];
-      ay->out[i] = ay->sign[i]*ay->vol[i];
+      ay->vol[i] = voltab[aw->val&0xf];
       break;
     
     case AY_ENV_PER_L:
