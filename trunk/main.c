@@ -35,6 +35,7 @@
 #include "disk.h"
 #include "machine.h"
 #include "monitor.h"
+#include "avi.h"
 
 #define FRAMES_TO_AVERAGE 15
 
@@ -55,6 +56,11 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   Sint32 start_machine, start_disktype, start_mode;
   char *start_disk, *start_tape, *start_syms;
   char opt_type, *opt_arg, *tmp;
+
+  struct avi_handle *ah;
+
+//  ah = avi_open( "foo.avi" );
+//  if( ah ) avi_close( ah );
 
   // Defaults
   start_machine  = MACH_ATMOS;
