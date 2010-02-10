@@ -502,7 +502,7 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
   ay->rndrack = 1;
   ay->logged  = 0;
   ay->logcycle = 0;
-  ay->output  = 0;
+  ay->output  = -32768;
   if( soundavailable )
     SDL_PauseAudio( 0 );
 
