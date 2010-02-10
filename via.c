@@ -436,6 +436,7 @@ void via_clock( struct via *v, unsigned int cycles )
 // Write VIA from CPU
 void via_write( struct via *v, int offset, unsigned char data )
 {
+  SDL_bool updateay;
   offset &= 0xf;
 
   switch( offset )
@@ -524,16 +525,19 @@ void via_write( struct via *v, int offset, unsigned char data )
     case 0xc0: // Continuous, output on PB7
       break;
     case VIA_PCR:
+      updateay = SDL_FALSE;
       v->pcr = data;
       switch( v->pcr & PCRF_CA2CON )
       {
         case 0x0c:
           v->ca2 = 0;
           v->ca2pulse = SDL_FALSE;
+          updateay = SDL_TRUE;
           break;
         
         case 0x0e:
           v->ca2 = 1;
+          updateay = SDL_TRUE;
           break;
       }
 
@@ -542,14 +546,16 @@ void via_write( struct via *v, int offset, unsigned char data )
         case 0xc0:
           v->cb2 = 0;
           v->cb2pulse = SDL_FALSE;
+          updateay = SDL_TRUE;
           break;
         
         case 0xe0:
           v->cb2 = 1;
+          updateay = SDL_TRUE;
           break;
       }
       
-      ay_set_bcmode( &v->oric->ay, v->ca2, v->cb2 );
+      if( updateay ) ay_set_bcmode( &v->oric->ay, v->ca2, v->cb2 );
       break;
     case VIA_IFR:
       if( data & VIRQF_CA1 ) v->iral = v->ira;

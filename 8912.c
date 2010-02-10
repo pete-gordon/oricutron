@@ -595,7 +595,7 @@ static void ay_modeset( struct ay8912 *ay )
       }
       break;
     
-    case AYBMF_BC1|AYBMF_BDIR: // Set register
+    case 0: // Set register
       ay->creg = via_read_porta( &ay->oric->via );
       break;
   }
