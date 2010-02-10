@@ -116,8 +116,8 @@ all: $(TARGET)
 run: $(TARGET)
 	$(TARGET)
 
-$(TARGET): main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o
-	$(CXX) -o $(TARGET) main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o $(LFLAGS)
+$(TARGET): main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o avi.o
+	$(CXX) -o $(TARGET) main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o avi.o $(LFLAGS)
 ifeq ($(PLATFORMTYPE),beos)
 	#$(BEOS_XRES) -o $(TARGET) $(RSRC_BEOS)
 	$(BEOS_SETVER) $(TARGET) \
@@ -157,6 +157,9 @@ font.o: font.c
 
 filereq.o: $(FILEREQ_SRC) system.h 6502.h via.h 8912.h gui.h disk.h machine.h
 	$(CC) -c $(FILEREQ_SRC) -o filereq.o $(CFLAGS)
+
+avi.o: avi.c system.h avi.h
+	$(CC) -c avi.c -o avi.o $(CFLAGS)
 
 clean:
 	rm -f $(TARGET) *.bak *.o
