@@ -55,7 +55,7 @@ char *keyqueue = NULL;
 int keysqueued = 0, kqoffs = 0;
 
 // Volume levels
-Sint32 voltab[] = { 0, 513/8, 828/8, 1239/8, 1923/8, 3238/8, 4926/8, 9110/8, 10344/8, 17876/8, 24682/8, 30442/8, 38844/8, 47270/8, 56402/8, 65535/8};
+Sint32 voltab[] = { 0, 513/4, 828/4, 1239/4, 1923/4, 3238/4, 4926/4, 9110/4, 10344/4, 17876/4, 24682/4, 30442/4, 38844/4, 47270/4, 56402/4, 65535/4};
 
 // Envelope shape descriptions
 // Bit 7 set = go to step defined in bits 0-6
@@ -361,11 +361,14 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
   Sint32 i, j, logc;
   Uint32 ccycle, ccyc, lastcyc;
   struct ay8912 *ay = (struct ay8912 *)dummy;
+  Sint32 dcadjustave, dcadjustmax;
 
   ccycle  = 0;
   ccyc    = 0;
   lastcyc = 0;
   logc    = 0;
+  dcadjustave = 0;
+  dcadjustmax = -32768;
 
   out = (Uint16 *)stream;
   for( i=0,j=0; i<AUDIO_BUFLEN; i++ )
@@ -385,7 +388,24 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
     out[j++] = ay->output;
     out[j++] = ay->output;
 
+    if( ay->output > dcadjustmax ) dcadjustmax = ay->output;
+    dcadjustave += ay->output;
+
     ccycle += CYCLESPERSAMPLE;
+  }
+
+  dcadjustave /= AUDIO_BUFLEN;
+
+  if( (dcadjustmax-dcadjustave) > 32767 )
+    dcadjustave = -(32767-dcadjustmax);
+
+  if( dcadjustave )
+  {
+    for( i=0, j=0; i<AUDIO_BUFLEN; i++ )
+    {
+      out[j++] -= dcadjustave;
+      out[j++] -= dcadjustave;
+    }
   }
 
   while( logc < ay->logged )
