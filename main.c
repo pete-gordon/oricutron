@@ -174,6 +174,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 #endif
 
   if( !init_gui( oric ) ) return SDL_FALSE;
+  if( !init_filerequester() ) return SDL_FALSE;
   oric->drivetype = start_disktype;
   if( !init_machine( oric, start_machine, SDL_TRUE ) ) return SDL_FALSE;
 
@@ -199,6 +200,7 @@ void shut( struct machine *oric )
 {
   shut_machine( oric );
   mon_shut();
+  shut_filerequester();
   shut_gui();
 #ifdef __amigaos4__
   IExec->FreeSignal( timersigbit );
