@@ -61,6 +61,14 @@ static int freqf_size=0, freqf_used=0, freqf_cgad=2;
 static struct frq_ent *freqfiles=NULL;
 static int freqf_clicktime=0;
 
+SDL_bool init_filerequester( void )
+{
+}
+
+void shut_filerequester( void )
+{
+}
+
 // Render the filerequester
 static void filereq_render( struct machine *oric )
 {

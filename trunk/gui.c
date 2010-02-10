@@ -32,6 +32,10 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
+#ifdef __amigaos4__
+#include <proto/dos.h>
+#endif
+
 #include "system.h"
 #include "6502.h"
 #include "via.h"
@@ -536,7 +540,6 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
 {
   if( !filerequester( oric, "Insert disk", diskpath, diskfile, FR_DISKS ) ) return;
   joinpath( diskpath, diskfile );
-  printf( "'%s' + '%s' = '%s'\n", diskpath, diskfile, filetmp );
   diskimage_load( oric, filetmp, drive );
 
   if( oric->drivetype == DRV_NONE )
