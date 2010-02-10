@@ -86,7 +86,7 @@ struct avi_handle *avi_open( char *filename )
   ok &= write32l( ok, ah, 306 );                  // LIST size
   ok &= writestr( ok, ah, "hdrlavih" );           // Header list, AVI header
   ok &= write32l( ok, ah, 56 );                   // AVI header size
-  ok &= write32l( ok, ah  20000 );                // dwMicroSecPerFrame   (20000us per frame)
+  ok &= write32l( ok, ah, 20000 );                // dwMicroSecPerFrame   (20000us per frame)
   ok &= write32l( ok, ah, 3*240*224*50 );         // dwMaxBytesPerSec     (RGB*W*H*FPS)
   ok &= write32l( ok, ah, 4 );                    // dwPaddingGranularity
   ok &= write32l( ok, ah, AVIF_WASCAPTUREFILE );  // dwFlags
@@ -100,7 +100,7 @@ struct avi_handle *avi_open( char *filename )
   ok &= write32l( ok, ah, 0 );                    // Reserved 2
   ok &= write32l( ok, ah, 0 );                    // Reserved 3
   ok &= write32l( ok, ah, 0 );                    // Reserved 4
-  ok &= writestr( ok, ah, "LIST"                  // Next LIST
+  ok &= writestr( ok, ah, "LIST" );               // Next LIST
   ok &= write32l( ok, ah, 116 );                  // LIST size
   ok &= writestr( ok, ah, "strlstrh" );           // Stream list, stream header
   ok &= write32l( ok, ah, 56 );                   // Stream header size
@@ -130,7 +130,7 @@ struct avi_handle *avi_open( char *filename )
   if( !ok )
   {
     free( ah );
-    return SDL_FALSE;
+    return NULL;
   }
 
   ah->csize = 52;
@@ -140,7 +140,7 @@ struct avi_handle *avi_open( char *filename )
 
 SDL_bool avi_addframe( struct avi_handle *ah, Uint8 *rgbdata )
 {
-
+  return SDL_TRUE;
 }
 
 void avi_close( struct avi_handle *ah )
@@ -150,7 +150,7 @@ void avi_close( struct avi_handle *ah )
   if( ah->f )
   {
     fseek( ah->f, 4, SEEK_SET );
-    write32l( SDL_TRUE, ah->f, ah->csize );
+    write32l( SDL_TRUE, ah, ah->csize );
     fclose( ah->f );
   }
   free( ah );
