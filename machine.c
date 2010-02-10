@@ -23,12 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef __SPECIFY_SDL_DIR__
-#include <SDL/SDL.h>
-#else
-#include <SDL.h>
-#endif
-
+#include "system.h"
 #include "6502.h"
 #include "via.h"
 #include "8912.h"
@@ -672,8 +667,8 @@ void preinit_machine( struct machine *oric )
     oric->diskname[i][0] = 0;
   }
 
-  microdiscrom_valid = load_rom( "roms/microdis.rom", 8192, rom_microdisc );
-  jasminrom_valid    = load_rom( "roms/jasmin.rom"  , 2048, rom_jasmin );
+  microdiscrom_valid = load_rom( ROMPREFIX"microdis.rom", 8192, rom_microdisc );
+  jasminrom_valid    = load_rom( ROMPREFIX"jasmin.rom"  , 2048, rom_jasmin );
 }
 
 SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
@@ -823,7 +818,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           break;
       }
 
-      if( !load_rom( "roms/basic10.rom", 16384, &oric->rom[0] ) )
+      if( !load_rom( ROMPREFIX"basic10.rom", 16384, &oric->rom[0] ) )
         return SDL_FALSE;
 
       oric->pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
@@ -889,7 +884,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           break;
       }
 
-      if( !load_rom( "roms/basic10.rom", 16384, &oric->rom[0] ) )
+      if( !load_rom( ROMPREFIX"basic10.rom", 16384, &oric->rom[0] ) )
         return SDL_FALSE;
 
       oric->pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
@@ -955,7 +950,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           break;
       }
 
-      if( !load_rom( "roms/basic11b.rom", 16384, &oric->rom[0] ) )
+      if( !load_rom( ROMPREFIX"basic11b.rom", 16384, &oric->rom[0] ) )
         return SDL_FALSE;
 
       oric->pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );

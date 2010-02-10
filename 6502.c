@@ -23,12 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef __SPECIFY_SDL_DIR__
-#include <SDL/SDL.h>
-#else
-#include <SDL.h>
-#endif
-
+#include "system.h"
 #include "6502.h"
 
 void dbg_printf( char *fmt, ... );
