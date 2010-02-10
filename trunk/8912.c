@@ -101,20 +101,6 @@ void queuekeys( char *str )
 }
 
 /*
-** Low pass filter for the audio output
-*/
-Sint16 lpbuf[2];
-Sint16 lowpass( Sint16 input )
-{
-  Sint16 output;
-
-  output = lpbuf[0]/4+input/2+lpbuf[1]/4;
-  lpbuf[1] = lpbuf[0];
-  lpbuf[0] = input;
-  return output;
-}
-
-/*
 ** RNG for the AY noise generator
 */
 static Uint32 ayrand( struct ay8912 *ay )
@@ -360,7 +346,6 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
       lastcyc = ccyc;
     }
 
-    ay->output = lowpass( ay->output );
     out[j++] = ay->output;
     out[j++] = ay->output;
 
@@ -478,7 +463,6 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
   ay->logged  = 0;
   ay->logcycle = 0;
   ay->output  = -32768;
-  lpbuf[0] = lpbuf[1] = -32768;
   if( soundavailable )
     SDL_PauseAudio( 0 );
 
