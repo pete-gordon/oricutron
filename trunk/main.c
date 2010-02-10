@@ -22,17 +22,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef __SPECIFY_SDL_DIR__
-#include <SDL/SDL.h>
-#else
-#include <SDL.h>
-#endif
-
 #ifdef __amigaos4__
 #include <proto/exec.h>
 #include <proto/dos.h>
 #endif
 
+#include "system.h"
 #include "6502.h"
 #include "via.h"
 #include "8912.h"

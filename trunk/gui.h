@@ -63,6 +63,7 @@ struct osdmenu
 
 void do_popup( char *str );
 void makebox( struct textzone *ptz, int x, int y, int w, int h, int fg, int bg );
+void tzsettitle( struct textzone *ptz, char *title );
 void tzstr( struct textzone *ptz, char *text );
 void tzstrpos( struct textzone *ptz, int x, int y, char *text );
 void tzsetcol( struct textzone *ptz, int fc, int bc );

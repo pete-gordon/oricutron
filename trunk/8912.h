@@ -71,13 +71,13 @@ struct ay8912
   unsigned char bmode;
   unsigned char creg;
   unsigned char regs[AY_LAST], eregs[AY_LAST];
-  SDL_bool keystates[8], newout[3], newnoise, anynewout;
+  SDL_bool keystates[8], newnoise;
   SDL_bool soundon;
   int logged;
   Uint32 logcycle;
   struct aywrite writelog[AUDIO_BUFLEN];
   Uint32 toneper[3], noiseper, envper;
-  Uint16 tonebit[3], noisebit[3], vol[3];
+  Uint16 tonebit[3], noisebit[3], vol[3], newout;
   int ct[3], ctn, cte;
   Uint32 tonepos[3], tonestep[3];
   Sint32 sign[3], out[3], envpos;
