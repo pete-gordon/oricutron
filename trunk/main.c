@@ -36,6 +36,7 @@
 #include "machine.h"
 #include "monitor.h"
 #include "avi.h"
+#include "filereq.h"
 
 #define FRAMES_TO_AVERAGE 15
 
@@ -57,7 +58,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   char *start_disk, *start_tape, *start_syms;
   char opt_type, *opt_arg, *tmp;
 
-  struct avi_handle *ah;
+//  struct avi_handle *ah;
 
 //  ah = avi_open( "foo.avi" );
 //  if( ah ) avi_close( ah );
