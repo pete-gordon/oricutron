@@ -4,7 +4,9 @@ PLATFORM ?= os4
 # PLATFORM = haiku
 # PLATFORM = osx
 # PLATFORM = linux
-
+# PLATFORM = gphwiz
+# PLATFORM = aitouchbook
+ 
 VERSION_MAJ = 0
 VERSION_MIN = 2
 VERSION_REV = 0
@@ -74,6 +76,33 @@ LFLAGS += -lm $(shell sdl-config --libs)
 TARGET = oricutron
 endif
 
+# Linux-gph-wiz
+ifeq ($(PLATFORM),gphwiz)
+WIZ_HOME = /opt/openwiz/toolchain/arm-openwiz-linux-gnu
+WIZ_PREFIX = $(WIZ_HOME)/bin/arm-openwiz-linux-gnu
+CC = $(WIZ_PREFIX)-gcc
+CXX = $(WIZ_PREFIX)-g++
+AR =  $(WIZ_PREFIX)-ar
+RANLIB = $(WIZ_PREFIX)-ranlib
+CFLAGS += `$(WIZ_HOME)/bin/sdl-config --cflags`
+LFLAGS += -lm `$(WIZ_HOME)/bin/sdl-config --libs`
+TARGET = oricutron.gpe
+endif
+
+# AI touchbook OS
+ifeq ($(PLATFORM),aitouchbook)
+AITB_HOME = /usr/bin/
+AITB_PREFIX = $(AITB_HOME)arm-angstrom-linux-gnueabi
+CC = $(AITB_PREFIX)-gcc
+CXX = $(AITB_PREFIX)-g++
+AR =  $(AITB_PREFIX)-ar
+CFLAGS += `$(AITB_HOME)/sdl-config --cflags`
+LFLAGS += -lm `$(AITB_HOME)/sdl-config --libs`
+RANLIB = $(AITB_PREFIX)-ranlib
+TARGET = oricutron_AITB
+endif
+
+ 
 ####### SHOULDN'T HAVE TO CHANGE THIS STUFF #######
 
 all: $(TARGET)
