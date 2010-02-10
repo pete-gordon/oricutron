@@ -79,9 +79,7 @@ struct ay8912
   Uint32 toneper[3], noiseper, envper;
   Uint16 tonebit[3], noisebit[3], vol[3];
   int ct[3], ctn, cte;
-
   Uint32 tonepos[3], tonestep[3];
-
   Sint32 sign[3], out[3], envpos;
   unsigned char *envtab;
   struct machine *oric;
