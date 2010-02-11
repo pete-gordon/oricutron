@@ -180,7 +180,9 @@ struct avi_handle *avi_open( char *filename, Uint8 *pal )
 
   for( i=0; i<8; i++ )
   {
-    ok &= writeblk( ok, ah, &pal[i*3], 3 );
+    ok &= writebyt( ok, ah, pal[i*3+2] );
+    ok &= writebyt( ok, ah, pal[i*3+1] );
+    ok &= writebyt( ok, ah, pal[i*3+0] );
     ok &= writebyt( ok, ah, 0 );
   }
 
