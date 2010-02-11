@@ -27,9 +27,14 @@
 
 struct avi_handle
 {
-  FILE   *f;
-  Uint32  csize;
+  FILE     *f;
+  Uint32   csize;
+  Uint32   movipos;
+  Uint32   recpos;
+  Uint32   recframes;
 };
 
 struct avi_handle *avi_open( char *filename );
-void avi_close( struct avi_handle *ah );
+SDL_bool avi_addframe( struct avi_handle **ah, Uint8 *rgbdata );
+void avi_close( struct avi_handle **ah );
+
