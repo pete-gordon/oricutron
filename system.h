@@ -1,5 +1,9 @@
 // System specific stuff
 
+// Output audio frequency
+#define AUDIO_FREQ   44100
+
+
 #if defined(__amigaos4__)
 
 #define PATHSEP '/'

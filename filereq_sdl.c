@@ -63,6 +63,7 @@ static int freqf_clicktime=0;
 
 SDL_bool init_filerequester( void )
 {
+  return SDL_TRUE;
 }
 
 void shut_filerequester( void )

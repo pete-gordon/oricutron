@@ -38,6 +38,7 @@
 
 SDL_bool init_filerequester( void )
 {
+  return SDL_TRUE;
 }
 
 void shut_filerequester( void )

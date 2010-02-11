@@ -34,6 +34,7 @@
 #include "gui.h"
 #include "disk.h"
 #include "machine.h"
+#include "avi.h"
 
 #ifdef __amigaos4__
 #include <proto/exec.h>
@@ -41,6 +42,9 @@
 extern struct Task *maintask;
 extern uint32 timersig;
 #endif
+
+static Sint16 audiocapbuf[AUDIO_BUFLEN];
+extern struct avi_handle *vidcap;
 
 extern SDL_bool soundavailable, soundon, warpspeed;
 
@@ -348,6 +352,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
 
     out[j++] = ay->output;
     out[j++] = ay->output;
+    if( vidcap ) audiocapbuf[i] = ay->output;
 
     if( ay->output > dcadjustmax ) dcadjustmax = ay->output;
     dcadjustave += ay->output;
@@ -366,8 +371,20 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
     {
       out[j++] -= dcadjustave;
       out[j++] -= dcadjustave;
+      if( vidcap ) audiocapbuf[i] -= dcadjustave;
     }
   }
+
+  if( vidcap )
+  {
+#if SDL_ENDIAN == SDL_BIG_ENDIAN
+    for( i=0; i<AUDIO_BUFLEN; i++ )
+      audiocapbuf[i] = SDL_Swap16( audiocapbuf[i] );
+#endif
+    avi_addaudio( &vidcap, audiocapbuf, AUDIO_BUFLEN*2 );
+  }
+
+
 
   while( logc < ay->logged )
     ay_dowrite( ay, &ay->writelog[logc++] );

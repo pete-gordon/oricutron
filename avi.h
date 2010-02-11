@@ -29,12 +29,20 @@ struct avi_handle
 {
   FILE     *f;
   Uint32   csize;
-  Uint32   movipos;
-  Uint32   recpos;
-  Uint32   recframes;
+  Uint32   frames;
+  Uint32   hdrlsize;
+  Uint32   movisize;
+  Uint32   audiolen;
+  Uint32   offs_riffsize;
+  Uint32   offs_hdrlsize;
+  Uint32   offs_frames;
+  Uint32   offs_frames2;
+  Uint32   offs_movisize;
+  Uint32   offs_audiolen;
 };
 
-struct avi_handle *avi_open( char *filename );
-SDL_bool avi_addframe( struct avi_handle **ah, Uint8 *rgbdata );
+struct avi_handle *avi_open( char *filename, Uint8 *pal );
+SDL_bool avi_addframe( struct avi_handle **ah, Uint8 *srcdata );
+SDL_bool avi_addaudio( struct avi_handle **ah, Uint16 *audiodata, Uint32 audiosize );
 void avi_close( struct avi_handle **ah );
 

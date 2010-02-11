@@ -23,9 +23,6 @@
 // clock cycles to audio samples
 #define FPBITS 10
 
-// Output audio frequency
-#define AUDIO_FREQ   44100
-
 // Audio buffer size
 #define AUDIO_BUFLEN 4096
 
