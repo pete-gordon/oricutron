@@ -43,6 +43,6 @@ struct avi_handle
 
 struct avi_handle *avi_open( char *filename, Uint8 *pal );
 SDL_bool avi_addframe( struct avi_handle **ah, Uint8 *srcdata );
-SDL_bool avi_addaudio( struct avi_handle **ah, Uint16 *audiodata, Uint32 audiosize );
+SDL_bool avi_addaudio( struct avi_handle **ah, Sint16 *audiodata, Uint32 audiosize );
 void avi_close( struct avi_handle **ah );
 

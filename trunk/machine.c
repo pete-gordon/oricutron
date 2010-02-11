@@ -38,7 +38,10 @@ extern int pixpitch;
 SDL_bool needclr = SDL_TRUE;
 extern Uint16 gpal[];
 extern SDL_bool showfps, warpspeed, soundavailable, soundon;
+
 struct avi_handle *vidcap = NULL;
+char vidcapname[128];
+int vidcapcount = 0;
 
 extern struct osdmenuitem hwopitems[];
 
@@ -748,9 +751,15 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
              break;
            }
 
-           vidcap = avi_open( "video.avi", oricpalette );
+           sprintf( vidcapname, "Capturing to video%02d.avi", vidcapcount );
+           SDL_LockAudio();
+           vidcap = avi_open( &vidcapname[13], oricpalette );
+           SDL_UnlockAudio();
            if( vidcap )
-             do_popup( "AVI capture started" );
+           {
+             vidcapcount++;
+             do_popup( vidcapname );
+           }
            break;
 
         default:
