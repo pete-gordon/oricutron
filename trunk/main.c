@@ -35,8 +35,8 @@
 #include "disk.h"
 #include "machine.h"
 #include "monitor.h"
-#include "avi.h"
 #include "filereq.h"
+#include "avi.h"
 
 #define FRAMES_TO_AVERAGE 15
 
@@ -44,6 +44,7 @@ SDL_bool fullscreen;
 extern SDL_bool warpspeed, soundon;
 Uint32 lastframetimes[FRAMES_TO_AVERAGE], frametimeave;
 extern char mon_bpmsg[];
+extern struct avi_handle *vidcap;
 
 #ifdef __amigaos4__
 int32 timersigbit = -1;
@@ -57,11 +58,6 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   Sint32 start_machine, start_disktype, start_mode;
   char *start_disk, *start_tape, *start_syms;
   char opt_type, *opt_arg, *tmp;
-
-//  struct avi_handle *ah;
-
-//  ah = avi_open( "foo.avi" );
-//  if( ah ) avi_close( ah );
 
   // Defaults
   start_machine  = MACH_ATMOS;
@@ -199,6 +195,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 
 void shut( struct machine *oric )
 {
+  if( vidcap ) avi_close( &vidcap );
   shut_machine( oric );
   mon_shut();
   shut_filerequester();

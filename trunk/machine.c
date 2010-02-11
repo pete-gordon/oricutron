@@ -31,17 +31,28 @@
 #include "disk.h"
 #include "machine.h"
 #include "monitor.h"
+#include "avi.h"
 
 extern SDL_Surface *screen;
 extern int pixpitch;
 SDL_bool needclr = SDL_TRUE;
 extern Uint16 gpal[];
 extern SDL_bool showfps, warpspeed, soundavailable, soundon;
+struct avi_handle *vidcap = NULL;
 
 extern struct osdmenuitem hwopitems[];
 
 unsigned char rom_microdisc[8912], rom_jasmin[2048];
 SDL_bool microdiscrom_valid, jasminrom_valid;
+
+Uint8 oricpalette[] = { 0x00, 0x00, 0x00,
+                        0xff, 0x00, 0x00,
+                        0x00, 0xff, 0x00,
+                        0xff, 0xff, 0x00,
+                        0x00, 0x00, 0xff,
+                        0xff, 0x00, 0xff,
+                        0x00, 0xff, 0xff,
+                        0xff, 0xff, 0xff };
 
 // Switch between emulation/monitor/menus etc.
 void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode )
@@ -212,6 +223,13 @@ SDL_bool video_doraster( struct machine *oric )
   oric->vid_raster++;
   if( oric->vid_raster == oric->vid_maxrast )
   {
+    if( vidcap )
+    {
+      SDL_LockAudio();
+      avi_addframe( &vidcap, oric->scr );
+      SDL_UnlockAudio();
+    }
+
     oric->vid_raster = 0;
     needrender = SDL_TRUE;
     oric->frames++;
@@ -721,6 +739,19 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             SDL_PauseAudio( warpspeed );
           }
           break;
+        
+        case SDLK_F10:
+           if( vidcap )
+           {
+             avi_close( &vidcap );
+             do_popup( "AVI capture stopped" );
+             break;
+           }
+
+           vidcap = avi_open( "video.avi", oricpalette );
+           if( vidcap )
+             do_popup( "AVI capture started" );
+           break;
 
         default:
           ay_keypress( &oric->ay, ev->key.keysym.sym, SDL_FALSE );
@@ -821,17 +852,11 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       if( !load_rom( ROMPREFIX"basic10.rom", 16384, &oric->rom[0] ) )
         return SDL_FALSE;
 
-      oric->pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
-      oric->pal[1] = SDL_MapRGB( screen->format, 0xff, 0x00, 0x00 );
-      oric->pal[2] = SDL_MapRGB( screen->format, 0x00, 0xff, 0x00 );
-      oric->pal[3] = SDL_MapRGB( screen->format, 0xff, 0xff, 0x00 );
-      oric->pal[4] = SDL_MapRGB( screen->format, 0x00, 0x00, 0xff );
-      oric->pal[5] = SDL_MapRGB( screen->format, 0xff, 0x00, 0xff );
-      oric->pal[6] = SDL_MapRGB( screen->format, 0x00, 0xff, 0xff );
-      oric->pal[7] = SDL_MapRGB( screen->format, 0xff, 0xff, 0xff );
-
       for( i=0; i<8; i++ )
+      {
+        oric->pal[i] = SDL_MapRGB( screen->format, oricpalette[i*3], oricpalette[i*3+1], oricpalette[i*3+2] );
         oric->dpal[i] = (oric->pal[i]<<16)|oric->pal[i];
+      }
 
       oric->scr = (Uint8 *)malloc( 240*224 );
       if( !oric->scr ) return SDL_FALSE;
