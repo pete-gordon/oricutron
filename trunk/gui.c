@@ -514,14 +514,15 @@ void joinpath( char *path, char *file )
   filetmp[4096+511] = 0;
 #else
   int i;
-  strlcpy( filetmp, path, 4096 );
+  strncpy( filetmp, path, 4096 ); filetmp[4095] = 0;
   i = strlen( filetmp );
   if( ( i > 0 ) && ( filetmp[i-1] != PATHSEP ) )
   {
     filetmp[i++] = PATHSEP;
     filetmp[i++] = 0;
   }
-  strlcat( filetmp, file, 4096+512 );
+  strncat( filetmp, file, 4096+512 );
+  filetmp[4096+511] = 0;
 #endif
 }
 

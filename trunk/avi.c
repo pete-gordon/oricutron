@@ -124,6 +124,17 @@ struct avi_handle *avi_open( char *filename )
   ok &= write32l( ok, ah, 224 );                  // biWidth
   ok &= write32l( ok, ah, 240 );                  // biHeight
   ok &= write16l( ok, ah, 1 );                    // biPlanes
+  ok &= write16l( ok, ah, 24 );                   // biBitCount
+  ok &= write32l( ok, ah, 0 );                    // biRGB (BI_RGB uncompressed)
+  ok &= write32l( ok, ah, 240*224*3 );            // biSizeImage
+  ok &= write32l( ok, ah, 0 );                    // biXPelsPerMeter
+  ok &= write32l( ok, ah, 0 );                    // biYPelsPerMeter
+  ok &= write32l( ok, ah, 0 );                    // biClrUsed
+  ok &= write32l( ok, ah, 0 );                    // blClrImportant
+  ok &= writestr( ok, ah, "LIST" );
+  ah->movipos = ah->csize;
+  ok &= write32l( ok, ah, 0 );
+  ok &= writestr( ok, ah, "movi" );
 
   // ... still more to do!
 
@@ -134,24 +145,45 @@ struct avi_handle *avi_open( char *filename )
   }
 
   ah->csize = 52;
+  ah->recpos = 0;
+  ah->recframes = 0;
 
   return ah;
 }
 
-SDL_bool avi_addframe( struct avi_handle *ah, Uint8 *rgbdata )
+SDL_bool avi_addframe( struct avi_handle **ah, Uint8 *rgbdata )
 {
+  SDL_bool ok;
+  
+  ok = SDL_TRUE;
+  if( !(*ah)->recpos )
+  {
+    ok &= writestr( ok, *ah, "LIST" );
+    (*ah)->recpos = (*ah)->csize;
+    ok &= write32l( ok, *ah, 0 );
+    ok &= writestr( ok, *ah, "movi" );
+  }  
+  
+  if( !ok )
+  {
+    avi_close( ah );
+    return SDL_FALSE;
+  }
+
   return SDL_TRUE;
 }
 
-void avi_close( struct avi_handle *ah )
+void avi_close( struct avi_handle **ah )
 {
-  if( !ah ) return;
+  if( ( !ah ) || (!(*ah)) ) return;
 
-  if( ah->f )
+  if( (*ah)->f )
   {
-    fseek( ah->f, 4, SEEK_SET );
-    write32l( SDL_TRUE, ah, ah->csize );
-    fclose( ah->f );
+    fseek( (*ah)->f, 4, SEEK_SET );
+    write32l( SDL_TRUE, (*ah), (*ah)->csize );
+    fclose( (*ah)->f );
   }
-  free( ah );
+  free( (*ah) );
+  *ah = NULL;
 }
+
