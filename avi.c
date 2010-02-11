@@ -106,6 +106,8 @@ struct avi_handle *avi_open( char *filename, Uint8 *pal )
 
   ah = malloc( sizeof( struct avi_handle ) );
   if( !ah ) return NULL;
+  
+  memset( ah, 0, sizeof( struct avi_handle ) );
 
   ah->f = fopen( filename, "wb" );
   if( !ah->f )
@@ -376,7 +378,7 @@ SDL_bool avi_addframe( struct avi_handle **ah, Uint8 *srcdata )
   return SDL_TRUE;
 }
 
-SDL_bool avi_addaudio( struct avi_handle **ah, Uint16 *audiodata, Uint32 audiosize )
+SDL_bool avi_addaudio( struct avi_handle **ah, Sint16 *audiodata, Uint32 audiosize )
 {
   SDL_bool ok;
 
