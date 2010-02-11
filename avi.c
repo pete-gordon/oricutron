@@ -360,6 +360,7 @@ SDL_bool avi_addframe( struct avi_handle **ah, Uint8 *srcdata )
 
   for( i=223,size=0; i>=0; i-- )
     size = rle_encode( &srcdata[i*240], size );
+  rledata[size-1] = 0x01;
 
   ok = SDL_TRUE;
   ok &= writestr( ok, *ah, "00dc", NULL );  // Chunk header
