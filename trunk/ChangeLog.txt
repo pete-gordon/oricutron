@@ -1,5 +1,24 @@
 Oricutron ChangeLog
 
+0.3 (12-Feb-2010)
+-----------------
+
+* CPU/VIA timing should now be balls-on, unless I made
+  a mistake somewhere ;-)
+* AY sound should be a lot more accurate. Also, sample
+  playback is now working. Still not perfect, but its
+  getting there!
+* Added (experimental) AVI export. Press F10 to record
+  and again to stop. Don't be surprised if it doesn't
+  work for some reason.
+* OS4 and Windows now use their respective standard
+  operating system file requesters. Other ports will use
+  the crappy built in one, unless someone adds platform
+  specific support.
+* The oric printer is emulated. All printer output
+  is appended to "printer_out.txt".
+
+
 0.2 (08-Feb-2010)
 -----------------
 
