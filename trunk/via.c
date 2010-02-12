@@ -347,6 +347,29 @@ void via_clock( struct via *v, unsigned int cycles )
   tape_ticktock( v->oric, cycles );
 
   if( !cycles ) return;
+  
+  if( v->oric->prclock > 0 )
+  {
+    v->oric->prclock -= cycles;
+    if( v->oric->prclock <= 0 )
+    {
+      v->oric->prclock = 0;
+      via_write_CA1( v, 0 );
+    }
+  }
+
+  if( v->oric->prclose > 0 )
+  {
+    v->oric->prclose -= cycles;
+    if( v->oric->prclose <= 0 )
+    {
+      v->oric->prclose = 0;
+      if( v->oric->prf )
+        fclose( v->oric->prf );
+      v->oric->prf = NULL;
+      do_popup( "I dunnit" );
+    }
+  }
 
   if( v->ca2pulse )
   {
@@ -428,6 +451,26 @@ void via_clock( struct via *v, unsigned int cycles )
   }
 }
 
+void lprintchar( struct machine *oric, char c )
+{
+  if( !oric->prf )
+  {
+    oric->prf = fopen( "printer_out.txt", "a" );
+    if( !oric->prf )
+    {
+      do_popup( "Printing failed :-(" );
+      return;
+    }
+    
+    do_popup( "Printing to 'printer_out.txt'" );
+  }
+  
+  fputc( c, oric->prf );
+  oric->prclock = 20;
+  oric->prclose = 64*312*50*5;
+  via_write_CA1( &oric->via, 1 );
+}
+
 // Write VIA from CPU
 void via_write( struct via *v, int offset, unsigned char data )
 {
@@ -437,10 +480,15 @@ void via_write( struct via *v, int offset, unsigned char data )
   switch( offset )
   {
     case VIA_IORB:
+      // Look for negative edge on printer strobe
+      if( ( (v->orb&v->ddrb&0x10) != 0 ) &&
+          ( (data&v->ddrb&0x10) == 0 ) )
+        lprintchar( v->oric, v->ora );
+    
       v->orb = data;
 
       tape_setmotor( v->oric, (v->orb&v->ddrb&0x40) != 0 );
-
+      
       via_clr_irq( v, VIRQF_CB1 );
       switch( v->pcr & PCRF_CB2CON )
       {
