@@ -39,9 +39,14 @@ struct avi_handle
   Uint32   offs_frames2;
   Uint32   offs_movisize;
   Uint32   offs_audiolen;
+
+  SDL_bool dosnd;
+  SDL_bool lastframevalid;
+  Uint8    rledata[240*224*4];
+  Uint8    lastframe[240*224];
 };
 
-struct avi_handle *avi_open( char *filename, Uint8 *pal );
+struct avi_handle *avi_open( char *filename, Uint8 *pal, SDL_bool dosound );
 SDL_bool avi_addframe( struct avi_handle **ah, Uint8 *srcdata );
 SDL_bool avi_addaudio( struct avi_handle **ah, Sint16 *audiodata, Uint32 audiosize );
 void avi_close( struct avi_handle **ah );

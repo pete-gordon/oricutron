@@ -39,10 +39,6 @@
 #define _BE16(X) (X)
 #endif
 
-static Uint8 rledata[240*224*4];
-static Uint8 lastframe[240*224];
-static SDL_bool lastframevalid;
-
 // Write a 32bit value to a stream in little-endian format
 static SDL_bool write32l( SDL_bool stillok, struct avi_handle *ah, Uint32 val, Uint32 *rem )
 {
@@ -78,6 +74,7 @@ static SDL_bool writestr( SDL_bool stillok, struct avi_handle *ah, char *str, Ui
 static SDL_bool seek_write32l( SDL_bool stillok, struct avi_handle *ah, Uint32 offs, Uint32 val )
 {
   if( !stillok ) return SDL_FALSE; // Something failed earlier, so we're aborting
+  if( offs == 0 ) return SDL_TRUE; // Don't overwrite RIFF!
   fseek( ah->f, offs, SEEK_SET );
   val = _LE32(val);
   return (fwrite( &val, 4, 1, ah->f ) == 1);
@@ -100,7 +97,7 @@ static SDL_bool writebyt( SDL_bool stillok, struct avi_handle *ah, Uint8 val )
 }
 
 #define AVIFLAGS (AVIF_ISINTERLEAVED|AVIF_WASCAPTUREFILE)
-struct avi_handle *avi_open( char *filename, Uint8 *pal )
+struct avi_handle *avi_open( char *filename, Uint8 *pal, SDL_bool dosound )
 {
   struct avi_handle *ah;
   SDL_bool ok;
@@ -118,6 +115,7 @@ struct avi_handle *avi_open( char *filename, Uint8 *pal )
     return NULL;
   }
 
+  ah->dosnd = dosound;
   ah->csize = 0;
 
   ok = SDL_TRUE;
@@ -136,7 +134,7 @@ struct avi_handle *avi_open( char *filename, Uint8 *pal )
   ok &= write32l( ok, ah,       AVIFLAGS, NULL               );   // Flags
   ok &= write32l( ok, ah,              0, &ah->offs_frames   );   // Number of frames
   ok &= write32l( ok, ah,              0, NULL               );   // Initial frames
-  ok &= write32l( ok, ah,              2, NULL               );   // Stream count
+  ok &= write32l( ok, ah,  ah->dosnd?2:1, NULL               );   // Stream count
   ok &= write32l( ok, ah,              0, NULL               );   // Suggested buffer size
   ok &= write32l( ok, ah,            240, NULL               );   // Width
   ok &= write32l( ok, ah,            224, NULL               );   // Height
@@ -188,35 +186,38 @@ struct avi_handle *avi_open( char *filename, Uint8 *pal )
     ok &= writebyt( ok, ah, 0 );
   }
 
-  ok &= writestr( ok, ah, "LIST"      , NULL               );   // Stream header list
-  ok &= write32l( ok, ah,  4+8+56+8+16, NULL               );   // Stream header list size
-  ok &= writestr( ok, ah, "strl"      , NULL               );   // Stream header identifier
+  if( ah->dosnd )
+  {
+    ok &= writestr( ok, ah, "LIST"      , NULL               );   // Stream header list
+    ok &= write32l( ok, ah,  4+8+56+8+16, NULL               );   // Stream header list size
+    ok &= writestr( ok, ah, "strl"      , NULL               );   // Stream header identifier
 
-  ok &= writestr( ok, ah, "strh"      , NULL               );   // Audio stream header
-  ok &= write32l( ok, ah,           56, NULL               );   // Chunk size
-  ok &= writestr( ok, ah, "auds"      , NULL               );   // Type
-  ok &= write32l( ok, ah,            0, NULL               );   // Codec
-  ok &= write32l( ok, ah,            0, NULL               );   // Flags
-  ok &= write32l( ok, ah,            0, NULL               );   // Reserved
-  ok &= write32l( ok, ah,            0, NULL               );   // Initial frames
-  ok &= write32l( ok, ah,            1, NULL               );   // Scale
-  ok &= write32l( ok, ah,   AUDIO_FREQ, NULL               );   // Rate
-  ok &= write32l( ok, ah,            0, NULL               );   // Start
-  ok &= write32l( ok, ah,            0, &ah->offs_audiolen );   // Length
-  ok &= write32l( ok, ah,            0, NULL               );   // Suggested buffer size
-  ok &= write32l( ok, ah,        10000, NULL               );   // Quality
-  ok &= write32l( ok, ah,            2, NULL               );   // Sample size
-  ok &= write32l( ok, ah,            0, NULL               );   // Frame
-  ok &= write32l( ok, ah,            0, NULL               );   // Frame
+    ok &= writestr( ok, ah, "strh"      , NULL               );   // Audio stream header
+    ok &= write32l( ok, ah,           56, NULL               );   // Chunk size
+    ok &= writestr( ok, ah, "auds"      , NULL               );   // Type
+    ok &= write32l( ok, ah,            0, NULL               );   // Codec
+    ok &= write32l( ok, ah,            0, NULL               );   // Flags
+    ok &= write32l( ok, ah,            0, NULL               );   // Reserved
+    ok &= write32l( ok, ah,            0, NULL               );   // Initial frames
+    ok &= write32l( ok, ah,            1, NULL               );   // Scale
+    ok &= write32l( ok, ah,   AUDIO_FREQ, NULL               );   // Rate
+    ok &= write32l( ok, ah,            0, NULL               );   // Start
+    ok &= write32l( ok, ah,            0, &ah->offs_audiolen );   // Length
+    ok &= write32l( ok, ah,            0, NULL               );   // Suggested buffer size
+    ok &= write32l( ok, ah,        10000, NULL               );   // Quality
+    ok &= write32l( ok, ah,            2, NULL               );   // Sample size
+    ok &= write32l( ok, ah,            0, NULL               );   // Frame
+    ok &= write32l( ok, ah,            0, NULL               );   // Frame
 
-  ok &= writestr( ok, ah, "strf"      , NULL               );   // Audio stream format
-  ok &= write32l( ok, ah,           16, NULL               );   // Chunk size
-  ok &= write16l( ok, ah,            1, NULL               );   // Format (PCM)
-  ok &= write16l( ok, ah,            1, NULL               );   // Channels
-  ok &= write32l( ok, ah,   AUDIO_FREQ, NULL               );   // Samples per second
-  ok &= write32l( ok, ah, AUDIO_FREQ*2, NULL               );   // Bytes per second
-  ok &= write16l( ok, ah,            2, NULL               );   // BlockAlign
-  ok &= write16l( ok, ah,           16, NULL               );   // BitsPerSample
+    ok &= writestr( ok, ah, "strf"      , NULL               );   // Audio stream format
+    ok &= write32l( ok, ah,           16, NULL               );   // Chunk size
+    ok &= write16l( ok, ah,            1, NULL               );   // Format (PCM)
+    ok &= write16l( ok, ah,            1, NULL               );   // Channels
+    ok &= write32l( ok, ah,   AUDIO_FREQ, NULL               );   // Samples per second
+    ok &= write32l( ok, ah, AUDIO_FREQ*2, NULL               );   // Bytes per second
+    ok &= write16l( ok, ah,            2, NULL               );   // BlockAlign
+    ok &= write16l( ok, ah,           16, NULL               );   // BitsPerSample
+  }
 
   ah->hdrlsize = ah->csize - ah->offs_hdrlsize - 4;
 
@@ -230,14 +231,15 @@ struct avi_handle *avi_open( char *filename, Uint8 *pal )
     return NULL;
   }
 
-  ah->frames       = 0;
-  ah->audiolen     = 0;
-  ah->movisize     = 0;
+  ah->frames         = 0;
+  ah->audiolen       = 0;
+  ah->movisize       = 0;
+  ah->lastframevalid = SDL_FALSE;
 
   return ah;
 }
 
-static Uint32 rle_putpixels( Uint8 *srcdata, Uint32 rlec, Uint32 srcc, Uint32 length )
+static Uint32 rle_putpixels( struct avi_handle *ah, Uint8 *srcdata, Uint32 rlec, Uint32 srcc, Uint32 length )
 {
   Uint32 c, chunker;
 
@@ -247,7 +249,7 @@ static Uint32 rle_putpixels( Uint8 *srcdata, Uint32 rlec, Uint32 srcc, Uint32 le
   {
     // Try not to leave an annoying dangly 1,2 or 3 byte section
     chunker = (length<258) ? 250 : 254;
-    rlec = rle_putpixels( srcdata, rlec, srcc, chunker );
+    rlec = rle_putpixels( ah, srcdata, rlec, srcc, chunker );
     srcc   += chunker;
     length -= chunker;
   }
@@ -257,8 +259,8 @@ static Uint32 rle_putpixels( Uint8 *srcdata, Uint32 rlec, Uint32 srcc, Uint32 le
   {
     while( length > 0 )
     {
-      rledata[rlec++] = 0x01;
-      rledata[rlec++] = srcdata[srcc++];
+      ah->rledata[rlec++] = 0x01;
+      ah->rledata[rlec++] = srcdata[srcc++];
       length--;
     }
     return rlec;
@@ -266,26 +268,33 @@ static Uint32 rle_putpixels( Uint8 *srcdata, Uint32 rlec, Uint32 srcc, Uint32 le
 
   c = length;
 
-  rledata[rlec++] = 0x00;
-  rledata[rlec++] = length;
+  ah->rledata[rlec++] = 0x00;
+  ah->rledata[rlec++] = length;
   while( c > 0 )
   {
-    rledata[rlec++] = srcdata[srcc++];
+    ah->rledata[rlec++] = srcdata[srcc++];
     c--;
   }
 
   if( length & 1 )
-    rledata[rlec++] = 0;
+    ah->rledata[rlec++] = 0;
 
   return rlec;
 }
 
 // RLE encode the frame
 #define NOABS 0xffffffff
-static Uint32 rle_encode( Uint8 *srcdata, Uint32 rlec, Uint32 eol )
+static Uint32 rle_encode( struct avi_handle *ah, Uint8 *srcdata, Uint32 rlec, Uint32 eol )
 {
   Uint32 srcc, runc, abspos, chunker;
   Uint8 thiscol;
+
+  if( eol == 0 )
+  {
+    ah->rledata[rlec++] = 0x00;
+    ah->rledata[rlec++] = 0x00;
+    return rlec;
+  }
 
   srcc = 0; // Source count
   abspos = NOABS;
@@ -298,14 +307,14 @@ static Uint32 rle_encode( Uint8 *srcdata, Uint32 rlec, Uint32 eol )
     if( srcc == eol-1 )
     {
       // Need to dump an absolute section?
-      if( abspos != NOABS ) rlec = rle_putpixels( srcdata, rlec, abspos, srcc-abspos );
+      if( abspos != NOABS ) rlec = rle_putpixels( ah, srcdata, rlec, abspos, srcc-abspos );
 
       // Just encode it
-      rledata[rlec++] = 0x01;
-      rledata[rlec++] = thiscol;
+      ah->rledata[rlec++] = 0x01;
+      ah->rledata[rlec++] = thiscol;
 
-      rledata[rlec++] = 0x00; // The end!
-      rledata[rlec++] = 0x00;
+      ah->rledata[rlec++] = 0x00; // The end!
+      ah->rledata[rlec++] = 0x00;
       return rlec;
     }
 
@@ -330,7 +339,7 @@ static Uint32 rle_encode( Uint8 *srcdata, Uint32 rlec, Uint32 eol )
     // Need to dump an absolute section?
     if( abspos != NOABS )
     {
-      rlec = rle_putpixels( srcdata, rlec, abspos, srcc-abspos );
+      rlec = rle_putpixels( ah, srcdata, rlec, abspos, srcc-abspos );
       abspos = NOABS;
     }
 
@@ -340,35 +349,74 @@ static Uint32 rle_encode( Uint8 *srcdata, Uint32 rlec, Uint32 eol )
     while( runc > 255 )  // Do any 255 byte chunks until runc < 255
     {
       chunker = (runc<258) ? 250 : 255;
-      rledata[rlec++] = chunker;
-      rledata[rlec++] = thiscol;
+      ah->rledata[rlec++] = chunker;
+      ah->rledata[rlec++] = thiscol;
       runc -= chunker;
     }
 
-    rledata[rlec++] = runc;   // Encode the bastard!
-    rledata[rlec++] = thiscol;
+    ah->rledata[rlec++] = runc;   // Encode the bastard!
+    ah->rledata[rlec++] = thiscol;
   }
 
-  if( abspos != NOABS ) rlec = rle_putpixels( srcdata, rlec, abspos, srcc-abspos );
-  rledata[rlec++] = 0x00; // The end!
-  rledata[rlec++] = 0x00;
+  if( abspos != NOABS ) rlec = rle_putpixels( ah, srcdata, rlec, abspos, srcc-abspos );
+  ah->rledata[rlec++] = 0x00; // The end!
+  ah->rledata[rlec++] = 0x00;
   return rlec;
 }
 
 SDL_bool avi_addframe( struct avi_handle **ah, Uint8 *srcdata )
 {
   SDL_bool ok;
-  Sint32 i;
+  Sint32 i, x, lastline, lastx;
   Uint32 size;
 
-  for( i=223,size=0; i>=0; i-- )
-    size = rle_encode( &srcdata[i*240], size, 240 );
-  rledata[size-1] = 0x01;
+  lastline = 0;
+  if( (*ah)->lastframevalid )
+  {
+    // Find the last line that differs
+    for( i=0; i<224; i++ )
+    {
+      for( x=0; x<240; x++ )
+      {
+        if( (*ah)->lastframe[i*240+x] != srcdata[i*240+x] )
+          break;
+      }
+      if( x<240 ) break;
+    }
+    lastline = i;
+  }
+
+  if( lastline == 224 )
+  {
+    size = 0;
+    (*ah)->rledata[size++] = 0x00;
+    (*ah)->rledata[size++] = 0x01;
+  } else {
+    for( i=223,size=0; i>=lastline; i-- )
+    {
+      lastx = 240;
+      if( (*ah)->lastframevalid )
+      {
+        // Find the last pixel we need to encode
+        for( x=239; x>=0; x-- )
+        {
+          if( (*ah)->lastframe[i*240+x] != srcdata[i*240+x] )
+            break;
+        }
+        lastx = x+1;
+      }
+      size = rle_encode( *ah, &srcdata[i*240], size, lastx );
+    }
+    (*ah)->rledata[size-1] = 0x01;
+  }
+
+  memcpy( (*ah)->lastframe, srcdata, 240*224 );
+  (*ah)->lastframevalid = SDL_TRUE;
 
   ok = SDL_TRUE;
   ok &= writestr( ok, *ah, "00dc", NULL );  // Chunk header
   ok &= write32l( ok, *ah, size, NULL );    // Chunk size
-  ok &= writeblk( ok, *ah, rledata, size ); // Chunk data
+  ok &= writeblk( ok, *ah, (*ah)->rledata, size ); // Chunk data
 
   (*ah)->movisize += size + 8;
   (*ah)->frames++;
@@ -385,6 +433,8 @@ SDL_bool avi_addframe( struct avi_handle **ah, Uint8 *srcdata )
 SDL_bool avi_addaudio( struct avi_handle **ah, Sint16 *audiodata, Uint32 audiosize )
 {
   SDL_bool ok;
+
+  if( !(*ah)->dosnd ) return SDL_TRUE;
 
   ok = SDL_TRUE;
   ok &= writestr( ok, *ah, "01wb", NULL );       // Chunk header
