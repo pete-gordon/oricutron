@@ -755,7 +755,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
            sprintf( vidcapname, "Capturing to video%02d.avi", vidcapcount );
            SDL_LockAudio();
-           vidcap = avi_open( &vidcapname[13], oricpalette );
+           vidcap = avi_open( &vidcapname[13], oricpalette, soundavailable&&soundon );
            SDL_UnlockAudio();
            if( vidcap )
            {
