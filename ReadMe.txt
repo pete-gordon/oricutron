@@ -10,7 +10,7 @@ Current status:
 
   6502:  100% done (apart from any unknown bugs :)
   VIA:   All done except shift register (which is on my todo list)
-  AY:    I/O done. The sound works, but is total crap (for now)
+  AY:    90% done.
   Video: 100% done
   Tape:  ".TAP" file support (no WAV yet)
   Disk:  Reading sectors works. No write support.
@@ -18,6 +18,13 @@ Current status:
 The Telestrat is not emulated at all yet. Also, "Turbo Tape" only works in
 Atmos mode.
 
+The AVI export uses the MRLE codec. Your favourite player might not support
+it, but MPlayer plays it, ffmpeg converts it and you can upload it directly
+to youtube.
+
+Note that the MRLE codec shows up some endian-issues on the Amiga OS4 port
+of MPlayer, so it will sound crappy and have wrong colours until those bugs
+are fixed :-(
 
 
 Command line
@@ -72,11 +79,12 @@ Keys
 In emulator
 -----------
 
-  F1 - Bring up the menu
-  F2 - Go to debugger/monitor
-  F4 - Jasmin reset (only when jasmin drive selected)
-  F5 - Toggle FPS
-  F6 - Toggle warp speed
+  F1  - Bring up the menu
+  F2  - Go to debugger/monitor
+  F4  - Jasmin reset (only when jasmin drive selected)
+  F5  - Toggle FPS
+  F6  - Toggle warp speed
+  F10 - Start/Stop AVI capture
 
 
 In menus

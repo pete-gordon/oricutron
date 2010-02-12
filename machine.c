@@ -1048,6 +1048,7 @@ void shut_machine( struct machine *oric )
   if( oric->drivetype == DRV_JASMIN )    { jasmin_free( &oric->jasmin ); oric->drivetype = DRV_NONE; }
   if( oric->mem ) { free( oric->mem ); oric->mem = NULL; oric->rom = NULL; }
   if( oric->scr ) { free( oric->scr ); oric->scr = NULL; }
+  if( oric->prf ) { fclose( oric->prf ); oric->prf = NULL; }
 }
 
 void shut( void );

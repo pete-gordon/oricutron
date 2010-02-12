@@ -367,7 +367,6 @@ void via_clock( struct via *v, unsigned int cycles )
       if( v->oric->prf )
         fclose( v->oric->prf );
       v->oric->prf = NULL;
-      do_popup( "I dunnit" );
     }
   }
 
