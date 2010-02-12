@@ -377,7 +377,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
 
   if( vidcap )
   {
-#if SDL_ENDIAN == SDL_BIG_ENDIAN
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
     for( i=0; i<AUDIO_BUFLEN; i++ )
       audiocapbuf[i] = SDL_Swap16( audiocapbuf[i] );
 #endif

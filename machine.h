@@ -89,6 +89,9 @@ struct machine
   struct microdisc md;
   struct jasmin jasmin;
   char diskname[MAX_DRIVES][16];
+  
+  FILE *prf;
+  int prclose, prclock;
 
   unsigned char tapebit, tapeout, tapeparity;
   int tapelen, tapeoffs, tapecount, tapetime, tapedupbytes;

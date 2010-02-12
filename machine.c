@@ -680,6 +680,9 @@ void preinit_machine( struct machine *oric )
   oric->symbolsautoload = SDL_TRUE;
   oric->symbolscase = SDL_FALSE;
   oric->tapename[0] = 0;
+  oric->prf = NULL;
+  oric->prclock = 0;
+  oric->prclose = 0;
 
   oric->drivetype = DRV_NONE;
   for( i=0; i<MAX_DRIVES; i++ )
