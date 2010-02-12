@@ -40,6 +40,8 @@
 #endif
 
 static Uint8 rledata[240*224*4];
+static Uint8 lastframe[240*224];
+static SDL_bool lastframevalid;
 
 // Write a 32bit value to a stream in little-endian format
 static SDL_bool write32l( SDL_bool stillok, struct avi_handle *ah, Uint32 val, Uint32 *rem )
@@ -280,21 +282,20 @@ static Uint32 rle_putpixels( Uint8 *srcdata, Uint32 rlec, Uint32 srcc, Uint32 le
 
 // RLE encode the frame
 #define NOABS 0xffffffff
-#define ENCODEEND 240
-static Uint32 rle_encode( Uint8 *srcdata, Uint32 rlec )
+static Uint32 rle_encode( Uint8 *srcdata, Uint32 rlec, Uint32 eol )
 {
   Uint32 srcc, runc, abspos, chunker;
   Uint8 thiscol;
 
   srcc = 0; // Source count
   abspos = NOABS;
-  while( srcc < ENCODEEND )
+  while( srcc < eol )
   {
     // Look for a run
     thiscol = srcdata[srcc];
 
     // At the last pixel?
-    if( srcc == ENCODEEND-1 )
+    if( srcc == eol-1 )
     {
       // Need to dump an absolute section?
       if( abspos != NOABS ) rlec = rle_putpixels( srcdata, rlec, abspos, srcc-abspos );
@@ -312,7 +313,7 @@ static Uint32 rle_encode( Uint8 *srcdata, Uint32 rlec )
     while( srcdata[srcc+runc] == thiscol )
     {
       runc++;
-      if( (srcc+runc) >= ENCODEEND ) break;
+      if( (srcc+runc) >= eol ) break;
     }
 
     // Need an absolute mode section?
@@ -361,7 +362,7 @@ SDL_bool avi_addframe( struct avi_handle **ah, Uint8 *srcdata )
   Uint32 size;
 
   for( i=223,size=0; i>=0; i-- )
-    size = rle_encode( &srcdata[i*240], size );
+    size = rle_encode( &srcdata[i*240], size, 240 );
   rledata[size-1] = 0x01;
 
   ok = SDL_TRUE;

@@ -746,7 +746,9 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
         case SDLK_F10:
            if( vidcap )
            {
+             SDL_LockAudio();
              avi_close( &vidcap );
+             SDL_UnlockAudio();
              do_popup( "AVI capture stopped" );
              break;
            }
