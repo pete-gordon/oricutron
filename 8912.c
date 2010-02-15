@@ -122,26 +122,17 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
   // For each clock cycle...
   while( cycles > 0 )
   {
-    if( !ay->noiseper )
+    // Count for the noise cycle counter
+    if( (++ay->ctn) >= ay->noiseper )
     {
-      if( !ay->currnoise )
-      {
-        ay->currnoise = 1;
-        ay->newnoise = SDL_TRUE;
-      }
-    } else {
-      // Count for the noise cycle counter
-      if( (++ay->ctn) >= ay->noiseper )
-      {
-        // Noise counter expired, calculate the next noise output level
-        ay->currnoise ^= ayrand( ay );
+      // Noise counter expired, calculate the next noise output level
+      ay->currnoise ^= ayrand( ay );
 
-        // Reset the noise counter
-        ay->ctn = 0;
+      // Reset the noise counter
+      ay->ctn = 0;
 
-        // Remember that the noise output changed
-        ay->newnoise = SDL_TRUE;
-      }
+      // Remember that the noise output changed
+      ay->newnoise = SDL_TRUE;
     }
 
     // For each audio channel...
@@ -177,7 +168,7 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
     }
 
     // Count down the envelope cycle counter
-    if( ( ay->envper ) && ( (++ay->cte) >= ay->envper ) )
+    if( (++ay->cte) >= ay->envper )
     {
       // Counter expired, so reset it
       ay->cte = 0;
@@ -241,25 +232,19 @@ void ay_dowrite( struct ay8912 *ay, struct aywrite *aw )
     case AY_CHA_PER_L:   // Channel A period
     case AY_CHA_PER_H:
       ay->regs[aw->reg] = aw->val;
-      ay->toneper[0] = (((ay->regs[AY_CHA_PER_H]&0xf)<<8)|ay->regs[AY_CHA_PER_L]);
-      if( ay->toneper[0] <= 5 ) ay->toneper[0] = 0;
-      ay->toneper[0] *= TONETIME;
+      ay->toneper[0] = (((ay->regs[AY_CHA_PER_H]&0xf)<<8)|ay->regs[AY_CHA_PER_L]) * TONETIME;
       break;
 
     case AY_CHB_PER_L:   // Channel B period
     case AY_CHB_PER_H:
       ay->regs[aw->reg] = aw->val;
-      ay->toneper[1] = (((ay->regs[AY_CHB_PER_H]&0xf)<<8)|ay->regs[AY_CHB_PER_L]);
-      if( ay->toneper[1] <= 5 ) ay->toneper[1] = 0;
-      ay->toneper[1] *= TONETIME;
+      ay->toneper[1] = (((ay->regs[AY_CHB_PER_H]&0xf)<<8)|ay->regs[AY_CHB_PER_L]) * TONETIME;
       break;
 
     case AY_CHC_PER_L:   // Channel C period
     case AY_CHC_PER_H:
       ay->regs[aw->reg] = aw->val;
-      ay->toneper[2] = (((ay->regs[AY_CHC_PER_H]&0xf)<<8)|ay->regs[AY_CHC_PER_L]);
-      if( ay->toneper[2] <= 5 ) ay->toneper[2] = 0;
-      ay->toneper[2] *= TONETIME;
+      ay->toneper[2] = (((ay->regs[AY_CHC_PER_H]&0xf)<<8)|ay->regs[AY_CHC_PER_L]) * TONETIME;
       break;
     
     case AY_STATUS:      // Status
@@ -275,9 +260,7 @@ void ay_dowrite( struct ay8912 *ay, struct aywrite *aw )
 
     case AY_NOISE_PER:   // Noise period
       ay->regs[aw->reg] = aw->val;
-      ay->noiseper = (ay->regs[AY_NOISE_PER]&0x1f);
-      if( ay->noiseper < 3 ) ay->noiseper = 0;
-      ay->noiseper *= NOISETIME;
+      ay->noiseper = (ay->regs[AY_NOISE_PER]&0x1f) * NOISETIME;
       break;
 
     case AY_CHA_AMP:
@@ -530,7 +513,7 @@ void ay_keypress( struct ay8912 *ay, unsigned short key, SDL_bool down )
 /*
 ** GI addressing
 */
-static void ay_modeset( struct ay8912 *ay )
+void ay_modeset( struct ay8912 *ay )
 {
   unsigned char v;
 
@@ -592,7 +575,7 @@ static void ay_modeset( struct ay8912 *ay )
       }
       break;
     
-    case 0: // Set register
+    case AYBMF_BDIR|AYBMF_BC1: // Set register
       ay->creg = via_read_porta( &ay->oric->via );
       break;
   }
