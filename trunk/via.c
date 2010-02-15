@@ -522,6 +522,7 @@ void via_write( struct via *v, int offset, unsigned char data )
           ay_set_bc1( &v->oric->ay, 0 );
           break;
       }
+      ay_modeset( &v->oric->ay );
       break;
     case VIA_DDRB:
       v->ddrb = data;
@@ -619,6 +620,7 @@ void via_write( struct via *v, int offset, unsigned char data )
 
     case VIA_IORA2:
       v->ora = data;
+      ay_modeset( &v->oric->ay );
       break;
   }
 }
@@ -692,6 +694,7 @@ unsigned char via_read( struct via *v, int offset )
       }
       return (v->orb&v->ddrb)|(v->irbl&(~v->ddrb));
     case VIA_IORA:
+      ay_modeset( &v->oric->ay );
       via_clr_irq( v, VIRQF_CA1 );
       switch( v->pcr & PCRF_CA2CON )
       {
@@ -737,6 +740,7 @@ unsigned char via_read( struct via *v, int offset )
     case VIA_IER:
       return v->ier|0x80;
     case VIA_IORA2:
+      ay_modeset( &v->oric->ay );
       return (v->ora&v->ddra)|(v->iral&(~v->ddra));
   }
 

@@ -95,4 +95,5 @@ void ay_keypress( struct ay8912 *ay, unsigned short key, SDL_bool down );
 void ay_set_bc1( struct ay8912 *ay, unsigned char state );
 void ay_set_bdir( struct ay8912 *ay, unsigned char state );
 void ay_set_bcmode( struct ay8912 *ay, unsigned char bc1, unsigned char bdir );
+void ay_modeset( struct ay8912 *ay );
 
