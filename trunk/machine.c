@@ -695,6 +695,7 @@ void preinit_machine( struct machine *oric )
   jasminrom_valid    = load_rom( ROMPREFIX"jasmin.rom"  , 2048, rom_jasmin );
 }
 
+static SDL_bool shifted = SDL_FALSE;
 SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 {
 //  char stmp[32];
@@ -715,6 +716,11 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
     case SDL_KEYUP:
       switch( ev->key.keysym.sym )
       {
+        case SDLK_LSHIFT:
+        case SDLK_RSHIFT:
+          shifted = SDL_FALSE;
+          break;
+
         case SDLK_F1:
           setemumode( oric, NULL, EM_MENU );
           *needrender = SDL_TRUE;
@@ -725,11 +731,16 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           *needrender = SDL_TRUE;
           break;
         
+        case SDLK_F3:
+          oric->cpu.nmi = SDL_TRUE;
+          oric->cpu.nmicount = 2;
+          break;
+        
         case SDLK_F4:
-          if( oric->drivetype != DRV_JASMIN ) break;
-          
-          oric->cpu.write( &oric->cpu, 0x3fb, 1 ); // ROMDIS
+          if( ( shifted ) && ( oric->drivetype == DRV_JASMIN ) )
+            oric->cpu.write( &oric->cpu, 0x3fb, 1 ); // ROMDIS
           m6502_reset( &oric->cpu );
+          via_init( &oric->via, oric );
           break;
         
         case SDLK_F5:
@@ -774,7 +785,17 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
       break;
 
     case SDL_KEYDOWN:
-      ay_keypress( &oric->ay, ev->key.keysym.sym, SDL_TRUE );
+      switch( ev->key.keysym.sym )
+      {
+        case SDLK_LSHIFT:
+        case SDLK_RSHIFT:
+          shifted = SDL_TRUE;
+          break;
+        
+        default:
+          ay_keypress( &oric->ay, ev->key.keysym.sym, SDL_TRUE );
+          break;
+      }
       break;
   }
 

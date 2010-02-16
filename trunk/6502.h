@@ -79,7 +79,7 @@ struct m6502
   Uint8    f_c, f_z, f_i, f_d, f_b, f_v, f_n;
   Uint16   pc;
   SDL_bool nmi;
-  Uint8    irq;
+  Uint8    irq, nmicount;
   void (*write)(struct m6502 *,Uint16,Uint8);
   unsigned char (*read)(struct m6502 *,Uint16);
   SDL_bool anybp, anymbp;

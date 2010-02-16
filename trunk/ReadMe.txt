@@ -79,12 +79,14 @@ Keys
 In emulator
 -----------
 
-  F1  - Bring up the menu
-  F2  - Go to debugger/monitor
-  F4  - Jasmin reset (only when jasmin drive selected)
-  F5  - Toggle FPS
-  F6  - Toggle warp speed
-  F10 - Start/Stop AVI capture
+  F1       - Bring up the menu
+  F2       - Go to debugger/monitor
+  F3       - Reset button (NMI)
+  F4       - Hard Reset
+  Shift+F4 - Jasmin reset
+  F5       - Toggle FPS
+  F6       - Toggle warp speed
+  F10      - Start/Stop AVI capture
 
 
 In menus
