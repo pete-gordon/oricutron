@@ -48,6 +48,7 @@
 
 char tapepath[4096], tapefile[512];
 char diskpath[4096], diskfile[512];
+//char snappath[4096], snapfile[512];
 char filetmp[4096+512];
 
 extern SDL_bool fullscreen;
@@ -106,6 +107,7 @@ void toggleautowind( struct machine *oric, struct osdmenuitem *mitem, int dummy 
 void toggleautoinsrt( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglesymbolsauto( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglecasesyms( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+//void savesnap( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 
 // Menu definitions. Name, function, parameter
 struct osdmenuitem mainitems[] = { { "Insert tape...",         inserttape,      0 },
@@ -114,6 +116,9 @@ struct osdmenuitem mainitems[] = { { "Insert tape...",         inserttape,      
                                    { "Insert disk 2...",       insertdisk,      2 },
                                    { "Insert disk 3...",       insertdisk,      3 },
                                    { OSDMENUBAR,               NULL,            0 },
+//                                   { "Save snapshot...",       savesnap,        0 },
+//                                   { "Load snapshot...",       NULL,            0 },
+//                                   { OSDMENUBAR,               NULL,            0 },
                                    { "Hardware options...",    gotomenu,        1 },
                                    { "Audio options...",       gotomenu,        2 },
                                    { "Video options...",       NULL,            0 },
@@ -552,6 +557,15 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
   setemumode( oric, NULL, EM_RUNNING );
 }
 
+/*
+void savesnap( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+  if( !filerequester( oric, "Save Snapshot", snappath, snapfile, FR_SNAPSHOTSAVE ) ) return;
+  joinpath( snappath, snapfile );
+  save_snapshot( oric, filetmp );
+}
+*/
+
 // Reset the oric
 void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
@@ -842,6 +856,8 @@ void preinit_gui( void )
   strcpy( tapefile, "" );
   strcpy( diskpath, FILEPREFIX"disks" );
   strcpy( diskfile, "" );
+//  strcpy( snappath, FILEPREFIX"snapshots" );
+//  strcpy( snapfile, "" );
 }
 
 // Ensure the sanity of toggle menuitems
@@ -928,7 +944,8 @@ SDL_bool init_gui( struct machine *oric )
     soundavailable = SDL_TRUE;
   }
 
-  SDL_WM_SetCaption( "Oricutron 0.3", "Oricutron 0.3" );
+  SDL_WM_SetCaption( "Oricutron WIP", "Oricutron WIP" );
+//  SDL_WM_SetCaption( "Oricutron 0.3", "Oricutron 0.3" );
 
   // Get the GUI palette
   for( i=0; i<NUM_GUI_COLS; i++ )

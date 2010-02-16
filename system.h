@@ -37,3 +37,15 @@
 #include <SDL_syswm.h>
 #endif
 #endif
+
+#if SDL_BYTEORDER == SDL_LIL_ENDIAN
+#define _LE32(X) (X)
+#define _LE16(X) (X)
+#define _BE32(X) SDL_Swap32(X)
+#define _BE16(X) SDL_Swap16(X)
+#else
+#define _LE32(X) SDL_Swap32(X)
+#define _LE16(X) SDL_Swap16(X)
+#define _BE32(X) (X)
+#define _BE16(X) (X)
+#endif

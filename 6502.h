@@ -51,29 +51,41 @@
 #define MBPB_CHANGE 2
 #define MBPF_CHANGE (1<<MBPB_CHANGE)
 
+// Merge the seperate flag stores into a 6502 status register form
+#define MAKEFLAGS ((cpu->f_n<<7)|(cpu->f_v<<6)|(1<<5)|(cpu->f_b<<4)|(cpu->f_d<<3)|(cpu->f_i<<2)|(cpu->f_z<<1)|cpu->f_c)
+
+// Set the seperate flag stores from a 6502-format mask
+#define SETFLAGS(n) cpu->f_n=(n&0x80)>>7;\
+                    cpu->f_v=(n&0x40)>>6;\
+                    cpu->f_b=(n&0x10)>>4;\
+                    cpu->f_d=(n&0x08)>>3;\
+                    cpu->f_i=(n&0x04)>>2;\
+                    cpu->f_z=(n&0x02)>>1;\
+                    cpu->f_c=n&0x01
+
 struct membreakpoint
 {
-  unsigned char  flags;
-  unsigned char  lastval;
-  unsigned short addr;
+  Uint8  flags;
+  Uint8  lastval;
+  Uint16 addr;
 };
 
 struct m6502
 {
-  int rastercycles;
-  unsigned int icycles;
-  unsigned int cycles;
-  unsigned char a, x, y, sp;
-  unsigned char f_c, f_z, f_i, f_d, f_b, f_v, f_n;
-  unsigned short pc;
+  Sint32   rastercycles;
+  Uint32   icycles;
+  Uint32   cycles;
+  Uint8    a, x, y, sp;
+  Uint8    f_c, f_z, f_i, f_d, f_b, f_v, f_n;
+  Uint16   pc;
   SDL_bool nmi;
-  int irq;
-  void (*write)(struct m6502 *,unsigned short, unsigned char);
-  unsigned char (*read)(struct m6502 *,unsigned short);
+  Uint8    irq;
+  void (*write)(struct m6502 *,Uint16,Uint8);
+  unsigned char (*read)(struct m6502 *,Uint16);
   SDL_bool anybp, anymbp;
-  int breakpoints[16];
+  Sint32   breakpoints[16];
   struct membreakpoint membreakpoints[16];
-  void *userdata;
+  void    *userdata;
 };
 
 void m6502_init( struct m6502 *cpu, void *userdata, SDL_bool nukebreakpoints );

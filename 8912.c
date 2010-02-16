@@ -311,11 +311,15 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
   Sint32 i, j, logc, tlogc;
   struct ay8912 *ay = (struct ay8912 *)dummy;
   Sint32 dcadjustave, dcadjustmax;
+  SDL_bool tapenoise;
 
   logc    = 0;
   tlogc   = 0;
   dcadjustave = 0;
   dcadjustmax = -32768;
+
+  tapenoise = ay->oric->tapenoise && !ay->oric->tapeturbo;
+  if( !tapenoise ) ay->tapeout = 0;
 
   out = (Uint16 *)stream;
   for( i=0,j=0; i<AUDIO_BUFLEN; i++ )
@@ -325,7 +329,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
     while( ( logc < ay->logged ) && ( ay->ccyc >= ay->writelog[logc].cycle ) )
       ay_dowrite( ay, &ay->writelog[logc++] );
 
-    if( ay->oric->tapenoise )
+    if( tapenoise )
     {
       while( ( tlogc < ay->tlogged ) && ( ay->ccyc >= ay->tapelog[tlogc].cycle ) )
         ay->tapeout = ay->tapelog[tlogc++].val * 8192;
@@ -374,7 +378,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
   while( logc < ay->logged )
     ay_dowrite( ay, &ay->writelog[logc++] );
 
-  if( ay->oric->tapenoise )
+  if( tapenoise )
   {
     while( tlogc < ay->tlogged )
       ay->tapeout = ay->tapelog[tlogc++].val * 8192;
@@ -428,7 +432,9 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
     }
   }
 
+  SDL_LockAudio();
   ay->logcycle += cycles;
+  SDL_UnlockAudio();
 }
 
 /*
@@ -574,7 +580,7 @@ void ay_modeset( struct ay8912 *ay )
             break;
           }
 
-          if( ay->logged >= (AUDIO_BUFLEN*4) )
+          if( ay->logged >= WRITELOG_SIZE )
           {
             SDL_WM_SetCaption( "AUDIO BASTARD", "AUDIO BASTARD" ); // Debug
             break;

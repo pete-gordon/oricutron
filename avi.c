@@ -27,18 +27,6 @@
 #include "avi.h"
 
 
-#if SDL_BYTEORDER == SDL_LIL_ENDIAN
-#define _LE32(X) (X)
-#define _LE16(X) (X)
-#define _BE32(X) SDL_Swap32(X)
-#define _BE16(X) SDL_Swap16(X)
-#else
-#define _LE32(X) SDL_Swap32(X)
-#define _LE16(X) SDL_Swap16(X)
-#define _BE32(X) (X)
-#define _BE16(X) (X)
-#endif
-
 // Write a 32bit value to a stream in little-endian format
 static SDL_bool write32l( SDL_bool stillok, struct avi_handle *ah, Uint32 val, Uint32 *rem )
 {

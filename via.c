@@ -305,6 +305,7 @@ void via_init( struct via *v, struct machine *oric )
   v->cb1 = 0;
   v->cb2 = 0;
   v->srcount = 0;
+  v->srtime = 0;
   v->t1run = SDL_FALSE;
   v->t2run = SDL_FALSE;
   v->ca2pulse = SDL_FALSE;
@@ -365,7 +366,7 @@ void via_clock( struct via *v, unsigned int cycles )
     if( v->oric->prclock <= 0 )
     {
       v->oric->prclock = 0;
-      via_write_CA1( v, 0 );
+      v->ca1 = 0;
     }
   }
 
@@ -390,8 +391,11 @@ void via_clock( struct via *v, unsigned int cycles )
 
   if( v->cb2pulse )
   {
-    v->cb2 = 1;
-    ay_set_bdir( &v->oric->ay, 1 );
+//    if( (v->acr&ACRF_SRCON) == 0 )
+    {
+      v->cb2 = 1;
+      ay_set_bdir( &v->oric->ay, 1 );
+    }
     v->cb2pulse = SDL_FALSE;
   }
 
@@ -459,6 +463,92 @@ void via_clock( struct via *v, unsigned int cycles )
     }
     v->t2c -= cycles;
   }
+
+  switch( v->acr & ACRF_SRCON )
+  {
+    case 0x00:    // Disabled
+    case 0x04:    // Shift in under T2 control (not implemented)
+    case 0x08:    // Shift in under O2 control (not implemented)
+    case 0x0c:    // Shift in under control of external clock (not implemented)
+    case 0x1c:    // Shift out under control of external clock (not implemented)
+      if( v->ifr&VIRQF_SR )
+        via_clr_irq( v, VIRQF_SR );
+      v->srcount = 0;
+      break;
+
+    case 0x10:    // Shift out free-running at T2 rate (not implemented)
+      // Count down the SR timer
+      v->srtime -= cycles;
+      while( v->srtime <= 0 )
+      {
+        // SR timer elapsed! Reload it
+        v->srtime += v->t2l_l+1;
+
+        // Toggle the clock!
+        v->cb1 ^= 1;
+
+        // Need to change cb2?
+        if( !v->cb1 )
+        {
+          v->cb2 = (v->sr & 0x80) ? 1 : 0;
+          v->sr = (v->sr<<1)|v->cb2;
+          ay_set_bdir( &v->oric->ay, v->cb2 );
+
+          v->srcount = (v->srcount+1)%8;
+        }        
+      }
+      break;
+
+    case 0x14:    // Shift out under T2 control
+      if( v->srcount == 8 ) break;
+
+      // Count down the SR timer
+      v->srtime -= cycles;
+      while( v->srtime <= 0 )
+      {
+        // SR timer elapsed! Reload it
+        v->srtime += v->t2l_l+1;
+
+        // Toggle the clock!
+        v->cb1 ^= 1;
+
+        // Need to change cb2?
+        if( !v->cb1 )
+        {
+          v->cb2 = (v->sr & 0x80) ? 1 : 0;
+          v->sr = (v->sr<<1)|v->cb2;
+          ay_set_bdir( &v->oric->ay, v->cb2 );
+
+          v->srcount++;
+          if( v->srcount == 8 )
+          {
+            via_set_irq( v, VIRQF_SR );
+            v->srtime = 0;
+            break;
+          }
+        }
+      }
+      break;
+
+    case 0x18:    // Shift out under O2 control
+      if( v->srcount == 8 ) break;
+
+      // Toggle the clock!
+      v->cb1 ^= 1;
+
+      // Need to change cb2?
+      if( !v->cb1 )
+      {
+        v->cb2 = (v->sr & 0x80) ? 1 : 0;
+        v->sr = (v->sr<<1)|v->cb2;
+        ay_set_bdir( &v->oric->ay, v->cb2 );
+
+        v->srcount++;
+        if( v->srcount == 8 )
+          via_set_irq( v, VIRQF_SR );
+      }
+      break;    
+  }   
 }
 
 void lprintchar( struct machine *oric, char c )
@@ -478,7 +568,7 @@ void lprintchar( struct machine *oric, char c )
   fputc( c, oric->prf );
   oric->prclock = 20;
   oric->prclose = 64*312*50*5;
-  via_write_CA1( &oric->via, 1 );
+  oric->via.ca1 = 1;
 }
 
 // Write VIA from CPU
@@ -510,8 +600,11 @@ void via_write( struct via *v, int offset, unsigned char data )
         case 0xa0:
           v->cb2pulse = SDL_TRUE;
         case 0x80:
-          v->cb2 = 0;
-          ay_set_bdir( &v->oric->ay, 0 );
+//          if( (v->acr&ACRF_SRCON) != 0 )
+          {
+            v->cb2 = 0;
+            ay_set_bdir( &v->oric->ay, 0 );
+          }
           break;
       }
       ay_update_keybits( &v->oric->ay );
@@ -568,8 +661,30 @@ void via_write( struct via *v, int offset, unsigned char data )
       break;
     case VIA_SR:
       v->sr = data;
+      v->srcount = 0;
+      v->srtime  = 0;
+      via_clr_irq( v, VIRQF_SR );
       break;
     case VIA_ACR:
+      // Disabling SR?
+/*
+      if( ( (v->acr&ACRF_SRCON) != 0 ) &&
+          ( (data&ACRF_SRCON) == 0 ) )
+      {
+        switch( v->pcr & PCRF_CB2CON )
+        {
+          case 0xc0:
+            v->cb2 = 0;
+            v->cb2pulse = SDL_FALSE;
+            break;
+        
+          case 0xe0:
+            v->cb2 = 1;
+            break;
+        }
+        ay_set_bcmode( &v->oric->ay, v->ca2, v->cb2 );
+      }
+*/
       v->acr = data;
       if( ( ( data & ACRF_T1CON ) != 0x40 ) &&
           ( ( data & ACRF_T1CON ) != 0xc0 ) )
@@ -595,18 +710,21 @@ void via_write( struct via *v, int offset, unsigned char data )
           break;
       }
 
-      switch( v->pcr & PCRF_CB2CON )
+//      if( (v->acr&ACRF_SRCON) == 0 )
       {
-        case 0xc0:
-          v->cb2 = 0;
-          v->cb2pulse = SDL_FALSE;
-          updateay = SDL_TRUE;
-          break;
+        switch( v->pcr & PCRF_CB2CON )
+        {
+          case 0xc0:
+            v->cb2 = 0;
+            v->cb2pulse = SDL_FALSE;
+            updateay = SDL_TRUE;
+            break;
         
-        case 0xe0:
-          v->cb2 = 1;
-          updateay = SDL_TRUE;
-          break;
+          case 0xe0:
+            v->cb2 = 1;
+            updateay = SDL_TRUE;
+            break;
+        }
       }
       
       if( updateay ) ay_set_bcmode( &v->oric->ay, v->ca2, v->cb2 );
@@ -699,8 +817,11 @@ unsigned char via_read( struct via *v, int offset )
         case 0xa0:
           v->cb2pulse = SDL_TRUE;
         case 0x80:
-          v->cb2 = 0;
-          ay_set_bdir( &v->oric->ay, 0 );
+//          if( (v->acr&ACRF_SRCON) == 0 )
+          {
+            v->cb2 = 0;
+            ay_set_bdir( &v->oric->ay, 0 );
+          }
           break;
       }
       return (v->orb&v->ddrb)|(v->irbl&(~v->ddrb));
@@ -741,6 +862,9 @@ unsigned char via_read( struct via *v, int offset )
     case VIA_T2C_H:
       return v->t2c>>8;
     case VIA_SR:
+      v->srcount = 0;
+      v->srtime  = 0;
+      via_clr_irq( v, VIRQF_SR );
       return v->sr;
     case VIA_ACR:
       return v->acr;
