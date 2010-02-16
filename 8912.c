@@ -556,7 +556,7 @@ void ay_modeset( struct ay8912 *ay )
             break;
           }
 
-          if( ay->logged >= AUDIO_BUFLEN )
+          if( ay->logged >= (AUDIO_BUFLEN*4) )
           {
             SDL_WM_SetCaption( "AUDIO BASTARD", "AUDIO BASTARD" ); // Debug
             break;

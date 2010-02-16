@@ -258,7 +258,7 @@ SDL_bool video_doraster( struct machine *oric )
         oric->vid_special     = oric->vid_start + 200;
         oric->vid_end         = oric->vid_start + 224;
       } else {
-        // PAL60
+        // NTSC
         oric->cyclesperraster = 64;
         oric->vid_start       = 32;
         oric->vid_maxrast     = 262;

@@ -90,7 +90,7 @@ void tape_rewind( struct machine *oric )
   oric->tapebit    = 0;
   oric->tapecount  = 2;
   oric->tapeout    = 0;
-  oric->tapedupbytes = 1;
+  oric->tapedupbytes = 80;
 }
 
 SDL_bool tape_load_tap( struct machine *oric, char *fname )
