@@ -63,15 +63,23 @@ struct aywrite
   Uint8  val;
 };
 
+struct tnchange
+{
+  Uint32 cycle;
+  Uint8  val;
+};
+
 struct ay8912
 {
   Uint8           bmode, creg;
   Uint8           regs[AY_LAST], eregs[AY_LAST];
   SDL_bool        keystates[8], newnoise;
   SDL_bool        soundon;
-  Sint32          logged;
+  SDL_bool        tapenoiseon;
+  Sint32          logged, tlogged;
   Uint32          logcycle;
   struct aywrite  writelog[AUDIO_BUFLEN*4];
+  struct tnchange tapelog[AUDIO_BUFLEN];
   Uint32          toneper[3], noiseper, envper;
   Uint16          tonebit[3], noisebit[3], vol[3], newout;
   Sint32          ct[3], ctn, cte;
@@ -81,6 +89,7 @@ struct ay8912
   struct machine *oric;
   Uint32          currnoise, rndrack;
   Sint16          output;
+  Sint16          tapeout;
   Uint32          ccycle, lastcyc, ccyc;
 };
 

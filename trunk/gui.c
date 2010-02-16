@@ -143,7 +143,7 @@ struct osdmenuitem hwopitems[] = { { " Oric-1",                swapmach,        
                                    { NULL, } };
 
 struct osdmenuitem auopitems[] = { { " Sound enabled",         togglesound,     0 },
-/*                                   { " Tape noise",            toggletapenoise, 0 }, */
+                                   { " Tape noise",            toggletapenoise, 0 },
                                    { OSDMENUBAR,               NULL,            0 },
                                    { "Back",                   gotomenu,        0 },
                                    { NULL, } };
@@ -580,11 +580,11 @@ void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 }
 
 // Turn tape noise on/off
-/*
 void toggletapenoise( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
   if( oric->tapenoise )
   {
+    oric->ay.tapeout = 0;
     oric->tapenoise = SDL_FALSE;
     mitem->name = " Tape noise";
     return;
@@ -593,7 +593,6 @@ void toggletapenoise( struct machine *oric, struct osdmenuitem *mitem, int dummy
   oric->tapenoise = SDL_TRUE;
   mitem->name = "\x0e""Tape noise";
 }
-*/
 
 // Toggle sound on/off
 void togglesound( struct machine *oric, struct osdmenuitem *mitem, int dummy )
@@ -853,12 +852,10 @@ void setmenutoggles( struct machine *oric )
   else
     auopitems[0].name = " Sound enabled";
 
-/*
   if( oric->tapenoise )
     auopitems[1].name = "\x0e""Tape noise";
   else
     auopitems[1].name = " Tape noise";
-*/
 
   if( oric->tapeturbo )
     hwopitems[9].name = "\x0e""Turbo tape";

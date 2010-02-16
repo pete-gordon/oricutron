@@ -174,7 +174,8 @@ void tape_ticktock( struct machine *oric, int cycles )
     }
   }
 
-  if( ( !oric->tapebuf ) || ( !oric->tapemotor ) ) return;
+  if( ( !oric->tapebuf ) || ( !oric->tapemotor ) )
+    return;
   if( ( oric->tapeoffs < 0 ) || ( oric->tapeoffs >= oric->tapelen ) )
     return;
 
@@ -214,6 +215,16 @@ void tape_ticktock( struct machine *oric, int cycles )
   }
 
   oric->tapeout ^= 1;
+  if( oric->tapenoise )
+  {
+    SDL_LockAudio();
+    if( oric->ay.tlogged < AUDIO_BUFLEN )
+    {
+      oric->ay.tapelog[oric->ay.tlogged  ].cycle = oric->ay.logcycle;
+      oric->ay.tapelog[oric->ay.tlogged++].val   = oric->tapeout;
+    }
+    SDL_UnlockAudio();
+  }
   via_write_CB1( &oric->via, oric->tapeout );
 
   if( oric->tapeout ) // New bit?

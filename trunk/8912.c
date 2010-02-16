@@ -307,11 +307,13 @@ void ay_dowrite( struct ay8912 *ay, struct aywrite *aw )
 void ay_callback( void *dummy, Sint8 *stream, int length )
 {
   Uint16 *out;
-  Sint32 i, j, logc;
+  Sint16 fout;
+  Sint32 i, j, logc, tlogc;
   struct ay8912 *ay = (struct ay8912 *)dummy;
   Sint32 dcadjustave, dcadjustmax;
 
   logc    = 0;
+  tlogc   = 0;
   dcadjustave = 0;
   dcadjustmax = -32768;
 
@@ -323,18 +325,24 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
     while( ( logc < ay->logged ) && ( ay->ccyc >= ay->writelog[logc].cycle ) )
       ay_dowrite( ay, &ay->writelog[logc++] );
 
+    if( ay->oric->tapenoise )
+    {
+      while( ( tlogc < ay->tlogged ) && ( ay->ccyc >= ay->tapelog[tlogc].cycle ) )
+        ay->tapeout = ay->tapelog[tlogc++].val * 8192;
+    }
+
     if( ay->ccyc > ay->lastcyc )
     {
       ay_audioticktock( ay, ay->ccyc-ay->lastcyc );
       ay->lastcyc = ay->ccyc;
     }
 
-    out[j++] = ay->output;
-//    out[j++] = ay->output;
-    if( vidcap ) audiocapbuf[i] = ay->output;
+    fout = ay->output + ay->tapeout;
+    out[j++] = fout;
+    if( vidcap ) audiocapbuf[i] = fout;
 
-    if( ay->output > dcadjustmax ) dcadjustmax = ay->output;
-    dcadjustave += ay->output;
+    if( fout > dcadjustmax ) dcadjustmax = fout;
+    dcadjustave += fout;
 
     ay->ccycle += CYCLESPERSAMPLE;
   }
@@ -366,10 +374,17 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
   while( logc < ay->logged )
     ay_dowrite( ay, &ay->writelog[logc++] );
 
+  if( ay->oric->tapenoise )
+  {
+    while( tlogc < ay->tlogged )
+      ay->tapeout = ay->tapelog[tlogc++].val * 8192;
+  }
+
   ay->ccycle -= (ay->lastcyc<<FPBITS);
   ay->lastcyc = 0;
   ay->logcycle = ay->ccycle>>FPBITS;
   ay->logged   = 0;
+  ay->tlogged  = 0;
 }
 
 /*
@@ -462,6 +477,9 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
   ay->lastcyc = 0;
   ay->ccyc    = 0;
   ay->ccycle  = 0;
+  ay->tapeout = 0;
+  ay->tlogged = 0;
+  ay->tapeout = 0;
   if( soundavailable )
     SDL_PauseAudio( 0 );
 
