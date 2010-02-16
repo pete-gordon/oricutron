@@ -154,7 +154,7 @@ struct osdmenuitem dbopitems[] = { { " Autoload symbols file", togglesymbolsauto
                                    { "Back",                   gotomenu,        0 },
                                    { NULL, } };
 
-struct osdmenu menus[] = { { "Main Menu",        12, mainitems },
+struct osdmenu menus[] = { { "Main Menu",         0, mainitems },
                            { "Hardware options", 13, hwopitems },
                            { "Audio options",     3, auopitems },
                            { "Debug options",     3, dbopitems } };
@@ -770,8 +770,8 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
       drawitems();
       *needrender = SDL_TRUE;    
       break;
-
-    case SDL_KEYUP:
+    
+    case SDL_KEYDOWN:
       switch( ev->key.keysym.sym )
       {
         case SDLK_UP:
@@ -806,6 +806,14 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           *needrender = SDL_TRUE;
           break;
         
+        default:
+          break;
+      }
+      break;
+
+    case SDL_KEYUP:
+      switch( ev->key.keysym.sym )
+      {
         case SDLK_RETURN:
           if( !cmenu->items[cmenu->citem].func ) break;
           cmenu->items[cmenu->citem].func( oric, &cmenu->items[cmenu->citem], cmenu->items[cmenu->citem].arg );

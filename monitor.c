@@ -1333,9 +1333,12 @@ static void printayregbits( char *str, Sint16 x, Sint16 y, Uint8 v, Uint8 bits )
 
 void mon_update_ay( struct machine *oric )
 {
-  tzprintfpos( tz[TZ_AY], 2, 1, "BC1=%1X    BDIR=%1X     REG=%02X",
-    (oric->ay.bmode & AYBMF_BC1) ? 1 : 0,
-    (oric->ay.bmode & AYBMF_BDIR) ? 1 : 0,
+  char *strs[] = { "INACTIVE",
+                   "READ    ",
+                   "WRITE   ",
+                   "LATCH   " };
+  tzprintfpos( tz[TZ_AY], 2, 1, "CTRL=%s  REG=%02X",
+    strs[oric->ay.bmode&3],
     oric->ay.creg );
 
   printayregbits( "R0 Pitch A L $%02X \%", 2, 2, oric->ay.eregs[AY_CHA_PER_L], 8 );
