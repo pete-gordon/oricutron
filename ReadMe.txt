@@ -1,4 +1,4 @@
-Oricutron 0.2
+Oricutron 0.4
 -------------
 
 All code (c)2009 Peter Gordon (pete@petergordon.org.uk)
@@ -9,11 +9,11 @@ This is a work in progress.
 Current status:
 
   6502:  100% done (apart from any unknown bugs :)
-  VIA:   All done except shift register (which is on my todo list)
-  AY:    90% done.
+  VIA:   95% done.
+  AY:    99% done.
   Video: 100% done
   Tape:  ".TAP" file support (no WAV yet)
-  Disk:  Reading sectors works. No write support.
+  Disk:  Reading/Writing sectors works. No track read/write.
 
 The Telestrat is not emulated at all yet. Also, "Turbo Tape" only works in
 Atmos mode.

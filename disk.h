@@ -101,6 +101,7 @@ struct diskimage
   Uint8   *rawimage;
   Uint32   rawimagelen;
   struct   densityinfo *dinf;
+  SDL_bool modified;
 };
 
 struct wd17xx

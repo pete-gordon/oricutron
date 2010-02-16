@@ -102,6 +102,7 @@ struct diskimage *diskimage_alloc( Uint32 rawimglen )
   dimg->rawimage    = buf;
   dimg->rawimagelen = rawimglen;
   dimg->dinf        = NULL;
+  dimg->modified    = SDL_FALSE;
   return dimg;
 }
 
@@ -214,6 +215,8 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
     do_popup( "\x14\x15""Invalid disk image" );
     return SDL_FALSE;
   }
+
+  oric->wddisk.disk[drive]->modified = SDL_FALSE;
 
   strncpy( oric->diskname[drive], fname, 16 );
   oric->diskname[drive][15] = 0;
@@ -412,6 +415,7 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
           if( !wd->currsector )
           {
             wd->r_status &= ~WSF_DRQ;
+            wd->r_status |= WSF_RNF;
             wd->clrdrq( wd->drqarg );
             wd->currentop = COP_NUFFINK;
             break;
@@ -623,9 +627,36 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
         
         case 0xa0:  // Write sector (Type II)
 #if GENERAL_DISK_DEBUG
-          dbg_printf( "DISK: Write sector" );
+          switch( oric->drivetype )
+          {
+            case DRV_MICRODISC:
+              dbg_printf( "DISK: (%04X) Write sector %u (CODE=%02X,ROM=%s,EPROM=%s)", oric->cpu.pc-1, wd->r_sector, data, oric->romdis?"OFF":"ON", oric->md.diskrom?"ON":"OFF" );
+              break;
+            
+            default:
+              dbg_printf( "DISK: (%04X) Write sector %u (CODE=%02X)", oric->cpu.pc-1, wd->r_sector, data );
+              break;
+          }
 #endif
-          wd->currentop = COP_WRITE_SECTOR;
+          wd->curroffs   = 0;
+          wd->currsector = wd17xx_find_sector( wd, wd->r_sector );
+          if( !wd->currsector )
+          {
+            wd->r_status = WSF_RNF;
+            wd->clrdrq( wd->drqarg );
+            wd->setintrq( wd->intrqarg );
+            wd->currentop = COP_NUFFINK;
+#if GENERAL_DISK_DEBUG
+            dbg_printf( "DISK: Sector %d not found.", wd->r_sector );
+#endif
+//            setemumode( oric, NULL, EM_DEBUG );
+            break;
+          }
+
+          wd->currseclen = 1<<(wd->currsector->id_ptr[4]+7);
+          wd->r_status   = WSF_BUSY|WSF_NOTREADY;
+          wd->delayeddrq = 500;
+          wd->currentop  = (data&0x10) ? COP_WRITE_SECTORS : COP_WRITE_SECTOR;
           break;
         
         case 0xc0:  // Read address / Force IRQ
@@ -712,6 +743,60 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
     
     case 3: // Data register
       wd->r_data = data;
+
+      switch( wd->currentop )
+      {
+        case COP_WRITE_SECTOR:
+        case COP_WRITE_SECTORS:
+          if( !wd->currsector )
+          {
+            wd->r_status &= ~WSF_DRQ;
+            wd->r_status |= WSF_RNF;
+            wd->clrdrq( wd->drqarg );
+            wd->currentop = COP_NUFFINK;
+            break;
+          }
+          if( wd->curroffs == 0 ) wd->currsector->data_ptr[wd->curroffs++]=0xf8;
+          wd->currsector->data_ptr[wd->curroffs++] = wd->r_data;
+          wd->disk[wd->c_drive]->modified = SDL_TRUE;
+          wd->r_status &= ~WSF_DRQ;
+          wd->clrdrq( wd->drqarg );
+
+          if( wd->curroffs > wd->currseclen )
+          {
+            if( wd->currentop == COP_WRITE_SECTORS )
+            {
+#if GENERAL_DISK_DEBUG
+              dbg_printf( "Next sector..." );
+#endif
+              // Get the next sector, and carry on!
+              wd->r_sector++;
+              wd->curroffs   = 0;
+              wd->currsector = wd17xx_find_sector( wd, wd->r_sector );
+              
+              if( !wd->currsector )
+              {
+                wd->delayedint = 20;
+                wd->distatus   = wd->sectype;
+                wd->currentop = COP_NUFFINK;
+                wd->r_status &= (~WSF_DRQ);
+                wd->clrdrq( wd->drqarg );
+                break;
+              }
+              wd->delayeddrq = 180;
+              break;
+            }
+
+            wd->delayedint = 32;
+            wd->distatus   = wd->sectype;
+            wd->currentop = COP_NUFFINK;
+            wd->r_status &= (~WSF_DRQ);
+            wd->clrdrq( wd->drqarg );
+          } else {
+            wd->delayeddrq = 32;
+          }
+          break;
+      }
       break;
   }
 }
