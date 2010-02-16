@@ -86,6 +86,8 @@ In emulator
   Shift+F4 - Jasmin reset
   F5       - Toggle FPS
   F6       - Toggle warp speed
+  F7       - Save all modified disks
+  Shift+F7 - Save all modified disks to new disk images
   F10      - Start/Stop AVI capture
 
 

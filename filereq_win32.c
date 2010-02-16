@@ -70,7 +70,9 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
   switch( type )
   {
-    case FR_DISKS:
+    case FR_DISKSAVE:
+      ofn.Flags = OFN_PATHMUSTEXIST;
+    case FR_DISKLOAD:
       ofn.lpstrFilter = "All Files\0*.*\0Disk Images (*.dsk)\0*.DSK\0";
       ofn.nFilterIndex = 2;
       break;
@@ -107,6 +109,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   switch( type )
   {
     case FR_SNAPSHOTSAVE:
+    case FR_DISKSAVE:
       if( !GetSaveFileName( &ofn ) )
       {
         chdir( odir );

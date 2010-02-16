@@ -7,9 +7,10 @@
 #if defined(__amigaos4__)
 
 #define PATHSEP '/'
-#define PATHSEPSTR "\\"
+#define PATHSEPSTR "/"
 #define FILEPREFIX "PROGDIR:"
 #define ROMPREFIX "PROGDIR:roms/"
+#define IMAGEPREFIX "PROGDIR:images/"
 
 #elif defined(WIN32)
 
@@ -17,12 +18,15 @@
 #define PATHSEPSTR "\\"
 #define FILEPREFIX
 #define ROMPREFIX "roms\\"
+#define IMAGEPREFIX "images\\"
 
 #else
 
 #define PATHSEP '/'
+#define PATHSEPSTR "/"
 #define FILEPREFIX
 #define ROMPREFIX "roms/"
+#define IMAGEPREFIX "images/"
 
 #endif
 

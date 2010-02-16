@@ -69,7 +69,9 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   
   switch( type )
   {
-    case FR_DISKS:
+    case FR_DISKSAVE:
+      dosavemode = TRUE;
+    case FR_DISKLOAD:
       pat = "#?.dsk";
       break;
     

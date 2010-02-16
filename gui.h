@@ -61,6 +61,24 @@ struct osdmenu
 
 #define VSPTMPSIZE 1024
 
+struct guiimg
+{
+  char *filename;
+  Uint16 w, h;
+  Uint16 *buf;
+};
+
+enum
+{
+  GIMG_STATUSBAR,
+  GIMG_DISK_EJECTED,
+  GIMG_DISK_IDLE,
+  GIMG_DISK_ACTIVE,
+  GIMG_DISK_IDLE_MOD,
+  GIMG_DISK_ACTIVE_MOD,
+  GIMG_LAST
+};
+
 void do_popup( char *str );
 void makebox( struct textzone *ptz, int x, int y, int w, int h, int fg, int bg );
 void tzsettitle( struct textzone *ptz, char *title );
@@ -79,3 +97,8 @@ void render( struct machine *oric );
 void preinit_gui( void );
 SDL_bool init_gui( struct machine *oric );
 void shut_gui( void );
+
+void draw_statusbar( void );
+void draw_disks( struct machine *oric );
+void statusprintstr( int x, Uint16 fc, char *str );
+void joinpath( char *path, char *file );
