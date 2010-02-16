@@ -6,7 +6,8 @@ All code (c)2009 Peter Gordon (pete@petergordon.org.uk)
 This is a work in progress.
 
 
-Current status:
+Current status
+==============
 
   6502:  100% done (apart from any unknown bugs :)
   VIA:   95% done.
@@ -17,6 +18,20 @@ Current status:
 
 The Telestrat is not emulated at all yet. Also, "Turbo Tape" only works in
 Atmos mode.
+
+
+Thanks
+======
+
+Thanks to DBug and Twilighte for letting me distribute their demos and
+games with Oricutron.
+
+Thanks to DBug, Twilighte, Chema, kamelito, Yicker, JamesD, Algarbi, ibisum,
+jede, thrust26 and everyone else for their help and feedback!
+
+
+AVI export notes
+================
 
 The AVI export uses the MRLE codec. Your favourite player might not support
 it, but MPlayer plays it, ffmpeg converts it and you can upload it directly
