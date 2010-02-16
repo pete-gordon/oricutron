@@ -50,6 +50,7 @@ extern struct avi_handle *vidcap;
 int32 timersigbit = -1;
 uint32 timersig;
 struct Task *maintask;
+char __attribute__((used)) stackcookie[] = "$STACK: 1000000";
 #endif
 
 SDL_bool init( struct machine *oric, int argc, char *argv[] )
