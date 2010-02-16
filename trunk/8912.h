@@ -65,24 +65,23 @@ struct aywrite
 
 struct ay8912
 {
-  unsigned char bmode;
-  unsigned char creg;
-  unsigned char regs[AY_LAST], eregs[AY_LAST];
-  SDL_bool keystates[8], newnoise;
-  SDL_bool soundon;
-  int logged;
-  Uint32 logcycle;
-  struct aywrite writelog[AUDIO_BUFLEN];
-  Uint32 toneper[3], noiseper, envper;
-  Uint16 tonebit[3], noisebit[3], vol[3], newout;
-  int ct[3], ctn, cte;
-  Uint32 tonepos[3], tonestep[3];
-  Sint32 sign[3], out[3], envpos;
-  unsigned char *envtab;
+  Uint8           bmode, creg;
+  Uint8           regs[AY_LAST], eregs[AY_LAST];
+  SDL_bool        keystates[8], newnoise;
+  SDL_bool        soundon;
+  Sint32          logged;
+  Uint32          logcycle;
+  struct aywrite  writelog[AUDIO_BUFLEN*4];
+  Uint32          toneper[3], noiseper, envper;
+  Uint16          tonebit[3], noisebit[3], vol[3], newout;
+  Sint32          ct[3], ctn, cte;
+  Uint32          tonepos[3], tonestep[3];
+  Sint32          sign[3], out[3], envpos;
+  unsigned char  *envtab;
   struct machine *oric;
-  Uint32 currnoise, rndrack;
-  Sint16 output;
-  Uint32 ccycle, lastcyc, ccyc;
+  Uint32          currnoise, rndrack;
+  Sint16          output;
+  Uint32          ccycle, lastcyc, ccyc;
 };
 
 void queuekeys( char *str );
