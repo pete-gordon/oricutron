@@ -82,6 +82,7 @@ struct ay8912
   struct machine *oric;
   Uint32 currnoise, rndrack;
   Sint16 output;
+  Uint32 ccycle, lastcyc, ccyc;
 };
 
 void queuekeys( char *str );

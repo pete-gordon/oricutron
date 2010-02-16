@@ -308,13 +308,9 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
 {
   Uint16 *out;
   Sint32 i, j, logc;
-  Uint32 ccycle, ccyc, lastcyc;
   struct ay8912 *ay = (struct ay8912 *)dummy;
   Sint32 dcadjustave, dcadjustmax;
 
-  ccycle  = 0;
-  ccyc    = 0;
-  lastcyc = 0;
   logc    = 0;
   dcadjustave = 0;
   dcadjustmax = -32768;
@@ -322,25 +318,25 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
   out = (Uint16 *)stream;
   for( i=0,j=0; i<AUDIO_BUFLEN; i++ )
   {
-    ccyc = ccycle>>FPBITS;
+    ay->ccyc = ay->ccycle>>FPBITS;
 
-    while( ( logc < ay->logged ) && ( ccyc >= ay->writelog[logc].cycle ) )
+    while( ( logc < ay->logged ) && ( ay->ccyc >= ay->writelog[logc].cycle ) )
       ay_dowrite( ay, &ay->writelog[logc++] );
 
-    if( ccyc > lastcyc )
+    if( ay->ccyc > ay->lastcyc )
     {
-      ay_audioticktock( ay, ccyc-lastcyc );
-      lastcyc = ccyc;
+      ay_audioticktock( ay, ay->ccyc-ay->lastcyc );
+      ay->lastcyc = ay->ccyc;
     }
 
     out[j++] = ay->output;
-    out[j++] = ay->output;
+//    out[j++] = ay->output;
     if( vidcap ) audiocapbuf[i] = ay->output;
 
     if( ay->output > dcadjustmax ) dcadjustmax = ay->output;
     dcadjustave += ay->output;
 
-    ccycle += CYCLESPERSAMPLE;
+    ay->ccycle += CYCLESPERSAMPLE;
   }
 
   dcadjustave /= AUDIO_BUFLEN;
@@ -353,7 +349,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
     for( i=0, j=0; i<AUDIO_BUFLEN; i++ )
     {
       out[j++] -= dcadjustave;
-      out[j++] -= dcadjustave;
+//      out[j++] -= dcadjustave;
       if( vidcap ) audiocapbuf[i] -= dcadjustave;
     }
   }
@@ -367,12 +363,12 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
     avi_addaudio( &vidcap, audiocapbuf, AUDIO_BUFLEN*2 );
   }
 
-
-
   while( logc < ay->logged )
     ay_dowrite( ay, &ay->writelog[logc++] );
 
-  ay->logcycle = 0;
+  ay->ccycle -= (ay->lastcyc<<FPBITS);
+  ay->lastcyc = 0;
+  ay->logcycle = ay->ccycle>>FPBITS;
   ay->logged   = 0;
 }
 
@@ -463,6 +459,9 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
   ay->logged  = 0;
   ay->logcycle = 0;
   ay->output  = -32768;
+  ay->lastcyc = 0;
+  ay->ccyc    = 0;
+  ay->ccycle  = 0;
   if( soundavailable )
     SDL_PauseAudio( 0 );
 
