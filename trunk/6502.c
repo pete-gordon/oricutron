@@ -264,17 +264,6 @@ void m6502_reset( struct m6502 *cpu )
 #define PUSHW(n) PUSHB( n>>8 ); PUSHB( n )
 #define POPW(n)  n = (cpu->read(cpu,((cpu->sp+2)&0xff)+0x100)<<8)|cpu->read(cpu,((cpu->sp+1)&0xff)+0x100); cpu->sp+=2
 
-// Merge the seperate flag stores into a 6502 status register form
-#define MAKEFLAGS ((cpu->f_n<<7)|(cpu->f_v<<6)|(1<<5)|(cpu->f_b<<4)|(cpu->f_d<<3)|(cpu->f_i<<2)|(cpu->f_z<<1)|cpu->f_c)
-
-// Set the seperate flag stores from a 6502-format mask
-#define SETFLAGS(n) cpu->f_n=(n&0x80)>>7;\
-                    cpu->f_v=(n&0x40)>>6;\
-                    cpu->f_b=(n&0x10)>>4;\
-                    cpu->f_d=(n&0x08)>>3;\
-                    cpu->f_i=(n&0x04)>>2;\
-                    cpu->f_z=(n&0x02)>>1;\
-                    cpu->f_c=n&0x01
 
 // Get the number of cycles the NEXT cpu instruction will take
 void m6502_set_icycles( struct m6502 *cpu )

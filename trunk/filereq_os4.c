@@ -65,6 +65,7 @@ void shut_filerequester( void )
 SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fname, int type )
 {
   char *pat, ppat[6*2+2];
+  BOOL dosavemode = FALSE;
   
   switch( type )
   {
@@ -78,6 +79,12 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
     
     case FR_ROMS:
       pat = "#?.rom";
+      break;
+
+    case FR_SNAPSHOTSAVE:
+      dosavemode = TRUE;
+    case FR_SNAPSHOTLOAD:
+      pat = "#?.sna";
       break;
  
     default:
@@ -93,6 +100,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
          ASLFR_InitialFile,   fname,
          ASLFR_DoPatterns,    pat != NULL,
          ASLFR_RejectIcons,   TRUE,
+         ASLFR_DoSaveMode,    dosavemode,
          pat ? ASLFR_AcceptPattern : TAG_IGNORE, ppat,
          TAG_DONE ) )
     return SDL_FALSE;

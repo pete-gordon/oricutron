@@ -26,6 +26,9 @@
 // Audio buffer size
 #define AUDIO_BUFLEN 4096
 
+#define WRITELOG_SIZE (AUDIO_BUFLEN*12)
+#define TAPELOG_SIZE (AUDIO_BUFLEN)
+
 #define CYCLESPERSECOND (312*64*50)
 #define CYCLESPERSAMPLE ((CYCLESPERSECOND<<FPBITS)/AUDIO_FREQ)
 
@@ -78,8 +81,8 @@ struct ay8912
   SDL_bool        tapenoiseon;
   Sint32          logged, tlogged;
   Uint32          logcycle;
-  struct aywrite  writelog[AUDIO_BUFLEN*4];
-  struct tnchange tapelog[AUDIO_BUFLEN];
+  struct aywrite  writelog[WRITELOG_SIZE];
+  struct tnchange tapelog[TAPELOG_SIZE];
   Uint32          toneper[3], noiseper, envper;
   Uint16          tonebit[3], noisebit[3], vol[3], newout;
   Sint32          ct[3], ctn, cte;

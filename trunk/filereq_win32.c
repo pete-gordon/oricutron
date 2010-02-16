@@ -67,6 +67,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   ofn.lpstrFile   = fname;
   ofn.nMaxFile    = 4096;
 
+  ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
   switch( type )
   {
     case FR_DISKS:
@@ -84,6 +85,13 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       ofn.nFilterIndex = 2;
       break;
 
+    case FR_SNAPSHOTSAVE:
+      ofn.Flags = OFN_PATHMUSTEXIST;
+    case FR_SNAPSHOTLOAD:
+      ofn.lpstrFilter = "All Files\0*.*\0Snapshot files (*.sna)\0*.SNA\0";
+      ofn.nFilterIndex = 2;
+      break;
+
     default:
       ofn.lpstrFilter = "All Files\0*.*";
       ofn.nFilterIndex = 1;
@@ -93,14 +101,28 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   ofn.lpstrFileTitle = NULL;
   ofn.nMaxFileTitle = 0;
   ofn.lpstrInitialDir = path;
-  ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
   odir = getcwd( NULL, 0 );
-  if( !GetOpenFileName( &ofn ) )
+
+  switch( type )
   {
-    chdir( odir );
-    free( odir );
-    return SDL_FALSE;
+    case FR_SNAPSHOTSAVE:
+      if( !GetSaveFileName( &ofn ) )
+      {
+        chdir( odir );
+        free( odir );
+        return SDL_FALSE;
+      }
+      break;
+    
+    default:
+      if( !GetOpenFileName( &ofn ) )
+      {
+        chdir( odir );
+        free( odir );
+        return SDL_FALSE;
+      }
+      break;
   }
 
   chdir( odir );

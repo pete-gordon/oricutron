@@ -323,6 +323,11 @@ int main( int argc, char *argv[] )
         {
           if( framedone )
           {
+            if( (oric.emu_mode == EM_RUNNING) && ((oric.frames&3)==0) )
+            {
+              framedone = SDL_FALSE;
+              continue;
+            }
             needrender = SDL_TRUE;
             framedone  = SDL_FALSE;
           }

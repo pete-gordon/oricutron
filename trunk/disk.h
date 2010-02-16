@@ -84,14 +84,6 @@ enum
   COP_READ_ADDRESS    // Reading a sector header
 };
 
-struct densityinfo
-{
-  int tracksize;
-  Uint8 idmark;
-  Uint8 datamark;
-  Uint8 deldatamark;
-};
-
 struct mfmsector
 {
   Uint8 *id_ptr;

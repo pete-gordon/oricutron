@@ -45,7 +45,7 @@ enum
 
 struct machine
 {
-  int type;
+  Uint8 type;
   struct m6502 cpu;
   struct via via;
   struct ay8912 ay;
@@ -113,3 +113,4 @@ void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type );
 void swapmach( struct machine *oric, struct osdmenuitem *mitem, int which );
 SDL_bool isram( struct machine *oric, unsigned short addr );
 
+void save_snapshot( struct machine *oric, char *filename );

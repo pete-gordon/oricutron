@@ -1248,7 +1248,7 @@ void mon_update_regs( struct machine *oric )
     tzprintfpos( tz[TZ_REGS], 2, 3, "%46s", " " );
   }
 
-  tzprintfpos( tz[TZ_REGS], 2, 4, "CY=%08d", oric->cpu.cycles );
+  tzprintfpos( tz[TZ_REGS], 2, 4, "CY=%09d", oric->cpu.cycles );
   tzprintfpos( tz[TZ_REGS], 2, 5, "FM=%06d RS=%03d", oric->frames, oric->vid_raster );
 
   tzstrpos( tz[TZ_REGS], 35, 4, (oric->cpu.irq&IRQF_VIA)  ? "VIA"  : "   "  );
