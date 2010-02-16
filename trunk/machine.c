@@ -716,11 +716,6 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
     case SDL_KEYUP:
       switch( ev->key.keysym.sym )
       {
-        case SDLK_LSHIFT:
-        case SDLK_RSHIFT:
-          shifted = SDL_FALSE;
-          break;
-
         case SDLK_F1:
           setemumode( oric, NULL, EM_MENU );
           *needrender = SDL_TRUE;
@@ -757,6 +752,9 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           }
           break;
         
+        case SDLK_F7:
+          break;
+        
         case SDLK_F10:
            if( vidcap )
            {
@@ -778,6 +776,10 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
            }
            break;
 
+        case SDLK_LSHIFT:
+        case SDLK_RSHIFT:
+          shifted = SDL_FALSE;
+
         default:
           ay_keypress( &oric->ay, ev->key.keysym.sym, SDL_FALSE );
           break;
@@ -790,7 +792,6 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
         case SDLK_LSHIFT:
         case SDLK_RSHIFT:
           shifted = SDL_TRUE;
-          break;
         
         default:
           ay_keypress( &oric->ay, ev->key.keysym.sym, SDL_TRUE );
