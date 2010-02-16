@@ -51,12 +51,21 @@ char diskpath[4096], diskfile[512];
 //char snappath[4096], snapfile[512];
 char filetmp[4096+512];
 
+struct guiimg gimgs[GIMG_LAST] = { { IMAGEPREFIX"statusbar.bmp",     640, 16, NULL },
+                                   { IMAGEPREFIX"disk_ejected.bmp",   18, 16, NULL },
+                                   { IMAGEPREFIX"disk_idle.bmp",      18, 16, NULL },
+                                   { IMAGEPREFIX"disk_active.bmp",    18, 16, NULL },
+                                   { IMAGEPREFIX"disk_modified.bmp",  18, 16, NULL },
+                                   { IMAGEPREFIX"disk_modactive.bmp", 18, 16, NULL } };
+
 extern SDL_bool fullscreen;
 SDL_Surface *screen = NULL;
 SDL_bool need_sdl_quit = SDL_FALSE;
 SDL_bool soundavailable, soundon;
 extern SDL_bool microdiscrom_valid, jasminrom_valid;
 
+#define GIMG_POS_SBARY (480-16)
+#define GIMG_POS_DISKX (640-4-18*4)
 
 // Our "lovely" hand-coded font
 extern unsigned char thefont[];
@@ -164,6 +173,119 @@ struct osdmenu menus[] = { { "Main Menu",         0, mainitems },
                            { "Audio options",     3, auopitems },
                            { "Debug options",     3, dbopitems } };
 
+SDL_bool gimg_load( struct guiimg *gi )
+{
+  FILE *f;
+  Uint8 hdrbuf[640*3];
+  Sint32 x, y;
+  SDL_bool fileok;
+
+  f = fopen( gi->filename, "rb" );
+  if( !f )
+  {
+    printf( "Unable to open '%s'\n", gi->filename );
+    return SDL_FALSE;
+  }
+
+  if( fread( hdrbuf, 54, 1, f ) != 1 )
+  {
+    printf( "Error reading '%s'\n", gi->filename );
+    return SDL_FALSE;
+  }
+
+  fileok = SDL_TRUE;
+  if( strncmp( hdrbuf, "BM", 2 ) != 0 ) fileok = SDL_FALSE;
+  if( ((hdrbuf[21]<<24)|(hdrbuf[20]<<16)|(hdrbuf[19]<<8)|hdrbuf[18]) != gi->w ) fileok = SDL_FALSE;
+  if( ((hdrbuf[25]<<24)|(hdrbuf[24]<<16)|(hdrbuf[23]<<8)|hdrbuf[22]) != gi->h ) fileok = SDL_FALSE;
+  if( ((hdrbuf[27]<<8)|hdrbuf[26]) != 1 ) fileok = SDL_FALSE;
+  if( ((hdrbuf[29]<<8)|hdrbuf[28]) != 24 ) fileok = SDL_FALSE;
+  if( ((hdrbuf[33]<<24)|(hdrbuf[32]<<16)|(hdrbuf[31]<<8)|hdrbuf[30]) != 0 ) fileok = SDL_FALSE;
+
+  if( !fileok )
+  {
+    printf( "'%s' needs to be a %dx%d, uncompressed, 24-bit BMP image\n", gi->filename, gi->w, gi->h );
+    return SDL_FALSE;
+  }
+
+  if( !gi->buf )
+    gi->buf = malloc( gi->w * gi->h * 2 );
+
+  if( !gi->buf )
+  {
+    printf( "Out of memory\n" );
+    return SDL_FALSE;
+  }
+
+  for( y=gi->h-1; y>=0; y-- )
+  {
+    fread( hdrbuf, ((gi->w*3)+3)&0xfffffffc, 1, f );
+    for( x=0; x<gi->w; x++ )
+      gi->buf[y*gi->w+x] = SDL_MapRGB( screen->format, hdrbuf[x*3+2], hdrbuf[x*3+1], hdrbuf[x*3] );
+  }
+  
+  return SDL_TRUE;
+}
+
+void gimg_draw( struct guiimg *gi, Sint32 xp, Sint32 yp )
+{
+  Uint16 *sptr, *dptr;
+  Sint32 x, y;
+
+  sptr = gi->buf;
+  dptr = &((Uint16 *)screen->pixels)[pixpitch*yp+xp];
+
+  for( y=0; y<gi->h; y++ )
+  {
+    for( x=0; x<gi->w; x++ )
+      *(dptr++) = *(sptr++);
+    dptr += pixpitch-gi->w;
+  }
+}
+
+void gimg_drawpart( struct guiimg *gi, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 oy, Sint32 w, Sint32 h )
+{
+  Uint16 *sptr, *dptr;
+  Sint32 x, y;
+
+  sptr = &gi->buf[oy*gi->w+ox];
+  dptr = &((Uint16 *)screen->pixels)[pixpitch*yp+xp];
+
+  for( y=0; y<h; y++ )
+  {
+    for( x=0; x<w; x++ )
+      *(dptr++) = *(sptr++);
+    sptr += gi->w-w;
+    dptr += pixpitch-w;
+  }
+}
+
+void draw_statusbar( void )
+{
+  gimg_draw( &gimgs[GIMG_STATUSBAR], 0, GIMG_POS_SBARY );
+}
+
+void draw_disks( struct machine *oric )
+{
+  Sint32 i, j;
+
+  if( oric->drivetype == DRV_NONE )
+  {
+    gimg_drawpart( &gimgs[GIMG_STATUSBAR], GIMG_POS_DISKX, GIMG_POS_SBARY, 0, 0, 18*4, 16 );
+    return;
+  }
+
+  for( i=0; i<4; i++ )
+  {
+    j = GIMG_DISK_EJECTED;
+    if( oric->wddisk.disk[i] )
+    {
+      j = ((oric->wddisk.c_drive==i)&&(oric->wddisk.currentop!=COP_NUFFINK)) ? GIMG_DISK_ACTIVE : GIMG_DISK_IDLE;
+      if( oric->wddisk.disk[i]->modified ) j+=2;
+    }
+    gimg_draw( &gimgs[j], GIMG_POS_DISKX+i*18, GIMG_POS_SBARY );
+  }
+}
+
 // Info popups
 static int popuptime=0;
 static char popupstr[40];
@@ -203,7 +325,7 @@ void render( struct machine *oric )
         else
           perc = 166667/(frametimeave?frametimeave:1);
         sprintf( tmp, "%4d.%02d%% - %4dFPS", perc/100, perc%100, fps/100 );
-        printstr( 0, 0, gpal[1], gpal[4], tmp );
+        statusprintstr( 0, gpal[1], tmp );
       }
       if( popuptime > 0 )
       {
@@ -404,6 +526,44 @@ void printstr( int x, int y, Uint16 fc, Uint16 bc, char *str )
     printchar( ptr, str[i], fc, bc, SDL_TRUE );
 }
 
+static void statusprintchar( int x, Uint16 fc, char c )
+{
+  int px, py, cp;
+  unsigned char *fptr;
+  Uint16 *ptr, *statptr;
+
+  if( c&0x80 ) return;
+
+  ptr = &((Uint16 *)screen->pixels)[pixpitch*(GIMG_POS_SBARY+2)+x];
+  statptr = &gimgs[GIMG_STATUSBAR].buf[2*640+x];
+
+  fptr = &thefont[c*12];
+
+  for( py=0; py<12; py++ )
+  {
+    for( cp=0x80, px=0; px<8; px++, cp>>=1, ptr++, statptr++ )
+    {
+      if( (*fptr)&cp )
+      {
+        *ptr = fc;
+      } else {
+        *ptr = *statptr;
+      }
+    }
+
+    ptr += pixpitch - 8;
+    statptr += 640-8;
+    fptr++;
+  }
+}
+
+void statusprintstr( int x, Uint16 fc, char *str )
+{
+  int i;
+  for( i=0; str[i]; i++, x+=8 )
+    statusprintchar( x, fc, str[i] );
+}
+
 // Set the title of a textzone
 void tzsettitle( struct textzone *ptz, char *title )
 {
@@ -544,7 +704,7 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 // "insert" a disk into the virtual disk drive, via filerequester
 void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
 {
-  if( !filerequester( oric, "Insert disk", diskpath, diskfile, FR_DISKS ) ) return;
+  if( !filerequester( oric, "Insert disk", diskpath, diskfile, FR_DISKLOAD ) ) return;
   joinpath( diskpath, diskfile );
   diskimage_load( oric, filetmp, drive );
 
@@ -852,6 +1012,7 @@ void preinit_gui( void )
 {
   int i;
   for( i=0; i<TZ_LAST; i++ ) tz[i] = NULL;
+  for( i=0; i<GIMG_LAST; i++ ) gimgs[i].buf = NULL;
   strcpy( tapepath, FILEPREFIX"tapes" );
   strcpy( tapefile, "" );
   strcpy( diskpath, FILEPREFIX"disks" );
@@ -970,6 +1131,11 @@ SDL_bool init_gui( struct machine *oric )
   if( !tz[TZ_DISK] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
   tz[TZ_FILEREQ] = alloc_textzone( 160, 48, 40, 32, "Files" );
   if( !tz[TZ_FILEREQ] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
+
+  for( i=0; i<GIMG_LAST; i++ )
+  {
+    if( !gimg_load( &gimgs[i] ) ) return SDL_FALSE;
+  }
 
   setmenutoggles( oric );
   return SDL_TRUE;

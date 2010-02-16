@@ -102,6 +102,7 @@ struct diskimage
   Uint32   rawimagelen;
   struct   densityinfo *dinf;
   SDL_bool modified;
+  char     filename[4096+512];
 };
 
 struct wd17xx
@@ -152,6 +153,7 @@ struct jasmin
 };
 
 SDL_bool diskimage_load( struct machine *oric, char *fname, int drive );
+SDL_bool diskimage_save( struct machine *oric, char *fname, int drive );
 
 void wd17xx_ticktock( struct wd17xx *wd, int cycles );
 

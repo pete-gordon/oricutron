@@ -32,12 +32,15 @@
 #include "machine.h"
 #include "monitor.h"
 #include "avi.h"
+#include "filereq.h"
 
 extern SDL_Surface *screen;
 extern int pixpitch;
-SDL_bool needclr = SDL_TRUE;
 extern Uint16 gpal[];
 extern SDL_bool showfps, warpspeed, soundavailable, soundon;
+extern char diskpath[ ], diskfile[], filetmp[];
+
+SDL_bool needclr = SDL_TRUE, refreshstatus = SDL_TRUE, refreshdisks = SDL_TRUE;
 
 struct avi_handle *vidcap = NULL;
 char vidcapname[128];
@@ -169,6 +172,7 @@ void video_show( struct machine *oric )
   {
     if( needclr )
     {
+      refreshstatus = SDL_TRUE;
       dptr = (Uint16 *)screen->pixels;
       for( y=0; y<480; y++ )
       {
@@ -178,8 +182,20 @@ void video_show( struct machine *oric )
       }
       needclr = SDL_FALSE;
     }
+
+    if( refreshstatus )
+      draw_statusbar();
+
+    if( refreshdisks || refreshstatus )
+    {
+      draw_disks( oric );
+      refreshdisks = SDL_FALSE;
+    }
+
+    refreshstatus = SDL_FALSE;
+
     sptr = oric->scr;
-    dptr2 = (Uint32 *)(&((Uint16 *)screen->pixels)[320-240+pixpitch*(240-224)]);
+    dptr2 = (Uint32 *)(&((Uint16 *)screen->pixels)[320-240+pixpitch*(240-226)]);
     dptr3 = dptr2+pp2;
     for( y=0; y<224; y++ )
     {
@@ -698,6 +714,8 @@ void preinit_machine( struct machine *oric )
 static SDL_bool shifted = SDL_FALSE;
 SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 {
+  Sint32 i;
+
 //  char stmp[32];
   switch( ev->type )
   {
@@ -753,6 +771,26 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           break;
         
         case SDLK_F7:
+          if( oric->drivetype == DRV_NONE ) break;
+
+          for( i=0; i<4; i++ )
+          {
+            if( ( oric->wddisk.disk[i] ) && ( oric->wddisk.disk[i]->modified ) )
+            {
+              if( shifted )
+              {
+                char frname[64];
+                sprintf( frname, "Save disk %d", i );
+                if( filerequester( oric, frname, diskpath, diskfile, FR_DISKSAVE ) )
+                {
+                  joinpath( diskpath, diskfile );
+                  diskimage_save( oric, filetmp, i );
+                }
+              } else {
+                diskimage_save( oric, oric->wddisk.disk[i]->filename, i );
+              }
+            }
+          }
           break;
         
         case SDLK_F10:
@@ -1060,6 +1098,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   if( oric->autorewind ) tape_rewind( oric );
 
   setmenutoggles( oric );
+  refreshstatus = SDL_TRUE;
 
   return SDL_TRUE;
 }
