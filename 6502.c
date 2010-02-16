@@ -85,6 +85,7 @@ void m6502_reset( struct m6502 *cpu )
   cpu->pc = (cpu->read( cpu, 0xfffd )<<8) | cpu->read( cpu, 0xfffc );
   cpu->nmi = SDL_FALSE;
   cpu->irq = 0;
+  cpu->nmicount = 0;
 }
 
 // Macros to set flags for various instructions
@@ -515,6 +516,13 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
   // Make sure you call set_icycles before this routine!
   cpu->rastercycles -= cpu->icycles;
   cpu->cycles += cpu->icycles;
+
+  if( cpu->nmicount > 0 )
+  {
+    cpu->nmicount--;
+    if( !cpu->nmicount )
+      cpu->nmi = SDL_FALSE;
+  }
 
   if( ( cpu->nmi ) ||
       ( ( cpu->irq ) && ( cpu->f_i == 0 ) ) )
