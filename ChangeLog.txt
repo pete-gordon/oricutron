@@ -1,5 +1,20 @@
 Oricutron ChangeLog
 
+0.4 (16-Feb-2010)
+-----------------
+
+* AY sound is (again) a lot better
+* Fixed keyboard issues introduced with 0.3
+* Improved menu navigation
+* Tape noise is available again, although it doesn't
+  work properly
+* VIA shift register is partially implemented
+* Disk writing is supported. The disk image won't
+  be changed until you hit F7 (or shift-F7) to save
+  changes back to the image file.
+* New status bar with disk status icons
+
+
 0.3 (12-Feb-2010)
 -----------------
 

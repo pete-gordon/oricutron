@@ -194,7 +194,7 @@ SDL_bool gimg_load( struct guiimg *gi )
   }
 
   fileok = SDL_TRUE;
-  if( strncmp( hdrbuf, "BM", 2 ) != 0 ) fileok = SDL_FALSE;
+  if( strncmp( (char *)hdrbuf, "BM", 2 ) != 0 ) fileok = SDL_FALSE;
   if( ((hdrbuf[21]<<24)|(hdrbuf[20]<<16)|(hdrbuf[19]<<8)|hdrbuf[18]) != gi->w ) fileok = SDL_FALSE;
   if( ((hdrbuf[25]<<24)|(hdrbuf[24]<<16)|(hdrbuf[23]<<8)|hdrbuf[22]) != gi->h ) fileok = SDL_FALSE;
   if( ((hdrbuf[27]<<8)|hdrbuf[26]) != 1 ) fileok = SDL_FALSE;
@@ -1105,8 +1105,8 @@ SDL_bool init_gui( struct machine *oric )
     soundavailable = SDL_TRUE;
   }
 
-  SDL_WM_SetCaption( "Oricutron WIP", "Oricutron WIP" );
-//  SDL_WM_SetCaption( "Oricutron 0.3", "Oricutron 0.3" );
+//  SDL_WM_SetCaption( "Oricutron WIP", "Oricutron WIP" );
+  SDL_WM_SetCaption( "Oricutron 0.4", "Oricutron 0.4" );
 
   // Get the GUI palette
   for( i=0; i<NUM_GUI_COLS; i++ )
