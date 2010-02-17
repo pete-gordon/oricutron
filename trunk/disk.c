@@ -167,11 +167,16 @@ SDL_bool diskimage_save( struct machine *oric, char *fname, int drive )
   if( !oric->wddisk.disk[drive] ) return SDL_FALSE;
 
   f = fopen( fname, "wb" );
-  if( !f ) return SDL_FALSE;
+  if( !f )
+  {
+    do_popup( "\x14\x15Save failed" );
+    return SDL_FALSE;
+  }
 
   if( fwrite( oric->wddisk.disk[drive]->rawimage, oric->wddisk.disk[drive]->rawimagelen, 1, f ) != 1 )
   {
     fclose( f );
+    do_popup( "\x14\x15Save failed" );
     return SDL_FALSE;
   }
 
