@@ -27,6 +27,7 @@ RANLIB = ranlib
 DEBUGLIB =
 TARGET = oricutron
 FILEREQ_SRC = filereq_sdl.c
+EXTRAOBJS =
 
 ####### PLATFORM SPECIFIC STUFF HERE #######
 
@@ -44,6 +45,7 @@ CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__
 LFLAGS += -lm -mwindows -lmingw32 -lSDLmain -lSDL
 TARGET = oricutron.exe
 FILEREQ_SRC = filereq_win32.c
+EXTRAOBJS = winicon.o
 endif
 
 # BeOS / Haiku
@@ -116,8 +118,8 @@ all: $(TARGET)
 run: $(TARGET)
 	$(TARGET)
 
-$(TARGET): main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o avi.o
-	$(CXX) -o $(TARGET) main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o avi.o $(LFLAGS)
+$(TARGET): main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o avi.o $(EXTRAOBJS)
+	$(CXX) -o $(TARGET) main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o avi.o $(EXTRAOBJS) $(LFLAGS)
 ifeq ($(PLATFORMTYPE),beos)
 	#$(BEOS_XRES) -o $(TARGET) $(RSRC_BEOS)
 	$(BEOS_SETVER) $(TARGET) \
@@ -128,13 +130,13 @@ ifeq ($(PLATFORMTYPE),beos)
 endif
 
 
-main.o: main.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h
+main.o: main.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h avi.h
 	$(CC) -c main.c -o main.o $(CFLAGS)
 
 6502.o: 6502.c system.h 6502.h
 	$(CC) -c 6502.c -o 6502.o $(CFLAGS)
 
-machine.o: machine.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h
+machine.o: machine.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h avi.h
 	$(CC) -c machine.c -o machine.o $(CFLAGS)
 
 gui.o: gui.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h filereq.h
@@ -149,7 +151,7 @@ via.o: via.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h
 disk.o: disk.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h
 	$(CC) -c disk.c -o disk.o $(CFLAGS)
 
-8912.o: 8912.c system.h 6502.h 8912.h via.h gui.h disk.h machine.h
+8912.o: 8912.c system.h 6502.h 8912.h via.h gui.h disk.h machine.h avi.h
 	$(CC) -c 8912.c -o 8912.o $(CFLAGS)
 
 font.o: font.c
@@ -160,6 +162,9 @@ filereq.o: $(FILEREQ_SRC) system.h 6502.h via.h 8912.h gui.h disk.h machine.h
 
 avi.o: avi.c system.h avi.h
 	$(CC) -c avi.c -o avi.o $(CFLAGS)
+
+winicon.o: winicon.ico oricutron.rc
+	windres -i oricutron.rc -o winicon.o
 
 clean:
 	rm -f $(TARGET) *.bak *.o
