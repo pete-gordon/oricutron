@@ -66,8 +66,8 @@ BEOS_RC := rc
 BEOS_XRES := xres
 BEOS_SETVER := setversion
 BEOS_MIMESET := mimeset
-#RSRC_BEOS = 
-#RESOURCES = $(RSRC_BEOS)
+RSRC_BEOS := oricutron.rsrc
+RESOURCES := $(RSRC_BEOS)
 endif
 
 # Mac OS X
@@ -118,10 +118,10 @@ all: $(TARGET)
 run: $(TARGET)
 	$(TARGET)
 
-$(TARGET): main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o avi.o $(EXTRAOBJS)
+$(TARGET): main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o avi.o $(EXTRAOBJS) $(RESOURCES)
 	$(CXX) -o $(TARGET) main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o avi.o $(EXTRAOBJS) $(LFLAGS)
 ifeq ($(PLATFORMTYPE),beos)
-	#$(BEOS_XRES) -o $(TARGET) $(RSRC_BEOS)
+	$(BEOS_XRES) -o $(TARGET) $(RSRC_BEOS)
 	$(BEOS_SETVER) $(TARGET) \
                 -app $(VERSION_MAJ) $(VERSION_MIN) 0 d 0 \
                 -short "$(APP_NAME) $(VERSION_FULL)" \
@@ -166,8 +166,11 @@ avi.o: avi.c system.h avi.h
 winicon.o: winicon.ico oricutron.rc
 	windres -i oricutron.rc -o winicon.o
 
+$(RSRC_BEOS): oricutron.rdef
+	$(BEOS_RC) -o $@ $<
+
 clean:
-	rm -f $(TARGET) *.bak *.o
+	rm -f $(TARGET) *.bak *.o $(RESOURCES)
 
 
 # torpor: added to test commit status
