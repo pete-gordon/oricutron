@@ -250,6 +250,7 @@ SDL_bool video_doraster( struct machine *oric )
     }
 
     oric->vid_raster = 0;
+    oric->vsync      = oric->cyclesperraster / 2;
     needrender = SDL_TRUE;
     oric->frames++;
 
@@ -690,6 +691,7 @@ void preinit_machine( struct machine *oric )
   oric->tapebuf = NULL;
   oric->tapelen = 0;
   oric->tapemotor = SDL_FALSE;
+  oric->vsynchack = SDL_FALSE;
   oric->tapeturbo = SDL_TRUE;
   oric->autorewind = SDL_FALSE;
   oric->autoinsert = SDL_TRUE;

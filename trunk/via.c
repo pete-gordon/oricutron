@@ -148,6 +148,20 @@ void tape_ticktock( struct machine *oric, int cycles )
   Sint32 i, j;
   char *odir;
 
+  if( oric->vsync > 0 )
+  {
+    oric->vsync -= cycles;
+    if( oric->vsync < 0 )
+      oric->vsync = 0;
+  }
+  
+  if( oric->vsynchack )
+  {
+    j = (oric->vsync == 0);
+    if( oric->via.cb1 != j )
+      via_write_CB1( &oric->via, j );
+  }
+
   if( oric->type == MACH_ATMOS )
   {
     switch( oric->cpu.pc )
@@ -215,17 +229,20 @@ void tape_ticktock( struct machine *oric, int cycles )
   }
 
   oric->tapeout ^= 1;
-  if( oric->tapenoise )
+  if( !oric->vsynchack )
   {
-    SDL_LockAudio();
-    if( oric->ay.tlogged < AUDIO_BUFLEN )
+    if( oric->tapenoise )
     {
-      oric->ay.tapelog[oric->ay.tlogged  ].cycle = oric->ay.logcycle;
-      oric->ay.tapelog[oric->ay.tlogged++].val   = oric->tapeout;
+      SDL_LockAudio();
+      if( oric->ay.tlogged < AUDIO_BUFLEN )
+      {
+        oric->ay.tapelog[oric->ay.tlogged  ].cycle = oric->ay.logcycle;
+        oric->ay.tapelog[oric->ay.tlogged++].val   = oric->tapeout;
+      }
+      SDL_UnlockAudio();
     }
-    SDL_UnlockAudio();
+    via_write_CB1( &oric->via, oric->tapeout );
   }
-  via_write_CB1( &oric->via, oric->tapeout );
 
   if( oric->tapeout ) // New bit?
   {
@@ -359,7 +376,7 @@ void via_clock( struct via *v, unsigned int cycles )
   tape_ticktock( v->oric, cycles );
 
   if( !cycles ) return;
-  
+
   if( v->oric->prclock > 0 )
   {
     v->oric->prclock -= cycles;
