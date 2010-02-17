@@ -1,4 +1,6 @@
 
+resource app_signature "application/x-vnd.oricutron";
+
 resource app_flags B_MULTIPLE_LAUNCH | B_ARGV_ONLY;
 
 
