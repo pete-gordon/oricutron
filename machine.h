@@ -69,9 +69,11 @@ struct machine
   int frames;
 
   int cyclesperraster;
+  int vsync;
 
   SDL_bool vid_double;
   SDL_bool romdis;
+  SDL_bool vsynchack;
 
   unsigned short vid_addr;
   unsigned char *vid_ch_data;

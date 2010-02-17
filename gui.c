@@ -116,6 +116,7 @@ void toggleautowind( struct machine *oric, struct osdmenuitem *mitem, int dummy 
 void toggleautoinsrt( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglesymbolsauto( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglecasesyms( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void togglevsynchack( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 //void savesnap( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 
 // Menu definitions. Name, function, parameter
@@ -152,6 +153,8 @@ struct osdmenuitem hwopitems[] = { { " Oric-1",                swapmach,        
                                    { " Turbo tape",            toggletapeturbo, 0 },
                                    { " Autoinsert tape",       toggleautoinsrt, 0 },
                                    { " Autorewind tape",       toggleautowind,  0 },
+                                   { OSDMENUBAR,               NULL,            0 },
+                                   { " VSync hack",            togglevsynchack, 0 },
                                    { OSDMENUBAR,               NULL,            0 },
                                    { "Back",                   gotomenu,        0 },
                                    { NULL, } };
@@ -800,6 +803,20 @@ void toggletapeturbo( struct machine *oric, struct osdmenuitem *mitem, int dummy
   mitem->name = "\x0e""Turbo tape";
 }
 
+// Toggle VSync Hack
+void togglevsynchack( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+  if( oric->vsynchack )
+  {
+    oric->vsynchack = SDL_FALSE;
+    mitem->name = " VSync hack";
+    return;
+  }
+
+  oric->vsynchack = SDL_TRUE;
+  mitem->name = "\x0e""VSync hack";
+}
+
 // Toggle symbols autoload
 void togglesymbolsauto( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
@@ -1048,6 +1065,11 @@ void setmenutoggles( struct machine *oric )
     hwopitems[11].name = "\x0e""Autorewind tape";
   else
     hwopitems[11].name = " Autorewind tape";
+
+  if( oric->vsynchack )
+    hwopitems[13].name = "\x0e""VSync hack";
+  else
+    hwopitems[13].name = " VSync hack";
 
   if( oric->symbolsautoload )
     dbopitems[0].name = "\x0e""Autoload symbols file";
