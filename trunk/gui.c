@@ -36,6 +36,11 @@
 #include <proto/dos.h>
 #endif
 
+#ifdef WIN32
+#include <windows.h>
+#define WANT_WMINFO
+#endif
+
 #include "system.h"
 #include "6502.h"
 #include "via.h"
@@ -1102,6 +1107,8 @@ SDL_bool init_gui( struct machine *oric )
     return SDL_FALSE;
   }
   need_sdl_quit = SDL_TRUE;
+
+  SDL_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
 
   screen = SDL_SetVideoMode( 640, 480, 16, fullscreen ? SDL_FULLSCREEN : SDL_SWSURFACE );
   if( !screen )
