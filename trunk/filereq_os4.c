@@ -19,6 +19,8 @@
 **  Amiga file dialog
 */
 
+#define __USE_INLINE__
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -38,18 +40,23 @@
 #include "filereq.h"
 
 struct Library *AslBase = NULL;
-struct AslIFace *IAsl = NULL;
 static struct FileRequester *req = NULL;
+
+#ifdef __amigaos4__
+struct AslIFace *IAsl = NULL;
+#endif
 
 SDL_bool init_filerequester( void )
 {
-  AslBase = IExec->OpenLibrary( "asl.library", 52 );
+  AslBase = OpenLibrary( "asl.library", 52 );
   if( !AslBase ) return SDL_FALSE;
-  
-  IAsl = (struct AslIFace *)IExec->GetInterface( AslBase, "main", 1, NULL );
-  if( !IAsl ) return SDL_FALSE;
 
-  req = (struct FileRequester *)IAsl->AllocAslRequestTags( ASL_FileRequest, TAG_DONE );
+#ifdef __amigaos4__
+  IAsl = (struct AslIFace *)GetInterface( AslBase, "main", 1, NULL );
+  if( !IAsl ) return SDL_FALSE;
+#endif
+
+  req = (struct FileRequester *)AllocAslRequestTags( ASL_FileRequest, TAG_DONE );
   if( !req ) return SDL_FALSE;
 
   return SDL_TRUE;
@@ -57,9 +64,11 @@ SDL_bool init_filerequester( void )
 
 void shut_filerequester( void )
 {
-  if( req ) IAsl->FreeAslRequest( req );
-  if( IAsl ) IExec->DropInterface( (struct Interface *)IAsl );
-  if( AslBase ) IExec->CloseLibrary( AslBase );
+  if( req ) FreeAslRequest( req );
+#ifdef __amigaos4__
+  if( IAsl ) DropInterface( (struct Interface *)IAsl );
+#endif
+  if( AslBase ) CloseLibrary( AslBase );
 }
 
 SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fname, int type )
@@ -94,9 +103,9 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       break;
   }
   
-  if( pat ) IDOS->ParsePatternNoCase( pat, ppat, 6*2+2 );
+  if( pat ) ParsePatternNoCase( pat, ppat, 6*2+2 );
   
-  if( !IAsl->AslRequestTags( req,
+  if( !AslRequestTags( req,
          ASLFR_TitleText,     title,
          ASLFR_InitialDrawer, path,
          ASLFR_InitialFile,   fname,
