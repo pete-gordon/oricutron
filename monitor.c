@@ -2200,7 +2200,7 @@ SDL_bool mon_new_symbols( char *fname, SDL_bool above )
     if( v >= 0xc000 )
       mon_addsym( v, SYMF_ROMDIS1, linetmp );
     else
-      mon_addsym( v, SYMF_ROMDIS0|SYMF_ROMDIS1, linetmp );
+      mon_addsym( v, 0, linetmp );
   }
 
   fclose( f );
