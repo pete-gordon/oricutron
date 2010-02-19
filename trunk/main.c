@@ -53,6 +53,10 @@ struct Task *maintask;
 char __attribute__((used)) stackcookie[] = "$STACK: 1000000";
 #endif
 
+#if defined(__amigaos4__) || defined(__MORPHOS__)
+char __attribute__((used)) versiontag[] = "$VER: Oricutron 0.4 (16.2.2010)";
+#endif
+
 SDL_bool init( struct machine *oric, int argc, char *argv[] )
 {
   Sint32 i;
