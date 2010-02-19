@@ -45,7 +45,7 @@ ifeq ($(PLATFORM),MorphOS)
 CFLAGS += `sdl-config --cflags`
 LFLAGS += `sdl-config --libs` -s
 FILEREQ_SRC = filereq_amiga.c
-#endif
+endif
 
 # Windows 32bit
 ifeq ($(PLATFORM),win32)
