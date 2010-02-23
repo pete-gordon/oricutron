@@ -27,4 +27,4 @@ void dbg_printf( char *fmt, ... );
 void mon_enter( struct machine *oric );
 void mon_shut( void );
 SDL_bool mon_new_symbols( char *fname, SDL_bool above );
-void mon_watch_reset( struct machine *oric );
+void mon_state_reset( struct machine *oric );

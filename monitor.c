@@ -105,6 +105,14 @@ static int mw_mode=0, mw_koffs=0;
 static char mw_ibuf[8];
 static unsigned char mwatch_old[65536];
 static SDL_bool mwatch_oldvalid = SDL_FALSE;
+static struct m6502 cpu_old;
+static int vidraster_old, frames_old;
+static SDL_bool cpu_oldvalid = SDL_FALSE;
+static struct ay8912 ay_old;
+static SDL_bool ay_oldvalid = SDL_FALSE;
+static struct via via_old;
+static SDL_bool via_oldvalid = SDL_FALSE;
+
 
 //                                                             12345678901       12345678 
 static struct msym defsym_oric1[] = { { 0x0300, 0,            "VIA_IORB"      , "VIA_IORB"   , "VIA_IORB" },
@@ -1214,6 +1222,18 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *lo
   return distmp;
 }
 
+static void mon_regmod( int x, int y, int w )
+{
+  int offs, i;
+
+  offs = y*tz[TZ_REGS]->w+x;
+  for( i=0; i<w; i++, offs++ )
+  {
+    tz[TZ_REGS]->fc[offs] = 1;
+    tz[TZ_REGS]->bc[offs] = 8;
+  }
+}
+
 void mon_update_regs( struct machine *oric )
 {
   int i;
@@ -1254,6 +1274,7 @@ void mon_update_regs( struct machine *oric )
   tzstrpos( tz[TZ_REGS], 35, 4, (oric->cpu.irq&IRQF_VIA)  ? "VIA"  : "   "  );
   tzstrpos( tz[TZ_REGS], 35, 5, (oric->cpu.irq&IRQF_DISK) ? "DISK" : "    " );
 
+
   tzstrpos( tz[TZ_REGS], 25, 4, "NV-BDIZC" );
   tzprintfpos( tz[TZ_REGS], 25, 5, "%01X%01X1%01X%01X%01X%01X%01X",
     oric->cpu.f_n,
@@ -1270,6 +1291,40 @@ void mon_update_regs( struct machine *oric )
     tzsetcol( tz[TZ_REGS], (addr==oric->cpu.pc) ? 1 : 2, 3 );
     tzstrpos( tz[TZ_REGS], 23, 7+i, "        " );
     tzstrpos( tz[TZ_REGS],  2, 7+i, mon_disassemble( oric, &addr, NULL ) );
+  }
+
+  if( cpu_oldvalid )
+  {
+    if( cpu_old.pc     != pc )               mon_regmod(  5, 2, 4 );
+    if( cpu_old.sp     != oric->cpu.sp )     mon_regmod( 14, 2, 4 );
+    if( cpu_old.a      != oric->cpu.a )      mon_regmod( 24, 2, 2 );
+    if( cpu_old.x      != oric->cpu.x )      mon_regmod( 30, 2, 2 );
+    if( cpu_old.y      != oric->cpu.y )      mon_regmod( 36, 2, 2 );
+    if( cpu_old.cycles != oric->cpu.cycles ) mon_regmod(  5, 4, 9 );
+    if( frames_old     != oric->frames )     mon_regmod(  5, 5, 6 );
+    if( vidraster_old  != oric->vid_raster ) mon_regmod( 15, 5, 3 );
+    if( cpu_old.f_n    != oric->cpu.f_n )    mon_regmod( 25, 5, 1 );
+    if( cpu_old.f_v    != oric->cpu.f_v )    mon_regmod( 26, 5, 1 );
+    if( cpu_old.f_b    != oric->cpu.f_b )    mon_regmod( 28, 5, 1 );
+    if( cpu_old.f_d    != oric->cpu.f_d )    mon_regmod( 29, 5, 1 );
+    if( cpu_old.f_i    != oric->cpu.f_i )    mon_regmod( 30, 5, 1 );
+    if( cpu_old.f_z    != oric->cpu.f_z )    mon_regmod( 31, 5, 1 );
+    if( cpu_old.f_c    != oric->cpu.f_c )    mon_regmod( 32, 5, 1 );
+
+    if( (cpu_old.irq&IRQF_VIA)  != (oric->cpu.irq&IRQF_VIA) )  mon_regmod( 35, 4, 3 );
+    if( (cpu_old.irq&IRQF_DISK) != (oric->cpu.irq&IRQF_DISK) ) mon_regmod( 35, 5, 4 );
+  }
+}
+
+static void mon_viamod( int x, int y, int w )
+{
+  int offs, i;
+
+  offs = y*tz[TZ_VIA]->w+x;
+  for( i=0; i<w; i++, offs++ )
+  {
+    tz[TZ_VIA]->fc[offs] = 1;
+    tz[TZ_VIA]->bc[offs] = 8;
   }
 }
 
@@ -1308,14 +1363,62 @@ void mon_update_via( struct machine *oric )
     (oric->tapebit+9)%10,
     oric->tapetime == TAPE_1_PULSE );
   tzprintfpos( tz[TZ_VIA], 2, 15, "MOTOR = %1X", oric->tapemotor );
+
+
+  if( via_oldvalid )
+  {
+    if( via_old.pcr   != oric->via.pcr  ) mon_viamod(  6, 2, 2 );
+    if( via_old.acr   != oric->via.acr  ) mon_viamod( 13, 2, 2 );
+    if( via_old.sr    != oric->via.sr   ) mon_viamod( 19, 2, 2 );
+    if( via_old.ifr   != oric->via.ifr  ) mon_viamod(  6, 3, 2 );
+    if( via_old.ier   != oric->via.ier  ) mon_viamod( 13, 3, 2 );
+    if( via_old.ddra  != oric->via.ddra ) mon_viamod( 12, 5, 2 );
+    if( via_old.ddrb  != oric->via.ddrb ) mon_viamod( 18, 5, 2 );
+    if( via_old.ca1   != oric->via.ca1  ) mon_viamod(  6, 6, 1 );
+    if( via_old.ca2   != oric->via.ca2  ) mon_viamod( 12, 6, 1 );
+    if( via_old.cb1   != oric->via.cb1  ) mon_viamod( 20, 6, 1 );
+    if( via_old.cb2   != oric->via.cb2  ) mon_viamod( 26, 6, 1 );
+    if( via_old.t1c   != oric->via.t1c  ) mon_viamod( 15, 8, 4 );
+    if( via_old.t2c   != oric->via.t2c  ) mon_viamod( 15, 9, 4 );
+
+    if( ((via_old.t1l_h<<8)|(via_old.t1l_l)) != ((oric->via.t1l_h<<8)|(oric->via.t1l_l)) ) mon_viamod( 6, 8, 4 );
+    if( ((via_old.t2l_h<<8)|(via_old.t2l_l)) != ((oric->via.t2l_h<<8)|(oric->via.t2l_l)) ) mon_viamod( 6, 9, 4 );
+
+    if( ((oric->via.ora&oric->via.ddra)|(oric->via.ira&(~oric->via.ddra))) != ((via_old.ora&via_old.ddra)|(via_old.ira&(~via_old.ddra))) ) mon_viamod(  4, 5, 2 );
+    if( ((oric->via.orb&oric->via.ddrb)|(oric->via.irb&(~oric->via.ddrb))) != ((via_old.orb&via_old.ddrb)|(via_old.irb&(~via_old.ddrb))) ) mon_viamod( 26, 5, 2 );
+  }
 }
 
-static void printayregbits( char *str, Sint16 x, Sint16 y, Uint8 v, Uint8 bits )
+static void mon_aymod( int x, int y, int w )
 {
-  int i, o;
+  int offs, i;
+
+  offs = y*tz[TZ_AY]->w+x;
+  for( i=0; i<w; i++, offs++ )
+  {
+    tz[TZ_AY]->fc[offs] = 1;
+    tz[TZ_AY]->bc[offs] = 8;
+  }
+}
+
+static void printayregbits( struct machine *oric, char *str, Sint16 x, Sint16 y, int reg, Uint8 bits )
+{
+  int i, o, fc, bc;
+  Uint8 vnew, vold;
   struct textzone *ptz = tz[TZ_AY];
 
-  tzprintfpos( ptz, x, y, str, v );
+  vnew = oric->ay.eregs[reg];
+  vold = ay_old.eregs[reg];
+
+  tzprintfpos( ptz, x, y, str, vnew );
+  fc = 2;
+  bc = 3;
+  if( ( ay_oldvalid ) && ( ay_old.eregs[reg] != oric->ay.eregs[reg] ) )
+  {
+    fc = 1;
+    bc = 8;
+    mon_aymod( x+14, y, 2 );
+  }
 
   x+=18;
   o = (y*ptz->w)+x;
@@ -1324,9 +1427,18 @@ static void printayregbits( char *str, Sint16 x, Sint16 y, Uint8 v, Uint8 bits )
   for( i=0; i<8; i++ )
   {
     if( i >= bits )
-      ptz->tx[o] = (v&(0x80>>i)) ? '1' : '0';
+      ptz->tx[o] = (vnew&(0x80>>i)) ? '1' : '0';
     else
       ptz->tx[o] = ' ';
+
+    if( (vnew&(0x80)>>i) != (vold&(0x80)>>i) )
+    {
+      ptz->fc[o] = fc;
+      ptz->bc[o] = bc;
+    } else {
+      ptz->fc[o] = 2;
+      ptz->bc[o] = 3;
+    }
     o++;
   }
 }
@@ -1341,24 +1453,31 @@ void mon_update_ay( struct machine *oric )
     strs[oric->ay.bmode&3],
     oric->ay.creg );
 
-  printayregbits( "R0 Pitch A L $%02X \%", 2, 2, oric->ay.eregs[AY_CHA_PER_L], 8 );
-  printayregbits( "R1 Pitch A H $%02X \%", 2, 3, oric->ay.eregs[AY_CHA_PER_H], 4 );
-  printayregbits( "R2 Pitch B L $%02X \%", 2, 4, oric->ay.eregs[AY_CHB_PER_L], 8 );
-  printayregbits( "R3 Pitch B H $%02X \%", 2, 5, oric->ay.eregs[AY_CHB_PER_H], 4 );
-  printayregbits( "R4 Pitch C L $%02X \%", 2, 6, oric->ay.eregs[AY_CHC_PER_L], 8 );
-  printayregbits( "R5 Pitch C H $%02X \%", 2, 7, oric->ay.eregs[AY_CHC_PER_H], 4 );
+  if( ay_oldvalid )
+  {
+    if( (ay_old.bmode&3) != (oric->ay.bmode&3) ) mon_aymod( 7, 1, 8 );
+    if( ay_old.creg != oric->ay.creg ) mon_aymod( 21, 1, 2 );
+  }
 
-  printayregbits( "R6 Noise     $%02X \%", 2, 9, oric->ay.eregs[AY_NOISE_PER], 5 );
-  printayregbits( "R7 Status    $%02X \%", 2,10, oric->ay.eregs[AY_STATUS],    7 );
+  printayregbits( oric, "R0 Pitch A L $%02X \%", 2, 2, AY_CHA_PER_L, 8 );
+  printayregbits( oric, "R1 Pitch A H $%02X \%", 2, 3, AY_CHA_PER_H, 4 );
+  printayregbits( oric, "R2 Pitch B L $%02X \%", 2, 4, AY_CHB_PER_L, 8 );
+  printayregbits( oric, "R3 Pitch B H $%02X \%", 2, 5, AY_CHB_PER_H, 4 );
+  printayregbits( oric, "R4 Pitch C L $%02X \%", 2, 6, AY_CHC_PER_L, 8 );
+  printayregbits( oric, "R5 Pitch C H $%02X \%", 2, 7, AY_CHC_PER_H, 4 );
 
-  printayregbits( "R8 Volume A  $%02X \%", 2,12, oric->ay.eregs[AY_CHA_AMP],   5 );
-  printayregbits( "R9 Volume B  $%02X \%", 2,13, oric->ay.eregs[AY_CHB_AMP],   5 );
-  printayregbits( "RA Volume C  $%02X \%", 2,14, oric->ay.eregs[AY_CHC_AMP],   5 );
+  printayregbits( oric, "R6 Noise     $%02X \%", 2, 9, AY_NOISE_PER, 5 );
+  printayregbits( oric, "R7 Status    $%02X \%", 2,10, AY_STATUS,    7 );
 
-  printayregbits( "RB Env Per L $%02X \%", 2,16, oric->ay.eregs[AY_ENV_PER_L], 8 );
-  printayregbits( "RC Env Per H $%02X \%", 2,17, oric->ay.eregs[AY_ENV_PER_L], 8 );
-  printayregbits( "RD Env Cycle $%02X \%", 2,18, oric->ay.eregs[AY_ENV_CYCLE], 4 );
-  printayregbits( "RE Key Col   $%02X \%", 2,19, oric->ay.eregs[AY_PORT_A],    8 );
+  printayregbits( oric, "R8 Volume A  $%02X \%", 2,12, AY_CHA_AMP,   5 );
+  printayregbits( oric, "R9 Volume B  $%02X \%", 2,13, AY_CHB_AMP,   5 );
+  printayregbits( oric, "RA Volume C  $%02X \%", 2,14, AY_CHC_AMP,   5 );
+
+  printayregbits( oric, "RB Env Per L $%02X \%", 2,16, AY_ENV_PER_L, 8 );
+  printayregbits( oric, "RC Env Per H $%02X \%", 2,17, AY_ENV_PER_L, 8 );
+  printayregbits( oric, "RD Env Cycle $%02X \%", 2,18, AY_ENV_CYCLE, 4 );
+  printayregbits( oric, "RE Key Col   $%02X \%", 2,19, AY_PORT_A,    8 );
+
 /*
   tzprintfpos( tz[TZ_AY], 2, 4, "A:P=%04X A=%02X   N:PER=%02X",
     (oric->ay.regs[AY_CHA_PER_H]<<8)|(oric->ay.regs[AY_CHA_PER_L]),
@@ -1459,11 +1578,25 @@ void mon_store_state( struct machine *oric )
       mwatch_old[k] = mon_read( oric, k );
   }
   mwatch_oldvalid = SDL_TRUE;
+
+  cpu_old = oric->cpu;
+  vidraster_old = oric->vid_raster;
+  frames_old = oric->frames;
+  cpu_oldvalid = SDL_TRUE;
+
+  ay_old = oric->ay;
+  ay_oldvalid = SDL_TRUE;
+
+  via_old = oric->via;
+  via_oldvalid = SDL_TRUE;
 }
 
-void mon_watch_reset( struct machine *oric )
+void mon_state_reset( struct machine *oric )
 {
   mwatch_oldvalid = SDL_FALSE;
+  cpu_oldvalid = SDL_FALSE;
+  ay_oldvalid = SDL_FALSE;
+  via_oldvalid = SDL_FALSE;
 }
 
 void mon_update_mwatch( struct machine *oric )
@@ -1787,6 +1920,9 @@ void mon_init( struct machine *oric )
   mw_split = SDL_FALSE;
   mw_which = 0;
   mwatch_oldvalid = SDL_FALSE;
+  cpu_oldvalid = SDL_FALSE;
+  ay_oldvalid = SDL_FALSE;
+  via_oldvalid = SDL_FALSE;
 #if LOG_DEBUG
   debug_logfile = fopen( debug_logname, "w" );
 #endif
