@@ -147,6 +147,20 @@ void tape_ticktock( struct machine *oric, int cycles )
 {
   Sint32 i, j;
   char *odir;
+  SDL_bool romon;
+
+  romon = SDL_TRUE;
+  if( oric->drivetype == DRV_JASMIN )
+  {
+    if( oric->jasmin.olay == 0 )
+    {
+      romon = !oric->romdis;
+    } else {
+      romon = SDL_FALSE;
+    }
+  } else {
+    romon = !oric->romdis;
+  }
 
   if( oric->vsync > 0 )
   {
@@ -162,7 +176,7 @@ void tape_ticktock( struct machine *oric, int cycles )
       via_write_CB1( &oric->via, j );
   }
 
-  if( oric->type == MACH_ATMOS )
+  if( ( oric->type == MACH_ATMOS ) && ( romon ) )
   {
     switch( oric->cpu.pc )
     {
@@ -193,7 +207,7 @@ void tape_ticktock( struct machine *oric, int cycles )
   if( ( oric->tapeoffs < 0 ) || ( oric->tapeoffs >= oric->tapelen ) )
     return;
 
-  if( ( oric->type == MACH_ATMOS ) && ( oric->tapeturbo ) && ( oric->romdis == 0 ) )
+  if( ( oric->type == MACH_ATMOS ) && ( oric->tapeturbo ) && ( romon ) )
   {
     switch( oric->cpu.pc )
     {
