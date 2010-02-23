@@ -28,10 +28,10 @@ enum
 
 enum
 {
-	MACH_ORIC1 = 0,
+  MACH_ORIC1 = 0,
   MACH_ORIC1_16K,
-	MACH_ATMOS,
-	MACH_TELESTRAT
+  MACH_ATMOS,
+  MACH_TELESTRAT
 };
 
 enum

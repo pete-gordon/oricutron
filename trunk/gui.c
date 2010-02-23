@@ -63,7 +63,7 @@ struct guiimg gimgs[GIMG_LAST] = { { IMAGEPREFIX"statusbar.bmp",     640, 16, NU
                                    { IMAGEPREFIX"disk_modified.bmp",  18, 16, NULL },
                                    { IMAGEPREFIX"disk_modactive.bmp", 18, 16, NULL } };
 
-extern SDL_bool fullscreen;
+extern SDL_bool fullscreen, hwsurface;
 SDL_Surface *screen = NULL;
 SDL_bool need_sdl_quit = SDL_FALSE;
 SDL_bool soundavailable, soundon;
@@ -1099,6 +1099,7 @@ SDL_bool init_gui( struct machine *oric )
 {
   int i;
   SDL_AudioSpec wanted;
+  Sint32 surfacemode;
 
   // Go SDL!
   if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO ) < 0 )
@@ -1108,9 +1109,12 @@ SDL_bool init_gui( struct machine *oric )
   }
   need_sdl_quit = SDL_TRUE;
 
+  surfacemode = fullscreen ? SDL_FULLSCREEN : SDL_SWSURFACE;
+  if( hwsurface ) { surfacemode &= ~SDL_SWSURFACE; surfacemode |= SDL_HWSURFACE; }
+
   SDL_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
 
-  screen = SDL_SetVideoMode( 640, 480, 16, fullscreen ? SDL_FULLSCREEN : SDL_SWSURFACE );
+  screen = SDL_SetVideoMode( 640, 480, 16, surfacemode );
   if( !screen )
   {
     printf( "SDL video failed\n" );

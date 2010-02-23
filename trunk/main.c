@@ -40,7 +40,7 @@
 
 #define FRAMES_TO_AVERAGE 15
 
-SDL_bool fullscreen;
+SDL_bool fullscreen, hwsurface;
 extern SDL_bool warpspeed, soundon;
 Uint32 lastframetimes[FRAMES_TO_AVERAGE], frametimeave;
 extern char mon_bpmsg[];
@@ -57,21 +57,192 @@ char __attribute__((used)) stackcookie[] = "$STACK: 1000000";
 char __attribute__((used)) versiontag[] = "$VER: Oricutron 0.4 (16.2.2010)";
 #endif
 
+struct start_opts
+{
+  char     lctmp[2048];
+  Sint32   start_machine;
+  Sint32   start_disktype;
+  SDL_bool start_debug;
+  char     start_disk[1024];
+  char     start_tape[1024];
+  char     start_syms[1024];
+};
+
+static char *machtypes[] = { "oric1",
+                             "oric1-16k",
+                             "atmos",
+                             NULL };
+static char *disktypes[] = { "none",
+                             "jasmin",
+                             "microdisc",
+                             NULL };
+
+static SDL_bool isws( char c )
+{
+  if( ( c == 9 ) || ( c == 32 ) ) return SDL_TRUE;
+  return SDL_FALSE;
+}
+
+static SDL_bool istokend( char c )
+{
+  if( isws( c ) ) return SDL_TRUE;
+  if( ( c == 0 ) || ( c == 10 ) || ( c == 13 ) ) return SDL_TRUE;
+  return SDL_FALSE;
+}
+
+static SDL_bool read_config_string( char *buf, char *token, char *dest, Sint32 maxlen )
+{
+  Sint32 i, toklen, d;
+
+  // Get the token length
+  toklen = strlen( token );
+
+  // Is this the token?
+  if( strnicmp( buf, token, toklen ) != 0 ) return SDL_FALSE;
+  i = toklen;
+
+  // Check for whitespace, equals, whitespace, single quote
+  while( isws( buf[i] ) ) i++;
+  if( buf[i] != '=' ) return SDL_TRUE;
+  i++;
+  while( isws( buf[i] ) ) i++;
+  if( buf[i] != '\'' ) return SDL_TRUE;
+  i++;
+
+  // Copy and un-escape the string
+  d=0;
+  while( buf[i] != '\'' )
+  {
+    if( !buf[i] ) break;
+
+    if( ( buf[i] == '\\' ) && ( buf[i+1] == '\'' ) )
+    {
+      dest[d++] = '\'';
+      i+=2;
+      continue;
+    }
+
+    if( ( buf[i] == '\\' ) && ( buf[i+1] == '\\' ) )
+    {
+      dest[d++] = '\\';
+      i+=2;
+      continue;
+    }
+
+    dest[d++] = buf[i++];
+  }
+
+  dest[d] = 0;
+  return SDL_TRUE;
+}
+
+static SDL_bool read_config_bool( char *buf, char *token, SDL_bool *dest )
+{
+  Sint32 i, toklen;
+
+  // Get the token length
+  toklen = strlen( token );
+
+  // Is this the token?
+  if( strnicmp( buf, token, toklen ) != 0 ) return SDL_FALSE;
+  i = toklen;
+
+  // Check for whitespace, equals, whitespace, single quote
+  while( isws( buf[i] ) ) i++;
+  if( buf[i] != '=' ) return SDL_TRUE;
+  i++;
+  while( isws( buf[i] ) ) i++;
+
+  (*dest) = SDL_FALSE;
+  if( strnicmp( &buf[i], "true", 4 ) == 0 ) (*dest) = SDL_TRUE;
+  if( strnicmp( &buf[i], "yes", 3 ) == 0 )  (*dest) = SDL_TRUE;
+  return SDL_TRUE;
+}
+
+static SDL_bool read_config_option( char *buf, char *token, Sint32 *dest, char **options )
+{
+  Sint32 i, j, len;
+
+  // Get the token length
+  len = strlen( token );
+
+  // Is this the token?
+  if( strnicmp( buf, token, len ) != 0 ) return SDL_FALSE;
+  i = len;
+
+  // Check for whitespace, equals, whitespace, single quote
+  while( isws( buf[i] ) ) i++;
+  if( buf[i] != '=' ) return SDL_TRUE;
+  i++;
+  while( isws( buf[i] ) ) i++;
+
+  for( j=0; options[j]; j++ )
+  {
+    len = strlen( options[j] );
+    if( strnicmp( &buf[i], options[j], len ) == 0 )
+    {
+      if( istokend( buf[i+len] ) )
+      {
+        *dest = j;
+        return SDL_TRUE;
+      }
+    }
+  }
+
+  return SDL_TRUE;
+}
+
+static void load_config( struct start_opts *sto )
+{
+  FILE *f;
+  Sint32 i;
+
+  f = fopen( FILEPREFIX"oricutron.cfg", "rb" );
+  if( !f ) return;
+
+  while( !feof( f ) )
+  {
+    if( !fgets( sto->lctmp, 2048, f ) ) break;
+
+    for( i=0; isws( sto->lctmp[i] ); i++ ) ;
+
+    if( read_config_option( &sto->lctmp[i], "machine",    &sto->start_machine, machtypes ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "disktype",   &sto->start_disktype, disktypes ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "debug",      &sto->start_debug ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "fullscreen", &fullscreen ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "hwsurface",  &hwsurface ) ) continue;
+    if( read_config_string( &sto->lctmp[i], "diskimage",  sto->start_disk, 1024 ) ) continue;
+    if( read_config_string( &sto->lctmp[i], "tapeimage",  sto->start_tape, 1024 ) ) continue;
+    if( read_config_string( &sto->lctmp[i], "symbols",    sto->start_syms, 1024 ) ) continue;
+  }
+
+  fclose( f );
+}
+
 SDL_bool init( struct machine *oric, int argc, char *argv[] )
 {
   Sint32 i;
-  Sint32 start_machine, start_disktype, start_mode;
-  char *start_disk, *start_tape, *start_syms;
+  struct start_opts *sto;
   char opt_type, *opt_arg, *tmp;
 
+  sto = malloc( sizeof( struct start_opts ) );
+  if( !sto ) return SDL_FALSE;
+
   // Defaults
-  start_machine  = MACH_ATMOS;
-  start_disktype = DRV_NONE;
-  start_mode     = EM_RUNNING;
-  start_disk     = NULL;
-  start_tape     = NULL;
-  start_syms     = NULL;
-  fullscreen     = SDL_FALSE;
+  sto->start_machine  = MACH_ATMOS;
+  sto->start_disktype = DRV_NONE;
+  sto->start_debug    = SDL_FALSE;
+  sto->start_disk[0]  = 0;
+  sto->start_tape[0]  = 0;
+  sto->start_syms[0]  = 0;
+  fullscreen          = SDL_FALSE;
+#ifdef WIN32
+  hwsurface           = SDL_TRUE;
+#else
+  hwsurface           = SDL_FALSE;
+#endif
+
+  load_config( sto );
 
   for( i=1; i<argc; i++ )
   {
@@ -87,6 +258,8 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           if( strcasecmp( tmp, "fullscreen" ) == 0 ) { opt_type = 'f'; break; }
           if( strcasecmp( tmp, "window"     ) == 0 ) { opt_type = 'w'; break; }
           if( strcasecmp( tmp, "debug"      ) == 0 ) { opt_type = 'b'; break; }
+          if( strcasecmp( tmp, "hwsurface"  ) == 0 ) { hwsurface = SDL_TRUE; break; }
+          if( strcasecmp( tmp, "swsurface"  ) == 0 ) { hwsurface = SDL_FALSE; break; }
 
           if( i<(argc-1) )
             opt_arg = argv[i+1];
@@ -110,38 +283,41 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
         case 'm':  // Machine type
           if( opt_arg )
           {
-            if( strcasecmp( opt_arg, "atmos" ) == 0 ) { start_machine = MACH_ATMOS;     break; }
-            if( strcasecmp( opt_arg, "a"     ) == 0 ) { start_machine = MACH_ATMOS;     break; }
-            if( strcasecmp( opt_arg, "oric1" ) == 0 ) { start_machine = MACH_ORIC1;     break; }
-            if( strcasecmp( opt_arg, "1"     ) == 0 ) { start_machine = MACH_ORIC1;     break; }
-            if( strcasecmp( opt_arg, "o16k"  ) == 0 ) { start_machine = MACH_ORIC1_16K; break; }
+            if( strcasecmp( opt_arg, "atmos" ) == 0 ) { sto->start_machine = MACH_ATMOS;     break; }
+            if( strcasecmp( opt_arg, "a"     ) == 0 ) { sto->start_machine = MACH_ATMOS;     break; }
+            if( strcasecmp( opt_arg, "oric1" ) == 0 ) { sto->start_machine = MACH_ORIC1;     break; }
+            if( strcasecmp( opt_arg, "1"     ) == 0 ) { sto->start_machine = MACH_ORIC1;     break; }
+            if( strcasecmp( opt_arg, "o16k"  ) == 0 ) { sto->start_machine = MACH_ORIC1_16K; break; }
           }
           
           printf( "Invalid machine type\n" );
           break;
         
         case 'd':  // Disk image
-          start_disk = opt_arg;
+          strncpy( sto->start_disk, opt_arg, 1024 );
+          sto->start_disk[1023] = 0;
           break;
         
         case 't':  // Tape image
-          start_tape = opt_arg;
+          strncpy( sto->start_tape, opt_arg, 1024 );
+          sto->start_tape[1023] = 0;
           break;
    
         case 'k':  // Drive controller type
           if( opt_arg )
           {
-            if( strcasecmp( opt_arg, "microdisc" ) == 0 ) { start_disktype = DRV_MICRODISC; break; }
-            if( strcasecmp( opt_arg, "m"         ) == 0 ) { start_disktype = DRV_MICRODISC; break; }
-            if( strcasecmp( opt_arg, "jasmin"    ) == 0 ) { start_disktype = DRV_JASMIN;    break; }
-            if( strcasecmp( opt_arg, "j"         ) == 0 ) { start_disktype = DRV_JASMIN;    break; }
+            if( strcasecmp( opt_arg, "microdisc" ) == 0 ) { sto->start_disktype = DRV_MICRODISC; break; }
+            if( strcasecmp( opt_arg, "m"         ) == 0 ) { sto->start_disktype = DRV_MICRODISC; break; }
+            if( strcasecmp( opt_arg, "jasmin"    ) == 0 ) { sto->start_disktype = DRV_JASMIN;    break; }
+            if( strcasecmp( opt_arg, "j"         ) == 0 ) { sto->start_disktype = DRV_JASMIN;    break; }
           }
 
           printf( "Invalid drive type\n" );
           break;
         
         case 's':  // Pre-load symbols file
-          start_syms = opt_arg;
+          strncpy( sto->start_syms, opt_arg, 1024 );
+          sto->start_syms[1023] = 0;
           break;
         
         case 'f':
@@ -153,14 +329,14 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           break;
         
         case 'b':
-          start_mode = EM_DEBUG;
+          sto->start_debug = SDL_TRUE;
           break; 
       }        
     }
   }
 
-  if( ( start_disk ) && ( start_disktype == DRV_NONE ) )
-    start_disktype = DRV_MICRODISC;
+  if( ( sto->start_disk[0] ) && ( sto->start_disktype == DRV_NONE ) )
+    sto->start_disktype = DRV_MICRODISC;
 
   for( i=0; i<8; i++ ) lastframetimes[i] = 0;
   frametimeave = 0;
@@ -169,32 +345,33 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 
 #ifdef __amigaos4__
   timersigbit = IExec->AllocSignal( -1 );
-  if( timersigbit == -1 ) return SDL_FALSE;
+  if( timersigbit == -1 ) { free( sto ); return SDL_FALSE; }
   timersig = 1L<<timersigbit;
   
   maintask = IExec->FindTask( NULL );
 #endif
 
-  if( !init_gui( oric ) ) return SDL_FALSE;
-  if( !init_filerequester() ) return SDL_FALSE;
-  oric->drivetype = start_disktype;
-  if( !init_machine( oric, start_machine, SDL_TRUE ) ) return SDL_FALSE;
+  if( !init_gui( oric ) ) { free( sto ); return SDL_FALSE; }
+  if( !init_filerequester() ) { free( sto ); return SDL_FALSE; }
+  oric->drivetype = sto->start_disktype;
+  if( !init_machine( oric, sto->start_machine, SDL_TRUE ) ) { free( sto ); return SDL_FALSE; }
 
-  if( start_mode != EM_RUNNING )
-    setemumode( oric, NULL, start_mode );
+  if( sto->start_debug )
+    setemumode( oric, NULL, EM_DEBUG );
 
-  if( start_disk ) diskimage_load( oric, start_disk, 0 );
-  if( start_tape )
+  if( sto->start_disk[0] ) diskimage_load( oric, sto->start_disk, 0 );
+  if( sto->start_tape[0] )
   {
-    if( tape_load_tap( oric, start_tape ) )
+    if( tape_load_tap( oric, sto->start_tape ) )
       queuekeys( "CLOAD\"\"\x0d" );
   }
 
   mon_init( oric );
 
-  if( start_syms )
-    mon_new_symbols( start_syms, SDL_TRUE );
+  if( sto->start_syms[0] )
+    mon_new_symbols( sto->start_syms, SDL_TRUE );
 
+  free( sto );
   return SDL_TRUE;
 }
 

@@ -1134,7 +1134,7 @@ void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
       break;
   }
 
-  mon_watch_reset( oric );
+  mon_state_reset( oric );
   if( !init_machine( oric, oric->type, SDL_FALSE ) )
   {
     shut();
@@ -1159,7 +1159,7 @@ void swapmach( struct machine *oric, struct osdmenuitem *mitem, int which )
 
   oric->drivetype = curr_drivetype;
 
-  mon_watch_reset( oric );
+  mon_state_reset( oric );
   if( !init_machine( oric, which, which!=oric->type ) )
   {
     shut();
