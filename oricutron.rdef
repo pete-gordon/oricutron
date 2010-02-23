@@ -18,14 +18,18 @@ resource(1, "BEOS:FILE_TYPES") message {
 
 
 /* bitmap files */
-resource(200, "disk_active.bmp") #'data' import "images/disk_active.bmp";
-resource(201, "disk_ejected.bmp") #'data' import "images/disk_ejected.bmp";
-resource(202, "disk_idle.bmp") #'data' import "images/disk_idle.bmp";
-resource(203, "disk_modactive.bmp") #'data' import "images/disk_modactive.bmp";
-resource(204, "disk_modified.bmp") #'data' import "images/disk_modified.bmp";
-resource(205, "statusbar.bmp") #'data' import "images/statusbar.bmp";
-resource(206, "winicon.bmp") #'data' import "images/winicon.bmp";
-
+resource(200, "winicon.bmp") #'data' import "images/winicon.bmp";
+resource(201, "statusbar.bmp") #'data' import "images/statusbar.bmp";
+resource(202, "disk_active.bmp") #'data' import "images/disk_active.bmp";
+resource(203, "disk_ejected.bmp") #'data' import "images/disk_ejected.bmp";
+resource(204, "disk_idle.bmp") #'data' import "images/disk_idle.bmp";
+resource(205, "disk_modactive.bmp") #'data' import "images/disk_modactive.bmp";
+resource(206, "disk_modified.bmp") #'data' import "images/disk_modified.bmp";
+resource(207, "tape_pause.bmp") #'data' import "images/tape_pause.bmp";
+resource(208, "tape_ejected.bmp") #'data' import "images/tape_ejected.bmp";
+resource(209, "tape_play.bmp") #'data' import "images/tape_play.bmp";
+resource(210, "tape_stop.bmp") #'data' import "images/tape_stop.bmp";
+resource(211, "avirec.bmp") #'data' import "images/avirec.bmp";
 
 /* XXX: add HVIF icon for Haiku */
 
