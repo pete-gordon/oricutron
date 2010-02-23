@@ -40,7 +40,7 @@ extern Uint16 gpal[];
 extern SDL_bool showfps, warpspeed, soundavailable, soundon;
 extern char diskpath[ ], diskfile[], filetmp[];
 
-SDL_bool needclr = SDL_TRUE, refreshstatus = SDL_TRUE, refreshdisks = SDL_TRUE;
+SDL_bool needclr = SDL_TRUE, refreshstatus = SDL_TRUE, refreshdisks = SDL_TRUE, refreshavi = SDL_TRUE, refreshtape = SDL_TRUE;
 
 struct avi_handle *vidcap = NULL;
 char vidcapname[128];
@@ -190,6 +190,18 @@ void video_show( struct machine *oric )
     {
       draw_disks( oric );
       refreshdisks = SDL_FALSE;
+    }
+
+    if( refreshavi || refreshstatus )
+    {
+      draw_avirec( vidcap != NULL );
+      refreshavi = SDL_FALSE;
+    }
+
+    if( refreshtape || refreshstatus )
+    {
+      draw_tape( oric );
+      refreshtape = SDL_FALSE;
     }
 
     refreshstatus = SDL_FALSE;
@@ -802,6 +814,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
              avi_close( &vidcap );
              SDL_UnlockAudio();
              do_popup( "AVI capture stopped" );
+             refreshavi = SDL_TRUE;
              break;
            }
 
@@ -814,6 +827,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
              vidcapcount++;
              do_popup( vidcapname );
            }
+           refreshavi = SDL_TRUE;
            break;
 
         case SDLK_LSHIFT:

@@ -76,6 +76,11 @@ enum
   GIMG_DISK_ACTIVE,
   GIMG_DISK_IDLE_MOD,
   GIMG_DISK_ACTIVE_MOD,
+  GIMG_TAPE_EJECTED,
+  GIMG_TAPE_PAUSE,
+  GIMG_TAPE_PLAY,
+  GIMG_TAPE_STOP,
+  GIMG_AVI_RECORD,
   GIMG_LAST
 };
 
@@ -100,5 +105,7 @@ void shut_gui( void );
 
 void draw_statusbar( void );
 void draw_disks( struct machine *oric );
+void draw_avirec( SDL_bool recording );
+void draw_tape( struct machine *oric );
 void statusprintstr( int x, Uint16 fc, char *str );
 void joinpath( char *path, char *file );
