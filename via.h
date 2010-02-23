@@ -50,6 +50,7 @@ struct via
   // Internal state stuff
   SDL_bool t1run, t2run;
   SDL_bool ca2pulse, cb2pulse;
+  SDL_bool srtrigger;
 
   struct machine *oric;
 };

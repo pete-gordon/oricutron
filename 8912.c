@@ -432,9 +432,9 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
     }
   }
 
-  SDL_LockAudio();
+  if( ( soundon ) && ( !warpspeed ) ) SDL_LockAudio();
   ay->logcycle += cycles;
-  SDL_UnlockAudio();
+  if( ( soundon ) && ( !warpspeed ) ) SDL_UnlockAudio();
 }
 
 /*

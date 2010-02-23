@@ -61,7 +61,12 @@ struct guiimg gimgs[GIMG_LAST] = { { IMAGEPREFIX"statusbar.bmp",     640, 16, NU
                                    { IMAGEPREFIX"disk_idle.bmp",      18, 16, NULL },
                                    { IMAGEPREFIX"disk_active.bmp",    18, 16, NULL },
                                    { IMAGEPREFIX"disk_modified.bmp",  18, 16, NULL },
-                                   { IMAGEPREFIX"disk_modactive.bmp", 18, 16, NULL } };
+                                   { IMAGEPREFIX"disk_modactive.bmp", 18, 16, NULL },
+                                   { IMAGEPREFIX"tape_ejected.bmp",   20, 16, NULL },
+                                   { IMAGEPREFIX"tape_pause.bmp",     20, 16, NULL },
+                                   { IMAGEPREFIX"tape_play.bmp",      20, 16, NULL },
+                                   { IMAGEPREFIX"tape_stop.bmp",      20, 16, NULL },
+                                   { IMAGEPREFIX"avirec.bmp",         16, 16, NULL } };
 
 extern SDL_bool fullscreen, hwsurface;
 SDL_Surface *screen = NULL;
@@ -69,8 +74,10 @@ SDL_bool need_sdl_quit = SDL_FALSE;
 SDL_bool soundavailable, soundon;
 extern SDL_bool microdiscrom_valid, jasminrom_valid;
 
-#define GIMG_POS_SBARY (480-16)
-#define GIMG_POS_DISKX (640-4-18*4)
+#define GIMG_POS_SBARY   (480-16)
+#define GIMG_POS_DISKX   (640-4-18*4)
+#define GIMG_POS_TAPEX   (GIMG_POS_DISKX-26)
+#define GIMG_POS_AVIRECX (GIMG_POS_TAPEX-22)
 
 // Our "lovely" hand-coded font
 extern unsigned char thefont[];
@@ -278,7 +285,7 @@ void draw_disks( struct machine *oric )
 
   if( oric->drivetype == DRV_NONE )
   {
-    gimg_drawpart( &gimgs[GIMG_STATUSBAR], GIMG_POS_DISKX, GIMG_POS_SBARY, 0, 0, 18*4, 16 );
+    gimg_drawpart( &gimgs[GIMG_STATUSBAR], GIMG_POS_DISKX, GIMG_POS_SBARY, GIMG_POS_DISKX, 0, 18*4, 16 );
     return;
   }
 
@@ -292,6 +299,40 @@ void draw_disks( struct machine *oric )
     }
     gimg_draw( &gimgs[j], GIMG_POS_DISKX+i*18, GIMG_POS_SBARY );
   }
+}
+
+void draw_avirec( SDL_bool recording )
+{
+  if( recording )
+  {
+    gimg_draw( &gimgs[GIMG_AVI_RECORD], GIMG_POS_AVIRECX, GIMG_POS_SBARY );
+    return;
+  }
+
+  gimg_drawpart( &gimgs[GIMG_STATUSBAR], GIMG_POS_AVIRECX, GIMG_POS_SBARY, GIMG_POS_AVIRECX, 0, 16, 16 );
+}
+
+void draw_tape( struct machine *oric )
+{
+  if( !oric->tapebuf )
+  {
+    gimg_draw( &gimgs[GIMG_TAPE_EJECTED], GIMG_POS_TAPEX, GIMG_POS_SBARY );
+    return;
+  }
+
+  if( oric->tapemotor )
+  {
+    gimg_draw( &gimgs[GIMG_TAPE_PLAY], GIMG_POS_TAPEX, GIMG_POS_SBARY );
+    return;
+  }
+
+  if( oric->tapeoffs >= oric->tapelen )
+  {
+    gimg_draw( &gimgs[GIMG_TAPE_STOP], GIMG_POS_TAPEX, GIMG_POS_SBARY );
+    return;
+  }
+
+  gimg_draw( &gimgs[GIMG_TAPE_PAUSE], GIMG_POS_TAPEX, GIMG_POS_SBARY );
 }
 
 // Info popups

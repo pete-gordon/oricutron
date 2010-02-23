@@ -36,6 +36,7 @@
 #include "machine.h"
 
 extern char tapefile[], tapepath[];
+extern SDL_bool refreshtape;
 
 void tape_popup( struct machine *oric )
 {
@@ -54,6 +55,8 @@ void tape_setmotor( struct machine *oric, SDL_bool motoron )
 {
   if( motoron == oric->tapemotor )
     return;
+
+  refreshtape = SDL_TRUE;
 
   if( ( !oric->tapeturbo ) || ( oric->type != MACH_ATMOS ) )
   {
@@ -82,6 +85,7 @@ void tape_eject( struct machine *oric )
   oric->tapelen = 0;
   oric->tapename[0] = 0;
   tape_popup( oric );
+  refreshtape = SDL_TRUE;
 }
 
 void tape_rewind( struct machine *oric )
@@ -91,6 +95,7 @@ void tape_rewind( struct machine *oric )
   oric->tapecount  = 2;
   oric->tapeout    = 0;
   oric->tapedupbytes = 80;
+  refreshtape = SDL_TRUE;
 }
 
 SDL_bool tape_load_tap( struct machine *oric, char *fname )
@@ -218,7 +223,10 @@ void tape_ticktock( struct machine *oric, int cycles )
           {
             oric->tapeoffs++;
             if( oric->tapeoffs >= oric->tapelen )
+            {
+              refreshtape = SDL_TRUE;
               return;
+            }
           } while( oric->tapebuf[oric->tapeoffs] != 0x16 );
         }
         oric->cpu.pc = 0xe759;
@@ -231,6 +239,7 @@ void tape_ticktock( struct machine *oric, int cycles )
         oric->cpu.write( &oric->cpu, 0x2f, oric->cpu.a );
         oric->cpu.write( &oric->cpu, 0x2b1, 0x00 );
         oric->cpu.pc = 0xe6fb;
+        if( oric->tapeoffs >= oric->tapelen ) refreshtape = SDL_TRUE;
         break;
     }
     return;
@@ -304,6 +313,8 @@ void tape_ticktock( struct machine *oric, int cycles )
         oric->tapedupbytes--;
       else
         oric->tapeoffs++;
+      if( oric->tapeoffs >= oric->tapelen )
+        refreshtape = SDL_TRUE;
     }
   }
   oric->tapecount = oric->tapetime;
@@ -337,6 +348,7 @@ void via_init( struct via *v, struct machine *oric )
   v->cb2 = 0;
   v->srcount = 0;
   v->srtime = 0;
+  v->srtrigger = SDL_FALSE;
   v->t1run = SDL_FALSE;
   v->t2run = SDL_FALSE;
   v->ca2pulse = SDL_FALSE;
@@ -397,7 +409,7 @@ void via_clock( struct via *v, unsigned int cycles )
     if( v->oric->prclock <= 0 )
     {
       v->oric->prclock = 0;
-      v->ca1 = 0;
+      via_write_CA1( v, 0 );
     }
   }
 
@@ -505,9 +517,12 @@ void via_clock( struct via *v, unsigned int cycles )
       if( v->ifr&VIRQF_SR )
         via_clr_irq( v, VIRQF_SR );
       v->srcount = 0;
+      v->srtrigger = SDL_FALSE;
       break;
 
-    case 0x10:    // Shift out free-running at T2 rate (not implemented)
+    case 0x10:    // Shift out free-running at T2 rate
+      if( !v->srtrigger ) break;
+
       // Count down the SR timer
       v->srtime -= cycles;
       while( v->srtime <= 0 )
@@ -531,6 +546,7 @@ void via_clock( struct via *v, unsigned int cycles )
       break;
 
     case 0x14:    // Shift out under T2 control
+      if( !v->srtrigger ) break;
       if( v->srcount == 8 ) break;
 
       // Count down the SR timer
@@ -555,6 +571,7 @@ void via_clock( struct via *v, unsigned int cycles )
           {
             via_set_irq( v, VIRQF_SR );
             v->srtime = 0;
+            v->srtrigger = SDL_FALSE;
             break;
           }
         }
@@ -562,6 +579,7 @@ void via_clock( struct via *v, unsigned int cycles )
       break;
 
     case 0x18:    // Shift out under O2 control
+      if( !v->srtrigger ) break;
       if( v->srcount == 8 ) break;
 
       // Toggle the clock!
@@ -576,7 +594,10 @@ void via_clock( struct via *v, unsigned int cycles )
 
         v->srcount++;
         if( v->srcount == 8 )
+        {
           via_set_irq( v, VIRQF_SR );
+          v->srtrigger = SDL_FALSE;
+        }
       }
       break;    
   }   
@@ -597,9 +618,9 @@ void lprintchar( struct machine *oric, char c )
   }
   
   fputc( c, oric->prf );
-  oric->prclock = 20;
+  oric->prclock = 40;
   oric->prclose = 64*312*50*5;
-  oric->via.ca1 = 1;
+  via_write_CA1( &oric->via, 1 );
 }
 
 // Write VIA from CPU
@@ -694,6 +715,7 @@ void via_write( struct via *v, int offset, unsigned char data )
       v->sr = data;
       v->srcount = 0;
       v->srtime  = 0;
+      v->srtrigger = SDL_TRUE;
       via_clr_irq( v, VIRQF_SR );
       break;
     case VIA_ACR:
@@ -895,6 +917,7 @@ unsigned char via_read( struct via *v, int offset )
     case VIA_SR:
       v->srcount = 0;
       v->srtime  = 0;
+      v->srtrigger = SDL_TRUE;
       via_clr_irq( v, VIRQF_SR );
       return v->sr;
     case VIA_ACR:
