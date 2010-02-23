@@ -98,7 +98,7 @@ static SDL_bool read_config_string( char *buf, char *token, char *dest, Sint32 m
   toklen = strlen( token );
 
   // Is this the token?
-  if( strnicmp( buf, token, toklen ) != 0 ) return SDL_FALSE;
+  if( strncasecmp( buf, token, toklen ) != 0 ) return SDL_FALSE;
   i = toklen;
 
   // Check for whitespace, equals, whitespace, single quote
@@ -144,7 +144,7 @@ static SDL_bool read_config_bool( char *buf, char *token, SDL_bool *dest )
   toklen = strlen( token );
 
   // Is this the token?
-  if( strnicmp( buf, token, toklen ) != 0 ) return SDL_FALSE;
+  if( strncasecmp( buf, token, toklen ) != 0 ) return SDL_FALSE;
   i = toklen;
 
   // Check for whitespace, equals, whitespace, single quote
@@ -154,8 +154,8 @@ static SDL_bool read_config_bool( char *buf, char *token, SDL_bool *dest )
   while( isws( buf[i] ) ) i++;
 
   (*dest) = SDL_FALSE;
-  if( strnicmp( &buf[i], "true", 4 ) == 0 ) (*dest) = SDL_TRUE;
-  if( strnicmp( &buf[i], "yes", 3 ) == 0 )  (*dest) = SDL_TRUE;
+  if( strncasecmp( &buf[i], "true", 4 ) == 0 ) (*dest) = SDL_TRUE;
+  if( strncasecmp( &buf[i], "yes", 3 ) == 0 )  (*dest) = SDL_TRUE;
   return SDL_TRUE;
 }
 
@@ -167,7 +167,7 @@ static SDL_bool read_config_option( char *buf, char *token, Sint32 *dest, char *
   len = strlen( token );
 
   // Is this the token?
-  if( strnicmp( buf, token, len ) != 0 ) return SDL_FALSE;
+  if( strncasecmp( buf, token, len ) != 0 ) return SDL_FALSE;
   i = len;
 
   // Check for whitespace, equals, whitespace, single quote
@@ -179,7 +179,7 @@ static SDL_bool read_config_option( char *buf, char *token, Sint32 *dest, char *
   for( j=0; options[j]; j++ )
   {
     len = strlen( options[j] );
-    if( strnicmp( &buf[i], options[j], len ) == 0 )
+    if( strncasecmp( &buf[i], options[j], len ) == 0 )
     {
       if( istokend( buf[i+len] ) )
       {
