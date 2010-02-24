@@ -79,10 +79,6 @@ struct ay8912
   SDL_bool        keystates[8], newnoise;
   SDL_bool        soundon;
   SDL_bool        tapenoiseon;
-  Sint32          logged, tlogged;
-  Uint32          logcycle;
-  struct aywrite  writelog[WRITELOG_SIZE];
-  struct tnchange tapelog[TAPELOG_SIZE];
   Uint32          toneper[3], noiseper, envper;
   Uint16          tonebit[3], noisebit[3], vol[3], newout;
   Sint32          ct[3], ctn, cte;
@@ -94,6 +90,13 @@ struct ay8912
   Sint16          output;
   Sint16          tapeout;
   Uint32          ccycle, lastcyc, ccyc;
+
+  SDL_bool        audiolocked;
+  SDL_bool        do_logcycle_reset;
+  Sint32          logged, tlogged;
+  Uint32          logcycle, newlogcycle;
+  struct aywrite  writelog[WRITELOG_SIZE];
+  struct tnchange tapelog[TAPELOG_SIZE];
 };
 
 void queuekeys( char *str );
@@ -109,3 +112,5 @@ void ay_set_bdir( struct ay8912 *ay, unsigned char state );
 void ay_set_bcmode( struct ay8912 *ay, unsigned char bc1, unsigned char bdir );
 void ay_modeset( struct ay8912 *ay );
 
+void ay_lockaudio( struct ay8912 *ay );
+void ay_unlockaudio( struct ay8912 *ay );

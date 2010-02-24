@@ -256,13 +256,17 @@ void tape_ticktock( struct machine *oric, int cycles )
   {
     if( oric->tapenoise )
     {
-      SDL_LockAudio();
-      if( oric->ay.tlogged < AUDIO_BUFLEN )
+      ay_lockaudio( &oric->ay ); // Gets unlocked at the end of each frame
+      if( oric->ay.do_logcycle_reset )
+      {
+        oric->ay.logcycle = oric->ay.newlogcycle;
+        oric->ay.do_logcycle_reset = SDL_FALSE;
+      }
+      if( oric->ay.tlogged < TAPELOG_SIZE )
       {
         oric->ay.tapelog[oric->ay.tlogged  ].cycle = oric->ay.logcycle;
         oric->ay.tapelog[oric->ay.tlogged++].val   = oric->tapeout;
       }
-      SDL_UnlockAudio();
     }
     via_write_CB1( &oric->via, oric->tapeout );
   }

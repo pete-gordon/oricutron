@@ -386,7 +386,8 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
 
   ay->ccycle -= (ay->lastcyc<<FPBITS);
   ay->lastcyc = 0;
-  ay->logcycle = ay->ccycle>>FPBITS;
+  ay->newlogcycle = ay->ccycle>>FPBITS;
+  ay->do_logcycle_reset = SDL_TRUE;
   ay->logged   = 0;
   ay->tlogged  = 0;
 }
@@ -432,9 +433,27 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
     }
   }
 
-  if( ( soundon ) && ( !warpspeed ) ) SDL_LockAudio();
+  if( ay->do_logcycle_reset )
+  {
+    ay->logcycle = ay->newlogcycle;
+    ay->do_logcycle_reset = SDL_FALSE;
+  }
   ay->logcycle += cycles;
-  if( ( soundon ) && ( !warpspeed ) ) SDL_UnlockAudio();
+}
+
+void ay_lockaudio( struct ay8912 *ay )
+{
+  if( ay->audiolocked ) return;
+  if( ( ay->oric->emu_mode != EM_RUNNING ) || ( !soundon ) || ( warpspeed ) ) return;
+  SDL_LockAudio();
+  ay->audiolocked = SDL_TRUE;
+}
+
+void ay_unlockaudio( struct ay8912 *ay )
+{
+  if( !ay->audiolocked ) return;
+  SDL_UnlockAudio();
+  ay->audiolocked = SDL_FALSE;
 }
 
 /*
@@ -479,6 +498,7 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
   ay->rndrack = 1;
   ay->logged  = 0;
   ay->logcycle = 0;
+  ay->do_logcycle_reset = SDL_FALSE;
   ay->output  = -32768;
   ay->lastcyc = 0;
   ay->ccyc    = 0;
@@ -486,6 +506,7 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
   ay->tapeout = 0;
   ay->tlogged = 0;
   ay->tapeout = 0;
+  ay->audiolocked = SDL_FALSE;
   if( soundavailable )
     SDL_PauseAudio( 0 );
 
@@ -585,11 +606,16 @@ void ay_modeset( struct ay8912 *ay )
             SDL_WM_SetCaption( "AUDIO BASTARD", "AUDIO BASTARD" ); // Debug
             break;
           }
-          SDL_LockAudio();
+          ay_lockaudio( ay );  // Gets unlocked at the end of each frame
+          if( ay->do_logcycle_reset )
+          {
+            ay->logcycle = ay->newlogcycle;
+            ay->do_logcycle_reset = SDL_FALSE;
+          }
+
           ay->writelog[ay->logged  ].cycle = ay->logcycle;
           ay->writelog[ay->logged  ].reg   = ay->creg;
           ay->writelog[ay->logged++].val   = v;
-          SDL_UnlockAudio();
           break;
 
         case AY_PORT_A:

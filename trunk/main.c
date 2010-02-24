@@ -501,6 +501,8 @@ int main( int argc, char *argv[] )
           }
         }
 
+        ay_unlockaudio( &oric.ay );
+
         if( warpspeed )
         {
           if( framedone )
@@ -536,6 +538,7 @@ int main( int argc, char *argv[] )
           }
         }
       } else {
+        ay_unlockaudio( &oric.ay );
         if( !SDL_WaitEvent( &event ) ) break;
       }
 
@@ -567,6 +570,7 @@ int main( int argc, char *argv[] )
           }
       }
     }
+    ay_unlockaudio( &oric.ay );
   }
   shut( &oric );
 
