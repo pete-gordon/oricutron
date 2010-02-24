@@ -253,7 +253,14 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
 
   strncpy( oric->wddisk.disk[drive]->filename, fname, 4096+512 );
   oric->wddisk.disk[drive]->filename[4096+511] = 0;
-  strncpy( oric->diskname[drive], fname, 16 );
+
+  if( strlen( fname ) > 15 )
+  {
+    strncpy( oric->diskname[drive], &fname[strlen(fname)-15], 16 );
+    oric->diskname[drive][0] = 22;
+  } else {
+    strncpy( oric->diskname[drive], fname, 16 );
+  }
   oric->diskname[drive][15] = 0;
   disk_popup( oric, drive );
   refreshdisks = SDL_TRUE;

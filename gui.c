@@ -56,17 +56,22 @@ char diskpath[4096], diskfile[512];
 //char snappath[4096], snapfile[512];
 char filetmp[4096+512];
 
-struct guiimg gimgs[GIMG_LAST] = { { IMAGEPREFIX"statusbar.bmp",     640, 16, NULL },
-                                   { IMAGEPREFIX"disk_ejected.bmp",   18, 16, NULL },
-                                   { IMAGEPREFIX"disk_idle.bmp",      18, 16, NULL },
-                                   { IMAGEPREFIX"disk_active.bmp",    18, 16, NULL },
-                                   { IMAGEPREFIX"disk_modified.bmp",  18, 16, NULL },
-                                   { IMAGEPREFIX"disk_modactive.bmp", 18, 16, NULL },
-                                   { IMAGEPREFIX"tape_ejected.bmp",   20, 16, NULL },
-                                   { IMAGEPREFIX"tape_pause.bmp",     20, 16, NULL },
-                                   { IMAGEPREFIX"tape_play.bmp",      20, 16, NULL },
-                                   { IMAGEPREFIX"tape_stop.bmp",      20, 16, NULL },
-                                   { IMAGEPREFIX"avirec.bmp",         16, 16, NULL } };
+#define GIMG_W_DISK 18
+#define GIMG_W_TAPE 20
+#define GIMG_W_AVIR 16
+
+// Images used in the GUI
+struct guiimg gimgs[GIMG_LAST] = { { IMAGEPREFIX"statusbar.bmp",              640, 16, NULL },
+                                   { IMAGEPREFIX"disk_ejected.bmp",   GIMG_W_DISK, 16, NULL },
+                                   { IMAGEPREFIX"disk_idle.bmp",      GIMG_W_DISK, 16, NULL },
+                                   { IMAGEPREFIX"disk_active.bmp",    GIMG_W_DISK, 16, NULL },
+                                   { IMAGEPREFIX"disk_modified.bmp",  GIMG_W_DISK, 16, NULL },
+                                   { IMAGEPREFIX"disk_modactive.bmp", GIMG_W_DISK, 16, NULL },
+                                   { IMAGEPREFIX"tape_ejected.bmp",   GIMG_W_TAPE, 16, NULL },
+                                   { IMAGEPREFIX"tape_pause.bmp",     GIMG_W_TAPE, 16, NULL },
+                                   { IMAGEPREFIX"tape_play.bmp",      GIMG_W_TAPE, 16, NULL },
+                                   { IMAGEPREFIX"tape_stop.bmp",      GIMG_W_TAPE, 16, NULL },
+                                   { IMAGEPREFIX"avirec.bmp",         GIMG_W_AVIR, 16, NULL } };
 
 extern SDL_bool fullscreen, hwsurface;
 SDL_Surface *screen = NULL;
@@ -74,10 +79,11 @@ SDL_bool need_sdl_quit = SDL_FALSE;
 SDL_bool soundavailable, soundon;
 extern SDL_bool microdiscrom_valid, jasminrom_valid;
 
+// GUI image locations
 #define GIMG_POS_SBARY   (480-16)
-#define GIMG_POS_DISKX   (640-4-18*4)
-#define GIMG_POS_TAPEX   (GIMG_POS_DISKX-26)
-#define GIMG_POS_AVIRECX (GIMG_POS_TAPEX-22)
+#define GIMG_POS_TAPEX   (640-4-GIMG_W_TAPE)
+#define GIMG_POS_DISKX   (GIMG_POS_TAPEX-(6+(GIMG_W_DISK*4)))
+#define GIMG_POS_AVIRECX (GIMG_POS_DISKX-(6+GIMG_W_AVIR))
 
 // Our "lovely" hand-coded font
 extern unsigned char thefont[];
@@ -188,6 +194,7 @@ struct osdmenu menus[] = { { "Main Menu",         0, mainitems },
                            { "Audio options",     3, auopitems },
                            { "Debug options",     3, dbopitems } };
 
+// Load a 24bit BMP for the GUI
 SDL_bool gimg_load( struct guiimg *gi )
 {
   FILE *f;
@@ -195,6 +202,7 @@ SDL_bool gimg_load( struct guiimg *gi )
   Sint32 x, y;
   SDL_bool fileok;
 
+  // Get the file
   f = fopen( gi->filename, "rb" );
   if( !f )
   {
@@ -202,6 +210,7 @@ SDL_bool gimg_load( struct guiimg *gi )
     return SDL_FALSE;
   }
 
+  // Read the header
   if( fread( hdrbuf, 54, 1, f ) != 1 )
   {
     printf( "Error reading '%s'\n", gi->filename );
@@ -209,12 +218,12 @@ SDL_bool gimg_load( struct guiimg *gi )
   }
 
   fileok = SDL_TRUE;
-  if( strncmp( (char *)hdrbuf, "BM", 2 ) != 0 ) fileok = SDL_FALSE;
-  if( ((hdrbuf[21]<<24)|(hdrbuf[20]<<16)|(hdrbuf[19]<<8)|hdrbuf[18]) != gi->w ) fileok = SDL_FALSE;
-  if( ((hdrbuf[25]<<24)|(hdrbuf[24]<<16)|(hdrbuf[23]<<8)|hdrbuf[22]) != gi->h ) fileok = SDL_FALSE;
-  if( ((hdrbuf[27]<<8)|hdrbuf[26]) != 1 ) fileok = SDL_FALSE;
-  if( ((hdrbuf[29]<<8)|hdrbuf[28]) != 24 ) fileok = SDL_FALSE;
-  if( ((hdrbuf[33]<<24)|(hdrbuf[32]<<16)|(hdrbuf[31]<<8)|hdrbuf[30]) != 0 ) fileok = SDL_FALSE;
+  if( strncmp( (char *)hdrbuf, "BM", 2 ) != 0 ) fileok = SDL_FALSE;                                      // Must start with "BM"
+  if( ((hdrbuf[21]<<24)|(hdrbuf[20]<<16)|(hdrbuf[19]<<8)|hdrbuf[18]) != gi->w ) fileok = SDL_FALSE;      // Must be the correct width
+  if( ((hdrbuf[25]<<24)|(hdrbuf[24]<<16)|(hdrbuf[23]<<8)|hdrbuf[22]) != gi->h ) fileok = SDL_FALSE;      // Must be the correct height
+  if( ((hdrbuf[27]<<8)|hdrbuf[26]) != 1 ) fileok = SDL_FALSE;                                            // Must contain one plane
+  if( ((hdrbuf[29]<<8)|hdrbuf[28]) != 24 ) fileok = SDL_FALSE;                                           // Must be 24 bit
+  if( ((hdrbuf[33]<<24)|(hdrbuf[32]<<16)|(hdrbuf[31]<<8)|hdrbuf[30]) != 0 ) fileok = SDL_FALSE;          // Must not be compressed
 
   if( !fileok )
   {
@@ -222,6 +231,7 @@ SDL_bool gimg_load( struct guiimg *gi )
     return SDL_FALSE;
   }
 
+  // Get some RAM!
   if( !gi->buf )
     gi->buf = malloc( gi->w * gi->h * 2 );
 
@@ -231,6 +241,7 @@ SDL_bool gimg_load( struct guiimg *gi )
     return SDL_FALSE;
   }
 
+  // BMPs are upside down!
   for( y=gi->h-1; y>=0; y-- )
   {
     fread( hdrbuf, ((gi->w*3)+3)&0xfffffffc, 1, f );
@@ -241,6 +252,7 @@ SDL_bool gimg_load( struct guiimg *gi )
   return SDL_TRUE;
 }
 
+// Draw a GUI image at X,Y
 void gimg_draw( struct guiimg *gi, Sint32 xp, Sint32 yp )
 {
   Uint16 *sptr, *dptr;
@@ -257,6 +269,7 @@ void gimg_draw( struct guiimg *gi, Sint32 xp, Sint32 yp )
   }
 }
 
+// Draw part of an image (xp,yp = screen location, ox, oy = offset into image, w, h = dimensions)
 void gimg_drawpart( struct guiimg *gi, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 oy, Sint32 w, Sint32 h )
 {
   Uint16 *sptr, *dptr;
@@ -274,11 +287,13 @@ void gimg_drawpart( struct guiimg *gi, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 o
   }
 }
 
+// Draw the statusbar at the bottom
 void draw_statusbar( void )
 {
   gimg_draw( &gimgs[GIMG_STATUSBAR], 0, GIMG_POS_SBARY );
 }
 
+// Overlay the disk icons onto the status bar
 void draw_disks( struct machine *oric )
 {
   Sint32 i, j;
@@ -297,10 +312,11 @@ void draw_disks( struct machine *oric )
       j = ((oric->wddisk.c_drive==i)&&(oric->wddisk.currentop!=COP_NUFFINK)) ? GIMG_DISK_ACTIVE : GIMG_DISK_IDLE;
       if( oric->wddisk.disk[i]->modified ) j+=2;
     }
-    gimg_draw( &gimgs[j], GIMG_POS_DISKX+i*18, GIMG_POS_SBARY );
+    gimg_draw( &gimgs[j], GIMG_POS_DISKX+i*GIMG_W_DISK, GIMG_POS_SBARY );
   }
 }
 
+// Overlay the AVI record icon onto the status bar
 void draw_avirec( SDL_bool recording )
 {
   if( recording )
@@ -312,6 +328,7 @@ void draw_avirec( SDL_bool recording )
   gimg_drawpart( &gimgs[GIMG_STATUSBAR], GIMG_POS_AVIRECX, GIMG_POS_SBARY, GIMG_POS_AVIRECX, 0, 16, 16 );
 }
 
+// Overlay the tape icon onto the status bar
 void draw_tape( struct machine *oric )
 {
   if( !oric->tapebuf )
