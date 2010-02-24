@@ -1,7 +1,7 @@
-Oricutron 0.4
+Oricutron 0.5
 -------------
 
-All code (c)2009 Peter Gordon (pete@petergordon.org.uk)
+All code (c)2010 Peter Gordon (pete@petergordon.org.uk)
 
 This is a work in progress.
 
@@ -27,7 +27,9 @@ Thanks to DBug and Twilighte for letting me distribute their demos and
 games with Oricutron.
 
 Thanks to DBug, Twilighte, Chema, kamelito, Yicker, JamesD, Algarbi, ibisum,
-jede, thrust26 and everyone else for their help and feedback!
+jede, thrust26, mmu_man and everyone else for their help and feedback!
+
+Thanks to Stefan Haubenthal for the MorphOS port!
 
 
 AVI export notes
