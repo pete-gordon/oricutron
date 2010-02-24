@@ -1197,7 +1197,7 @@ SDL_bool init_gui( struct machine *oric )
   }
 
 //  SDL_WM_SetCaption( "Oricutron WIP", "Oricutron WIP" );
-  SDL_WM_SetCaption( "Oricutron 0.4", "Oricutron 0.4" );
+  SDL_WM_SetCaption( "Oricutron 0.5", "Oricutron 0.5" );
 
   // Get the GUI palette
   for( i=0; i<NUM_GUI_COLS; i++ )
