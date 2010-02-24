@@ -256,9 +256,8 @@ SDL_bool video_doraster( struct machine *oric )
   {
     if( vidcap )
     {
-      SDL_LockAudio();
+      ay_lockaudio( &oric->ay ); // Gets unlocked at the end of each frame
       avi_addframe( &vidcap, oric->scr );
-      SDL_UnlockAudio();
     }
 
     oric->vid_raster = 0;
@@ -810,18 +809,18 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
         case SDLK_F10:
            if( vidcap )
            {
-             SDL_LockAudio();
+             ay_lockaudio( &oric->ay );
              avi_close( &vidcap );
-             SDL_UnlockAudio();
+             ay_unlockaudio( &oric->ay );
              do_popup( "AVI capture stopped" );
              refreshavi = SDL_TRUE;
              break;
            }
 
            sprintf( vidcapname, "Capturing to video%02d.avi", vidcapcount );
-           SDL_LockAudio();
+           ay_lockaudio( &oric->ay );
            vidcap = avi_open( &vidcapname[13], oricpalette, soundavailable&&soundon );
-           SDL_UnlockAudio();
+           ay_unlockaudio( &oric->ay );
            if( vidcap )
            {
              vidcapcount++;
