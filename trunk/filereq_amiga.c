@@ -48,7 +48,7 @@ struct AslIFace *IAsl = NULL;
 
 SDL_bool init_filerequester( void )
 {
-  AslBase = OpenLibrary( "asl.library", 52 );
+  AslBase = OpenLibrary( "asl.library", 39 );
   if( !AslBase ) return SDL_FALSE;
 
 #ifdef __amigaos4__
