@@ -25,6 +25,7 @@
 #define SNAME_LEN 11              // Short name for symbols (with ...)
 #define SSNAME_LEN (SNAME_LEN-3)  // Short short name :)
 
+#define EMUL_EMULREGS_H     // MorphOS should not define REG_PC
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

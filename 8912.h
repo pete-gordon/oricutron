@@ -90,6 +90,7 @@ struct ay8912
   Sint16          output;
   Sint16          tapeout;
   Uint32          ccycle, lastcyc, ccyc;
+  Uint32          keybitdelay, currkeyoffs;
 
   SDL_bool        audiolocked;
   SDL_bool        do_logcycle_reset;

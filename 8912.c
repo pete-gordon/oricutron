@@ -433,6 +433,17 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
     }
   }
 
+  if( ay->keybitdelay > 0 )
+  {
+    if( cycles >= ay->keybitdelay )
+    {
+      ay->keybitdelay = 0;
+      ay_update_keybits( ay );
+    } else {
+      ay->keybitdelay -= cycles;
+    }
+  }
+
   if( ay->do_logcycle_reset )
   {
     ay->logcycle = ay->newlogcycle;
@@ -506,6 +517,7 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
   ay->tapeout = 0;
   ay->tlogged = 0;
   ay->tapeout = 0;
+  ay->keybitdelay = 0;
   ay->audiolocked = SDL_FALSE;
   if( soundavailable )
     SDL_PauseAudio( 0 );
@@ -518,10 +530,8 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
 */
 void ay_update_keybits( struct ay8912 *ay )
 {
-  int offset;
-
-  offset = via_read_portb( &ay->oric->via ) & 0x7;
-  if( ay->keystates[offset] & (ay->eregs[AY_PORT_A]^0xff) )
+  ay->currkeyoffs = via_read_portb( &ay->oric->via ) & 0x7;
+  if( ay->keystates[ay->currkeyoffs] & (ay->eregs[AY_PORT_A]^0xff) )
     via_write_portb( &ay->oric->via, 0x08, 0x08 );
   else
     via_write_portb( &ay->oric->via, 0x08, 0x00 );
@@ -550,8 +560,14 @@ void ay_keypress( struct ay8912 *ay, unsigned short key, SDL_bool down )
   else
     ay->keystates[i>>3] &= ~(1<<(i&7));         // Up, so clear it
 
-  // Update the VIA
-  ay_update_keybits( ay );
+  // Maybe update the VIA
+  if( ay->currkeyoffs == (i>>3) )
+  {
+    if( ay->keystates[ay->currkeyoffs] & (ay->eregs[AY_PORT_A]^0xff) )
+      via_write_portb( &ay->oric->via, 0x08, 0x08 );
+    else
+      via_write_portb( &ay->oric->via, 0x08, 0x00 );
+  }
 }
 
 /*
@@ -619,7 +635,7 @@ void ay_modeset( struct ay8912 *ay )
           break;
 
         case AY_PORT_A:
-          ay_update_keybits( ay );
+          ay->keybitdelay = 12;
           break;
       }
       break;
