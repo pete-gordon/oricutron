@@ -1182,7 +1182,7 @@ SDL_bool init_gui( struct machine *oric )
   // Set up SDL audio
   wanted.freq     = AUDIO_FREQ; 
   wanted.format   = AUDIO_S16SYS; 
-  wanted.channels = 1; /* 1 = mono, 2 = stereo */
+  wanted.channels = 2; /* 1 = mono, 2 = stereo */
   wanted.samples  = AUDIO_BUFLEN;
 
   wanted.callback = (void*)ay_callback;

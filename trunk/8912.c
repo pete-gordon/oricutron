@@ -343,6 +343,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
 
     fout = ay->output + ay->tapeout;
     out[j++] = fout;
+    out[j++] = fout;
     if( vidcap ) audiocapbuf[i] = fout;
 
     if( fout > dcadjustmax ) dcadjustmax = fout;
@@ -361,7 +362,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
     for( i=0, j=0; i<AUDIO_BUFLEN; i++ )
     {
       out[j++] -= dcadjustave;
-//      out[j++] -= dcadjustave;
+      out[j++] -= dcadjustave;
       if( vidcap ) audiocapbuf[i] -= dcadjustave;
     }
   }
