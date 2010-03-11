@@ -1544,10 +1544,9 @@ void mon_update_disk( struct machine *oric )
     oric->wddisk.c_drive,
     oric->wddisk.c_side,
     oric->wddisk.c_track );
-  tzprintfpos( tz[TZ_DISK], 2, 4, "SECTR=%02X DATA=%02X CMD  =%02X",
+  tzprintfpos( tz[TZ_DISK], 2, 4, "SECTR=%02X DATA=%02X",
     oric->wddisk.r_sector,
-    oric->wddisk.r_data,
-    oric->wddisk.cmd );
+    oric->wddisk.r_data );
   tzprintfpos( tz[TZ_DISK], 2, 5, "OP=%s", opname );
   tzprintfpos( tz[TZ_DISK], 2, 6, "IRQC=%03d DRQC=%03d",
     oric->wddisk.delayedint,
@@ -3263,12 +3262,6 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
         }
         break;
       
-      default:
-        break;
-    }
-
-    switch( ev->key.keysym.unicode )
-    {
       case SDLK_BACKSPACE:
         if( cursx > 0 )
         {
@@ -3302,6 +3295,12 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
         *needrender = SDL_TRUE;
         break;
 
+      default:
+        break;
+    }
+
+    switch( ev->key.keysym.unicode )
+    {
       default:
         if( ( ev->key.keysym.unicode > 31 ) && ( ev->key.keysym.unicode < 127 ) )
         {
@@ -3383,10 +3382,7 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
     
     default:
       break;
-  }
 
-  switch( ev->key.keysym.unicode )
-  {
     case SDLK_BACKSPACE:
       if( cursx > 0 )
       {
@@ -3439,7 +3435,10 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
       mon_show_curs();
       *needrender = SDL_TRUE;
       break;
+  }
 
+  switch( ev->key.keysym.unicode )
+  {
     default:
       if( ( ev->key.keysym.unicode > 31 ) && ( ev->key.keysym.unicode < 127 ) )
       {
