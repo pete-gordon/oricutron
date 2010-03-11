@@ -102,7 +102,6 @@ struct diskimage *diskimage_alloc( Uint32 rawimglen )
   dimg->numsectors  = 0;
   dimg->rawimage    = buf;
   dimg->rawimagelen = rawimglen;
-  dimg->dinf        = NULL;
   dimg->modified    = SDL_FALSE;
   return dimg;
 }
@@ -115,27 +114,35 @@ void disk_eject( struct machine *oric, int drive )
   disk_popup( oric, drive );
 }
 
-// Cache a track
+// Whenever a seek operation occurs, the track where the head ends up
+// is "cached". The track is located within the raw image file, and
+// all the sector address and data markers are found, and pointers
+// are remembered for each.
 void diskimage_cachetrack( struct diskimage *dimg, int track, int side )
 {
   Uint8 *ptr, *eot;
   Uint32 sectorcount, n;
 
+  // If this track is already cached, don't waste time doing it again
   if( ( dimg->cachedtrack == track ) &&
       ( dimg->cachedside == side ) )
     return;
 
+  // Find the start and end locations of the track within the disk image
   ptr = &dimg->rawimage[(side*dimg->numtracks+track)*6400+256];
   eot = &ptr[6400];
 
+  // Scan through the track looking for sectors
   sectorcount = 0;
   while( ptr < eot )
   {
     // Search for ID mark
     while( (ptr<eot) && (ptr[0]!=0xfe) ) ptr++;
+
+    // Don't exceed the bounds of this track
     if( ptr >= eot ) break;
     
-    // Store pointer
+    // Store ID pointer
     dimg->sector[sectorcount].id_ptr = ptr;
     dimg->sector[sectorcount].data_ptr = NULL;
     sectorcount++;
@@ -157,15 +164,22 @@ void diskimage_cachetrack( struct diskimage *dimg, int track, int side )
     ptr += (1<<(n+7))+3;
   }
 
+  // Remember how many sectors we have successfully cached
   dimg->numsectors = sectorcount;
 }
 
+// This saves a diskimage back to disk.
+// Since the disk image is always kept in standard format, there is
+// no processing of the image in this routine, it is just dumped from
+// memory back to disk.
 SDL_bool diskimage_save( struct machine *oric, char *fname, int drive )
 {
   FILE *f;
 
+  // Make sure there is a disk in the drive!
   if( !oric->wddisk.disk[drive] ) return SDL_FALSE;
 
+  // Open the file for writing
   f = fopen( fname, "wb" );
   if( !f )
   {
@@ -173,6 +187,7 @@ SDL_bool diskimage_save( struct machine *oric, char *fname, int drive )
     return SDL_FALSE;
   }
 
+  // Dump it to disk
   if( fwrite( oric->wddisk.disk[drive]->rawimage, oric->wddisk.disk[drive]->rawimagelen, 1, f ) != 1 )
   {
     fclose( f );
@@ -180,38 +195,50 @@ SDL_bool diskimage_save( struct machine *oric, char *fname, int drive )
     return SDL_FALSE;
   }
 
+  // All done!
   fclose( f );
 
+  // If we are not just overwriting the original file, remember the new filename
   if( fname != oric->wddisk.disk[drive]->filename )
   {
     strncpy( oric->wddisk.disk[drive]->filename, fname, 4096+512 );
     oric->wddisk.disk[drive]->filename[4096+511] = 0;
   }
+
+  // The image in memory is no longer different to the last saved version
   oric->wddisk.disk[drive]->modified = SDL_FALSE;
+
+  // Remember to update the GUI
   refreshdisks = SDL_TRUE;
   return SDL_TRUE;
 }
 
+// This routine "inserts" a disk image into a virtual drive
 SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
 {
   FILE *f;
   Uint32 len;
 
+  // Open the file
   f = fopen( fname, "rb" );
   if( !f ) return SDL_FALSE;
 
+  // The file exists, so eject any currently inserted disk
   disk_eject( oric, drive );
 
+  // Determine the size of the disk image
   fseek( f, 0, SEEK_END );
   len = ftell( f );
   fseek( f, 0, SEEK_SET );
 
+  // Empty file!?
   if( len <= 0 )
   {
     fclose( f );
     return SDL_FALSE;
   }
 
+  // Allocate a new disk image structure and space for the raw image
   oric->wddisk.disk[drive] = diskimage_alloc( len );
   if( !oric->wddisk.disk[drive] )
   {
@@ -220,6 +247,7 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
     return SDL_FALSE;
   }
 
+  // Read the image file into memory
   if( fread( oric->wddisk.disk[drive]->rawimage, len, 1, f ) != 1 )
   {
     fclose( f );
@@ -230,6 +258,7 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
 
   fclose( f );
 
+  // Check for the header ID
   if( strncmp( (char *)oric->wddisk.disk[drive]->rawimage, "MFM_DISK", 8 ) != 0 )
   {
     disk_eject( oric, drive );
@@ -237,10 +266,12 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
     return SDL_FALSE;
   }
 
+  // Get some basic image info
   oric->wddisk.disk[drive]->numsides  = diskimage_rawint( oric->wddisk.disk[drive], 8 );
   oric->wddisk.disk[drive]->numtracks = diskimage_rawint( oric->wddisk.disk[drive], 12 );
   oric->wddisk.disk[drive]->geometry  = diskimage_rawint( oric->wddisk.disk[drive], 16 );
 
+  // Is the disk sane!?
   if( ( oric->wddisk.disk[drive]->numsides < 1 ) &&
       ( oric->wddisk.disk[drive]->numsides > 2 ) )
   {
@@ -249,11 +280,14 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
     return SDL_FALSE;
   }
 
+  // Nobody has written to this disk yet
   oric->wddisk.disk[drive]->modified = SDL_FALSE;
 
+  // Remember the filename of the image for this drive
   strncpy( oric->wddisk.disk[drive]->filename, fname, 4096+512 );
   oric->wddisk.disk[drive]->filename[4096+511] = 0;
 
+  // Come up with a suitable short name for popups etc.
   if( strlen( fname ) > 15 )
   {
     strncpy( oric->diskname[drive], &fname[strlen(fname)-15], 16 );
@@ -262,18 +296,24 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
     strncpy( oric->diskname[drive], fname, 16 );
   }
   oric->diskname[drive][15] = 0;
+
+  // Do the popup
   disk_popup( oric, drive );
+
+  // Mark the disk status icons as needing a refresh
   refreshdisks = SDL_TRUE;
   return SDL_TRUE;
 };
 
+// This routine does nothing. It is just used as a default for the callback routines
+// and is usually replaced by the microdisc/jasmin/whatever implementations.
 void wd17xx_dummy( void *nothing )
 {
 }
 
+// Initialise a WD17xx controller instance
 void wd17xx_init( struct wd17xx *wd )
 {
-  wd->cmd      = 0;
   wd->r_status = 0;
   wd->r_track  = 0;
   wd->r_sector = 0;
@@ -297,19 +337,30 @@ void wd17xx_init( struct wd17xx *wd )
   refreshdisks = SDL_TRUE;
 }
 
+// This routine emulates some cycles of disk activity.
 void wd17xx_ticktock( struct wd17xx *wd, int cycles )
 {
+  // Is there a pending INTRQ?
   if( wd->delayedint > 0 )
   {
+    // Count down the INTRQ timer!
     wd->delayedint -= cycles;
+
+    // Time to assert INTRQ?
     if( wd->delayedint <= 0 )
     {
+      // Yep! Stop timing.
       wd->delayedint = 0;
+      
+      // Need to update the status register?
       if( wd->distatus != -1 )
       {
+        // Yep. Do so.
         wd->r_status = wd->distatus;
         wd->distatus = -1;
       }
+
+      // Assert INTRQ (this function pointer is set up by the microdisc/jasmin/whatever controller)
       wd->setintrq( wd->intrqarg );
 #if GENERAL_DISK_DEBUG
       dbg_printf( "DISK: Delayed INTRQ" );
@@ -317,42 +368,55 @@ void wd17xx_ticktock( struct wd17xx *wd, int cycles )
     }
   }
 
+  // Is there a pending DRQ?
   if( wd->delayeddrq > 0 )
   {
+    // Count down the DRQ timer!
     wd->delayeddrq -= cycles;
+
+    // Time to assert DRQ?
     if( wd->delayeddrq <= 0 )
     {
+      // Yep! Stop timing.
       wd->delayeddrq = 0;
+
+      // Need to update the status register?
       if( wd->ddstatus != -1 )
       {
+        // Yep. Do so.
         wd->r_status = wd->ddstatus;
         wd->ddstatus = -1;
       }
+
+      // Assert DRQ
       wd->r_status |= WSF_DRQ;
       wd->setdrq( wd->drqarg );
-//      dbg_printf( "DISK: Delayed DRQ" );
     }
   }
 }
 
+// This routine seeks to the specified track. It is used by the SEEK and STEP commands.
 void wd17xx_seek_track( struct wd17xx *wd, Uint8 track )
 {
+  // Is there a disk in the drive?
   if( wd->disk[wd->c_drive] )
   {
+    // Yes. If we are trying to seek to a non-existant track, just seek as far as we can
     if( track >= wd->disk[wd->c_drive]->numtracks )
-//    {
       track = (wd->disk[wd->c_drive]->numtracks>0)?wd->disk[wd->c_drive]->numtracks-1:0;
-/*      
-      wd->distatus = WSFI_SEEKERR;
-      wd->delayedint = 20;
-      dbg_printf( "DISK: track %u doesn't exist", track );
-      return;
-    }
-*/
+
+    // Cache the new track
     diskimage_cachetrack( wd->disk[wd->c_drive], track, wd->c_side );
+
+    // Update our status
     wd->c_track = track;
     wd->c_sector = 0;
     wd->r_track = track;
+
+    // Assert INTRQ in 20 cycles time and update the status accordingly
+    // (note: 20 cycles is waaaaaay faster than any real drive could seek. The actual
+    // delay would depend how far the head had to seek, and what stepping speed was
+    // currently set).
     wd->delayedint = 20;
     wd->distatus = WSFI_HEADL|WSFI_PULSE;
     if( wd->c_track == 0 ) wd->distatus |= WSFI_TRK0;
@@ -363,7 +427,10 @@ void wd17xx_seek_track( struct wd17xx *wd, Uint8 track )
   }
 
   // No disk in drive
+  // Set INTRQ because the operation has finished.
   wd->setintrq( wd->intrqarg );
+
+  // Set error state
   wd->r_status = WSF_NOTREADY|WSFI_SEEKERR;
   wd->r_track = 0;
 #if GENERAL_DISK_DEBUG
@@ -371,78 +438,115 @@ void wd17xx_seek_track( struct wd17xx *wd, Uint8 track )
 #endif
 }
 
+// This routine looks for the sector with the specified ID in the current track.
+// It returns NULL if there is no such sector, or a structure with pointers to
+// the ID and data fields if the sector is found.
 struct mfmsector *wd17xx_find_sector( struct wd17xx *wd, Uint8 secid )
 {
   int revs=0;
   struct diskimage *dimg;
 
+  // Save some typing...
   dimg = wd->disk[wd->c_drive];
 
+  // No disk image? No sectors!
   if( !dimg ) return NULL;
+
+  // Make sure the current track is cached
   diskimage_cachetrack( dimg, wd->c_track, wd->c_side );
 
+  // No sectors on this track? Someone needs to format their disk...
   if( dimg->numsectors < 1 )
     return NULL;
 
+  // We do this more realistically than we need to since this is not
+  // a super-accurate emulation (for now). Never mind. Lets go
+  // around the track up to two times.
   while( revs < 2 )
   {
+    // Move on to the next sector
     wd->c_sector = (wd->c_sector+1)%dimg->numsectors;
+
+    // If we passed through the start of the track, set the pulse bit in the status register
     if( !wd->c_sector )
     {
       revs++;
       wd->r_status |= WSFI_PULSE;
     }
 
+    // Found the required sector?
     if( dimg->sector[wd->c_sector].id_ptr[3] == secid )
       return &dimg->sector[wd->c_sector];
   }
 
+  // The search failed :-(
 #if GENERAL_DISK_DEBUG
   dbg_printf( "Couldn't find sector %u", secid );
 #endif
   return NULL;
 }
 
+// This returns the first valid sector in the current track, or NULL if
+// there aren't any sectors.
 struct mfmsector *wd17xx_first_sector( struct wd17xx *wd )
 {
   struct diskimage *dimg;
 
   dimg = wd->disk[wd->c_drive];
   
+  // No disk? no sector...
   if( !dimg ) return NULL;
+
+  // Make sure the current track is cached
   diskimage_cachetrack( dimg, wd->c_track, wd->c_side );
   
+  // No sectors?!
   if( dimg->numsectors < 1 )
     return NULL;
 
+  // We're at the first sector!
   wd->c_sector = 0;
   wd->r_status = WSFI_PULSE;
+
+  // Return the sector pointers
   return &dimg->sector[wd->c_sector];
 }
 
+// Move on to the next sector
 struct mfmsector *wd17xx_next_sector( struct wd17xx *wd )
 {
   struct diskimage *dimg;
 
   dimg = wd->disk[wd->c_drive];
   
+  // No disk? No sectors!
   if( !dimg ) return NULL;
+
+  // Make sure the current track is cached
   diskimage_cachetrack( dimg, wd->c_track, wd->c_side );
   
+  // No sectors?
   if( dimg->numsectors < 1 )
     return NULL;
 
+  // Get the next sector number
   wd->c_sector = (wd->c_sector+1)%dimg->numsectors;
+
+  // If we are at the start of the track, set the pulse bit
   if( !wd->c_sector ) wd->r_status |= WSFI_PULSE;
+
+  // Return the sector pointers
   return &dimg->sector[wd->c_sector];
 }
 
+// Perform a read operation on a WD17xx register
 unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
 {
+  // Which register?!
   switch( addr )
   {
     case 0: // Status register
-      wd->clrintrq( wd->intrqarg );
+      wd->clrintrq( wd->intrqarg );   // Reading the status register clears INTRQ
       return wd->r_status;
     
     case 1: // Track register
@@ -452,12 +556,15 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
       return wd->r_sector;
     
     case 3: // Data register
+      // What are we currently doing?
       switch( wd->currentop )
       {
         case COP_READ_SECTOR:
         case COP_READ_SECTORS:
+          // We somehow started a sector read operation without a valid sector.
           if( !wd->currsector )
           {
+            // Abort.
             wd->r_status &= ~WSF_DRQ;
             wd->r_status |= WSF_RNF;
             wd->clrdrq( wd->drqarg );
@@ -465,8 +572,14 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
             refreshdisks = SDL_TRUE;
             break;
           }
+
+          // If this is the first read of a read operation, remember the record type for later
           if( wd->curroffs == 0 ) wd->sectype = (wd->currsector->data_ptr[wd->curroffs++]==0xf8)?WSFR_RECTYP:0x00;
+
+          // Get the next byte from the sector
           wd->r_data = wd->currsector->data_ptr[wd->curroffs++];
+
+          // Clear any previous DRQ
           wd->r_status &= ~WSF_DRQ;
           wd->clrdrq( wd->drqarg );
 
@@ -485,6 +598,7 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
           }
 #endif
 
+          // Has the whole sector been read?
           if( wd->curroffs > wd->currseclen )
           {
 #if DEBUG_SECTOR_DUMP
@@ -499,6 +613,9 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
               sectordumpcount = 0;
             }
 #endif
+
+            // We've got to the end of the current sector. IF it is a multiple sector
+            // operation, we need to move on!
             if( wd->currentop == COP_READ_SECTORS )
             {
 #if GENERAL_DISK_DEBUG
@@ -509,28 +626,35 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
               wd->curroffs   = 0;
               wd->currsector = wd17xx_find_sector( wd, wd->r_sector );
               
+              // If we hit the end of the track, thats fine, it just means the operation
+              // is finished.
               if( !wd->currsector )
               {
-                wd->delayedint = 20;
-                wd->distatus   = wd->sectype;
-                wd->currentop = COP_NUFFINK;
-                wd->r_status &= (~WSF_DRQ);
+                wd->delayedint = 20;           // Assert INTRQ in 20 cycles time
+                wd->distatus   = wd->sectype;  // ...and when doing so, set the status to reflect the record type
+                wd->currentop = COP_NUFFINK;   // No longer in the middle of an operation
+                wd->r_status &= (~WSF_DRQ);    // Clear DRQ (no data to read)
                 wd->clrdrq( wd->drqarg );
-                refreshdisks = SDL_TRUE;
+                refreshdisks = SDL_TRUE;       // Turn off the disk LED in the status bar
                 break;
               }
+
+              // We've got the next sector lined up. Assert DRQ in 180 cycles time (simulate a bit of a delay
+              // between sectors. Note that most of these values have been pulled out of thin air and might need
+              // adjusting for some pickier loaders).
               wd->delayeddrq = 180;
               break;
             }
 
-            wd->delayedint = 32;
-            wd->distatus   = wd->sectype;
-            wd->currentop = COP_NUFFINK;
-            wd->r_status &= (~WSF_DRQ);
+            // Just reading one sector so..
+            wd->delayedint = 32;           // INTRQ in a little while because we're finished
+            wd->distatus   = wd->sectype;  // Set the status accordingly
+            wd->currentop = COP_NUFFINK;   // Finished the op
+            wd->r_status &= (~WSF_DRQ);    // Clear DRQ (no more data)
             wd->clrdrq( wd->drqarg );
-            refreshdisks = SDL_TRUE;
+            refreshdisks = SDL_TRUE;       // Turn off disk LED
           } else {
-            wd->delayeddrq = 32;
+            wd->delayeddrq = 32;           // More data ready. DRQ to let them know!
           }
           break;
         
@@ -572,7 +696,6 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
   {
     case 0: // Command register
       wd->clrintrq( wd->intrqarg );
-      wd->cmd = data;
       switch( data & 0xe0 )
       {
         case 0x00:  // Restore or seek
