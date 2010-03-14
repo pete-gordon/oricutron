@@ -636,7 +636,7 @@ void ay_modeset( struct ay8912 *ay )
           break;
 
         case AY_PORT_A:
-          ay->keybitdelay = 12;
+          ay->keybitdelay = 7;
           break;
       }
       break;
