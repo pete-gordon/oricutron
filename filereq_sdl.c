@@ -139,7 +139,10 @@ int filereq_sortcmp(const void *p1, const void *p2)
 	struct frq_ent *p1_t = (struct frq_ent *)p1;
 	struct frq_ent *p2_t = (struct frq_ent *)p2;
 
-	return strcmp(p1_t->name, p2_t->name);
+	if (p1_t->isdir)
+		return 0;
+	else
+		return strcmp(p1_t->name, p2_t->name);
 
 }
 
