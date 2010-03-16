@@ -132,6 +132,38 @@ static void filereq_addent( SDL_bool isdir, char *name, char *showname )
   freqf_used++;
 }
 
+
+
+int filereq_sortcmp(const void *p1, const void *p2)
+{
+	struct frq_ent *p1_t = (struct frq_ent *)p1;
+	struct frq_ent *p2_t = (struct frq_ent *)p2;
+
+	return strcmp(p1_t->name, p2_t->name);
+
+}
+
+static void filereq_sortent()
+{
+	int i;
+
+#if LOG_DEBUG
+	dbg_printf("Before sort: \n");
+	for(i=0;i<freqf_used;i++)
+		dbg_printf(" file # %d is [%s]\n", i, freqfiles[i].name);
+#endif
+
+	qsort(&freqfiles[0], freqf_used, sizeof(struct frq_ent), filereq_sortcmp);
+
+#if LOG_DEBUG
+	dbg_printf("After sort: \n");
+	for(i=0;i<freqf_used;i++)
+		dbg_printf(" file # %d is [%s]\n", i, freqfiles[i].name);
+#endif
+
+}
+
+
 // Scan a directory to show in the filerequester
 static SDL_bool filereq_scan( char *path )
 {
@@ -166,6 +198,8 @@ static SDL_bool filereq_scan( char *path )
   }
 
   closedir( dh );
+
+  filereq_sortent();
 
   chdir( odir );
   free( odir );
