@@ -1475,7 +1475,7 @@ void mon_update_ay( struct machine *oric )
   printayregbits( oric, "RA Volume C  $%02X \%", 2,14, AY_CHC_AMP,   5 );
 
   printayregbits( oric, "RB Env Per L $%02X \%", 2,16, AY_ENV_PER_L, 8 );
-  printayregbits( oric, "RC Env Per H $%02X \%", 2,17, AY_ENV_PER_L, 8 );
+  printayregbits( oric, "RC Env Per H $%02X \%", 2,17, AY_ENV_PER_H, 8 );
   printayregbits( oric, "RD Env Cycle $%02X \%", 2,18, AY_ENV_CYCLE, 4 );
   printayregbits( oric, "RE Key Col   $%02X \%", 2,19, AY_PORT_A,    8 );
 
