@@ -30,7 +30,6 @@ enum
   TZ_AY,
   TZ_DISK,
   TZ_MENU,
-  TZ_FILEREQ,
   TZ_LAST
 };
 
@@ -83,6 +82,9 @@ enum
   GIMG_AVI_RECORD,
   GIMG_LAST
 };
+
+struct textzone *alloc_textzone( int x, int y, int w, int h, char *title );
+void free_textzone( struct textzone *ptz );
 
 void do_popup( char *str );
 void makebox( struct textzone *ptz, int x, int y, int w, int h, int fg, int bg );

@@ -1220,8 +1220,6 @@ SDL_bool init_gui( struct machine *oric )
   if( !tz[TZ_AY] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
   tz[TZ_DISK]   = alloc_textzone( 400, 228, 30, 21, "Disk Status" );
   if( !tz[TZ_DISK] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
-  tz[TZ_FILEREQ] = alloc_textzone( 160, 48, 40, 32, "Files" );
-  if( !tz[TZ_FILEREQ] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
 
   for( i=0; i<GIMG_LAST; i++ )
   {

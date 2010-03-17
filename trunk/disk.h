@@ -99,6 +99,7 @@ struct mfmsector
 // the actual sectors within the track.
 struct diskimage
 {
+  Sint16   drivenum;              // The drive this disk is inserted into, or -1
   Uint32   numtracks;             // Number of tracks per side
   Uint32   numsides;              // Number of sides in the image
   Uint32   geometry;              // Geometry. I don't know what this is.

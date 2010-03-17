@@ -32,8 +32,10 @@
 #include "disk.h"
 #include "machine.h"
 #include "monitor.h"
+#include "msgbox.h"
+#include "filereq.h"
 
-extern char diskfile[], diskpath[];
+extern char diskfile[], diskpath[], filetmp[];
 extern SDL_bool refreshdisks;
 
 #define GENERAL_DISK_DEBUG 1
@@ -59,9 +61,25 @@ void disk_popup( struct machine *oric, int drive )
 }
 
 // Free a disk image and clear the pointer to it
-void diskimage_free( struct diskimage **dimg )
+void diskimage_free( struct machine *oric, struct diskimage **dimg )
 {
   if( !(*dimg) ) return;
+
+  if( (*dimg)->modified )
+  {
+    char modmsg[128];
+    sprintf( modmsg, "The disk in drive %d is modified.\nWould you like to save the changes?", (*dimg)->drivenum );
+    if( msgbox( oric, MSGBOX_YES_NO, modmsg ) )
+    {
+      sprintf( modmsg, "Save disk %d", (*dimg)->drivenum );
+      if( filerequester( oric, modmsg, diskpath, diskfile, FR_DISKSAVE ) )
+      {
+        joinpath( diskpath, diskfile );
+        diskimage_save( oric, filetmp, (*dimg)->drivenum );
+      }      
+    }
+  }
+
   if( (*dimg)->rawimage ) free( (*dimg)->rawimage );
   free( *dimg );
   (*dimg) = NULL;
@@ -94,6 +112,7 @@ struct diskimage *diskimage_alloc( Uint32 rawimglen )
   dimg = malloc( sizeof( struct diskimage ) );
   if( !dimg ) return NULL;
 
+  dimg->drivenum    = -1;
   dimg->numtracks   = 0;
   dimg->numsides    = 0;
   dimg->geometry    = 0;
@@ -109,7 +128,7 @@ struct diskimage *diskimage_alloc( Uint32 rawimglen )
 // Eject a disk from a drive
 void disk_eject( struct machine *oric, int drive )
 {
-  diskimage_free( &oric->wddisk.disk[drive] );
+  diskimage_free( oric, &oric->wddisk.disk[drive] );
   oric->diskname[drive][0] = 0;
   disk_popup( oric, drive );
 }
@@ -267,6 +286,7 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
   }
 
   // Get some basic image info
+  oric->wddisk.disk[drive]->drivenum  = drive;
   oric->wddisk.disk[drive]->numsides  = diskimage_rawint( oric->wddisk.disk[drive], 8 );
   oric->wddisk.disk[drive]->numtracks = diskimage_rawint( oric->wddisk.disk[drive], 12 );
   oric->wddisk.disk[drive]->geometry  = diskimage_rawint( oric->wddisk.disk[drive], 16 );
