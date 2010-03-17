@@ -36,6 +36,7 @@
 #include "machine.h"
 #include "monitor.h"
 #include "filereq.h"
+#include "msgbox.h"
 #include "avi.h"
 
 #define FRAMES_TO_AVERAGE 15
@@ -353,6 +354,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 
   if( !init_gui( oric ) ) { free( sto ); return SDL_FALSE; }
   if( !init_filerequester() ) { free( sto ); return SDL_FALSE; }
+  if( !init_msgbox() ) { free( sto ); return SDL_FALSE; }
   oric->drivetype = sto->start_disktype;
   if( !init_machine( oric, sto->start_machine, SDL_TRUE ) ) { free( sto ); return SDL_FALSE; }
 
@@ -381,6 +383,7 @@ void shut( struct machine *oric )
   shut_machine( oric );
   mon_shut();
   shut_filerequester();
+  shut_msgbox();
   shut_gui();
 #ifdef __amigaos4__
   IExec->FreeSignal( timersigbit );

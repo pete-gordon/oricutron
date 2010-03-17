@@ -33,10 +33,11 @@
 #include "gui.h"
 #include "disk.h"
 #include "machine.h"
+#include "filereq.h"
 
 // Externs
 extern SDL_Surface *screen;
-extern struct textzone *tz[];
+static struct textzone *tz = NULL;
 
 // A directory entry in the file requester
 struct frq_ent
@@ -65,11 +66,15 @@ static int freqf_clicktime=0;
 
 SDL_bool init_filerequester( void )
 {
+  tz = alloc_textzone( 160, 48, 40, 32, "Files" );
+  if( !tz ) return SDL_FALSE;
+
   return SDL_TRUE;
 }
 
 void shut_filerequester( void )
 {
+  if( tz ) free_textzone( tz );
 }
 
 // Render the filerequester
@@ -79,7 +84,7 @@ static void filereq_render( struct machine *oric )
     SDL_LockSurface( screen );
 
   video_show( oric );
-  draw_textzone( tz[TZ_FILEREQ] );
+  draw_textzone( tz );
 
   if( SDL_MUSTLOCK( screen ) )
     SDL_UnlockSurface( screen );
@@ -105,13 +110,23 @@ static void filereq_addent( SDL_bool isdir, char *name, char *showname )
   }
 
   // Get the point to insert it
-  j = freqf_used; // At the end for a file
-
-  if( isdir )
+  j = 0;
+  if( freqf_used > 0 )
   {
-    // After the last dir for a dir
-    for( j=0; j<freqf_used; j++ )
-      if( !freqfiles[j].isdir ) break;
+    if( isdir )
+    {
+      for( j=1; j<freqf_used; j++ )
+      {
+        if( strcasecmp( name, freqfiles[j].name ) <= 0 ) break;
+        if( !freqfiles[j].isdir ) break;
+      }
+    } else {
+      for( j=1; j<freqf_used; j++ )
+        if( !freqfiles[j].isdir ) break;
+
+      for( ; j<freqf_used; j++ )
+        if( strcasecmp( name, freqfiles[j].name ) <= 0 ) break;
+    }
 
     // Move everything down to make space
     if( j < freqf_used )
@@ -131,41 +146,6 @@ static void filereq_addent( SDL_bool isdir, char *name, char *showname )
   // I dun it!!11
   freqf_used++;
 }
-
-
-
-int filereq_sortcmp(const void *p1, const void *p2)
-{
-	struct frq_ent *p1_t = (struct frq_ent *)p1;
-	struct frq_ent *p2_t = (struct frq_ent *)p2;
-
-	if (p1_t->isdir)
-		return 0;
-	else
-		return strcmp(p1_t->name, p2_t->name);
-
-}
-
-static void filereq_sortent()
-{
-	int i;
-
-#if LOG_DEBUG
-	dbg_printf("Before sort: \n");
-	for(i=0;i<freqf_used;i++)
-		dbg_printf(" file # %d is [%s]\n", i, freqfiles[i].name);
-#endif
-
-	qsort(&freqfiles[0], freqf_used, sizeof(struct frq_ent), filereq_sortcmp);
-
-#if LOG_DEBUG
-	dbg_printf("After sort: \n");
-	for(i=0;i<freqf_used;i++)
-		dbg_printf(" file # %d is [%s]\n", i, freqfiles[i].name);
-#endif
-
-}
-
 
 // Scan a directory to show in the filerequester
 static SDL_bool filereq_scan( char *path )
@@ -202,8 +182,6 @@ static SDL_bool filereq_scan( char *path )
 
   closedir( dh );
 
-  filereq_sortent();
-
   chdir( odir );
   free( odir );
   return SDL_TRUE;
@@ -213,35 +191,33 @@ static SDL_bool filereq_scan( char *path )
 static void filereq_showfiles( int offset, int cfile )
 {
   int i, j, o;
-  struct textzone *ptz;
 
   // If the listview isn't selected, don't show a current file
   if( freqf_cgad != 2 )
     cfile = -1;
 
-  ptz = tz[TZ_FILEREQ];
   for( i=0; i<26; i++ )
   {
     // Set the colours
     if( (i+offset) < freqf_used )
-      tzsetcol( ptz, freqfiles[i+offset].isdir ? 1 : 0, (i+offset)==cfile ? 7 : 6 );
+      tzsetcol( tz, freqfiles[i+offset].isdir ? 1 : 0, (i+offset)==cfile ? 7 : 6 );
     else
-      tzsetcol( ptz, 0, 6 );
+      tzsetcol( tz, 0, 6 );
 
     // Clear this line
-    o = (i+1)*ptz->w+1;
+    o = (i+1)*tz->w+1;
     for( j=0; j<38; j++, o++ )
     {
-      ptz->fc[o] = ptz->cfc;
-      ptz->bc[o] = ptz->cbc;
-      ptz->tx[o] = 32;
+      tz->fc[o] = tz->cfc;
+      tz->bc[o] = tz->cbc;
+      tz->tx[o] = 32;
     }
 
     if( (i+offset) >= freqf_used )
       continue;
 
     // Print the name
-    tzstrpos( ptz, 1, i+1, freqfiles[i+offset].showname );
+    tzstrpos( tz, 1, i+1, freqfiles[i+offset].showname );
   }
 }
 
@@ -260,25 +236,24 @@ static void filereq_settbox( struct frq_textbox *tb, char *buf )
 // Draw a textbox into the filerequester textzone
 static void filereq_drawtbox( struct frq_textbox *tb, SDL_bool active )
 {
-  struct textzone *ptz = tz[TZ_FILEREQ];
   int i, j, o;
 
-  tzsetcol( ptz, 0, active ? 7 : 6 );
-  o = (tb->y*ptz->w)+tb->x;
+  tzsetcol( tz, 0, active ? 7 : 6 );
+  o = (tb->y*tz->w)+tb->x;
   for( i=0,j=tb->vpos; i<tb->w; i++, o++, j++ )
   {
     if( ( active ) && ( j==tb->cpos ) )
     {
-      ptz->fc[o] = ptz->cbc;
-      ptz->bc[o] = ptz->cfc;
+      tz->fc[o] = tz->cbc;
+      tz->bc[o] = tz->cfc;
     } else {
-      ptz->fc[o] = ptz->cfc;
-      ptz->bc[o] = ptz->cbc;
+      tz->fc[o] = tz->cfc;
+      tz->bc[o] = tz->cbc;
     }
     if( j < tb->slen )
-      ptz->tx[o] = tb->buf[j];
+      tz->tx[o] = tb->buf[j];
     else
-      ptz->tx[o] = 32;
+      tz->tx[o] = 32;
   }
 }
 
@@ -301,6 +276,14 @@ static void filereq_setfiletbox( int cfile, char *fname )
   filereq_settbox( &freqf_tbox[1], fname );
 }
 
+enum
+{
+  ACTION_NONE = 0,
+  ACTION_SELECTITEM,
+  ACTION_PAGEUP,
+  ACTION_PAGEDOWN
+};
+
 // This routine displays a file requester and waits for the user to select a file
 //   title = title at the top of the requester
 //   path  = initial path to show
@@ -310,20 +293,21 @@ static void filereq_setfiletbox( int cfile, char *fname )
 SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fname, int type )
 {
   SDL_Event event;
-  struct textzone *ptz;
   struct frq_textbox *tb;
   int top=0,cfile=0,i,mx,my,mclick;
-  SDL_bool doit;
+  SDL_bool shifty = SDL_FALSE, wasunicode;
+  int doaction;
 
-  ptz = tz[TZ_FILEREQ];
+  wasunicode = SDL_EnableUNICODE( SDL_TRUE );
+  SDL_EnableKeyRepeat( SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL );
 
   filereq_settbox( &freqf_tbox[0], path );
   filereq_settbox( &freqf_tbox[1], fname );
 
-  tzsettitle( ptz, title );
-  tzsetcol( ptz, 2, 3 );
-  tzstrpos( ptz, 1, 28, "Path:" );
-  tzstrpos( ptz, 1, 30, "File:" );
+  tzsettitle( tz, title );
+  tzsetcol( tz, 2, 3 );
+  tzstrpos( tz, 1, 28, "Path:" );
+  tzstrpos( tz, 1, 30, "File:" );
 
   if( !filereq_scan( path ) )
   {
@@ -331,8 +315,15 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
     {
       path[0] = 0;
       filereq_settbox( &freqf_tbox[0], path );
-      if( !filereq_scan( path ) ) return SDL_FALSE;
+      if( !filereq_scan( path ) )
+      {
+        SDL_EnableUNICODE( wasunicode );
+        SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+        return SDL_FALSE;
+      }
     } else {
+      SDL_EnableUNICODE( wasunicode );
+      SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
       return SDL_FALSE;
     }
   }
@@ -343,24 +334,29 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
 
   for( ;; )
   {
-    if( !SDL_WaitEvent( &event ) ) return SDL_FALSE;
+    if( !SDL_WaitEvent( &event ) )
+    {
+      SDL_EnableUNICODE( wasunicode );
+      SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+      return SDL_FALSE;
+    }
 
     mx = -1;
     my = -1;
     mclick = 0;
-    doit = SDL_FALSE;
+    doaction = ACTION_NONE;
     switch( event.type )
     {
       case SDL_MOUSEMOTION:
-        mx = (event.motion.x - ptz->x)/8;
-        my = (event.motion.y - ptz->y)/12;
+        mx = (event.motion.x - tz->x)/8;
+        my = (event.motion.y - tz->y)/12;
         break;
 
       case SDL_MOUSEBUTTONDOWN:
         if( event.button.button == SDL_BUTTON_LEFT )
         {
-          mx = (event.button.x - ptz->x)/8;
-          my = (event.button.y - ptz->y)/12;
+          mx = (event.button.x - tz->x)/8;
+          my = (event.button.y - tz->y)/12;
           mclick = SDL_GetTicks();
         }
         break;
@@ -409,13 +405,20 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
         }
 
         freqf_clicktime = 0;
-        doit = SDL_TRUE;
+        doaction = ACTION_SELECTITEM;
         break;
 
       case SDL_KEYUP:
         switch( event.key.keysym.sym )
         {
+          case SDLK_LSHIFT:
+          case SDLK_RSHIFT:
+            shifty = SDL_FALSE;
+            break;
+
           case SDLK_ESCAPE:
+            SDL_EnableUNICODE( wasunicode );
+            SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
             return SDL_FALSE;
 
           case SDLK_RETURN:
@@ -429,8 +432,15 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
                   {
                     path[0] = 0;
                     filereq_settbox( &freqf_tbox[0], path );
-                    if( !filereq_scan( path ) ) return SDL_FALSE;
+                    if( !filereq_scan( path ) )
+                    {
+                      SDL_EnableUNICODE( wasunicode );
+                      SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+                      return SDL_FALSE;
+                    }
                   } else {
+                    SDL_EnableUNICODE( wasunicode );
+                    SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
                     return SDL_FALSE;
                   }
                 }
@@ -441,10 +451,12 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
                 break;
               
               case 1:
+                SDL_EnableUNICODE( wasunicode );
+                SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
                 return SDL_TRUE;
                 
               case 2:
-                doit = SDL_TRUE;
+                doaction = ACTION_SELECTITEM;
                 break;
             }
             break;
@@ -457,8 +469,16 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       case SDL_KEYDOWN:
         switch( event.key.keysym.sym )
         {          
+          case SDLK_LSHIFT:
+          case SDLK_RSHIFT:
+            shifty = SDL_TRUE;
+            break;
+
           case SDLK_TAB:
-            freqf_cgad = (freqf_cgad+1)%3;
+            if( shifty )
+              freqf_cgad = (freqf_cgad+2)%3;
+            else
+              freqf_cgad = (freqf_cgad+1)%3;
             filereq_showfiles( top, cfile );
             filereq_drawtbox( &freqf_tbox[0], freqf_cgad==0 );
             filereq_drawtbox( &freqf_tbox[1], freqf_cgad==1 );
@@ -466,7 +486,22 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
             break;
           
           case SDLK_UP:
-            if( ( freqf_cgad != 2 ) || ( cfile <= 0 ) ) break;
+            if( freqf_cgad != 2 )
+            {
+              freqf_cgad = 2;
+              filereq_showfiles( top, cfile );
+              filereq_drawtbox( &freqf_tbox[0], freqf_cgad==0 );
+              filereq_drawtbox( &freqf_tbox[1], freqf_cgad==1 );
+              filereq_render( oric );
+              break;
+            }
+
+            if( cfile <= 0 ) break;
+            if( shifty )
+            {
+              doaction = ACTION_PAGEUP;
+              break;
+            }
             cfile--;
             if( cfile < top ) top = cfile;
             filereq_setfiletbox( cfile, fname );
@@ -476,13 +511,56 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
             break;
           
           case SDLK_DOWN:
-            if( ( freqf_cgad != 2 ) || ( cfile >= (freqf_used-1) ) ) break;
+            if( freqf_cgad != 2 )
+            {
+              freqf_cgad = 2;
+              filereq_showfiles( top, cfile );
+              filereq_drawtbox( &freqf_tbox[0], freqf_cgad==0 );
+              filereq_drawtbox( &freqf_tbox[1], freqf_cgad==1 );
+              filereq_render( oric );
+              break;
+            }
+
+            if( cfile >= (freqf_used-1) ) break;
+            if( shifty )
+            {
+              doaction = ACTION_PAGEDOWN;
+              break;
+            }
             cfile++;
             if( cfile > (top+25) ) top = cfile-25;
             filereq_setfiletbox( cfile, fname );
             filereq_showfiles( top, cfile );
             filereq_drawtbox( &freqf_tbox[1], SDL_FALSE );
             filereq_render( oric );
+            break;
+          
+          case SDLK_PAGEUP:
+            if( freqf_cgad != 2 )
+            {
+              freqf_cgad = 2;
+              filereq_showfiles( top, cfile );
+              filereq_drawtbox( &freqf_tbox[0], freqf_cgad==0 );
+              filereq_drawtbox( &freqf_tbox[1], freqf_cgad==1 );
+              filereq_render( oric );
+              break;
+            }
+
+            doaction = ACTION_PAGEUP;
+            break;
+          
+          case SDLK_PAGEDOWN:
+            if( freqf_cgad != 2 )
+            {
+              freqf_cgad = 2;
+              filereq_showfiles( top, cfile );
+              filereq_drawtbox( &freqf_tbox[0], freqf_cgad==0 );
+              filereq_drawtbox( &freqf_tbox[1], freqf_cgad==1 );
+              filereq_render( oric );
+              break;
+            }
+
+            doaction = ACTION_PAGEDOWN;
             break;
           
           case SDLK_BACKSPACE:
@@ -554,6 +632,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
               tb->buf[tb->cpos] = event.key.keysym.unicode;
               tb->slen++;
               tb->cpos++;
+              tb->buf[tb->cpos] = 0;
               if( tb->cpos < tb->vpos ) tb->vpos = tb->cpos;
               if( tb->cpos >= (tb->vpos+tb->w) ) tb->vpos = tb->cpos-(tb->w-1);
               if( tb->vpos < 0 ) tb->vpos = 0;
@@ -572,54 +651,99 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
         break;
     }
 
-    if( !doit ) continue;
+    switch( doaction )
+    {
+      case ACTION_PAGEUP:
+        if( cfile > top )
+        {
+          cfile = top;
+        } else {
+          top -= 25;
+          if( top < 0 ) top = 0;
+          cfile = top;
+        }
+        filereq_showfiles( top, cfile );
+        filereq_drawtbox( &freqf_tbox[0], freqf_cgad==0 );
+        filereq_drawtbox( &freqf_tbox[1], freqf_cgad==1 );
+        filereq_render( oric );
+        break;
+      
+      case ACTION_PAGEDOWN:
+        if( cfile < (top+25) )
+        {
+          cfile = top+25;
+        } else {
+          cfile += 25;
+        }
+        if( cfile > (freqf_used-1) ) cfile = freqf_used-1;
+        top = cfile-25;
+        if( top < 0 ) top = 0;
+        filereq_showfiles( top, cfile );
+        filereq_drawtbox( &freqf_tbox[0], freqf_cgad==0 );
+        filereq_drawtbox( &freqf_tbox[1], freqf_cgad==1 );
+        filereq_render( oric );
+        break;
 
-    if( freqf_used <= 0 ) break;
-    if( cfile<=0 ) // Parent
-    {
-      i = strlen( path )-1;
-      if( i<=0 ) break;
-      if( path[i] == '/' ) i--;
-      while( i > -1 )
-      {
-        if( path[i] == '/' ) break;
-        i--;
-      }
-      if( i==-1 ) i++;
-      path[i] = 0;
-    } else if( freqfiles[cfile].isdir ) {
-      i = strlen( path )-1;
-      if( i < 0 )
-      {
-        i++;
-      } else {
-        if( path[i] != '/' )
-          i++;
-      }
-      if( i > 0 ) path[i++] = '/';
-      strncpy( &path[i], freqfiles[cfile].name, 4096-i );
-      path[4095] = 0;
-    } else {
-      return SDL_TRUE;
-    }
-    cfile = top = 0;
-    filereq_settbox( &freqf_tbox[0], path );
-    if( !filereq_scan( path ) )
-    {
-      if( path[0] )
-      {
-        path[0] = 0;
+      case ACTION_SELECTITEM:
+        if( freqf_used <= 0 ) break;
+        if( cfile<=0 ) // Parent
+        {
+          i = strlen( path )-1;
+          if( i<=0 ) break;
+          if( path[i] == PATHSEP ) i--;
+          while( i > -1 )
+          {
+            if( path[i] == PATHSEP ) break;
+            i--;
+          }
+          if( i==-1 ) i++;
+          path[i] = 0;
+        } else if( freqfiles[cfile].isdir ) {
+          i = strlen( path )-1;
+          if( i < 0 )
+          {
+            i++;
+          } else {
+            if( path[i] != PATHSEP )
+              i++;
+          }
+          if( i > 0 ) path[i++] = PATHSEP;
+          strncpy( &path[i], freqfiles[cfile].name, 4096-i );
+          path[4095] = 0;
+        } else {
+          SDL_EnableUNICODE( wasunicode );
+          SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+          return SDL_TRUE;
+        }
+        cfile = top = 0;
         filereq_settbox( &freqf_tbox[0], path );
-        if( !filereq_scan( path ) ) return SDL_FALSE;
-      } else {
-        return SDL_FALSE;
-      }
+        if( !filereq_scan( path ) )
+        {
+          if( path[0] )
+          {
+            path[0] = 0;
+            filereq_settbox( &freqf_tbox[0], path );
+            if( !filereq_scan( path ) )
+            {
+              SDL_EnableUNICODE( wasunicode );
+              SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+              return SDL_FALSE;
+            }
+          } else {
+            SDL_EnableUNICODE( wasunicode );
+            SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+            return SDL_FALSE;
+          }
+        }
+        filereq_showfiles( top, cfile );
+        filereq_drawtbox( &freqf_tbox[0], freqf_cgad==0 );
+        filereq_drawtbox( &freqf_tbox[1], freqf_cgad==1 );
+        filereq_render( oric );
+        break;
     }
-    filereq_showfiles( top, cfile );
-    filereq_drawtbox( &freqf_tbox[0], freqf_cgad==0 );
-    filereq_drawtbox( &freqf_tbox[1], freqf_cgad==1 );
-    filereq_render( oric );
   }
 
+  SDL_EnableUNICODE( wasunicode );
+  SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
   return SDL_FALSE;
 }

@@ -28,6 +28,7 @@ RANLIB = ranlib
 DEBUGLIB =
 TARGET = oricutron
 FILEREQ_SRC = filereq_sdl.c
+MSGBOX_SRC = msgbox_sdl.c
 EXTRAOBJS =
 
 ####### PLATFORM SPECIFIC STUFF HERE #######
@@ -53,6 +54,7 @@ CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__
 LFLAGS += -lm -mwindows -lmingw32 -lSDLmain -lSDL
 TARGET = oricutron.exe
 FILEREQ_SRC = filereq_win32.c
+MSGBOX_SRC = msgbox_win32.c
 EXTRAOBJS = winicon.o
 endif
 
@@ -126,8 +128,8 @@ all: $(TARGET)
 run: $(TARGET)
 	$(TARGET)
 
-$(TARGET): main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o avi.o $(EXTRAOBJS) $(RESOURCES)
-	$(CXX) -o $(TARGET) main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o avi.o $(EXTRAOBJS) $(LFLAGS)
+$(TARGET): main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o msgbox.o avi.o $(EXTRAOBJS) $(RESOURCES)
+	$(CXX) -o $(TARGET) main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o msgbox.o avi.o $(EXTRAOBJS) $(LFLAGS)
 ifeq ($(PLATFORMTYPE),beos)
 	$(BEOS_XRES) -o $(TARGET) $(RSRC_BEOS)
 	$(BEOS_SETVER) $(TARGET) \
@@ -138,7 +140,7 @@ ifeq ($(PLATFORMTYPE),beos)
 endif
 
 
-main.o: main.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h avi.h
+main.o: main.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h avi.h msgbox.h filereq.h
 	$(CC) -c main.c -o main.o $(CFLAGS)
 
 6502.o: 6502.c system.h 6502.h
@@ -156,7 +158,7 @@ monitor.o: monitor.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor
 via.o: via.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h
 	$(CC) -c via.c -o via.o $(CFLAGS)
 
-disk.o: disk.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h
+disk.o: disk.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h msgbox.h
 	$(CC) -c disk.c -o disk.o $(CFLAGS)
 
 8912.o: 8912.c system.h 6502.h 8912.h via.h gui.h disk.h machine.h avi.h
@@ -165,8 +167,11 @@ disk.o: disk.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h
 font.o: font.c
 	$(CC) -c font.c -o font.o $(CFLAGS)
 
-filereq.o: $(FILEREQ_SRC) system.h 6502.h via.h 8912.h gui.h disk.h machine.h
+filereq.o: $(FILEREQ_SRC) filereq.h system.h 6502.h via.h 8912.h gui.h disk.h machine.h
 	$(CC) -c $(FILEREQ_SRC) -o filereq.o $(CFLAGS)
+
+msgbox.o: $(MSGBOX_SRC) msgbox.h system.h 6502.h via.h 8912.h gui.h disk.h machine.h
+	$(CC) -c $(MSGBOX_SRC) -o msgbox.o $(CFLAGS)
 
 avi.o: avi.c system.h avi.h
 	$(CC) -c avi.c -o avi.o $(CFLAGS)
