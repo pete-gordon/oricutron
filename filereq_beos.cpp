@@ -26,6 +26,7 @@
 
 #include <FilePanel.h>
 #include <Looper.h>
+#include <Messenger.h>
 #include <Path.h>
 
 extern "C" {
