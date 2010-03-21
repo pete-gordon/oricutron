@@ -70,7 +70,10 @@ endif
 ifeq ($(PLATFORMTYPE),beos)
 CFLAGS += $(shell sdl-config --cflags)
 LFLAGS += $(shell sdl-config --libs)
+LFLAGS += -lbe -ltracker
 TARGET = oricutron
+FILEREQ_SRC = filereq_beos.cpp
+MSGBOX_SRC = msgbox_beos.cpp
 BEOS_BERES := beres
 BEOS_RC := rc
 BEOS_XRES := xres
