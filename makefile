@@ -39,6 +39,7 @@ CFLAGS += -mcrt=newlib -gstabs -I/SDK/Local/common/include/ -I/SDK/Local/common/
 LFLAGS += -lm `sdl-config --libs` -lm -mcrt=newlib -gstabs
 BDBLFLAGS += -lunix
 FILEREQ_SRC = filereq_amiga.c
+MSGBOX_SRC = msgbox_os4.c
 endif
 
 # MorphOS
