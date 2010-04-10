@@ -4,7 +4,7 @@
  * rx ReadMe2Guide <ReadMe.txt >Oricutron.guide
  */
 
-say '@database'
+say '@database ""'
 say '@author "ReadMe2Guide"'
 say '@node "Main" "Main"'
 if ~eof(stdin) then parse pull last
