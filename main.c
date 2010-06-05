@@ -222,7 +222,7 @@ static void load_config( struct start_opts *sto )
 
 static void usage( int ret )
 {
-  printf( "Oricutron ©Peter Gordon (pete@petergordon.org.uk)\n\n" );
+  printf( VERSION_COPYRIGHTS "\n\n" );
   printf( "Usage:\toricutron [-a|--arg [option]] [disk file] [tape file]\n" );
   printf( "  -m / --machine    = Specify machine type. Valid types are:\n" );
   printf( "\n" );
