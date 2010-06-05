@@ -73,6 +73,7 @@ ifeq ($(PLATFORMTYPE),beos)
 CFLAGS += $(shell sdl-config --cflags)
 LFLAGS += $(shell sdl-config --libs)
 CFLAGS += -Wno-multichar
+CFLAGS += -g
 LFLAGS += -lbe -ltracker
 TARGET = oricutron
 FILEREQ_SRC = filereq_beos.cpp
