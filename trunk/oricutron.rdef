@@ -11,9 +11,9 @@ resource(1, "BEOS:FILE_TYPES") message {
 	/* XXX: find a sane type for ORIC roms, tapes and dsk */
 	/*
 	"types" = "application/x-oric-rom",
-	"types" = "application/x-oric-tap",
-	"types" = "application/x-oric-dsk"
 	*/
+	"types" = "application/x-oric-tape",
+	"types" = "application/x-oric-disk"
 };
 
 
