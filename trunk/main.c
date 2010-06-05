@@ -275,7 +275,22 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
         
         default:
           opt_type = argv[i][1];
-          opt_arg = &argv[i][2];
+          opt_arg = NULL;
+          if (argv[i][2])
+            opt_arg = &argv[i][2];
+          else if ( i<(argc-1))
+          {
+          	switch (opt_type)
+          	{
+              case 'm':
+              case 'd':
+              case 't':
+              case 'k':
+              case 's':
+                opt_arg = argv[i+1];
+                i++;
+          	}
+          }
           break;
       }
 
@@ -333,6 +348,20 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           sto->start_debug = SDL_TRUE;
           break; 
       }        
+    }
+    else
+    {
+      char *p = strrchr(argv[i], '.');
+      if( p && ( strcasecmp(p, ".dsk") == 0 ) )
+      {
+        strncpy( sto->start_disk, argv[i], 1024 );
+        sto->start_disk[1023] = 0;
+      }
+      if( p && ( strcasecmp(p, ".tap") == 0 ) )
+      {
+        strncpy( sto->start_tape, argv[i], 1024 );
+        sto->start_tape[1023] = 0;
+      }
     }
   }
 
