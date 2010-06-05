@@ -220,6 +220,30 @@ static void load_config( struct start_opts *sto )
   fclose( f );
 }
 
+static void usage( int ret )
+{
+  printf( "Oricutron ©Peter Gordon (pete@petergordon.org.uk)\n\n" );
+  printf( "Usage:\toricutron [-a|--arg [option]] [disk file] [tape file]\n" );
+  printf( "  -m / --machine    = Specify machine type. Valid types are:\n" );
+  printf( "\n" );
+  printf( "                      \"atmos\" or \"a\" for Oric atmos\n" );
+  printf( "                      \"oric1\" or \"1\" for Oric 1\n" );
+  printf( "                      \"o16k\" for Oric 1 16k\n" );
+  printf( "\n" );
+  printf( "  -d / --disk       = Specify a disk image to use in drive 0\n" );
+  printf( "  -t / --tape       = Specify a tape image to use\n" );
+  printf( "  -k / --drive      = Specify a disk drive controller. Valid types are:\n" );
+  printf( "  \n" );
+  printf( "                      \"microdisc\" or \"m\" for Microdisc\n" );
+  printf( "                      \"jasmin\" or \"j\" for Jasmin\n" );
+  printf( "\n" );
+  printf( "  -s / --symbols    = Load symbols from a file\n" );
+  printf( "  -f / --fullscreen = Run oricutron fullscreen\n" );
+  printf( "  -w / --window     = Run oricutron in a window\n" );
+  printf( "  -b / --debug      = Start oricutron in the debugger\n" );
+  exit(ret);
+}
+
 SDL_bool init( struct machine *oric, int argc, char *argv[] )
 {
   Sint32 i;
@@ -261,6 +285,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           if( strcasecmp( tmp, "debug"      ) == 0 ) { opt_type = 'b'; break; }
           if( strcasecmp( tmp, "hwsurface"  ) == 0 ) { hwsurface = SDL_TRUE; break; }
           if( strcasecmp( tmp, "swsurface"  ) == 0 ) { hwsurface = SDL_FALSE; break; }
+          if( strcasecmp( tmp, "help"       ) == 0 ) { opt_type = 'h'; break; }
 
           if( i<(argc-1) )
             opt_arg = argv[i+1];
@@ -346,7 +371,11 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
         
         case 'b':
           sto->start_debug = SDL_TRUE;
-          break; 
+          break;
+
+        case 'h':
+          usage( 0 );
+          break;
       }        
     }
     else
@@ -362,6 +391,8 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
         strncpy( sto->start_tape, argv[i], 1024 );
         sto->start_tape[1023] = 0;
       }
+      else
+        usage( 1 );
     }
   }
 
