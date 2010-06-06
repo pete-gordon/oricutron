@@ -374,7 +374,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           break;
 
         case 'h':
-          usage( 0 );
+          usage( EXIT_SUCCESS );
           break;
       }        
     }
@@ -392,7 +392,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
         sto->start_tape[1023] = 0;
       }
       else
-        usage( 1 );
+        usage( EXIT_FAILURE );
     }
   }
 
@@ -637,5 +637,5 @@ int main( int argc, char *argv[] )
   }
   shut( &oric );
 
-  return 0;
+  return EXIT_SUCCESS;
 }
