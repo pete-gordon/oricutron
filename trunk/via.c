@@ -46,7 +46,7 @@ void tape_popup( struct machine *oric )
 
   if( !oric->tapename[0] )
   {
-	// Eject symbol
+    // Eject symbol
     do_popup( "\x0f\x10\x13" );
     return;
   }
@@ -68,8 +68,8 @@ void tape_setmotor( struct machine *oric, SDL_bool motoron )
   // "Real" tape emulation?
   if( ( !oric->tapeturbo ) || ( oric->type != MACH_ATMOS ) )
   {
-	// If we're stopping part way through a byte, just move
-	// the current position on to the start of the next byte
+    // If we're stopping part way through a byte, just move
+    // the current position on to the start of the next byte
     if( !motoron )
     {
       if( oric->tapebit > 0 )
@@ -78,9 +78,9 @@ void tape_setmotor( struct machine *oric, SDL_bool motoron )
     }
 
     // If we're starting the tape motor and the tape
-	// is at a sync header, generate a bunch of dummy
-	// sync bytes. This makes the Oric Atmos welcome tape
-	// work without turbo tape enabled, for example.
+    // is at a sync header, generate a bunch of dummy
+    // sync bytes. This makes the Oric Atmos welcome tape
+    // work without turbo tape enabled, for example.
     if( ( motoron ) &&
         ( oric->tapebuf ) &&
         ( oric->tapeoffs < oric->tapelen ) &&
@@ -228,9 +228,9 @@ void tape_ticktock( struct machine *oric, int cycles )
   // a modified one first...
   if( ( oric->type == MACH_ATMOS ) && ( romon ) )
   {
-	// Patch CLOAD to insert a tape image specified.
-	// Unfortunately the way the ROM works means we
-	// only have up to 16 chars.
+    // Patch CLOAD to insert a tape image specified.
+    // Unfortunately the way the ROM works means we
+    // only have up to 16 chars.
     switch( oric->cpu.pc )
     {
       case 0xe85f: // Decoded filename
@@ -268,19 +268,66 @@ void tape_ticktock( struct machine *oric, int cycles )
   // Maybe do turbotape
   if( ( oric->type == MACH_ATMOS ) && ( oric->tapeturbo ) && ( romon ) )
   {
+    int stackadd;
+
     switch( oric->cpu.pc )
     {
+      case 0xe720:
+        // Cassette sync was called when there was no valid
+        // tape to sync, so the normal cassette sync hack failed
+        // and now we're stuck looking for a signal that will never
+        // arrive. We have to recover back to the end of the cassette
+        // sync routine.
+
+        // Get the return address from the routine at E71C
+        i = (oric->cpu.read( &oric->cpu, oric->cpu.sp+0x103 )<<8) + oric->cpu.read( &oric->cpu, oric->cpu.sp+0x102 );
+
+        // Get the return address from the routine at E6FC
+        switch( i )
+        {
+          case 0xe6fe:
+            j = (oric->cpu.read( &oric->cpu, oric->cpu.sp+0x105 )<<8) + oric->cpu.read( &oric->cpu, oric->cpu.sp+0x104 );
+            stackadd = 1+2+2;   // 1x PLA, 2x RTS
+            break;
+
+          case 0xe712:
+            j = (oric->cpu.read( &oric->cpu, oric->cpu.sp+0x106 )<<8) + oric->cpu.read( &oric->cpu, oric->cpu.sp+0x105 );
+            stackadd = 1+2+1+2; // 2x PLA, 2x RTS
+            break;
+
+          default:
+            // Dunno how to handle this. Disable turbo tape.
+            oric->tapeturbo = SDL_FALSE;
+            setmenutoggles( oric );
+            return;
+        }
+
+        // See if we can recover from this
+        switch( j )
+        {
+          case 0xe737:     // Was this all caused by a call to cassette sync?
+            // Yes, we can recover.
+            oric->cpu.sp += stackadd;
+            break;
+
+          default:
+            // Dunno how to handle this. Disable turbo tape.
+            oric->tapeturbo = SDL_FALSE;
+            setmenutoggles( oric );
+            return;
+        }
+
       case 0xe735: // Cassette sync
 
-	    // Currently at a sync byte?
+        // Currently at a sync byte?
         if( oric->tapebuf[oric->tapeoffs] != 0x16 )
         {
-		  // Find the next sync byte
+          // Find the next sync byte
           do
           {
             oric->tapeoffs++;
 
-			// Give up at end of image
+            // Give up at end of image
             if( oric->tapeoffs >= oric->tapelen )
             {
               refreshtape = SDL_TRUE;
@@ -289,23 +336,23 @@ void tape_ticktock( struct machine *oric, int cycles )
           } while( oric->tapebuf[oric->tapeoffs] != 0x16 );
         }
 
-		// "Jump" to the end of the cassette sync routine
+        // "Jump" to the end of the cassette sync routine
         oric->cpu.pc = 0xe759;
         break;
       
       case 0xe6c9: // Read byte
-	    // Read the next byte directly into A
+        // Read the next byte directly into A
         oric->cpu.a = oric->tapebuf[oric->tapeoffs++];
 
-		// Set flags
+        // Set flags
         oric->cpu.f_z = oric->cpu.a == 0;
         oric->cpu.f_c = 1;
 
-		// Simulate the effects of the read byte routine
+        // Simulate the effects of the read byte routine
         oric->cpu.write( &oric->cpu, 0x2f, oric->cpu.a );
         oric->cpu.write( &oric->cpu, 0x2b1, 0x00 );
 
-		// Jump to the end of the read byte routine
+        // Jump to the end of the read byte routine
         oric->cpu.pc = 0xe6fb;
         if( oric->tapeoffs >= oric->tapelen ) refreshtape = SDL_TRUE;
         break;
@@ -325,7 +372,7 @@ void tape_ticktock( struct machine *oric, int cycles )
   oric->tapeout ^= 1;
   if( !oric->vsynchack )
   {
-	// Update the audio if tape noise is enabled
+    // Update the audio if tape noise is enabled
     if( oric->tapenoise )
     {
       ay_lockaudio( &oric->ay ); // Gets unlocked at the end of each frame
@@ -341,7 +388,7 @@ void tape_ticktock( struct machine *oric, int cycles )
       }
     }
 
-	// Put tape signal onto CB1
+    // Put tape signal onto CB1
     via_write_CB1( &oric->via, oric->tapeout );
   }
 
