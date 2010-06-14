@@ -712,6 +712,7 @@ void preinit_machine( struct machine *oric )
   oric->prf = NULL;
   oric->prclock = 0;
   oric->prclose = 0;
+  oric->lasttapefile[0] = 0;
 
   oric->drivetype = DRV_NONE;
   for( i=0; i<MAX_DRIVES; i++ )
