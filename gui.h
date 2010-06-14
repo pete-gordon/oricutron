@@ -47,6 +47,8 @@ struct textzone
 struct osdmenuitem
 {
   char *name;
+  char *key;
+  int  sdlkey;
   void (*func)(struct machine *,struct osdmenuitem *,int);
   int arg;
 };

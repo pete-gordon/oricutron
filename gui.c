@@ -137,56 +137,58 @@ void togglecasesyms( struct machine *oric, struct osdmenuitem *mitem, int dummy 
 void togglevsynchack( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 //void savesnap( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 
-// Menu definitions. Name, function, parameter
-struct osdmenuitem mainitems[] = { { "Insert tape...",         inserttape,      0 },
-                                   { "Insert disk 0...",       insertdisk,      0 },
-                                   { "Insert disk 1...",       insertdisk,      1 },
-                                   { "Insert disk 2...",       insertdisk,      2 },
-                                   { "Insert disk 3...",       insertdisk,      3 },
-                                   { OSDMENUBAR,               NULL,            0 },
-//                                   { "Save snapshot...",       savesnap,        0 },
-//                                   { "Load snapshot...",       NULL,            0 },
-//                                   { OSDMENUBAR,               NULL,            0 },
-                                   { "Hardware options...",    gotomenu,        1 },
-                                   { "Audio options...",       gotomenu,        2 },
-                                   { "Video options...",       NULL,            0 },
-                                   { "Debug options...",       gotomenu,        3 },
-                                   { OSDMENUBAR,               NULL,            0 },
-                                   { "Reset",                  resetoric,       0 },
-                                   { "Monitor",                setemumode,      EM_DEBUG },
-                                   { "Back",                   setemumode,      EM_RUNNING },
-                                   { OSDMENUBAR,               NULL,            0 },
-                                   { "Quit",                   setemumode,      EM_PLEASEQUIT },
+// Menu definitions. Name, key name, SDL key code, function, parameter
+// Keys that are also available while emulating should be marked with
+// square brackets
+struct osdmenuitem mainitems[] = { { "Insert tape...",         NULL,   0,        inserttape,      0 },
+                                   { "Insert disk 0...",       "0",    SDLK_0,   insertdisk,      0 },
+                                   { "Insert disk 1...",       "1",    SDLK_1,   insertdisk,      1 },
+                                   { "Insert disk 2...",       "2",    SDLK_2,   insertdisk,      2 },
+                                   { "Insert disk 3...",       "3",    SDLK_3,   insertdisk,      3 },
+                                   { OSDMENUBAR,               NULL,   0,        NULL,            0 },
+//                                   { "Save snapshot...",       NULL,   0,        savesnap,        0 },
+//                                   { "Load snapshot...",       NULL,   0,        NULL,            0 },
+//                                   { OSDMENUBAR,               NULL,   0,        NULL,            0 },
+                                   { "Hardware options...",    "H",    'h',      gotomenu,        1 },
+                                   { "Audio options...",       "A",    'a',      gotomenu,        2 },
+                                   { "Video options...",       "V",    'v',      NULL,            0 },
+                                   { "Debug options...",       "D",    'd',      gotomenu,        3 },
+                                   { OSDMENUBAR,               NULL,   0,        NULL,            0 },
+                                   { "Reset",                  "[F4]", SDLK_F4,  resetoric,       0 },
+                                   { "Monitor",                "[F2]", SDLK_F2,  setemumode,      EM_DEBUG },
+                                   { "Back",                   "\x17", SDLK_BACKSPACE,setemumode, EM_RUNNING },
+                                   { OSDMENUBAR,               NULL,   0,        NULL,            0 },
+                                   { "Quit",                   NULL,   0,        setemumode,      EM_PLEASEQUIT },
                                    { NULL, } };
 
-struct osdmenuitem hwopitems[] = { { " Oric-1",                swapmach,        (0xffff<<16)|MACH_ORIC1 },
-                                   { " Oric-1 16K",            swapmach,        (0xffff<<16)|MACH_ORIC1_16K },
-                                   { " Atmos",                 swapmach,        (0xffff<<16)|MACH_ATMOS },
-                                   { " Telestrat",             NULL,            0 },
-                                   { OSDMENUBAR,               NULL,            0 },
-                                   { " No disk",               setdrivetype,    DRV_NONE },
-                                   { " Microdisc",             setdrivetype,    DRV_MICRODISC },
-                                   { " Jasmin",                setdrivetype,    DRV_JASMIN },
-                                   { OSDMENUBAR,               NULL,            0 },
-                                   { " Turbo tape",            toggletapeturbo, 0 },
-                                   { " Autoinsert tape",       toggleautoinsrt, 0 },
-                                   { " Autorewind tape",       toggleautowind,  0 },
-                                   { OSDMENUBAR,               NULL,            0 },
-                                   { " VSync hack",            togglevsynchack, 0 },
-                                   { OSDMENUBAR,               NULL,            0 },
-                                   { "Back",                   gotomenu,        0 },
+struct osdmenuitem hwopitems[] = { { " Oric-1",                "1",    SDLK_1,   swapmach,        (0xffff<<16)|MACH_ORIC1 },
+                                   { " Oric-1 16K",            "2",    SDLK_2,   swapmach,        (0xffff<<16)|MACH_ORIC1_16K },
+                                   { " Atmos",                 "3",    SDLK_3,   swapmach,        (0xffff<<16)|MACH_ATMOS },
+                                   { " Telestrat",             NULL,   0,        NULL,            0 },
+                                   { OSDMENUBAR,               NULL,   0,        NULL,            0 },
+                                   { " No disk",               "X",    'x',      setdrivetype,    DRV_NONE },
+                                   { " Microdisc",             "M",    'm',      setdrivetype,    DRV_MICRODISC },
+                                   { " Jasmin",                "J",    'j',      setdrivetype,    DRV_JASMIN },
+                                   { OSDMENUBAR,               NULL,   0,        NULL,            0 },
+                                   { " Turbo tape",            NULL,   0,        toggletapeturbo, 0 },
+                                   { " Autoinsert tape",       NULL,   0,        toggleautoinsrt, 0 },
+                                   { " Autorewind tape",       NULL,   0,        toggleautowind,  0 },
+                                   { OSDMENUBAR,               NULL,   0,        NULL,            0 },
+                                   { " VSync hack",            NULL,   0,        togglevsynchack, 0 },
+                                   { OSDMENUBAR,               NULL,   0,        NULL,            0 },
+                                   { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0 },
                                    { NULL, } };
 
-struct osdmenuitem auopitems[] = { { " Sound enabled",         togglesound,     0 },
-                                   { " Tape noise",            toggletapenoise, 0 },
-                                   { OSDMENUBAR,               NULL,            0 },
-                                   { "Back",                   gotomenu,        0 },
+struct osdmenuitem auopitems[] = { { " Sound enabled",         NULL,   0,        togglesound,     0 },
+                                   { " Tape noise",            NULL,   0,        toggletapenoise, 0 },
+                                   { OSDMENUBAR,               NULL,   0,        NULL,            0 },
+                                   { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0 },
                                    { NULL, } };
                                   
-struct osdmenuitem dbopitems[] = { { " Autoload symbols file", togglesymbolsauto, 0 },
-                                   { " Case-sensitive symbols",togglecasesyms,  0 },
-                                   { OSDMENUBAR,               NULL,            0 },
-                                   { "Back",                   gotomenu,        0 },
+struct osdmenuitem dbopitems[] = { { " Autoload symbols file", NULL,   0,        togglesymbolsauto, 0 },
+                                   { " Case-sensitive symbols",NULL,   0,        togglecasesyms,  0 },
+                                   { OSDMENUBAR,               NULL,   0,        NULL,            0 },
+                                   { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0 },
                                    { NULL, } };
 
 struct osdmenu menus[] = { { "Main Menu",         0, mainitems },
@@ -722,6 +724,10 @@ void drawitems( void )
     
     // Write the text for the item
     tzstrpos( tz[TZ_MENU], 1, i+1, cmenu->items[i].name );
+
+    // And the key (if there is one)
+    if( cmenu->items[i].key )
+      tzstrpos( tz[TZ_MENU], tz[TZ_MENU]->w-(1+strlen(cmenu->items[i].key)), i+1, cmenu->items[i].key );
   }
 }
 
@@ -939,20 +945,27 @@ void toggleautoinsrt( struct machine *oric, struct osdmenuitem *mitem, int dummy
 // Go to a different menu
 void gotomenu( struct machine *oric, struct osdmenuitem *mitem, int menunum )
 {
-  int i, w;
+  int i, w, keyw;
 
   if( tz[TZ_MENU] ) { free_textzone( tz[TZ_MENU] ); tz[TZ_MENU] = NULL; }
 
   cmenu = &menus[menunum];
   w = strlen( cmenu->title )+8;
+  keyw = 0;
   for( i=0; cmenu->items[i].name; i++ )
   {
     if( cmenu->items[i].name == OSDMENUBAR )
       continue;
     if( strlen( cmenu->items[i].name ) > w )
       w = strlen( cmenu->items[i].name );
+    if( cmenu->items[i].key )
+    {
+      if( (strlen( cmenu->items[i].key )+1) > keyw )
+        keyw = strlen( cmenu->items[i].key )+1;
+    }
   }
-  w+=2; i+=2;
+
+  w+=keyw+2; i+=2;
 
   tz[TZ_MENU] = alloc_textzone( 320-w*4, 240-i*6, w, i, cmenu->title );
   if( !tz[TZ_MENU] )
@@ -1108,6 +1121,19 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           break;
         
         default:
+          for( i=0; cmenu->items[i].name; i++ )
+          {
+            if( ( cmenu->items[i].sdlkey ) &&
+                ( cmenu->items[i].sdlkey == ev->key.keysym.sym ) &&
+                ( cmenu->items[i].func ) )
+              break;
+          }
+
+          if( !cmenu->items[i].name ) break;
+
+          cmenu->items[i].func( oric, &cmenu->items[i], cmenu->items[i].arg );
+          drawitems();
+          *needrender = SDL_TRUE;
           break;
       }
       break;
