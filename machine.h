@@ -100,6 +100,7 @@ struct machine
   unsigned char *tapebuf;
   SDL_bool tapemotor, tapenoise, tapeturbo, autorewind, autoinsert;
   SDL_bool symbolsautoload, symbolscase;
+  char lasttapefile[20];
   char tapename[16];
 };
 

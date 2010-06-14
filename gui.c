@@ -767,6 +767,7 @@ void joinpath( char *path, char *file )
 void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
   if( !filerequester( oric, "Insert tape", tapepath, tapefile, FR_TAPES ) ) return;
+  oric->lasttapefile[0] = 0;
   joinpath( tapepath, tapefile );
   tape_load_tap( oric, filetmp );
   if( oric->symbolsautoload ) mon_new_symbols( "symbols", SDL_TRUE );

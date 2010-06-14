@@ -179,11 +179,30 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
   return SDL_TRUE;
 };
 
+void tape_autoinsert( struct machine *oric )
+{
+  char *odir;
+
+  // Try and load the tape image
+  strcpy( tapefile, oric->lasttapefile );
+
+  odir = getcwd( NULL, 0 );
+  chdir( tapepath );
+  tape_load_tap( oric, tapefile );
+  if( !oric->tapebuf )
+  {
+    // Try appending .tap
+    strcat( tapefile, ".tap" );
+    tape_load_tap( oric, tapefile );
+  }
+  chdir( odir );
+  free( odir );
+}
+
 // Emulate the specified cpu-cycles time for the tape
 void tape_ticktock( struct machine *oric, int cycles )
 {
   Sint32 i, j;
-  char *odir;
   SDL_bool romon;
 
   // Determine if the ROM is currently active
@@ -234,25 +253,27 @@ void tape_ticktock( struct machine *oric, int cycles )
     switch( oric->cpu.pc )
     {
       case 0xe85f: // Decoded filename
-        if( !oric->autoinsert ) break;  // Autoinsert disabled?
-        if( oric->cpu.read( &oric->cpu, 0x027f ) == 0 ) break; // No filename?
-
         // Read in the filename from RAM
         for( i=0; i<16; i++ )
         {
           j = oric->cpu.read( &oric->cpu, 0x027f+i );
           if( !j ) break;
-          tapefile[i] = j;
+          oric->lasttapefile[i] = j;
         }
-        tapefile[i] = 0;
-        oric->cpu.write( &oric->cpu, 0x27f, 0 );
+        oric->lasttapefile[i] = 0;
 
-        // Try and load the tape image
-        odir = getcwd( NULL, 0 );
-        chdir( tapepath );
-        tape_load_tap( oric, tapefile );
-        chdir( odir );
-        free( odir );
+        if( oric->cpu.read( &oric->cpu, 0x027f ) == 0 ) break; // No filename?
+        if( !oric->autoinsert ) break;  // Autoinsert disabled?
+
+        // Only do this if there is no tape inserted, or we're at the
+        // end of the current tape, or the filename ends in .TAP
+        if( ( !oric->tapebuf ) ||
+            ( oric->tapeoffs >= oric->tapelen ) ||
+            ( ( i > 3 ) && ( strcasecmp( &oric->lasttapefile[i-4], ".tap" ) == 0 ) ) )
+        {
+          oric->cpu.write( &oric->cpu, 0x27f, 0 );
+          tape_autoinsert( oric );
+        }
         break;
     }
   }
@@ -263,7 +284,15 @@ void tape_ticktock( struct machine *oric, int cycles )
 
   // Tape offset outside the tape image limits?
   if( ( oric->tapeoffs < 0 ) || ( oric->tapeoffs >= oric->tapelen ) )
+  {
+    // Try to autoinsert a tape image
+    if( ( oric->lasttapefile[0] ) && ( oric->autoinsert ) )
+    {
+      tape_autoinsert( oric );
+      oric->lasttapefile[0] = 0;
+    }
     return;
+  }
 
   // Maybe do turbotape
   if( ( oric->type == MACH_ATMOS ) && ( oric->tapeturbo ) && ( romon ) )
