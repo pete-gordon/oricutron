@@ -1,6 +1,6 @@
 /*
 **  Oricutron
-**  Copyright (C) 2009 Peter Gordon
+**  Copyright (C) 2009-2010 Peter Gordon
 **
 **  This program is free software; you can redistribute it and/or
 **  modify it under the terms of the GNU General Public License
@@ -48,10 +48,10 @@ extern struct avi_handle *vidcap;
 
 extern SDL_bool soundavailable, soundon, warpspeed;
 
-// To insert keypresses into the queue, set these vars
+// Variables used by the queuekeys function
 // (only works for ROM routines)
-char *keyqueue = NULL;
-int keysqueued = 0, kqoffs = 0;
+static char *keyqueue = NULL;
+static int keysqueued = 0, kqoffs = 0;
 
 // Volume levels
 Sint32 voltab[] = { 0, 513/4, 828/4, 1239/4, 1923/4, 3238/4, 4926/4, 9110/4, 10344/4, 17876/4, 24682/4, 30442/4, 38844/4, 47270/4, 56402/4, 65535/4};
@@ -97,6 +97,8 @@ static unsigned short keytab[] = { '7'        , 'n'        , '5'        , 'v'   
                                    'y'        , 'h'        , 'g'        , 'e'        , SDLK_RALT  , 'a'        , 's'        , 'w'        ,
                                    '8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, 0          , SDLK_EQUALS };
 
+// Queue up some key presses. These key presses
+// are only detected by the standard ROM routines.
 void queuekeys( char *str )
 {
   keyqueue   = str;
@@ -399,6 +401,22 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
 */
 void ay_ticktock( struct ay8912 *ay, int cycles )
 {
+  SDL_bool romon;
+
+  // Determine if the ROM is currently active
+  romon = SDL_TRUE;
+  if( oric->drivetype == DRV_JASMIN )
+  {
+    if( oric->jasmin.olay == 0 )
+    {
+      romon = !oric->romdis;
+    } else {
+      romon = SDL_FALSE;
+    }
+  } else {
+    romon = !oric->romdis;
+  }
+
   // Need to do queued keys?
   if( ( keyqueue ) && ( keysqueued ) )
   {
@@ -411,7 +429,7 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
       switch( ay->oric->type )
       {
         case MACH_ATMOS:
-          if( ( ay->oric->cpu.pc == 0xeb78 ) && ( ay->oric->romdis == 0 ) )
+          if( ( ay->oric->cpu.pc == 0xeb78 ) && ( romon ) )
           {
             ay->oric->cpu.a = keyqueue[kqoffs++];
             ay->oric->cpu.write( &ay->oric->cpu, 0x2df, 0 );
@@ -422,7 +440,7 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
         
         case MACH_ORIC1:
         case MACH_ORIC1_16K:
-          if( ( ay->oric->cpu.pc == 0xe905 ) && ( ay->oric->romdis == 0 ) )
+          if( ( ay->oric->cpu.pc == 0xe905 ) && ( romon ) )
           {
             ay->oric->cpu.a = keyqueue[kqoffs++];
             ay->oric->cpu.write( &ay->oric->cpu, 0x2df, 0 );

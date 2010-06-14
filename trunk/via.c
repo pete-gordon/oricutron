@@ -1,6 +1,6 @@
 /*
 **  Oricutron
-**  Copyright (C) 2009 Peter Gordon
+**  Copyright (C) 2009-2010 Peter Gordon
 **
 **  This program is free software; you can redistribute it and/or
 **  modify it under the terms of the GNU General Public License
@@ -38,28 +38,38 @@
 extern char tapefile[], tapepath[];
 extern SDL_bool refreshtape;
 
+// Pop-up the name of the currently inserted tape
+// image file (or an eject symbol if no tape image).
 void tape_popup( struct machine *oric )
 {
   char tmp[40];
+
   if( !oric->tapename[0] )
   {
+	// Eject symbol
     do_popup( "\x0f\x10\x13" );
     return;
   }
 
+  // Tape image name
   sprintf( tmp, "\x0f\x10""%c %-16s", oric->tapemotor ? 18 : 17, oric->tapename );
   do_popup( tmp );
 }
 
+// Set the tape motor on or off
 void tape_setmotor( struct machine *oric, SDL_bool motoron )
 {
   if( motoron == oric->tapemotor )
     return;
 
+  // Refresh the tape status icon in the status bar
   refreshtape = SDL_TRUE;
 
+  // "Real" tape emulation?
   if( ( !oric->tapeturbo ) || ( oric->type != MACH_ATMOS ) )
   {
+	// If we're stopping part way through a byte, just move
+	// the current position on to the start of the next byte
     if( !motoron )
     {
       if( oric->tapebit > 0 )
@@ -67,6 +77,10 @@ void tape_setmotor( struct machine *oric, SDL_bool motoron )
       oric->tapebit = 0;
     }
 
+    // If we're starting the tape motor and the tape
+	// is at a sync header, generate a bunch of dummy
+	// sync bytes. This makes the Oric Atmos welcome tape
+	// work without turbo tape enabled, for example.
     if( ( motoron ) &&
         ( oric->tapebuf ) &&
         ( oric->tapeoffs < oric->tapelen ) &&
@@ -74,10 +88,12 @@ void tape_setmotor( struct machine *oric, SDL_bool motoron )
       oric->tapedupbytes = 80;
   }
 
+  // Set the new status and do a popup
   oric->tapemotor = motoron;
   if( oric->tapename[0] ) tape_popup( oric );
 }
 
+// Free up the current tape image
 void tape_eject( struct machine *oric )
 {
   if( oric->tapebuf ) free( oric->tapebuf );
@@ -88,6 +104,7 @@ void tape_eject( struct machine *oric )
   refreshtape = SDL_TRUE;
 }
 
+// Rewind to the start of the tape
 void tape_rewind( struct machine *oric )
 {
   oric->tapeoffs   = 0;
@@ -98,15 +115,19 @@ void tape_rewind( struct machine *oric )
   refreshtape = SDL_TRUE;
 }
 
+// Insert a new tape image
 SDL_bool tape_load_tap( struct machine *oric, char *fname )
 {
   FILE *f;
 
+  // First make sure the image file exists
   f = fopen( fname, "rb" );
   if( !f ) return SDL_FALSE;
 
+  // Eject any old image
   tape_eject( oric );
 
+  // Get the image size
   fseek( f, 0, SEEK_END );
   oric->tapelen = ftell( f );
   fseek( f, 0, SEEK_SET );
@@ -117,6 +138,7 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
     return SDL_FALSE;
   }
 
+  // Allocate memory for the tape image and read it in
   oric->tapebuf = malloc( oric->tapelen+1 );
   if( !oric->tapebuf )
   {
@@ -132,10 +154,17 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
     return SDL_FALSE;
   }
 
+  // Add an extra zero byte to the end. I don't know why this
+  // is necessary, but it makes some tapes work that otherwise
+  // get stuck at the end.
   oric->tapebuf[oric->tapelen++] = 0;
 
   fclose( f );
+
+  // Rewind the tape
   tape_rewind( oric );
+
+  // Make a displayable version of the image filename
   if( strlen( fname ) > 15 )
   {
     strncpy( oric->tapename, &fname[strlen(fname)-15], 16 );
@@ -144,16 +173,21 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
     strncpy( oric->tapename, fname, 16 );
   }
   oric->tapename[15] = 0;
+
+  // Show it in the popup
   tape_popup( oric );
   return SDL_TRUE;
 };
 
+// Emulate the specified cpu-cycles time for the tape
 void tape_ticktock( struct machine *oric, int cycles )
 {
   Sint32 i, j;
   char *odir;
   SDL_bool romon;
 
+  // Determine if the ROM is currently active
+  // (for turbotape purposes)
   romon = SDL_TRUE;
   if( oric->drivetype == DRV_JASMIN )
   {
@@ -167,6 +201,11 @@ void tape_ticktock( struct machine *oric, int cycles )
     romon = !oric->romdis;
   }
 
+  // The VSync hack is triggered in the video emulation
+  // but actually handled here, since the VSync signal
+  // is read into the tape input. The video emulation
+  // puts half a scanlines worth of cycles into this
+  // counter, which we count down here.
   if( oric->vsync > 0 )
   {
     oric->vsync -= cycles;
@@ -174,6 +213,8 @@ void tape_ticktock( struct machine *oric, int cycles )
       oric->vsync = 0;
   }
   
+  // If the VSync hack is active, we pull CB1 low
+  // while the above counter is active.
   if( oric->vsynchack )
   {
     j = (oric->vsync == 0);
@@ -181,14 +222,22 @@ void tape_ticktock( struct machine *oric, int cycles )
       via_write_CB1( &oric->via, j );
   }
 
+  // If the Machine type is Atmos, and the built-in
+  // ROM is enabled, maybe do turbotape patches.
+  // We probably should ensure the ROM isn't
+  // a modified one first...
   if( ( oric->type == MACH_ATMOS ) && ( romon ) )
   {
+	// Patch CLOAD to insert a tape image specified.
+	// Unfortunately the way the ROM works means we
+	// only have up to 16 chars.
     switch( oric->cpu.pc )
     {
       case 0xe85f: // Decoded filename
-        if( !oric->autoinsert ) break;
-        if( oric->cpu.read( &oric->cpu, 0x027f ) == 0 ) break;
+        if( !oric->autoinsert ) break;  // Autoinsert disabled?
+        if( oric->cpu.read( &oric->cpu, 0x027f ) == 0 ) break; // No filename?
 
+        // Read in the filename from RAM
         for( i=0; i<16; i++ )
         {
           j = oric->cpu.read( &oric->cpu, 0x027f+i );
@@ -198,6 +247,7 @@ void tape_ticktock( struct machine *oric, int cycles )
         tapefile[i] = 0;
         oric->cpu.write( &oric->cpu, 0x27f, 0 );
 
+        // Try and load the tape image
         odir = getcwd( NULL, 0 );
         chdir( tapepath );
         tape_load_tap( oric, tapefile );
@@ -207,21 +257,30 @@ void tape_ticktock( struct machine *oric, int cycles )
     }
   }
 
+  // No tape? Motor off?
   if( ( !oric->tapebuf ) || ( !oric->tapemotor ) )
     return;
+
+  // Tape offset outside the tape image limits?
   if( ( oric->tapeoffs < 0 ) || ( oric->tapeoffs >= oric->tapelen ) )
     return;
 
+  // Maybe do turbotape
   if( ( oric->type == MACH_ATMOS ) && ( oric->tapeturbo ) && ( romon ) )
   {
     switch( oric->cpu.pc )
     {
       case 0xe735: // Cassette sync
+
+	    // Currently at a sync byte?
         if( oric->tapebuf[oric->tapeoffs] != 0x16 )
         {
+		  // Find the next sync byte
           do
           {
             oric->tapeoffs++;
+
+			// Give up at end of image
             if( oric->tapeoffs >= oric->tapelen )
             {
               refreshtape = SDL_TRUE;
@@ -229,15 +288,24 @@ void tape_ticktock( struct machine *oric, int cycles )
             }
           } while( oric->tapebuf[oric->tapeoffs] != 0x16 );
         }
+
+		// "Jump" to the end of the cassette sync routine
         oric->cpu.pc = 0xe759;
         break;
       
       case 0xe6c9: // Read byte
+	    // Read the next byte directly into A
         oric->cpu.a = oric->tapebuf[oric->tapeoffs++];
+
+		// Set flags
         oric->cpu.f_z = oric->cpu.a == 0;
         oric->cpu.f_c = 1;
+
+		// Simulate the effects of the read byte routine
         oric->cpu.write( &oric->cpu, 0x2f, oric->cpu.a );
         oric->cpu.write( &oric->cpu, 0x2b1, 0x00 );
+
+		// Jump to the end of the read byte routine
         oric->cpu.pc = 0xe6fb;
         if( oric->tapeoffs >= oric->tapelen ) refreshtape = SDL_TRUE;
         break;
@@ -245,15 +313,19 @@ void tape_ticktock( struct machine *oric, int cycles )
     return;
   }
 
+  // No turbotape. Do "real" tape emulation.
+  // Count down the cycle counter
   if( oric->tapecount > cycles )
   {
     oric->tapecount -= cycles;
     return;
   }
 
+  // Toggle the tape input
   oric->tapeout ^= 1;
   if( !oric->vsynchack )
   {
+	// Update the audio if tape noise is enabled
     if( oric->tapenoise )
     {
       ay_lockaudio( &oric->ay ); // Gets unlocked at the end of each frame
@@ -268,23 +340,26 @@ void tape_ticktock( struct machine *oric, int cycles )
         oric->ay.tapelog[oric->ay.tlogged++].val   = oric->tapeout;
       }
     }
+
+	// Put tape signal onto CB1
     via_write_CB1( &oric->via, oric->tapeout );
   }
 
-  if( oric->tapeout ) // New bit?
+  // Tape signal rising edge
+  if( oric->tapeout )
   {
     switch( oric->tapebit )
     {
-      case 0:
+      case 0:      // Start of a new byte. Send a 1 pulse
         oric->tapetime = TAPE_1_PULSE;
         break;
 
-      case 1:  // sync pulse
+      case 1:     // Then a sync pulse (0)
         oric->tapetime = TAPE_0_PULSE;
         oric->tapeparity = 1;
         break;
       
-      default:
+      default:    // For bit numbers 2 to 9, send actual byte bits 0 to 7
         if( oric->tapebuf[oric->tapeoffs]&(1<<(oric->tapebit-2)) )
         {
           oric->tapetime = TAPE_1_PULSE;
@@ -294,14 +369,14 @@ void tape_ticktock( struct machine *oric, int cycles )
         }
         break;
 
-      case 10:  // Parity bit
+      case 10:  // Then a parity bit
         if( oric->tapeparity )
           oric->tapetime = TAPE_1_PULSE;
         else
           oric->tapetime = TAPE_0_PULSE;
         break;
 
-      case 11:
+      case 11:  // and then 5 1 pulses.
       case 12:
       case 13:
       case 14:
@@ -310,6 +385,7 @@ void tape_ticktock( struct machine *oric, int cycles )
         break;
     }
 
+    // Move on to the next bit
     oric->tapebit = (oric->tapebit+1)%16;
     if( !oric->tapebit )
     {
@@ -324,7 +400,7 @@ void tape_ticktock( struct machine *oric, int cycles )
   oric->tapecount = oric->tapetime;
 }
 
-// Init/Reset
+// Init/Reset VIA
 void via_init( struct via *v, struct machine *oric )
 {
   v->orb = 0;
@@ -360,6 +436,7 @@ void via_init( struct via *v, struct machine *oric )
   v->oric = oric;
 }
 
+// Update the CPU IRQ flags depending on the state of the VIA
 static inline void via_check_irq( struct via *v )
 {
   if( ( v->ier & v->ifr )&0x7f )
@@ -372,6 +449,7 @@ static inline void via_check_irq( struct via *v )
   }
 }
 
+// Set a bit in the IFR
 static inline void via_set_irq( struct via *v, unsigned char bit )
 {
   v->ifr |= bit;
@@ -382,6 +460,7 @@ static inline void via_set_irq( struct via *v, unsigned char bit )
   v->oric->cpu.irq |= IRQF_VIA;
 }
 
+// Clear a bit in the IFR
 static inline void via_clr_irq( struct via *v, unsigned char bit )
 {
   if( bit & VIRQF_CA1 )
@@ -403,10 +482,12 @@ void via_clock( struct via *v, unsigned int cycles )
 {
   unsigned int crem;
 
+  // Move on the tape emulation
   tape_ticktock( v->oric, cycles );
 
   if( !cycles ) return;
 
+  // Simulate the feedback from the printer
   if( v->oric->prclock > 0 )
   {
     v->oric->prclock -= cycles;
@@ -417,6 +498,9 @@ void via_clock( struct via *v, unsigned int cycles )
     }
   }
 
+  // This is just a timer to close the
+  // "printer_out.txt" filehandle if the
+  // oric printer is idle for a while
   if( v->oric->prclose > 0 )
   {
     v->oric->prclose -= cycles;
@@ -607,8 +691,15 @@ void via_clock( struct via *v, unsigned int cycles )
   }   
 }
 
+// Send a byte to the printer. It sets up
+// two timers; one to count down and then
+// do the response from the printer, the
+// other to close the printer_out.txt filehandle
+// after the printer is idle for a while.
 void lprintchar( struct machine *oric, char c )
 {
+  // If the printer handle isn't currently open,
+  // open it and do a popup to tell the user.
   if( !oric->prf )
   {
     oric->prf = fopen( "printer_out.txt", "a" );
@@ -621,6 +712,7 @@ void lprintchar( struct machine *oric, char c )
     do_popup( "Printing to 'printer_out.txt'" );
   }
   
+  // Put the char to the file, set up the timers
   fputc( c, oric->prf );
   oric->prclock = 40;
   oric->prclose = 64*312*50*5;

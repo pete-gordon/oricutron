@@ -1,6 +1,6 @@
-PLATFORM ?= os4
+# PLATFORM ?= os4
 # PLATFORM = MorphOS
-# PLATFORM = win32
+PLATFORM = win32
 # PLATFORM = beos
 # PLATFORM = haiku
 # PLATFORM = osx
