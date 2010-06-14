@@ -1028,6 +1028,7 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
       switch( ev->key.keysym.sym )
       {
         case SDLK_UP:
+          // Find the next selectable item above this one
           i = cmenu->citem-1;
           while( ( cmenu->items[i].name == OSDMENUBAR ) ||
                  ( cmenu->items[i].func == NULL ) )
@@ -1035,8 +1036,23 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             if( i < 0 ) break;
             i--;
           }
+
+          // Hit the top?
           if( ( i < 0 ) || ( cmenu->items[i].name == OSDMENUBAR ) )
-            break;
+          {
+            // Start the search again from the last item
+            for( i=0; cmenu->items[i].name; i++ ) ;
+            i--;
+
+            // Find the first selectable item from here
+            while( ( cmenu->items[i].name == OSDMENUBAR ) ||
+                   ( cmenu->items[i].func == NULL ) )
+            {
+              if( i < 0 ) break;
+              i--;
+            }
+            if( ( i < 0 ) || ( cmenu->items[i].name == OSDMENUBAR ) ) break;
+          }
           cmenu->citem = i;
           drawitems();
           *needrender = SDL_TRUE;
@@ -1052,7 +1068,19 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           }
 
           if( ( cmenu->items[i].name == NULL ) || ( cmenu->items[i].name == OSDMENUBAR ) )
-            break;
+          {
+            i=0;
+
+            while( ( cmenu->items[i].name == OSDMENUBAR ) ||
+                   ( cmenu->items[i].func == NULL ) )
+            {
+              if( cmenu->items[i].name == NULL ) break;
+              i++;
+            }
+
+            if( ( cmenu->items[i].name == NULL ) || ( cmenu->items[i].name == OSDMENUBAR ) )
+              break;
+          }
 
           cmenu->citem = i;
           drawitems();

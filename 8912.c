@@ -405,16 +405,16 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
 
   // Determine if the ROM is currently active
   romon = SDL_TRUE;
-  if( oric->drivetype == DRV_JASMIN )
+  if( ay->oric->drivetype == DRV_JASMIN )
   {
-    if( oric->jasmin.olay == 0 )
+    if( ay->oric->jasmin.olay == 0 )
     {
-      romon = !oric->romdis;
+      romon = !ay->oric->romdis;
     } else {
       romon = SDL_FALSE;
     }
   } else {
-    romon = !oric->romdis;
+    romon = !ay->oric->romdis;
   }
 
   // Need to do queued keys?
