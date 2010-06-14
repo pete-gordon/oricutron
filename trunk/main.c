@@ -386,7 +386,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
         strncpy( sto->start_disk, argv[i], 1024 );
         sto->start_disk[1023] = 0;
       }
-      if( p && ( strcasecmp(p, ".tap") == 0 ) )
+      else if( p && ( strcasecmp(p, ".tap") == 0 ) )
       {
         strncpy( sto->start_tape, argv[i], 1024 );
         sto->start_tape[1023] = 0;
