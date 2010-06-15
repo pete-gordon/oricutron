@@ -1,5 +1,27 @@
 Oricutron ChangeLog
 
+0.6 (15-Jun-2010)
+-----------------
+
+* If you type CLOAD"", THEN insert a tape, it will
+  now load properly even with turbotape enabled.
+* Now outputs the mono audio as two identical stereo
+  channels again. It seems some targets don't like
+  mono audio.
+* Fixed some compilation warnings
+* The files/dirs in the SDL filerequesters are
+  now sorted (thanks ibisum!)
+* AY Envolope Per H now shown correctly in debugger
+* Included AmigaGuide version of readme (thanks
+  to Stefan Haubenthal)
+* Better argument parsing (thanks Revolf)
+* Navigating in menus with cursor keys now cycles
+  round at the top/bottom.
+* Menus have keyboard shortcuts
+* Auto-insertion of tapes should work better
+* Various minor fixes
+
+
 0.5 (24-Feb-2010)
 -----------------
 
