@@ -1,7 +1,7 @@
-Oricutron 0.5
+Oricutron 0.6
 -------------
 
-All code (c)2010 Peter Gordon (pete@petergordon.org.uk)
+(c)2010 Peter Gordon (pete@petergordon.org.uk)
 
 This is a work in progress.
 
@@ -79,6 +79,7 @@ Here are all the options:
   -f / --fullscreen = Run oricutron fullscreen
   -w / --window     = Run oricutron in a window
   -b / --debug      = Start oricutron in the debugger
+  -h / --help       = Print command line help and quit
 
 
 Examples:
@@ -111,9 +112,10 @@ In emulator
 In menus
 --------
 
-  Cursors - Navigate
-  Enter   - Perform option
-  Escape  - Go back
+  Cursors   - Navigate
+  Enter     - Perform option
+  Backspace - Go back
+  Escape    - Exit menus
   (or use the mouse)
 
 
