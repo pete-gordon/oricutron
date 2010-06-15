@@ -183,6 +183,9 @@ void tape_autoinsert( struct machine *oric )
 {
   char *odir;
 
+  if( strncmp( &oric->mem[0x27f], oric->lasttapefile, 16 ) == 0 )
+	oric->mem[0x27f] = 0;
+
   // Try and load the tape image
   strcpy( tapefile, oric->lasttapefile );
 
@@ -252,7 +255,7 @@ void tape_ticktock( struct machine *oric, int cycles )
     // only have up to 16 chars.
     switch( oric->cpu.pc )
     {
-      case 0xe85f: // Decoded filename
+      case 0xe4ac: // Decoded filename
         // Read in the filename from RAM
         for( i=0; i<16; i++ )
         {
@@ -270,10 +273,7 @@ void tape_ticktock( struct machine *oric, int cycles )
         if( ( !oric->tapebuf ) ||
             ( oric->tapeoffs >= oric->tapelen ) ||
             ( ( i > 3 ) && ( strcasecmp( &oric->lasttapefile[i-4], ".tap" ) == 0 ) ) )
-        {
-          oric->cpu.write( &oric->cpu, 0x27f, 0 );
           tape_autoinsert( oric );
-        }
         break;
     }
   }
