@@ -100,13 +100,14 @@ In emulator
   F1       - Bring up the menu
   F2       - Go to debugger/monitor
   F3       - Reset button (NMI)
-  F4       - Hard Reset
+  F4       - Hard reset
   Shift+F4 - Jasmin reset
   F5       - Toggle FPS
   F6       - Toggle warp speed
   F7       - Save all modified disks
   Shift+F7 - Save all modified disks to new disk images
   F10      - Start/Stop AVI capture
+  Help     - Show guide
 
 
 In menus

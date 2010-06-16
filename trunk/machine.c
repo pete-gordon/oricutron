@@ -830,6 +830,12 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
            refreshavi = SDL_TRUE;
            break;
 
+#if defined(__amigaos4__) || defined(__MORPHOS__)
+        case SDLK_HELP:
+           System( "Multiview Oricutron.guide");
+           break;
+#endif
+
         case SDLK_LSHIFT:
         case SDLK_RSHIFT:
           shifted = SDL_FALSE;
