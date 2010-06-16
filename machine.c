@@ -23,6 +23,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(__amigaos4__) || defined(__MORPHOS__)
+#include <proto/dos.h>
+#endif
+
 #include "system.h"
 #include "6502.h"
 #include "via.h"
@@ -857,7 +861,17 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
            refreshavi = SDL_TRUE;
            break;
 
-#if defined(__amigaos4__) || defined(__MORPHOS__)
+#ifdef __amigaos4__
+        case SDLK_HELP:
+           IDOS->SystemTags( "Multiview Oricutron.guide",
+             SYS_Input, IDOS->Open( "NIL:", MODE_NEWFILE ),
+             SYS_Output, IDOS->Open( "NIL:", MODE_NEWFILE ),
+             SYS_Asynch, TRUE,
+             TAG_DONE );
+           break;
+#endif
+
+#ifdef __MORPHOS__
         case SDLK_HELP:
            System( "Multiview Oricutron.guide");
            break;
