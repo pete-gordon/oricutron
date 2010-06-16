@@ -409,6 +409,19 @@ void o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
   oric->mem[addr&0x3fff] = data;
 }
 
+// Oric Atmos CPU write
+void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
+{
+  struct machine *oric = (struct machine *)cpu->userdata;
+  if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
+  if( ( addr & 0xff00 ) == 0x0300 )
+  {
+    via_write( &oric->via, addr, data );
+    return;
+  }
+  oric->mem[addr] = data;
+}
+
 // Atmos + jasmin
 void jasmin_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
@@ -565,6 +578,20 @@ unsigned char o16kread( struct m6502 *cpu, unsigned short addr )
     return oric->rom[addr-0xc000];
 
   return oric->mem[addr&0x3fff];
+}
+
+// Oric Telestrat CPU read
+unsigned char telestratread( struct m6502 *cpu, unsigned short addr )
+{
+  struct machine *oric = (struct machine *)cpu->userdata;
+
+  if( ( addr & 0xff00 ) == 0x0300 )
+    return via_read( &oric->via, addr );
+
+  if( ( !oric->romdis ) && ( addr >= 0xc000 ) )
+    return oric->rom[addr-0xc000];
+
+  return oric->mem[addr];
 }
 
 // Atmos + jasmin
@@ -767,7 +794,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           if( ( shifted ) && ( oric->drivetype == DRV_JASMIN ) )
             oric->cpu.write( &oric->cpu, 0x3fb, 1 ); // ROMDIS
           m6502_reset( &oric->cpu );
-          via_init( &oric->via, oric );
+          via_init( &oric->via, oric, VIA_MAIN );
           break;
         
         case SDLK_F5:
@@ -1103,14 +1130,53 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       hwopitems[1].name = " Oric-1 16K";
       hwopitems[2].name = " Atmos";
       hwopitems[3].name = "\x0e""Telestrat";
-      printf( "Telestrat not implimented yet\n" );
-      return SDL_FALSE;
+      oric->mem = malloc( 65536 + 49152 );
+      if( !oric->mem )
+      {
+        printf( "Out of memory\n" );
+        return SDL_FALSE;
+      }
+
+      blank_ram( 0, oric->mem, 65536+49152 );      
+
+      oric->rom = &oric->mem[65536];
+
+	  oric->cpu.read = telestratread;
+	  oric->cpu.write = telestratwrite;
+	  oric->romdis = SDL_FALSE;
+
+      if( !load_rom( ROMPREFIX"hyperbas.rom", 16384, &oric->rom[0] ) )
+        return SDL_FALSE;
+
+      oric->pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
+      oric->pal[1] = SDL_MapRGB( screen->format, 0xff, 0x00, 0x00 );
+      oric->pal[2] = SDL_MapRGB( screen->format, 0x00, 0xff, 0x00 );
+      oric->pal[3] = SDL_MapRGB( screen->format, 0xff, 0xff, 0x00 );
+      oric->pal[4] = SDL_MapRGB( screen->format, 0x00, 0x00, 0xff );
+      oric->pal[5] = SDL_MapRGB( screen->format, 0xff, 0x00, 0xff );
+      oric->pal[6] = SDL_MapRGB( screen->format, 0x00, 0xff, 0xff );
+      oric->pal[7] = SDL_MapRGB( screen->format, 0xff, 0xff, 0xff );
+
+      for( i=0; i<8; i++ )
+        oric->dpal[i] = (oric->pal[i]<<16)|oric->pal[i];
+
+      oric->scr = (Uint8 *)malloc( 240*224 );
+      if( !oric->scr ) return SDL_FALSE;
+
+      oric->cyclesperraster = 64;
+      oric->vid_start = 65;
+      oric->vid_maxrast = 312;
+      oric->vid_special = oric->vid_start + 200;
+      oric->vid_end     = oric->vid_start + 224;
+      oric->vid_raster  = 0;
+      video_decode_attr( oric, 0x1a );
+      break;
   }
 
   oric->tapename[0] = 0;
   tape_rewind( oric );
   m6502_reset( &oric->cpu );
-  via_init( &oric->via, oric );
+  via_init( &oric->via, oric, VIA_MAIN );
   ay_init( &oric->ay, oric );
   oric->cpu.rastercycles = oric->cyclesperraster;
   oric->frames = 0;
