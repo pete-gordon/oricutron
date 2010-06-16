@@ -72,6 +72,7 @@ struct start_opts
 static char *machtypes[] = { "oric1",
                              "oric1-16k",
                              "atmos",
+	                         "telestrat",
                              NULL };
 static char *disktypes[] = { "none",
                              "jasmin",
@@ -329,6 +330,8 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
             if( strcasecmp( opt_arg, "oric1" ) == 0 ) { sto->start_machine = MACH_ORIC1;     break; }
             if( strcasecmp( opt_arg, "1"     ) == 0 ) { sto->start_machine = MACH_ORIC1;     break; }
             if( strcasecmp( opt_arg, "o16k"  ) == 0 ) { sto->start_machine = MACH_ORIC1_16K; break; }
+            if( strcasecmp( opt_arg, "telestrat" ) == 0 ) { sto->start_machine = MACH_TELESTRAT;     break; }
+            if( strcasecmp( opt_arg, "t"     ) == 0 ) { sto->start_machine = MACH_TELESTRAT;     break; }
           }
           
           printf( "Invalid machine type\n" );

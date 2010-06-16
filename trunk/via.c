@@ -184,7 +184,7 @@ void tape_autoinsert( struct machine *oric )
   char *odir;
 
   if( strncmp( &oric->mem[0x27f], oric->lasttapefile, 16 ) == 0 )
-	oric->mem[0x27f] = 0;
+    oric->mem[0x27f] = 0;
 
   // Try and load the tape image
   strcpy( tapefile, oric->lasttapefile );
@@ -476,8 +476,106 @@ void tape_ticktock( struct machine *oric, int cycles )
   oric->tapecount = oric->tapetime;
 }
 
+// Send a byte to the printer. It sets up
+// two timers; one to count down and then
+// do the response from the printer, the
+// other to close the printer_out.txt filehandle
+// after the printer is idle for a while.
+void lprintchar( struct machine *oric, char c )
+{
+  // If the printer handle isn't currently open,
+  // open it and do a popup to tell the user.
+  if( !oric->prf )
+  {
+    oric->prf = fopen( "printer_out.txt", "a" );
+    if( !oric->prf )
+    {
+      do_popup( "Printing failed :-(" );
+      return;
+    }
+    
+    do_popup( "Printing to 'printer_out.txt'" );
+  }
+  
+  // Put the char to the file, set up the timers
+  fputc( c, oric->prf );
+  oric->prclock = 40;
+  oric->prclose = 64*312*50*5;
+  via_write_CA1( &oric->via, 1 );
+}
+
+
+void via_main_w_iorb( struct via *v, unsigned char oldorb )
+{
+  // Look for negative edge on printer strobe
+  if( ( (oldorb&v->ddrb&0x10) != 0 ) &&
+      ( (v->orb&v->ddrb&0x10) == 0 ) )
+    lprintchar( v->oric, v->ora );
+
+  if( (v->pcr&PCRF_CB2CON) == 0x80 )
+    ay_set_bdir( &v->oric->ay, 0 );
+
+  ay_update_keybits( &v->oric->ay );
+}
+
+void via_main_w_iora( struct via *v )
+{
+  if( (v->pcr&PCRF_CA2CON) == 0x08 )
+    ay_set_bc1( &v->oric->ay, 0 );
+
+  ay_modeset( &v->oric->ay );
+}
+
+void via_main_w_iora2( struct via *v )
+{
+  ay_modeset( &v->oric->ay );
+}
+
+void via_main_w_ddrb( struct via *v )
+{
+  ay_update_keybits( &v->oric->ay );
+}
+
+void via_main_w_pcr( struct via *v )
+{
+  SDL_bool updateay = SDL_FALSE;
+
+  switch( v->pcr & PCRF_CA2CON )
+  {
+    case 0x0c:
+      updateay = SDL_TRUE;
+      updateay = SDL_TRUE;
+      break;
+  }
+
+//  if( (v->acr&ACRF_SRCON) == 0 )
+  {
+    switch( v->pcr & PCRF_CB2CON )
+    {
+      case 0xc0:
+      case 0xe0:
+        updateay = SDL_TRUE;
+        break;
+    }
+  }
+      
+  if( updateay ) ay_set_bcmode( &v->oric->ay, v->ca2, v->cb2 );
+}
+
+void via_main_r_iora( struct via *v )
+{
+  ay_modeset( &v->oric->ay );
+  if( (v->pcr&PCRF_CA2CON) == 0x08 )
+    ay_set_bc1( &v->oric->ay, 0 );
+}
+
+void via_main_r_iora2( struct via *v )
+{
+  ay_modeset( &v->oric->ay );
+}
+
 // Init/Reset VIA
-void via_init( struct via *v, struct machine *oric )
+void via_init( struct via *v, struct machine *oric, int viatype )
 {
   v->orb = 0;
   v->ora = 0;
@@ -510,6 +608,31 @@ void via_init( struct via *v, struct machine *oric )
   v->ca2pulse = SDL_FALSE;
   v->cb2pulse = SDL_FALSE;
   v->oric = oric;
+
+  switch( viatype )
+  {
+    case VIA_MAIN:
+      v->w_iorb  = via_main_w_iorb;
+      v->w_iora  = via_main_w_iora;
+      v->w_iora2 = via_main_w_iora2;
+	  v->w_ddrb  = via_main_w_ddrb;
+	  v->w_pcr   = via_main_w_pcr;
+	  v->r_iora  = via_main_r_iora;
+      v->r_iora2 = via_main_r_iora2;
+	  v->irqbit  = IRQF_VIA;
+      break;
+
+    case VIA_TELESTRAT:
+      v->w_iorb  = NULL;
+      v->w_iora  = NULL;
+      v->w_iora2 = NULL;
+	  v->w_ddrb  = NULL;
+	  v->w_pcr   = NULL;
+	  v->r_iora  = NULL;
+	  v->r_iora2 = NULL;
+	  v->irqbit  = IRQF_VIA2;
+      break;
+  }
 }
 
 // Update the CPU IRQ flags depending on the state of the VIA
@@ -517,10 +640,10 @@ static inline void via_check_irq( struct via *v )
 {
   if( ( v->ier & v->ifr )&0x7f )
   {
-    v->oric->cpu.irq  |= IRQF_VIA;
+    v->oric->cpu.irq  |= v->irqbit;
     v->ifr |= 0x80;
   } else {
-    v->oric->cpu.irq &= ~IRQF_VIA;
+    v->oric->cpu.irq &= ~v->irqbit;
     v->ifr &= 0x7f;
   }
 }
@@ -533,7 +656,7 @@ static inline void via_set_irq( struct via *v, unsigned char bit )
     v->ifr |= 0x80;
 
   if( ( v->ier & bit ) == 0 ) return;
-  v->oric->cpu.irq |= IRQF_VIA;
+  v->oric->cpu.irq |= v->irqbit;
 }
 
 // Clear a bit in the IFR
@@ -548,7 +671,7 @@ static inline void via_clr_irq( struct via *v, unsigned char bit )
   v->ifr &= ~bit;
   if( (( v->ier & v->ifr )&0x7f) == 0 )
   {
-    v->oric->cpu.irq &= ~IRQF_VIA;
+    v->oric->cpu.irq &= ~v->irqbit;
     v->ifr &= 0x7f;
   }
 }
@@ -767,52 +890,18 @@ void via_clock( struct via *v, unsigned int cycles )
   }   
 }
 
-// Send a byte to the printer. It sets up
-// two timers; one to count down and then
-// do the response from the printer, the
-// other to close the printer_out.txt filehandle
-// after the printer is idle for a while.
-void lprintchar( struct machine *oric, char c )
-{
-  // If the printer handle isn't currently open,
-  // open it and do a popup to tell the user.
-  if( !oric->prf )
-  {
-    oric->prf = fopen( "printer_out.txt", "a" );
-    if( !oric->prf )
-    {
-      do_popup( "Printing failed :-(" );
-      return;
-    }
-    
-    do_popup( "Printing to 'printer_out.txt'" );
-  }
-  
-  // Put the char to the file, set up the timers
-  fputc( c, oric->prf );
-  oric->prclock = 40;
-  oric->prclose = 64*312*50*5;
-  via_write_CA1( &oric->via, 1 );
-}
-
 // Write VIA from CPU
 void via_write( struct via *v, int offset, unsigned char data )
 {
-  SDL_bool updateay;
+  unsigned char tmp;
   offset &= 0xf;
 
   switch( offset )
   {
     case VIA_IORB:
-      // Look for negative edge on printer strobe
-      if( ( (v->orb&v->ddrb&0x10) != 0 ) &&
-          ( (data&v->ddrb&0x10) == 0 ) )
-        lprintchar( v->oric, v->ora );
-    
+      tmp = v->orb;    
       v->orb = data;
 
-      tape_setmotor( v->oric, (v->orb&v->ddrb&0x40) != 0 );
-      
       via_clr_irq( v, VIRQF_CB1 );
       switch( v->pcr & PCRF_CB2CON )
       {
@@ -825,13 +914,10 @@ void via_write( struct via *v, int offset, unsigned char data )
           v->cb2pulse = SDL_TRUE;
         case 0x80:
 //          if( (v->acr&ACRF_SRCON) != 0 )
-          {
             v->cb2 = 0;
-            ay_set_bdir( &v->oric->ay, 0 );
-          }
           break;
       }
-      ay_update_keybits( &v->oric->ay );
+      if( v->w_iorb ) v->w_iorb( v, tmp );
       break;
     case VIA_IORA:
       v->ora = data;
@@ -850,11 +936,11 @@ void via_write( struct via *v, int offset, unsigned char data )
           ay_set_bc1( &v->oric->ay, 0 );
           break;
       }
-      ay_modeset( &v->oric->ay );
+      if( v->w_iora ) v->w_iora( v );
       break;
     case VIA_DDRB:
       v->ddrb = data;
-      ay_update_keybits( &v->oric->ay );
+	  if( v->w_ddrb ) v->w_ddrb( v );
       break;
     case VIA_DDRA:
       v->ddra = data;
@@ -919,19 +1005,16 @@ void via_write( struct via *v, int offset, unsigned char data )
     case 0xc0: // Continuous, output on PB7
       break;
     case VIA_PCR:
-      updateay = SDL_FALSE;
       v->pcr = data;
       switch( v->pcr & PCRF_CA2CON )
       {
         case 0x0c:
           v->ca2 = 0;
           v->ca2pulse = SDL_FALSE;
-          updateay = SDL_TRUE;
           break;
         
         case 0x0e:
           v->ca2 = 1;
-          updateay = SDL_TRUE;
           break;
       }
 
@@ -942,17 +1025,15 @@ void via_write( struct via *v, int offset, unsigned char data )
           case 0xc0:
             v->cb2 = 0;
             v->cb2pulse = SDL_FALSE;
-            updateay = SDL_TRUE;
             break;
         
           case 0xe0:
             v->cb2 = 1;
-            updateay = SDL_TRUE;
             break;
         }
       }
-      
-      if( updateay ) ay_set_bcmode( &v->oric->ay, v->ca2, v->cb2 );
+
+	  if( v->w_pcr ) v->w_pcr( v );
       break;
     case VIA_IFR:
       if( data & VIRQF_CA1 ) v->iral = v->ira;
@@ -962,7 +1043,7 @@ void via_write( struct via *v, int offset, unsigned char data )
       if( ( v->ier & v->ifr )&0x7f )
         v->ifr |= 0x80;
       else
-        v->oric->cpu.irq &= ~IRQF_VIA;
+        v->oric->cpu.irq &= ~v->irqbit;
       break;
     case VIA_IER:
       if( data & 0x80 )
@@ -974,7 +1055,7 @@ void via_write( struct via *v, int offset, unsigned char data )
 
     case VIA_IORA2:
       v->ora = data;
-      ay_modeset( &v->oric->ay );
+	  if( v->w_iora2 ) v->w_iora2( v );
       break;
   }
 }
@@ -1051,7 +1132,6 @@ unsigned char via_read( struct via *v, int offset )
       }
       return (v->orb&v->ddrb)|(v->irbl&(~v->ddrb));
     case VIA_IORA:
-      ay_modeset( &v->oric->ay );
       via_clr_irq( v, VIRQF_CA1 );
       switch( v->pcr & PCRF_CA2CON )
       {
@@ -1064,9 +1144,9 @@ unsigned char via_read( struct via *v, int offset )
           v->ca2pulse = SDL_TRUE;
         case 0x08:
           v->ca2 = 0;
-          ay_set_bc1( &v->oric->ay, 0 );
           break;
       }
+	  if( v->r_iora ) v->r_iora( v );
       return (v->ora&v->ddra)|(v->iral&(~v->ddra));
     case VIA_DDRB:
       return v->ddrb;
@@ -1101,7 +1181,6 @@ unsigned char via_read( struct via *v, int offset )
     case VIA_IER:
       return v->ier|0x80;
     case VIA_IORA2:
-      ay_modeset( &v->oric->ay );
       return (v->ora&v->ddra)|(v->iral&(~v->ddra));
   }
 
@@ -1118,7 +1197,7 @@ void via_mon_write_ifr( struct via *v, unsigned char data )
   if( ( v->ier & v->ifr )&0x7f )
     v->ifr |= 0x80;
   else
-    v->oric->cpu.irq &= ~IRQF_VIA;
+    v->oric->cpu.irq &= ~v->irqbit;
 }
 
 // Write CA1,CA2,CB1,CB2 from external device

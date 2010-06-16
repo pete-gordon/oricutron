@@ -164,7 +164,7 @@ struct osdmenuitem mainitems[] = { { "Insert tape...",         NULL,   0,       
 struct osdmenuitem hwopitems[] = { { " Oric-1",                "1",    SDLK_1,   swapmach,        (0xffff<<16)|MACH_ORIC1 },
                                    { " Oric-1 16K",            "2",    SDLK_2,   swapmach,        (0xffff<<16)|MACH_ORIC1_16K },
                                    { " Atmos",                 "3",    SDLK_3,   swapmach,        (0xffff<<16)|MACH_ATMOS },
-                                   { " Telestrat",             NULL,   0,        NULL,            0 },
+                                   { " Telestrat",             "4",    SDLK_4,   swapmach,        (DRV_NONE<<16)|MACH_TELESTRAT },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0 },
                                    { " No disk",               "X",    'x',      setdrivetype,    DRV_NONE },
                                    { " Microdisc",             "M",    'm',      setdrivetype,    DRV_MICRODISC },
@@ -818,7 +818,7 @@ void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy )
       break;
   }
   m6502_reset( &oric->cpu );
-  via_init( &oric->via, oric );
+  via_init( &oric->via, oric, VIA_MAIN );
   ay_init( &oric->ay, oric );
   oric->cpu.rastercycles = oric->cyclesperraster;
   oric->frames = 0;

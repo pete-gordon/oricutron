@@ -21,6 +21,12 @@
 #define TAPE_0_PULSE 416
 #define TAPE_1_PULSE 208
 
+enum
+{
+  VIA_MAIN = 0,
+  VIA_TELESTRAT
+};
+
 struct via
 {
   // CPU accessible registers
@@ -52,7 +58,16 @@ struct via
   SDL_bool ca2pulse, cb2pulse;
   SDL_bool srtrigger;
 
+  void (*w_iorb)(struct via *,unsigned char);
+  void (*w_iora)(struct via *);
+  void (*w_iora2)(struct via *);
+  void (*w_ddrb)(struct via *);
+  void (*w_pcr)(struct via *);
+  void (*r_iora)(struct via *);
+  void (*r_iora2)(struct via *);
+
   struct machine *oric;
+  int irqbit;
 };
 
 #define VIA_IORB   0
@@ -109,7 +124,7 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname );
 void tape_ticktock( struct machine *oric, int cycles );
 
 // Init/Reset
-void via_init( struct via *v, struct machine *oric );
+void via_init( struct via *v, struct machine *oric, int viatype );
 
 // Move timers on etc.
 void via_clock( struct via *v, unsigned int cycles );
