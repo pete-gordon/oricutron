@@ -25,6 +25,7 @@
 
 #if defined(__amigaos4__) || defined(__MORPHOS__)
 #include <proto/dos.h>
+#include <dos/dostags.h>
 #endif
 
 #include "system.h"
@@ -873,7 +874,11 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
 #ifdef __MORPHOS__
         case SDLK_HELP:
-           System( "Multiview Oricutron.guide");
+           SystemTags( "Multiview Oricutron.guide",
+             SYS_Input, Open( "NIL:", MODE_NEWFILE ),
+             SYS_Output, Open( "NIL:", MODE_NEWFILE ),
+             SYS_Asynch, TRUE,
+             TAG_DONE );
            break;
 #endif
 
