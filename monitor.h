@@ -28,3 +28,4 @@ void mon_enter( struct machine *oric );
 void mon_shut( void );
 SDL_bool mon_new_symbols( char *fname, SDL_bool above );
 void mon_state_reset( struct machine *oric );
+SDL_bool mon_getnum( struct machine *oric, unsigned int *num, char *buf, int *off, SDL_bool addrregs, SDL_bool nregs, SDL_bool viaregs, SDL_bool symbols );

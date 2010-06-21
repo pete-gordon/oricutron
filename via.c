@@ -512,6 +512,8 @@ void via_main_w_iorb( struct via *v, unsigned char oldorb )
       ( (v->orb&v->ddrb&0x10) == 0 ) )
     lprintchar( v->oric, v->ora );
 
+  tape_setmotor( v->oric, (v->orb&v->ddrb&0x40) != 0 );
+
   if( (v->pcr&PCRF_CB2CON) == 0x80 )
     ay_set_bdir( &v->oric->ay, 0 );
 
@@ -615,22 +617,22 @@ void via_init( struct via *v, struct machine *oric, int viatype )
       v->w_iorb  = via_main_w_iorb;
       v->w_iora  = via_main_w_iora;
       v->w_iora2 = via_main_w_iora2;
-	  v->w_ddrb  = via_main_w_ddrb;
-	  v->w_pcr   = via_main_w_pcr;
-	  v->r_iora  = via_main_r_iora;
+      v->w_ddrb  = via_main_w_ddrb;
+      v->w_pcr   = via_main_w_pcr;
+      v->r_iora  = via_main_r_iora;
       v->r_iora2 = via_main_r_iora2;
-	  v->irqbit  = IRQF_VIA;
+      v->irqbit  = IRQF_VIA;
       break;
 
     case VIA_TELESTRAT:
       v->w_iorb  = NULL;
       v->w_iora  = NULL;
       v->w_iora2 = NULL;
-	  v->w_ddrb  = NULL;
-	  v->w_pcr   = NULL;
-	  v->r_iora  = NULL;
-	  v->r_iora2 = NULL;
-	  v->irqbit  = IRQF_VIA2;
+      v->w_ddrb  = NULL;
+      v->w_pcr   = NULL;
+      v->r_iora  = NULL;
+      v->r_iora2 = NULL;
+      v->irqbit  = IRQF_VIA2;
       break;
   }
 }
@@ -940,7 +942,7 @@ void via_write( struct via *v, int offset, unsigned char data )
       break;
     case VIA_DDRB:
       v->ddrb = data;
-	  if( v->w_ddrb ) v->w_ddrb( v );
+      if( v->w_ddrb ) v->w_ddrb( v );
       break;
     case VIA_DDRA:
       v->ddra = data;
@@ -1033,7 +1035,7 @@ void via_write( struct via *v, int offset, unsigned char data )
         }
       }
 
-	  if( v->w_pcr ) v->w_pcr( v );
+      if( v->w_pcr ) v->w_pcr( v );
       break;
     case VIA_IFR:
       if( data & VIRQF_CA1 ) v->iral = v->ira;
@@ -1055,7 +1057,7 @@ void via_write( struct via *v, int offset, unsigned char data )
 
     case VIA_IORA2:
       v->ora = data;
-	  if( v->w_iora2 ) v->w_iora2( v );
+      if( v->w_iora2 ) v->w_iora2( v );
       break;
   }
 }
@@ -1146,7 +1148,7 @@ unsigned char via_read( struct via *v, int offset )
           v->ca2 = 0;
           break;
       }
-	  if( v->r_iora ) v->r_iora( v );
+      if( v->r_iora ) v->r_iora( v );
       return (v->ora&v->ddra)|(v->iral&(~v->ddra));
     case VIA_DDRB:
       return v->ddrb;
