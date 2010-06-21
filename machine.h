@@ -53,6 +53,8 @@ struct machine
   unsigned char *rom;
   int emu_mode;
 
+  struct via tele_via;
+
   // Video
   int vid_start;           // Start drawing video
   int vid_end;             // Stop drawing video
