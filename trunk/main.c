@@ -67,12 +67,13 @@ struct start_opts
   char     start_disk[1024];
   char     start_tape[1024];
   char     start_syms[1024];
+  char    *start_breakpoint;
 };
 
 static char *machtypes[] = { "oric1",
                              "oric1-16k",
                              "atmos",
-	                         "telestrat",
+                             "telestrat",
                              NULL };
 static char *disktypes[] = { "none",
                              "jasmin",
@@ -242,6 +243,7 @@ static void usage( int ret )
   printf( "  -f / --fullscreen = Run oricutron fullscreen\n" );
   printf( "  -w / --window     = Run oricutron in a window\n" );
   printf( "  -b / --debug      = Start oricutron in the debugger\n" );
+  printf( "  -r / --breakpoint = Set a breakpoint\n" );
   exit(ret);
 }
 
@@ -261,6 +263,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   sto->start_disk[0]  = 0;
   sto->start_tape[0]  = 0;
   sto->start_syms[0]  = 0;
+  sto->start_breakpoint = NULL;
   fullscreen          = SDL_FALSE;
 #ifdef WIN32
   hwsurface           = SDL_TRUE;
@@ -297,6 +300,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           if( strcasecmp( tmp, "tape"       ) == 0 ) { opt_type = 't'; break; }
           if( strcasecmp( tmp, "drive"      ) == 0 ) { opt_type = 'k'; break; }
           if( strcasecmp( tmp, "symbols"    ) == 0 ) { opt_type = 's'; break; }
+          if( strcasecmp( tmp, "breakpoint" ) == 0 ) { opt_type = 'r'; break; }
           break;
         
         default:
@@ -306,8 +310,8 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
             opt_arg = &argv[i][2];
           else if ( i<(argc-1))
           {
-          	switch (opt_type)
-          	{
+            switch (opt_type)
+            {
               case 'm':
               case 'd':
               case 't':
@@ -315,7 +319,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
               case 's':
                 opt_arg = argv[i+1];
                 i++;
-          	}
+            }
           }
           break;
       }
@@ -375,6 +379,13 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
         case 'b':
           sto->start_debug = SDL_TRUE;
           break;
+        
+        case 'r': // Breakpoint
+          if( opt_arg )
+            sto->start_breakpoint = opt_arg;
+          else
+            printf( "Breakpoint address or symbol expected\r\n" );
+          break;
 
         case 'h':
           usage( EXIT_SUCCESS );
@@ -432,9 +443,24 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   }
 
   mon_init( oric );
-
   if( sto->start_syms[0] )
     mon_new_symbols( sto->start_syms, SDL_TRUE );
+
+  if( sto->start_breakpoint )
+  {
+    int i;
+    unsigned int addr;
+    if( !mon_getnum( oric, &addr, sto->start_breakpoint, &i, SDL_FALSE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+    {
+      printf( "Invalid breakpoint\n" );
+      free( sto );
+      return SDL_FALSE;
+    }
+    
+    oric->cpu.breakpoints[0] = addr;
+    oric->cpu.anybp = SDL_TRUE;
+  }
+
 
   free( sto );
   return SDL_TRUE;
