@@ -421,7 +421,10 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
   if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
   if( ( addr & 0xff00 ) == 0x0300 )
   {
-    via_write( &oric->via, addr, data );
+    if( ( addr >= 0x380 ) && ( addr < 0x390 ) )
+      via_write( &oric->tele_via, addr, data );
+    else
+      via_write( &oric->via, addr, data );
     return;
   }
   oric->mem[addr] = data;
@@ -591,7 +594,12 @@ unsigned char telestratread( struct m6502 *cpu, unsigned short addr )
   struct machine *oric = (struct machine *)cpu->userdata;
 
   if( ( addr & 0xff00 ) == 0x0300 )
+  {
+    if( ( addr >= 0x380 ) && ( addr < 0x390 ) )
+      return via_read( &oric->tele_via, addr );
+
     return via_read( &oric->via, addr );
+  }
 
   if( ( !oric->romdis ) && ( addr >= 0xc000 ) )
     return oric->rom[addr-0xc000];
@@ -800,6 +808,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             oric->cpu.write( &oric->cpu, 0x3fb, 1 ); // ROMDIS
           m6502_reset( &oric->cpu );
           via_init( &oric->via, oric, VIA_MAIN );
+      via_init( &oric->tele_via, oric, VIA_TELESTRAT );
           break;
         
         case SDLK_F5:
@@ -1160,9 +1169,9 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
 
       oric->rom = &oric->mem[65536];
 
-	  oric->cpu.read = telestratread;
-	  oric->cpu.write = telestratwrite;
-	  oric->romdis = SDL_FALSE;
+    oric->cpu.read = telestratread;
+    oric->cpu.write = telestratwrite;
+    oric->romdis = SDL_FALSE;
 
       if( !load_rom( ROMPREFIX"hyperbas.rom", 16384, &oric->rom[0] ) )
         return SDL_FALSE;
@@ -1196,6 +1205,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   tape_rewind( oric );
   m6502_reset( &oric->cpu );
   via_init( &oric->via, oric, VIA_MAIN );
+  via_init( &oric->via, oric, VIA_TELESTRAT );
   ay_init( &oric->ay, oric );
   oric->cpu.rastercycles = oric->cyclesperraster;
   oric->frames = 0;

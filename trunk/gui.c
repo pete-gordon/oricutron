@@ -819,6 +819,7 @@ void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   }
   m6502_reset( &oric->cpu );
   via_init( &oric->via, oric, VIA_MAIN );
+  via_init( &oric->tele_via, oric, VIA_TELESTRAT );
   ay_init( &oric->ay, oric );
   oric->cpu.rastercycles = oric->cyclesperraster;
   oric->frames = 0;
