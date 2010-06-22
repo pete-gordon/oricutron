@@ -1245,7 +1245,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   tape_rewind( oric );
   m6502_reset( &oric->cpu );
   via_init( &oric->via, oric, VIA_MAIN );
-  via_init( &oric->via, oric, VIA_TELESTRAT );
+  via_init( &oric->tele_via, oric, VIA_TELESTRAT );
   ay_init( &oric->ay, oric );
   oric->cpu.rastercycles = oric->cyclesperraster;
   oric->frames = 0;

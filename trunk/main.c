@@ -342,13 +342,23 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           break;
         
         case 'd':  // Disk image
-          strncpy( sto->start_disk, opt_arg, 1024 );
-          sto->start_disk[1023] = 0;
+          if( opt_arg )
+          {
+            strncpy( sto->start_disk, opt_arg, 1024 );
+            sto->start_disk[1023] = 0;
+          } else {
+            printf( "No disk image specified\n" );
+          }
           break;
         
         case 't':  // Tape image
-          strncpy( sto->start_tape, opt_arg, 1024 );
-          sto->start_tape[1023] = 0;
+          if( opt_arg )
+          {
+            strncpy( sto->start_tape, opt_arg, 1024 );
+            sto->start_tape[1023] = 0;
+          } else {
+            printf( "No tape image specified\n" );
+          }          
           break;
    
         case 'k':  // Drive controller type
@@ -364,8 +374,13 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           break;
         
         case 's':  // Pre-load symbols file
-          strncpy( sto->start_syms, opt_arg, 1024 );
-          sto->start_syms[1023] = 0;
+          if( opt_arg )
+          {
+            strncpy( sto->start_syms, opt_arg, 1024 );
+            sto->start_syms[1023] = 0;
+          } else {
+            printf( "No symbols file specified\n" );
+          }          
           break;
         
         case 'f':
