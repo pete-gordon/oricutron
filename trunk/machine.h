@@ -43,6 +43,19 @@ enum
   EM_PLEASEQUIT
 };
 
+enum
+{
+  TELEBANK_RAM,
+  TELEBANK_ROM,
+  TELEBANK_HALFNHALF
+};
+
+struct telebankinfo
+{
+  unsigned char type;
+  unsigned char *ptr;
+};
+
 struct machine
 {
   Uint8 type;
@@ -53,7 +66,10 @@ struct machine
   unsigned char *rom;
   int emu_mode;
 
-  struct via tele_via;
+  struct telebankinfo tele_bank[8];
+  struct via          tele_via;
+  int                 tele_currbank;
+  unsigned char       tele_banktype;
 
   // Video
   int vid_start;           // Start drawing video
