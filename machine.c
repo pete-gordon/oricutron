@@ -414,19 +414,33 @@ void o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
   oric->mem[addr&0x3fff] = data;
 }
 
-// Oric Atmos CPU write
+// Oric Telestrat CPU write
 void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
-  if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
+
+  if( addr >= 0xc000 )
+  {
+    switch( oric->tele_banktype )
+    {
+      case TELEBANK_HALFNHALF:
+        if( addr >= 0xe000 ) break;
+      case TELEBANK_RAM:
+        oric->rom[addr-0xc000] = data;
+        break;
+    }
+    return;
+  }
+
   if( ( addr & 0xff00 ) == 0x0300 )
   {
-    if( ( addr >= 0x380 ) && ( addr < 0x390 ) )
+    if( ( addr >= 0x320 ) && ( addr < 0x330 ) )
       via_write( &oric->tele_via, addr, data );
     else
       via_write( &oric->via, addr, data );
     return;
   }
+
   oric->mem[addr] = data;
 }
 
@@ -541,7 +555,12 @@ void microdisc_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char 
 SDL_bool isram( struct machine *oric, unsigned short addr )
 {
   if( addr < 0xc000 ) return SDL_TRUE;
-  
+
+  if( oric->type == MACH_TELESTRAT )
+  {
+    return oric->tele_banktype == TELEBANK_RAM;
+  }
+
   if( !oric->romdis ) return SDL_FALSE;
   
   switch( oric->drivetype )
@@ -595,13 +614,13 @@ unsigned char telestratread( struct m6502 *cpu, unsigned short addr )
 
   if( ( addr & 0xff00 ) == 0x0300 )
   {
-    if( ( addr >= 0x380 ) && ( addr < 0x390 ) )
+    if( ( addr >= 0x320 ) && ( addr < 0x330 ) )
       return via_read( &oric->tele_via, addr );
 
     return via_read( &oric->via, addr );
   }
 
-  if( ( !oric->romdis ) && ( addr >= 0xc000 ) )
+  if( addr >= 0xc000 )
     return oric->rom[addr-0xc000];
 
   return oric->mem[addr];
@@ -808,7 +827,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             oric->cpu.write( &oric->cpu, 0x3fb, 1 ); // ROMDIS
           m6502_reset( &oric->cpu );
           via_init( &oric->via, oric, VIA_MAIN );
-      via_init( &oric->tele_via, oric, VIA_TELESTRAT );
+          via_init( &oric->tele_via, oric, VIA_TELESTRAT );
           break;
         
         case SDLK_F5:
@@ -1158,23 +1177,44 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       hwopitems[1].name = " Oric-1 16K";
       hwopitems[2].name = " Atmos";
       hwopitems[3].name = "\x0e""Telestrat";
-      oric->mem = malloc( 65536 + 49152 );
+      oric->mem = malloc( 65536+16384*7 );
       if( !oric->mem )
       {
         printf( "Out of memory\n" );
         return SDL_FALSE;
       }
 
-      blank_ram( 0, oric->mem, 65536+49152 );      
+      blank_ram( 0, oric->mem, 65536+16384*7 );      
 
-      oric->rom = &oric->mem[65536];
+      oric->cpu.read = telestratread;
+      oric->cpu.write = telestratwrite;
+      oric->romdis = SDL_FALSE;
 
-    oric->cpu.read = telestratread;
-    oric->cpu.write = telestratwrite;
-    oric->romdis = SDL_FALSE;
+      oric->tele_bank[0].type = TELEBANK_RAM;
+      oric->tele_bank[0].ptr  = &oric->mem[0x0c000];
+      oric->tele_bank[1].type = TELEBANK_RAM;
+      oric->tele_bank[1].ptr  = &oric->mem[0x10000];
+      oric->tele_bank[2].type = TELEBANK_RAM;
+      oric->tele_bank[2].ptr  = &oric->mem[0x14000];
+      oric->tele_bank[3].type = TELEBANK_HALFNHALF;
+      oric->tele_bank[3].ptr  = &oric->mem[0x18000];
+      oric->tele_bank[4].type = TELEBANK_RAM;
+      oric->tele_bank[4].ptr  = &oric->mem[0x1c000];
+      oric->tele_bank[5].type = TELEBANK_ROM;
+      oric->tele_bank[5].ptr  = &oric->mem[0x20000];
+      oric->tele_bank[6].type = TELEBANK_ROM;
+      oric->tele_bank[6].ptr  = &oric->mem[0x24000];
+      oric->tele_bank[7].type = TELEBANK_ROM;
+      oric->tele_bank[7].ptr  = &oric->mem[0x28000];
 
-      if( !load_rom( ROMPREFIX"hyperbas.rom", 16384, &oric->rom[0] ) )
-        return SDL_FALSE;
+      if( !load_rom( ROMPREFIX"telmatic.rom",  8192, &oric->tele_bank[3].ptr[8192] ) ) return SDL_FALSE;
+      if( !load_rom( ROMPREFIX"teleass.rom",  16384, oric->tele_bank[5].ptr ) ) return SDL_FALSE;
+      if( !load_rom( ROMPREFIX"hyperbas.rom", 16384, oric->tele_bank[6].ptr ) ) return SDL_FALSE;
+      if( !load_rom( ROMPREFIX"telmon24.rom", 16384, oric->tele_bank[7].ptr ) ) return SDL_FALSE;
+
+      oric->tele_currbank = 7;
+      oric->tele_banktype = oric->tele_bank[7].type;
+      oric->rom           = oric->tele_bank[7].ptr;
 
       oric->pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
       oric->pal[1] = SDL_MapRGB( screen->format, 0xff, 0x00, 0x00 );

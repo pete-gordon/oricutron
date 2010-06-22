@@ -576,6 +576,22 @@ void via_main_r_iora2( struct via *v )
   ay_modeset( &v->oric->ay );
 }
 
+
+void via_tele_w_iora( struct via *v )
+{
+  v->oric->tele_currbank = v->ora&v->ddra&0x07;
+  v->oric->tele_banktype = v->oric->tele_bank[v->oric->tele_currbank].type;
+  v->oric->rom           = v->oric->tele_bank[v->oric->tele_currbank].ptr;
+}
+
+void via_tele_w_iora2( struct via *v )
+{
+  v->oric->tele_currbank = v->ora&v->ddra&0x07;
+  v->oric->tele_banktype = v->oric->tele_bank[v->oric->tele_currbank].type;
+  v->oric->rom           = v->oric->tele_bank[v->oric->tele_currbank].ptr;
+}
+
+
 // Init/Reset VIA
 void via_init( struct via *v, struct machine *oric, int viatype )
 {
@@ -626,8 +642,8 @@ void via_init( struct via *v, struct machine *oric, int viatype )
 
     case VIA_TELESTRAT:
       v->w_iorb  = NULL;
-      v->w_iora  = NULL;
-      v->w_iora2 = NULL;
+      v->w_iora  = via_tele_w_iora;
+      v->w_iora2 = via_tele_w_iora2;
       v->w_ddrb  = NULL;
       v->w_pcr   = NULL;
       v->r_iora  = NULL;
