@@ -113,6 +113,8 @@ static struct ay8912 ay_old;
 static SDL_bool ay_oldvalid = SDL_FALSE;
 static struct via via_old;
 static SDL_bool via_oldvalid = SDL_FALSE;
+static struct via via2_old;
+static SDL_bool via2_oldvalid = SDL_FALSE;
 
 
 //                                                             12345678901       12345678 
@@ -387,6 +389,7 @@ static struct msym defsym_atmos[] = { { 0x0300, 0,            "VIA_IORB"      , 
 enum
 {
   MSHOW_VIA=0,
+  MSHOW_VIA2,
   MSHOW_AY,
   MSHOW_DISK,
   MSHOW_LAST
@@ -1317,76 +1320,78 @@ void mon_update_regs( struct machine *oric )
   }
 }
 
-static void mon_viamod( int x, int y, int w )
+static void mon_viamod( int x, int y, int w, struct textzone *vtz )
 {
   int offs, i;
 
-  offs = y*tz[TZ_VIA]->w+x;
+  offs = y*vtz->w+x;
   for( i=0; i<w; i++, offs++ )
   {
-    tz[TZ_VIA]->fc[offs] = 1;
-    tz[TZ_VIA]->bc[offs] = 8;
+    vtz->fc[offs] = 1;
+    vtz->bc[offs] = 8;
   }
 }
 
-void mon_update_via( struct machine *oric )
+void mon_update_via( struct machine *oric, struct textzone *vtz, struct via *v, struct via *old, SDL_bool *oldvalid  )
 {
-  tzprintfpos( tz[TZ_VIA], 2, 2, "PCR=%02X ACR=%02X SR=%02X",
-    oric->via.pcr,
-    oric->via.acr,
-    oric->via.sr );
-  tzprintfpos( tz[TZ_VIA], 2, 3, "IFR=%02X IER=%02X",
-    oric->via.ifr,
-    oric->via.ier );  
-  tzprintfpos( tz[TZ_VIA], 2, 5, "A=%02X DDRA=%02X  B=%02X DDRB=%02X",
-    (oric->via.ora&oric->via.ddra)|(oric->via.ira&(~oric->via.ddra)),
-    oric->via.ddra,
-    (oric->via.orb&oric->via.ddrb)|(oric->via.irb&(~oric->via.ddrb)),
-    oric->via.ddrb );
-  tzprintfpos( tz[TZ_VIA], 2, 6, "CA1=%01X CA2=%01X   CB1=%01X CB2=%01X",
-    oric->via.ca1,
-    oric->via.ca2,
-    oric->via.cb1,
-    oric->via.cb2 );
-  tzprintfpos( tz[TZ_VIA], 2, 8, "T1L=%02X%02X T1C=%04X",
-    oric->via.t1l_h,
-    oric->via.t1l_l,
-    oric->via.t1c );
-  tzprintfpos( tz[TZ_VIA], 2, 9, "T2L=%02X%02X T2C=%04X",
-    oric->via.t2l_h,
-    oric->via.t2l_l,
-    oric->via.t2c );
+  tzprintfpos( vtz, 2, 2, "PCR=%02X ACR=%02X SR=%02X",
+    v->pcr,
+    v->acr,
+    v->sr );
+  tzprintfpos( vtz, 2, 3, "IFR=%02X IER=%02X",
+    v->ifr,
+    v->ier );  
+  tzprintfpos( vtz, 2, 5, "A=%02X DDRA=%02X  B=%02X DDRB=%02X",
+    (v->ora&v->ddra)|(v->ira&(~v->ddra)),
+    v->ddra,
+    (v->orb&v->ddrb)|(v->irb&(~v->ddrb)),
+    v->ddrb );
+  tzprintfpos( vtz, 2, 6, "CA1=%01X CA2=%01X   CB1=%01X CB2=%01X",
+    v->ca1,
+    v->ca2,
+    v->cb1,
+    v->cb2 );
+  tzprintfpos( vtz, 2, 8, "T1L=%02X%02X T1C=%04X",
+    v->t1l_h,
+    v->t1l_l,
+    v->t1c );
+  tzprintfpos( vtz, 2, 9, "T2L=%02X%02X T2C=%04X",
+    v->t2l_h,
+    v->t2l_l,
+    v->t2c );
 
-  tzprintfpos( tz[TZ_VIA], 2, 11, "TAPE OFFS = %07d", oric->tapeoffs );
-  tzprintfpos( tz[TZ_VIA], 2, 12, "TAPE LEN  = %07d", oric->tapelen );
-  tzprintfpos( tz[TZ_VIA], 2, 13, "COUNT     = %07d", oric->tapecount );
-  tzprintfpos( tz[TZ_VIA], 2, 14, "BIT = %02X  DATA = %1X",
-    (oric->tapebit+9)%10,
-    oric->tapetime == TAPE_1_PULSE );
-  tzprintfpos( tz[TZ_VIA], 2, 15, "MOTOR = %1X", oric->tapemotor );
-
-
-  if( via_oldvalid )
+  if( v == &oric->via )
   {
-    if( via_old.pcr   != oric->via.pcr  ) mon_viamod(  6, 2, 2 );
-    if( via_old.acr   != oric->via.acr  ) mon_viamod( 13, 2, 2 );
-    if( via_old.sr    != oric->via.sr   ) mon_viamod( 19, 2, 2 );
-    if( via_old.ifr   != oric->via.ifr  ) mon_viamod(  6, 3, 2 );
-    if( via_old.ier   != oric->via.ier  ) mon_viamod( 13, 3, 2 );
-    if( via_old.ddra  != oric->via.ddra ) mon_viamod( 12, 5, 2 );
-    if( via_old.ddrb  != oric->via.ddrb ) mon_viamod( 18, 5, 2 );
-    if( via_old.ca1   != oric->via.ca1  ) mon_viamod(  6, 6, 1 );
-    if( via_old.ca2   != oric->via.ca2  ) mon_viamod( 12, 6, 1 );
-    if( via_old.cb1   != oric->via.cb1  ) mon_viamod( 20, 6, 1 );
-    if( via_old.cb2   != oric->via.cb2  ) mon_viamod( 26, 6, 1 );
-    if( via_old.t1c   != oric->via.t1c  ) mon_viamod( 15, 8, 4 );
-    if( via_old.t2c   != oric->via.t2c  ) mon_viamod( 15, 9, 4 );
+    tzprintfpos( vtz, 2, 11, "TAPE OFFS = %07d", oric->tapeoffs );
+    tzprintfpos( vtz, 2, 12, "TAPE LEN  = %07d", oric->tapelen );
+    tzprintfpos( vtz, 2, 13, "COUNT     = %07d", oric->tapecount );
+    tzprintfpos( vtz, 2, 14, "BIT = %02X  DATA = %1X",
+      (oric->tapebit+9)%10,
+      oric->tapetime == TAPE_1_PULSE );
+    tzprintfpos( vtz, 2, 15, "MOTOR = %1X", oric->tapemotor );
+  }
 
-    if( ((via_old.t1l_h<<8)|(via_old.t1l_l)) != ((oric->via.t1l_h<<8)|(oric->via.t1l_l)) ) mon_viamod( 6, 8, 4 );
-    if( ((via_old.t2l_h<<8)|(via_old.t2l_l)) != ((oric->via.t2l_h<<8)|(oric->via.t2l_l)) ) mon_viamod( 6, 9, 4 );
+  if( *oldvalid )
+  {
+    if( old->pcr   != v->pcr  ) mon_viamod(  6, 2, 2, vtz );
+    if( old->acr   != v->acr  ) mon_viamod( 13, 2, 2, vtz );
+    if( old->sr    != v->sr   ) mon_viamod( 19, 2, 2, vtz );
+    if( old->ifr   != v->ifr  ) mon_viamod(  6, 3, 2, vtz );
+    if( old->ier   != v->ier  ) mon_viamod( 13, 3, 2, vtz );
+    if( old->ddra  != v->ddra ) mon_viamod( 12, 5, 2, vtz );
+    if( old->ddrb  != v->ddrb ) mon_viamod( 18, 5, 2, vtz );
+    if( old->ca1   != v->ca1  ) mon_viamod(  6, 6, 1, vtz );
+    if( old->ca2   != v->ca2  ) mon_viamod( 12, 6, 1, vtz );
+    if( old->cb1   != v->cb1  ) mon_viamod( 20, 6, 1, vtz );
+    if( old->cb2   != v->cb2  ) mon_viamod( 26, 6, 1, vtz );
+    if( old->t1c   != v->t1c  ) mon_viamod( 15, 8, 4, vtz );
+    if( old->t2c   != v->t2c  ) mon_viamod( 15, 9, 4, vtz );
 
-    if( ((oric->via.ora&oric->via.ddra)|(oric->via.ira&(~oric->via.ddra))) != ((via_old.ora&via_old.ddra)|(via_old.ira&(~via_old.ddra))) ) mon_viamod(  4, 5, 2 );
-    if( ((oric->via.orb&oric->via.ddrb)|(oric->via.irb&(~oric->via.ddrb))) != ((via_old.orb&via_old.ddrb)|(via_old.irb&(~via_old.ddrb))) ) mon_viamod( 26, 5, 2 );
+    if( ((old->t1l_h<<8)|(old->t1l_l)) != ((v->t1l_h<<8)|(v->t1l_l)) ) mon_viamod( 6, 8, 4, vtz );
+    if( ((old->t2l_h<<8)|(old->t2l_l)) != ((v->t2l_h<<8)|(v->t2l_l)) ) mon_viamod( 6, 9, 4, vtz );
+
+    if( ((v->ora&v->ddra)|(v->ira&(~v->ddra))) != ((old->ora&old->ddra)|(old->ira&(~old->ddra))) ) mon_viamod(  4, 5, 2, vtz );
+    if( ((v->orb&v->ddrb)|(v->irb&(~v->ddrb))) != ((old->orb&old->ddrb)|(old->irb&(~old->ddrb))) ) mon_viamod( 26, 5, 2, vtz );
   }
 }
 
@@ -1589,6 +1594,9 @@ void mon_store_state( struct machine *oric )
 
   via_old = oric->via;
   via_oldvalid = SDL_TRUE;
+
+  via2_old = oric->tele_via;
+  via2_oldvalid = SDL_TRUE;
 }
 
 void mon_state_reset( struct machine *oric )
@@ -1597,6 +1605,7 @@ void mon_state_reset( struct machine *oric )
   cpu_oldvalid = SDL_FALSE;
   ay_oldvalid = SDL_FALSE;
   via_oldvalid = SDL_FALSE;
+  via2_oldvalid = SDL_FALSE;
 }
 
 void mon_update_mwatch( struct machine *oric )
@@ -1684,8 +1693,13 @@ void mon_render( struct machine *oric )
   switch( mshow )
   {
     case MSHOW_VIA:
-      mon_update_via( oric );
+      mon_update_via( oric, tz[TZ_VIA], &oric->via, &via_old, &via_oldvalid );
       draw_textzone( tz[TZ_VIA] );
+      break;
+    
+    case MSHOW_VIA2:
+      mon_update_via( oric, tz[TZ_VIA2], &oric->tele_via, &via2_old, &via2_oldvalid );
+      draw_textzone( tz[TZ_VIA2] );
       break;
     
     case MSHOW_AY:
@@ -3560,6 +3574,10 @@ static unsigned int steppy_step( struct machine *oric )
   via_clock( &oric->via, oric->cpu.icycles );
   ay_ticktock( &oric->ay, oric->cpu.icycles );
   if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
+  if( oric->type == MACH_TELESTRAT )
+  {
+    via_clock( &oric->tele_via, oric->cpu.icycles );
+  }
   m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
   if( oric->cpu.rastercycles <= 0 )
   {
@@ -3605,6 +3623,10 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           via_clock( &oric->via, oric->cpu.icycles );
           ay_ticktock( &oric->ay, oric->cpu.icycles );
           if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
+          if( oric->type == MACH_TELESTRAT )
+          {
+            via_clock( &oric->tele_via, oric->cpu.icycles );
+          }
           m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
           if( oric->cpu.rastercycles <= 0 )
           {
@@ -3623,6 +3645,8 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
         case SDLK_F4:
           mshow = (mshow+1)%MSHOW_LAST;
+          if( ( mshow == MSHOW_VIA2 ) && ( oric->type != MACH_TELESTRAT ) )
+            mshow = (mshow+1)%MSHOW_LAST;
           if( ( oric->drivetype == DRV_NONE ) && ( mshow == MSHOW_DISK ) )
             mshow = (mshow+1)%MSHOW_LAST;
           *needrender = SDL_TRUE;

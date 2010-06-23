@@ -27,6 +27,7 @@ enum
   TZ_MEMWATCH,
   TZ_REGS,
   TZ_VIA,
+  TZ_VIA2,
   TZ_AY,
   TZ_DISK,
   TZ_MENU,

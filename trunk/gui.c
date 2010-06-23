@@ -1272,6 +1272,8 @@ SDL_bool init_gui( struct machine *oric )
   if( !tz[TZ_REGS] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
   tz[TZ_VIA]  = alloc_textzone( 400, 228, 30, 21, "VIA Status" );
   if( !tz[TZ_VIA] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
+  tz[TZ_VIA2]  = alloc_textzone( 400, 228, 30, 21, "Telestrat VIA Status" );
+  if( !tz[TZ_VIA2] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
   tz[TZ_AY]   = alloc_textzone( 400, 228, 30, 21, "AY Status" );
   if( !tz[TZ_AY] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
   tz[TZ_DISK]   = alloc_textzone( 400, 228, 30, 21, "Disk Status" );
