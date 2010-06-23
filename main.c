@@ -585,6 +585,10 @@ int main( int argc, char *argv[] )
               via_clock( &oric.via, oric.cpu.icycles );
               ay_ticktock( &oric.ay, oric.cpu.icycles );
               if( oric.drivetype ) wd17xx_ticktock( &oric.wddisk, oric.cpu.icycles );
+              if( oric.type == MACH_TELESTRAT )
+              {
+                via_clock( &oric.tele_via, oric.cpu.icycles );
+              }
               breaky = m6502_inst( &oric.cpu, SDL_TRUE, mon_bpmsg );
               if( oric.emu_mode != EM_RUNNING )
               {

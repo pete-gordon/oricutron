@@ -63,8 +63,14 @@ struct via
   void (*w_iora2)(struct via *);
   void (*w_ddrb)(struct via *);
   void (*w_pcr)(struct via *);
+  void (*w_ca2ext)(struct via *);
+  void (*w_cb2ext)(struct via *);
   void (*r_iora)(struct via *);
   void (*r_iora2)(struct via *);
+  void (*r_iorb)(struct via *);
+  void (*ca2pulsed)(struct via *);
+  void (*cb2pulsed)(struct via *);
+  void (*cb2shifted)(struct via *);
 
   struct machine *oric;
   int irqbit;
