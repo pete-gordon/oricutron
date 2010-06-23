@@ -231,6 +231,7 @@ static void usage( int ret )
   printf( "                      \"atmos\" or \"a\" for Oric atmos\n" );
   printf( "                      \"oric1\" or \"1\" for Oric 1\n" );
   printf( "                      \"o16k\" for Oric 1 16k\n" );
+  printf( "                      \"telestrat\" for Telestrat\n" );
   printf( "\n" );
   printf( "  -d / --disk       = Specify a disk image to use in drive 0\n" );
   printf( "  -t / --tape       = Specify a tape image to use\n" );
