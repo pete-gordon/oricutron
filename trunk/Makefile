@@ -1,4 +1,5 @@
-PLATFORM ?= os4
+# valid platforms:
+# PLATFORM = os4
 # PLATFORM = MorphOS
 # PLATFORM = win32
 # PLATFORM = beos
@@ -7,7 +8,7 @@ PLATFORM ?= os4
 # PLATFORM = linux
 # PLATFORM = gphwiz
 # PLATFORM = aitouchbook
- 
+
 VERSION_MAJ = 0
 VERSION_MIN = 6
 VERSION_REV = 0
@@ -31,6 +32,26 @@ TARGET = oricutron
 FILEREQ_SRC = filereq_sdl.c
 MSGBOX_SRC = msgbox_sdl.c
 EXTRAOBJS =
+
+####### PLATFORM DETECTION HERE #######
+
+ifeq ($(OSTYPE),beos)
+PLATFORM ?= beos
+else
+UNAME_S = $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+PLATFORM ?= osx
+endif
+ifeq ($(UNAME_S),Haiku)
+PLATFORM ?= haiku
+endif
+ifeq ($(UNAME_S),Linux)
+PLATFORM ?= linux
+endif
+endif
+# default
+PLATFORM ?= os4
+$(info Target platform: $(PLATFORM))
 
 ####### PLATFORM SPECIFIC STUFF HERE #######
 
