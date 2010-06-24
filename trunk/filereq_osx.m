@@ -54,9 +54,6 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   NSString *msg = @"Select the file to open.";
   bool dosavemode = false;
 
-printf("title:'%s'\n", title);
-printf("path:'%s'\n", path);
-printf("path:'%s'\n", fname);
   switch( type )
   {
     case FR_DISKSAVE:
