@@ -117,7 +117,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
 	looper->Run();
 	SDL_bool ret;
 
-  char *pat, ppat[6*2+2];
+  char *pat;
   bool dosavemode = false;
   
   switch( type )
