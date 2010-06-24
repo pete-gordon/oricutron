@@ -92,6 +92,7 @@ ifeq ($(PLATFORM),osx)
 CFLAGS += $(shell sdl-config --cflags)
 LFLAGS += -lm $(shell sdl-config --libs)
 TARGET = oricutron
+FILEREQ_SRC = filereq_osx.m
 MSGBOX_SRC = msgbox_osx.m
 endif
 
