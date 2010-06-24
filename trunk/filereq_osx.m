@@ -91,7 +91,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   [sp setTitle:[NSString stringWithUTF8String:title]];
 
   if (path)
-    [sp setDirectoryURL:[NSURL fileURLWithPath:[NSString stringByExpandingTildeInPath:path]]];
+    [sp setDirectoryURL:[NSURL fileURLWithPath:[NSString stringWithUTF8String:path]]];
 
   if (pat)
     [sp setAllowedFileTypes:[NSArray arrayWithObjects:pat,nil]];
