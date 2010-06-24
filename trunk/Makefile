@@ -48,10 +48,13 @@ endif
 ifeq ($(UNAME_S),Linux)
 PLATFORM ?= linux
 endif
+ifeq ($(UNAME_S),MorphOS)
+PLATFORM ?= MorphOS
+endif
 endif
 # default
 PLATFORM ?= os4
-$(info Target platform: $(PLATFORM))
+#$(info Target platform: $(PLATFORM))
 
 ####### PLATFORM SPECIFIC STUFF HERE #######
 
