@@ -152,6 +152,9 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
 	panel = new BFilePanel(dosavemode ? B_SAVE_PANEL : B_OPEN_PANEL);
 	panel->SetTarget(BMessenger(looper));
 
+	if (path)
+		panel->SetPanelDirectory(path);
+
 	panel->Show();
 
 	looper->Wait();
