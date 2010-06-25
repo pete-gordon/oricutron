@@ -224,27 +224,27 @@ static void load_config( struct start_opts *sto )
 
 static void usage( int ret )
 {
-  printf( VERSION_COPYRIGHTS "\n\n" );
-  printf( "Usage:\toricutron [-a|--arg [option]] [disk file] [tape file]\n" );
-  printf( "  -m / --machine    = Specify machine type. Valid types are:\n" );
-  printf( "\n" );
-  printf( "                      \"atmos\" or \"a\" for Oric atmos\n" );
-  printf( "                      \"oric1\" or \"1\" for Oric 1\n" );
-  printf( "                      \"o16k\" for Oric 1 16k\n" );
-  printf( "                      \"telestrat\" for Telestrat\n" );
-  printf( "\n" );
-  printf( "  -d / --disk       = Specify a disk image to use in drive 0\n" );
-  printf( "  -t / --tape       = Specify a tape image to use\n" );
-  printf( "  -k / --drive      = Specify a disk drive controller. Valid types are:\n" );
-  printf( "  \n" );
-  printf( "                      \"microdisc\" or \"m\" for Microdisc\n" );
-  printf( "                      \"jasmin\" or \"j\" for Jasmin\n" );
-  printf( "\n" );
-  printf( "  -s / --symbols    = Load symbols from a file\n" );
-  printf( "  -f / --fullscreen = Run oricutron fullscreen\n" );
-  printf( "  -w / --window     = Run oricutron in a window\n" );
-  printf( "  -b / --debug      = Start oricutron in the debugger\n" );
-  printf( "  -r / --breakpoint = Set a breakpoint\n" );
+  printf( VERSION_COPYRIGHTS "\n\n"
+          "Usage:\toricutron [-a|--arg [option]] [disk file] [tape file]\n"
+          "  -m / --machine    = Specify machine type. Valid types are:\n"
+          "\n"
+          "                      \"atmos\" or \"a\" for Oric atmos\n"
+          "                      \"oric1\" or \"1\" for Oric 1\n"
+          "                      \"o16k\" for Oric 1 16k\n"
+          "                      \"telestrat\" for Telestrat\n"
+          "\n"
+          "  -d / --disk       = Specify a disk image to use in drive 0\n"
+          "  -t / --tape       = Specify a tape image to use\n"
+          "  -k / --drive      = Specify a disk drive controller. Valid types are:\n"
+          "  \n"
+          "                      \"microdisc\" or \"m\" for Microdisc\n"
+          "                      \"jasmin\" or \"j\" for Jasmin\n"
+          "\n"
+          "  -s / --symbols    = Load symbols from a file\n"
+          "  -f / --fullscreen = Run oricutron fullscreen\n"
+          "  -w / --window     = Run oricutron in a window\n"
+          "  -b / --debug      = Start oricutron in the debugger\n"
+          "  -r / --breakpoint = Set a breakpoint\n" );
   exit(ret);
 }
 
@@ -529,12 +529,13 @@ Uint32 systemtiming( Uint32 interval, void *userdata )
 
 int main( int argc, char *argv[] )
 {
+  SDL_bool isinit;
   void *thetimer;
   Sint32 i, foo;
   struct machine oric;
   Uint32 framestart;
 
-  if( init( &oric, argc, argv ) )
+  if( ( isinit = init( &oric, argc, argv ) ) )
   {
     SDL_bool done, needrender, framedone;
 
@@ -686,5 +687,5 @@ int main( int argc, char *argv[] )
   }
   shut( &oric );
 
-  return EXIT_SUCCESS;
+  return isinit ? EXIT_SUCCESS : EXIT_FAILURE;
 }
