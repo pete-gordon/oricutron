@@ -32,6 +32,8 @@ TARGET = oricutron
 FILEREQ_SRC = filereq_sdl.c
 MSGBOX_SRC = msgbox_sdl.c
 EXTRAOBJS =
+PKGDIR = Oricutron_$(PLATFORM)_v$(VERSION_MAJ)$(VERSION_MIN)
+DOCFILES = ReadMe.txt oricutron.cfg ChangeLog.txt
 
 ####### PLATFORM DETECTION HERE #######
 
@@ -100,6 +102,7 @@ CFLAGS += -Wno-multichar
 CFLAGS += -g
 LFLAGS += -lbe -ltracker
 TARGET = oricutron
+INSTALLDIR = /boot/apps/Oricutron
 FILEREQ_SRC = filereq_beos.cpp
 MSGBOX_SRC = msgbox_beos.cpp
 BEOS_BERES := beres
@@ -125,6 +128,7 @@ ifeq ($(PLATFORM),linux)
 CFLAGS += $(shell sdl-config --cflags)
 LFLAGS += -lm $(shell sdl-config --libs)
 TARGET = oricutron
+INSTALLDIR = /usr/local
 endif
 
 # Linux-gph-wiz
@@ -160,6 +164,10 @@ all: $(TARGET)
 
 run: $(TARGET)
 	$(TARGET)
+
+install: install-$(PLATFORM)
+
+package: package-$(PLATFORM)
 
 $(TARGET): main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o msgbox.o avi.o $(EXTRAOBJS) $(RESOURCES)
 	$(CXX) -o $(TARGET) main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o msgbox.o avi.o $(EXTRAOBJS) $(LFLAGS)
@@ -216,7 +224,32 @@ $(RSRC_BEOS): oricutron.rdef
 	$(BEOS_RC) -o $@ $<
 
 clean:
-	rm -f $(TARGET) *.bak *.o $(RESOURCES)
+	rm -f $(TARGET) *.bak *.o $(RESOURCES) -R $(PKGDIR)
 
+
+install-beos install-haiku:
+	mkdir -p $(INSTALLDIR)
+	copyattr -d $(TARGET) $(INSTALLDIR)
+# TODO: use resources
+	mkdir -p $(INSTALLDIR)/images
+	copyattr -d images/* $(INSTALLDIR)/images
+
+install-linux:
+	install -m 755 $(TARGET) $(INSTALLDIR)/bin
+
+package-beos package-haiku:
+	mkdir -p $(PKGDIR)/images
+	copyattr -d $(TARGET) $(PKGDIR)
+	copyattr -d images/* $(PKGDIR)/images
+	install -m 644 $(DOCFILES) $(PKGDIR)
+	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
+	
+
+package-osx:
+	mkdir -p $(PKGDIR)/Oriculator.app/Contents/MacOS/images
+	install -m 755 $(TARGET) $(PKGDIR)/Oriculator.app/Contents/MacOS
+	install -m 644 images/* $(PKGDIR)/Oriculator.app/Contents/MacOS/images
+	install -m 644 $(DOCFILES) $(PKGDIR)
+	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
 
 # torpor: added to test commit status
