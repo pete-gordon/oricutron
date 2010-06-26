@@ -61,6 +61,7 @@ struct via
   void (*w_iorb)(struct via *,unsigned char);
   void (*w_iora)(struct via *);
   void (*w_iora2)(struct via *);
+  void (*w_ddra)(struct via *);
   void (*w_ddrb)(struct via *);
   void (*w_pcr)(struct via *);
   void (*w_ca2ext)(struct via *);
