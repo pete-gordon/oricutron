@@ -1286,12 +1286,13 @@ void mon_update_regs( struct machine *oric )
   if( ( oric->cpu.irq ) && ( oric->cpu.f_i == 0 ) )
     pc = (mon_read( oric, 0xffff )<<8) | mon_read( oric, 0xfffe );
 
-  tzprintfpos( tz[TZ_REGS], 2, 2, "PC=%04X  SP=01%02X    A=%02X  X=%02X  Y=%02X",
+  tzprintfpos( tz[TZ_REGS], 2, 2, "PC=%04X  SP=01%02X  A=%02X  X=%02X  Y=%02X  LPC=%04X",
     pc,
     oric->cpu.sp,
     oric->cpu.a,
     oric->cpu.x,
-    oric->cpu.y );
+    oric->cpu.y,
+    oric->cpu.lastpc );
 
   csym = mon_find_sym_by_addr( oric, pc );
   if( csym )
@@ -1337,9 +1338,9 @@ void mon_update_regs( struct machine *oric )
   {
     if( cpu_old.pc     != pc )               mon_regmod(  5, 2, 4 );
     if( cpu_old.sp     != oric->cpu.sp )     mon_regmod( 14, 2, 4 );
-    if( cpu_old.a      != oric->cpu.a )      mon_regmod( 24, 2, 2 );
-    if( cpu_old.x      != oric->cpu.x )      mon_regmod( 30, 2, 2 );
-    if( cpu_old.y      != oric->cpu.y )      mon_regmod( 36, 2, 2 );
+    if( cpu_old.a      != oric->cpu.a )      mon_regmod( 22, 2, 2 );
+    if( cpu_old.x      != oric->cpu.x )      mon_regmod( 28, 2, 2 );
+    if( cpu_old.y      != oric->cpu.y )      mon_regmod( 34, 2, 2 );
     if( cpu_old.cycles != oric->cpu.cycles ) mon_regmod(  5, 4, 9 );
     if( frames_old     != oric->frames )     mon_regmod(  5, 5, 6 );
     if( vidraster_old  != oric->vid_raster ) mon_regmod( 15, 5, 3 );
@@ -1405,6 +1406,11 @@ void mon_update_via( struct machine *oric, struct textzone *vtz, struct via *v, 
       (oric->tapebit+9)%10,
       oric->tapetime == TAPE_1_PULSE );
     tzprintfpos( vtz, 2, 15, "MOTOR = %1X", oric->tapemotor );
+  }
+
+  if( v == &oric->tele_via )
+  {
+    tzprintfpos( vtz, 2, 11, "BANK = %02X", oric->tele_currbank );
   }
 
   if( *oldvalid )

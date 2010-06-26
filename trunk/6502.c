@@ -83,6 +83,7 @@ void m6502_reset( struct m6502 *cpu )
   cpu->f_v = 0;
   cpu->f_n = 0;
   cpu->pc = (cpu->read( cpu, 0xfffd )<<8) | cpu->read( cpu, 0xfffc );
+  cpu->lastpc = 0;
   cpu->nmi = SDL_FALSE;
   cpu->irq = 0;
   cpu->nmicount = 0;
@@ -806,6 +807,7 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
     }
   }
 
+  cpu->lastpc = cpu->pc;
   op = cpu->read( cpu, cpu->pc++ );
   switch( op )
   {
