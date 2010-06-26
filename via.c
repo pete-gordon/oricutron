@@ -623,18 +623,27 @@ void via_main_cb2pulsed( struct via *v )
 
 void via_tele_w_iora( struct via *v )
 {
-  v->oric->tele_currbank = v->ora&v->ddra&0x07;
+  int invddra = (v->ddra&7)^7;
+  v->oric->tele_currbank = (v->oric->tele_currbank&invddra)|(v->ora&v->ddra&0x07);
   v->oric->tele_banktype = v->oric->tele_bank[v->oric->tele_currbank].type;
   v->oric->rom           = v->oric->tele_bank[v->oric->tele_currbank].ptr;
 }
 
 void via_tele_w_iora2( struct via *v )
 {
-  v->oric->tele_currbank = v->ora&v->ddra&0x07;
+  int invddra = (v->ddra&7)^7;
+  v->oric->tele_currbank = (v->oric->tele_currbank&invddra)|(v->ora&v->ddra&0x07);
   v->oric->tele_banktype = v->oric->tele_bank[v->oric->tele_currbank].type;
   v->oric->rom           = v->oric->tele_bank[v->oric->tele_currbank].ptr;
 }
 
+void via_tele_w_ddra( struct via *v )
+{
+  int invddra = (v->ddra&7)^7;
+  v->oric->tele_currbank = (v->oric->tele_currbank&invddra)|(v->ora&v->ddra&0x07);
+  v->oric->tele_banktype = v->oric->tele_bank[v->oric->tele_currbank].type;
+  v->oric->rom           = v->oric->tele_bank[v->oric->tele_currbank].ptr;
+}
 
 // Init/Reset VIA
 void via_init( struct via *v, struct machine *oric, int viatype )
@@ -677,6 +686,7 @@ void via_init( struct via *v, struct machine *oric, int viatype )
       v->w_iorb     = via_main_w_iorb;
       v->w_iora     = via_main_w_iora;
       v->w_iora2    = via_main_w_iora2;
+      v->w_ddra     = NULL;
       v->w_ddrb     = via_main_w_ddrb;
       v->w_pcr      = via_main_w_pcr;
       v->w_ca2ext   = via_main_w_ca2ext;
@@ -694,6 +704,7 @@ void via_init( struct via *v, struct machine *oric, int viatype )
       v->w_iorb     = NULL;
       v->w_iora     = via_tele_w_iora;
       v->w_iora2    = via_tele_w_iora2;
+      v->w_ddra     = via_tele_w_ddra;
       v->w_ddrb     = NULL;
       v->w_pcr      = NULL;
       v->w_ca2ext   = NULL;
@@ -1017,6 +1028,7 @@ void via_write( struct via *v, int offset, unsigned char data )
       break;
     case VIA_DDRA:
       v->ddra = data;
+      if( v->w_ddra ) v->w_ddra( v );
       break;
     case VIA_T1C_H:
       v->t1l_h = data;

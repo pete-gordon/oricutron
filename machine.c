@@ -421,10 +421,10 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
 
   if( addr >= 0xc000 )
   {
-    if( oric->romdis )
-    {
-      if( ( oric->md.diskrom ) && ( addr >= 0xe000 ) ) return; // Can't write to ROM!
-    } else {
+//    if( oric->romdis )
+//    {
+//      if( ( oric->md.diskrom ) && ( addr >= 0xe000 ) ) return; // Can't write to ROM!
+//    } else {
       switch( oric->tele_banktype )
       {
         case TELEBANK_HALFNHALF:
@@ -434,7 +434,7 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
           break;
       }
       return;
-    }
+//    }
   }
 
   if( ( addr & 0xff00 ) == 0x0300 )
@@ -643,13 +643,13 @@ unsigned char telestratread( struct m6502 *cpu, unsigned short addr )
 
   if( addr >= 0xc000 )
   {
-    if( oric->romdis )
-    {
-      if( ( oric->md.diskrom ) && ( addr >= 0xe000 ) )
-        return rom_microdisc[addr-0xe000];
-    } else {
+//    if( oric->romdis )
+//    {
+//      if( ( oric->md.diskrom ) && ( addr >= 0xe000 ) )
+//        return rom_microdisc[addr-0xe000];
+//    } else {
       return oric->rom[addr-0xc000];
-    }
+//    }
   }
 
   return oric->mem[addr];

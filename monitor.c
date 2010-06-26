@@ -118,6 +118,42 @@ static SDL_bool via2_oldvalid = SDL_FALSE;
 
 
 //                                                             12345678901       12345678 
+static struct msym defsym_tele[]  = { { 0x0300, 0,            "VIA_IORB"      , "VIA_IORB"   , "VIA_IORB" },
+                                      { 0x0301, 0,            "VIA_IORA"      , "VIA_IORA"   , "VIA_IORA" },
+                                      { 0x0302, 0,            "VIA_DDRB"      , "VIA_DDRB"   , "VIA_DDRB" },
+                                      { 0x0303, 0,            "VIA_DDRA"      , "VIA_DDRA"   , "VIA_DDRA" },
+                                      { 0x0304, 0,            "VIA_T1C_L"     , "VIA_T1C\x16", "VIA_T1C_L" },
+                                      { 0x0305, 0,            "VIA_T1C_H"     , "VIA_T1C\x16", "VIA_T1C_H" },
+                                      { 0x0306, 0,            "VIA_T1L_L"     , "VIA_T1L\x16", "VIA_T1L_L" },
+                                      { 0x0307, 0,            "VIA_T1L_H"     , "VIA_T1L\x16", "VIA_T1L_H" },
+                                      { 0x0308, 0,            "VIA_T2C_L"     , "VIA_T2C\x16", "VIA_T2C_L" },
+                                      { 0x0309, 0,            "VIA_T2C_H"     , "VIA_T2C\x16", "VIA_T2C_H" },
+                                      { 0x030A, 0,            "VIA_SR"        , "VIA_SR"     , "VIA_SR" },
+                                      { 0x030B, 0,            "VIA_ACR"       , "VIA_ACR"    , "VIA_ACR" },
+                                      { 0x030C, 0,            "VIA_PCR"       , "VIA_PCR"    , "VIA_PCR" },
+                                      { 0x030D, 0,            "VIA_IFR"       , "VIA_IFR"    , "VIA_IFR" },
+                                      { 0x030E, 0,            "VIA_IER"       , "VIA_IER"    , "VIA_IER" },
+                                      { 0x030F, 0,            "VIA_IORA2"     , "VIA_IORA2"  , "VIA_IORA2" },
+                                      { 0x0320, 0,            "VIA2_IORB"     , "VIA2_IORB"  , "VIA2_IORB" },
+                                      { 0x0321, 0,            "VIA2_IORA"     , "VIA2_IORA"  , "VIA2_IORA" },
+                                      { 0x0322, 0,            "VIA2_DDRB"     , "VIA2_DDRB"  , "VIA2_DDRB" },
+                                      { 0x0323, 0,            "VIA2_DDRA"     , "VIA2_DDRA"  , "VIA2_DDRA" },
+                                      { 0x0324, 0,            "VIA2_T1C_L"    , "VIA2_T1\x16", "VIA2_T1C_L" },
+                                      { 0x0325, 0,            "VIA2_T1C_H"    , "VIA2_T1\x16", "VIA2_T1C_H" },
+                                      { 0x0326, 0,            "VIA2_T1L_L"    , "VIA2_T1\x16", "VIA2_T1L_L" },
+                                      { 0x0327, 0,            "VIA2_T1L_H"    , "VIA2_T1\x16", "VIA2_T1L_H" },
+                                      { 0x0328, 0,            "VIA2_T2C_L"    , "VIA2_T2\x16", "VIA2_T2C_L" },
+                                      { 0x0329, 0,            "VIA2_T2C_H"    , "VIA2_T2\x16", "VIA2_T2C_H" },
+                                      { 0x032A, 0,            "VIA2_SR"       , "VIA2_SR"    , "VIA2_SR" },
+                                      { 0x032B, 0,            "VIA2_ACR"      , "VIA2_ACR"   , "VIA2_ACR" },
+                                      { 0x032C, 0,            "VIA2_PCR"      , "VIA2_PCR"   , "VIA2_PCR" },
+                                      { 0x032D, 0,            "VIA2_IFR"      , "VIA2_IFR"   , "VIA2_IFR" },
+                                      { 0x032E, 0,            "VIA2_IER"      , "VIA2_IER"   , "VIA2_IER" },
+                                      { 0x032F, 0,            "VIA2_IORA2"    , "VIA2_IO\x16", "VIA2_IORA2" },
+                                      { 0xc000, 0,            "BankedArea"    , "BankedA\x16", "BankedArea" },
+                                      { 0, 0, { 0, }, { 0, }, NULL } };
+
+//                                                             12345678901       12345678 
 static struct msym defsym_oric1[] = { { 0x0300, 0,            "VIA_IORB"      , "VIA_IORB"   , "VIA_IORB" },
                                       { 0x0301, 0,            "VIA_IORA"      , "VIA_IORA"   , "VIA_IORA" },
                                       { 0x0302, 0,            "VIA_DDRB"      , "VIA_DDRB"   , "VIA_DDRB" },
@@ -1906,11 +1942,16 @@ void mon_enter( struct machine *oric )
   switch( oric->type )
   {
     case MACH_ORIC1:
+    case MACH_ORIC1_16K:
       defaultsyms = defsym_oric1;
       break;
 
     case MACH_ATMOS:
       defaultsyms = defsym_atmos;
+      break;
+    
+    case MACH_TELESTRAT:
+      defaultsyms = defsym_tele;
       break;
   }
 
