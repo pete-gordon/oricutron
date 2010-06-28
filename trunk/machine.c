@@ -1227,7 +1227,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->tele_bank[1].ptr  = &oric->mem[0x10000];
       oric->tele_bank[2].type = TELEBANK_RAM;
       oric->tele_bank[2].ptr  = &oric->mem[0x14000];
-      oric->tele_bank[3].type = TELEBANK_HALFNHALF;
+      oric->tele_bank[3].type = TELEBANK_RAM;
       oric->tele_bank[3].ptr  = &oric->mem[0x18000];
       oric->tele_bank[4].type = TELEBANK_RAM;
       oric->tele_bank[4].ptr  = &oric->mem[0x1c000];
@@ -1238,7 +1238,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->tele_bank[7].type = TELEBANK_ROM;
       oric->tele_bank[7].ptr  = &oric->mem[0x28000];
 
-      if( !load_rom( ROMPREFIX"telmatic.rom",  8192, &oric->tele_bank[3].ptr[8192] ) ) return SDL_FALSE;
+//      if( !load_rom( ROMPREFIX"telmatic.rom",  8192, &oric->tele_bank[3].ptr[8192] ) ) return SDL_FALSE;
       if( !load_rom( ROMPREFIX"teleass.rom",  16384, oric->tele_bank[5].ptr ) ) return SDL_FALSE;
       if( !load_rom( ROMPREFIX"hyperbas.rom", 16384, oric->tele_bank[6].ptr ) ) return SDL_FALSE;
       if( !load_rom( ROMPREFIX"telmon24.rom", 16384, oric->tele_bank[7].ptr ) ) return SDL_FALSE;

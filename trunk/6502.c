@@ -31,7 +31,7 @@ void dbg_printf( char *fmt, ... );
 
 // These are the default read/write routines.
 // You need to overwrite these with your own ones if you want
-// the CPU to do anything other than constantly execute BRK
+// the CPU to do anything other than constantly execute brk
 // instructions :-)
 static void nullwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
@@ -812,7 +812,7 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
   switch( op )
   {
     case 0x00: // { "BRK", AM_IMP },  // 00
-      PUSHW( cpu->pc );
+      PUSHW( cpu->pc+1 );
       PUSHB( MAKEFLAGS | (1<<4) );   // Set B on the stack
       cpu->f_i = 1;
       cpu->f_d = 0;
