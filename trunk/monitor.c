@@ -22,8 +22,6 @@
 #define MAX_CONS_INPUT 127        // Max line length in console
 #define MAX_ASM_INPUT 36
 #define CONS_WIDTH 46             // Actual console width for input
-#define SNAME_LEN 11              // Short name for symbols (with ...)
-#define SSNAME_LEN (SNAME_LEN-3)  // Short short name :)
 
 #define EMUL_EMULREGS_H     // MorphOS should not define REG_PC
 #include <stdlib.h>
@@ -38,8 +36,8 @@
 #include "8912.h"
 #include "gui.h"
 #include "disk.h"
-#include "machine.h"
 #include "monitor.h"
+#include "machine.h"
 
 #define LOG_DEBUG 0
 
@@ -64,24 +62,6 @@ struct asminf
   short imp, imm, zp, zpx, zpy, abs, abx, aby, zix, ziy, rel, ind;
 };
 
-#define SYMB_ROMDIS0   0
-#define SYMF_ROMDIS0   (1<<SYMB_ROMDIS0)
-#define SYMB_ROMDIS1   1
-#define SYMF_ROMDIS1   (1<<SYMB_ROMDIS1)
-#define SYMB_MICRODISC 2
-#define SYMF_MICRODISC (1<<SYMB_MICRODISC)
-#define SYMB_JASMIN    3
-#define SYMF_JASMIN    (1<<SYMB_JASMIN)
-
-struct msym
-{
-  unsigned short addr;       // Address
-  unsigned short flags;
-  char sname[SNAME_LEN+1];   // Short name
-  char ssname[SSNAME_LEN+1]; // Short short name
-  char *name;                // Full name
-};
-
 
 extern struct textzone *tz[];
 extern char vsptmp[];
@@ -94,8 +74,8 @@ static unsigned short mon_addr, mon_asmmode = SDL_FALSE;
 static SDL_bool kshifted = SDL_FALSE;
 static int helpcount=0;
 
-static int numsyms=0, symspace=0;
-static struct msym *defaultsyms = NULL, *syms = NULL;
+static struct symboltable defaultsyms;
+struct symboltable usersyms;
 
 char mon_bpmsg[80];
 
@@ -154,26 +134,6 @@ static struct msym defsym_tele[]  = { { 0x0300, 0,            "VIA_IORB"      , 
                                       { 0, 0, { 0, }, { 0, }, NULL } };
 
 //                                                             12345678901       12345678 
-static struct msym defsym_oric1[] = { { 0x0300, 0,            "VIA_IORB"      , "VIA_IORB"   , "VIA_IORB" },
-                                      { 0x0301, 0,            "VIA_IORA"      , "VIA_IORA"   , "VIA_IORA" },
-                                      { 0x0302, 0,            "VIA_DDRB"      , "VIA_DDRB"   , "VIA_DDRB" },
-                                      { 0x0303, 0,            "VIA_DDRA"      , "VIA_DDRA"   , "VIA_DDRA" },
-                                      { 0x0304, 0,            "VIA_T1C_L"     , "VIA_T1C\x16", "VIA_T1C_L" },
-                                      { 0x0305, 0,            "VIA_T1C_H"     , "VIA_T1C\x16", "VIA_T1C_H" },
-                                      { 0x0306, 0,            "VIA_T1L_L"     , "VIA_T1L\x16", "VIA_T1L_L" },
-                                      { 0x0307, 0,            "VIA_T1L_H"     , "VIA_T1L\x16", "VIA_T1L_H" },
-                                      { 0x0308, 0,            "VIA_T2C_L"     , "VIA_T2C\x16", "VIA_T2C_L" },
-                                      { 0x0309, 0,            "VIA_T2C_H"     , "VIA_T2C\x16", "VIA_T2C_H" },
-                                      { 0x030A, 0,            "VIA_SR"        , "VIA_SR"     , "VIA_SR" },
-                                      { 0x030B, 0,            "VIA_ACR"       , "VIA_ACR"    , "VIA_ACR" },
-                                      { 0x030C, 0,            "VIA_PCR"       , "VIA_PCR"    , "VIA_PCR" },
-                                      { 0x030D, 0,            "VIA_IFR"       , "VIA_IFR"    , "VIA_IFR" },
-                                      { 0x030E, 0,            "VIA_IER"       , "VIA_IER"    , "VIA_IER" },
-                                      { 0x030F, 0,            "VIA_IORA2"     , "VIA_IORA2"  , "VIA_IORA2" },
-                                      { 0xc000, SYMF_ROMDIS0, "ROMStart"      , "ROMStart"   , "ROMStart" },
-                                      { 0, 0, { 0, }, { 0, }, NULL } };
-
-//                                                             12345678901       12345678 
 static struct msym defsym_atmos[] = { { 0x0300, 0,            "VIA_IORB"      , "VIA_IORB"   , "VIA_IORB" },
                                       { 0x0301, 0,            "VIA_IORA"      , "VIA_IORA"   , "VIA_IORA" },
                                       { 0x0302, 0,            "VIA_DDRB"      , "VIA_DDRB"   , "VIA_DDRB" },
@@ -191,7 +151,8 @@ static struct msym defsym_atmos[] = { { 0x0300, 0,            "VIA_IORB"      , 
                                       { 0x030E, 0,            "VIA_IER"       , "VIA_IER"    , "VIA_IER" },
                                       { 0x030F, 0,            "VIA_IORA2"     , "VIA_IORA2"  , "VIA_IORA2" },
                                       { 0xc000, SYMF_ROMDIS0, "ROMStart"      , "ROMStart"   , "ROMStart" },
-                                      { 0xc000, SYMF_ROMDIS1, "Overlay"       , "Overlay"    , "Overlay" },
+                                      { 0xc000, SYMF_ROMDIS1, "Overlay"       , "Overlay"    , "Overlay" } };
+/*                                      
                                       { 0xc006, SYMF_ROMDIS0, "JumpTab"       , "JumpTab"    , "JumpTab" },
                                       { 0xc0ea, SYMF_ROMDIS0, "Keywords"      , "Keywords"   , "Keywords" },
                                       { 0xc2a8, SYMF_ROMDIS0, "ErrorMsgs"     , "ErrorMs\x16", "ErrorMsgs" },
@@ -421,6 +382,7 @@ static struct msym defsym_atmos[] = { { 0x0300, 0,            "VIA_IORB"      , 
                                       { 0xfe71, SYMF_ROMDIS1|SYMF_JASMIN,    "jsPrintMsg"    , "jsPrint\x16", "jsPrintMsg" },
                                       { 0xfec7, SYMF_ROMDIS1|SYMF_JASMIN,    "jsIrq"         , "jsIrq"      , "jsIrq" },
                                       { 0, 0, { 0, }, { 0, }, NULL } };
+*/
 
 enum
 {
@@ -954,7 +916,50 @@ unsigned char mon_read( struct machine *oric, unsigned short addr )
   return oric->cpu.read( &oric->cpu, addr );
 }
 
-struct msym *mon_find_sym_by_addr( struct machine *oric, unsigned short addr )
+struct msym *mon_tab_find_sym_by_addr( struct symboltable *stab, struct machine *oric, unsigned short addr )
+{
+  int i, j, k,romdis;
+
+  romdis = oric->romdis;
+  if( ( oric->drivetype == DRV_JASMIN ) && ( oric->jasmin.olay ) )
+    romdis = 1;
+
+  for( i=0; i<stab->numsyms; i++ )
+  {
+    if( oric->type == MACH_TELESTRAT )
+    {
+      for( j=0, k=SYMF_TELEBANK0; j<8; j++, k<<=1 )
+      {
+//        if( (stab->syms[i].flags&k) && ( 
+      }
+    } else {
+      if( stab->syms[i].flags&SYMF_MICRODISC )
+      {
+        if( ( oric->drivetype != DRV_MICRODISC ) || ( !oric->md.diskrom ) )
+          continue;
+      }
+
+      if( (stab->syms[i].flags&SYMF_JASMIN) && ( oric->drivetype != DRV_JASMIN ) )
+        continue;
+    
+      if( romdis )
+      {
+        if( (stab->syms[i].flags&SYMF_ROMDIS0) != 0 )
+          continue;
+      } else {
+        if( (stab->syms[i].flags&SYMF_ROMDIS1) != 0 )
+          continue;
+      }
+    }
+
+    if( addr == stab->syms[i].addr )
+      return &stab->syms[i];
+  }
+
+  return NULL;
+}
+
+struct msym *mon_tab_find_sym_by_name( struct symboltable *stab, struct machine *oric, char *name )
 {
   int i, romdis;
 
@@ -962,177 +967,140 @@ struct msym *mon_find_sym_by_addr( struct machine *oric, unsigned short addr )
   if( ( oric->drivetype == DRV_JASMIN ) && ( oric->jasmin.olay ) )
     romdis = 1;
 
-  for( i=0; i<numsyms; i++ )
+  for( i=0; i<stab->numsyms; i++ )
   {
-    if( syms[i].flags&SYMF_MICRODISC )
+    if( oric->type != MACH_TELESTRAT )
     {
-      if( ( oric->drivetype != DRV_MICRODISC ) || ( !oric->md.diskrom ) )
+      if( (stab->syms[i].flags&SYMF_MICRODISC) && ( oric->drivetype != DRV_MICRODISC ) )
         continue;
+
+      if( (stab->syms[i].flags&SYMF_JASMIN) && ( oric->drivetype != DRV_JASMIN ) )
+        continue;
+
+      if( romdis )
+      {
+        if( (stab->syms[i].flags&SYMF_ROMDIS0) != 0 )
+          continue;
+      } else {
+        if( (stab->syms[i].flags&SYMF_ROMDIS1) != 0 )
+          continue;
+      }
     }
 
-    if( (syms[i].flags&SYMF_JASMIN) && ( oric->drivetype != DRV_JASMIN ) )
-      continue;
-    
-    if( romdis )
+    if( !oric->symbolscase )
     {
-      if( (syms[i].flags&SYMF_ROMDIS0) != 0 )
-        continue;
+      if( strcasecmp( name, stab->syms[i].name ) == 0 )
+        return &stab->syms[i];
     } else {
-      if( (syms[i].flags&SYMF_ROMDIS1) != 0 )
-        continue;
+      if( strcmp( name, stab->syms[i].name ) == 0 )
+        return &stab->syms[i];
     }
-
-    if( addr == syms[i].addr )
-      return &syms[i];
-  }
-
-  if( !defaultsyms ) return NULL;
-
-  for( i=0; defaultsyms[i].name; i++ )
-  {
-    if( (defaultsyms[i].flags&SYMF_MICRODISC) && ( oric->drivetype != DRV_MICRODISC ) )
-      continue;
-
-    if( (defaultsyms[i].flags&SYMF_JASMIN) && ( oric->drivetype != DRV_JASMIN ) )
-      continue;
-
-    if( romdis )
-    {
-      if( (defaultsyms[i].flags&SYMF_ROMDIS0) != 0 )
-        continue;
-    } else {
-      if( (defaultsyms[i].flags&SYMF_ROMDIS1) != 0 )
-        continue;
-    }
-
-    if( addr == defaultsyms[i].addr )
-      return &defaultsyms[i];
   }
 
   return NULL;
+}
+
+struct msym *mon_find_sym_by_addr( struct machine *oric, unsigned short addr )
+{
+  struct msym *ret;
+  int i;
+
+  ret = mon_tab_find_sym_by_addr( &usersyms, oric, addr );
+  if( !ret ) ret = mon_tab_find_sym_by_addr( &oric->romsyms, oric, addr );
+  if( ( !ret ) && ( oric->type == MACH_TELESTRAT ) ) ret = mon_tab_find_sym_by_addr( &oric->tele_banksyms[oric->tele_currbank], oric, addr );
+  if( ( !ret ) && ( oric->disksyms ) ) ret = mon_tab_find_sym_by_addr( oric->disksyms, oric, addr );
+  if( ret ) return ret;
+
+  return mon_tab_find_sym_by_addr( &defaultsyms, oric, addr );
 }
 
 struct msym *mon_find_sym_by_name( struct machine *oric, char *name )
 {
-  int i, romdis;
+  struct msym *ret;
 
-  romdis = oric->romdis;
-  if( ( oric->drivetype == DRV_JASMIN ) && ( oric->jasmin.olay ) )
-    romdis = 1;
+  ret = mon_tab_find_sym_by_name( &usersyms, oric, name );
+  if( ( !ret ) && ( oric->disksyms ) )
+    ret = mon_tab_find_sym_by_name( oric->disksyms, oric, name );
 
-  for( i=0; i<numsyms; i++ )
-  {
-    if( (syms[i].flags&SYMF_MICRODISC) && ( oric->drivetype != DRV_MICRODISC ) )
-      continue;
-
-    if( (syms[i].flags&SYMF_JASMIN) && ( oric->drivetype != DRV_JASMIN ) )
-      continue;
-
-    if( romdis )
-    {
-      if( (syms[i].flags&SYMF_ROMDIS0) != 0 )
-        continue;
-    } else {
-      if( (syms[i].flags&SYMF_ROMDIS1) != 0 )
-        continue;
-    }
-
-    if( !oric->symbolscase )
-    {
-      if( strcasecmp( name, syms[i].name ) == 0 )
-        return &syms[i];
-    } else {
-      if( strcmp( name, syms[i].name ) == 0 )
-        return &syms[i];
-    }
-  }
-
-  if( !defaultsyms ) return NULL;
-
-  for( i=0; defaultsyms[i].name; i++ )
-  {
-    if( (defaultsyms[i].flags&SYMF_MICRODISC) && ( oric->drivetype != DRV_MICRODISC ) )
-      continue;
-
-    if( (defaultsyms[i].flags&SYMF_JASMIN) && ( oric->drivetype != DRV_JASMIN ) )
-      continue;
-
-    if( romdis )
-    {
-      if( (defaultsyms[i].flags&SYMF_ROMDIS0) != 0 )
-        continue;
-    } else {
-      if( (defaultsyms[i].flags&SYMF_ROMDIS1) != 0 )
-        continue;
-    }
-
-    if( !oric->symbolscase )
-    {
-      if( strcasecmp( name, defaultsyms[i].name ) == 0 )
-        return &defaultsyms[i];
-    } else {
-      if( strcmp( name, defaultsyms[i].name ) == 0 )
-        return &defaultsyms[i];
-    }
-  }
-
-  return NULL;
+  if( ret ) return ret;
+  
+  return mon_tab_find_sym_by_name( &defaultsyms, oric, name );
 }
 
-SDL_bool mon_addsym( unsigned short addr, unsigned short flags, char *name )
+SDL_bool mon_addsym( struct symboltable *stab, unsigned short addr, unsigned short flags, char *name )
 {
   int i;
 
-  if( ( !syms ) || ( symspace < (numsyms+1) ) )
+  // Is it a dynamic symbol table?
+  if( stab->symspace == -1 ) return SDL_FALSE;
+
+  if( ( !stab->syms ) || ( stab->symspace < (stab->numsyms+1) ) )
   {
     struct msym *newbuf;
 
-    newbuf = malloc( sizeof( struct msym ) * (symspace+64) );
+    newbuf = malloc( sizeof( struct msym ) * (stab->symspace+64) );
     if( !newbuf ) return SDL_FALSE;
 
-    if( ( syms ) && ( numsyms > 0 ) )
-      memcpy( newbuf, syms, sizeof( struct msym ) * numsyms );
+    if( ( stab->syms ) && ( stab->numsyms > 0 ) )
+      memcpy( newbuf, stab->syms, sizeof( struct msym ) * stab->numsyms );
 
-    free( syms );
-    syms = newbuf;
-    symspace += 64;
+    free( stab->syms );
+    stab->syms = newbuf;
+    stab->symspace += 64;
 
-    for( i=numsyms; i<symspace; i++ )
-      syms[i].name = NULL;
+    for( i=stab->numsyms; i<stab->symspace; i++ )
+      stab->syms[i].name = NULL;
   }
 
-  if( !syms[numsyms].name )
+  if( !stab->syms[stab->numsyms].name )
   {
-    syms[numsyms].name = malloc( 128 );
-    if( !syms[numsyms].name ) return SDL_FALSE;
+    stab->syms[stab->numsyms].name = malloc( 128 );
+    if( !stab->syms[stab->numsyms].name ) return SDL_FALSE;
   }
 
-  syms[numsyms].addr = addr;
-  syms[numsyms].flags = flags;
-  strncpy( syms[numsyms].name, name, 128 );
-  syms[numsyms].name[127] = 0;
+  stab->syms[stab->numsyms].addr = addr;
+  stab->syms[stab->numsyms].flags = flags;
+  strncpy( stab->syms[stab->numsyms].name, name, 128 );
+  stab->syms[stab->numsyms].name[127] = 0;
 
   if( strlen( name ) > SNAME_LEN )
   {
-    strncpy( syms[numsyms].sname, name, (SNAME_LEN-1) );
-    syms[numsyms].sname[SNAME_LEN-1] = 22;
-    syms[numsyms].sname[SNAME_LEN] = 0;
+    strncpy( stab->syms[stab->numsyms].sname, name, (SNAME_LEN-1) );
+    stab->syms[stab->numsyms].sname[SNAME_LEN-1] = 22;
+    stab->syms[stab->numsyms].sname[SNAME_LEN] = 0;
   } else {
-    strcpy( syms[numsyms].sname, name );
+    strcpy( stab->syms[stab->numsyms].sname, name );
   }
 
   if( strlen( name ) > SSNAME_LEN )
   {
-    strncpy( syms[numsyms].ssname, name, (SSNAME_LEN-1) );
-    syms[numsyms].ssname[SSNAME_LEN-1] = 22;
-    syms[numsyms].ssname[SSNAME_LEN] = 0;
+    strncpy( stab->syms[stab->numsyms].ssname, name, (SSNAME_LEN-1) );
+    stab->syms[stab->numsyms].ssname[SSNAME_LEN-1] = 22;
+    stab->syms[stab->numsyms].ssname[SSNAME_LEN] = 0;
   } else {
-    strcpy( syms[numsyms].ssname, name );
+    strcpy( stab->syms[stab->numsyms].ssname, name );
   }
 
-  numsyms++;
+  stab->numsyms++;
 
   return SDL_TRUE;
+}
+
+void mon_init_symtab( struct symboltable *stab )
+{
+  stab->syms = NULL;
+  stab->numsyms = 0;
+  stab->symspace = 0;
+}
+
+void mon_freesyms( struct symboltable *stab )
+{
+  // Is it a dynamic table?
+  if( stab->symspace == -1 ) return;
+  if( stab->syms ) free( stab->syms );
+  stab->syms     = NULL;
+  stab->numsyms  = 0;
+  stab->symspace = 0;
 }
 
 char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *looped )
@@ -1944,20 +1912,21 @@ void mon_start_input( void )
 
 void mon_enter( struct machine *oric )
 {
-  defaultsyms = NULL;
+  defaultsyms.syms     = NULL;
+  defaultsyms.numsyms  = 0;
+  defaultsyms.symspace = -1; // Not a dynamic symbol table
   switch( oric->type )
   {
     case MACH_ORIC1:
     case MACH_ORIC1_16K:
-      defaultsyms = defsym_oric1;
-      break;
-
     case MACH_ATMOS:
-      defaultsyms = defsym_atmos;
+      defaultsyms.syms    = defsym_atmos;
+      defaultsyms.numsyms = sizeof( defsym_atmos ) / sizeof( struct msym );
       break;
     
     case MACH_TELESTRAT:
-      defaultsyms = defsym_tele;
+      defaultsyms.syms    = defsym_tele;
+      defaultsyms.numsyms = sizeof( defsym_tele ) / sizeof( struct msym );
       break;
   }
 
@@ -1970,6 +1939,13 @@ void mon_enter( struct machine *oric )
 
 void mon_init( struct machine *oric )
 {
+  defaultsyms.numsyms = 0;
+  defaultsyms.symspace = 0;
+  defaultsyms.syms = NULL;
+  usersyms.numsyms = 0;
+  usersyms.symspace = 0;
+  usersyms.syms = NULL;
+
   mon_bpmsg[0] = 0;
   mshow = MSHOW_VIA;
   cshow = CSHOW_CONSOLE;
@@ -1991,14 +1967,7 @@ void mon_init( struct machine *oric )
 
 void mon_shut( void )
 {
-  int i;
-  if( syms )
-  {
-    for( i=0; i<symspace; i++ )
-      if( syms[i].name ) free( syms[i].name );
-    free( syms );
-  }
-  syms = NULL;
+  mon_freesyms( &usersyms );
 #if LOG_DEBUG
   if( debug_logfile ) fclose( debug_logfile );
   debug_logfile = NULL;
@@ -2354,7 +2323,7 @@ SDL_bool mon_getnum( struct machine *oric, unsigned int *num, char *buf, int *of
   return SDL_TRUE;    
 }
 
-SDL_bool mon_new_symbols( char *fname, SDL_bool above )
+SDL_bool mon_new_symbols( struct symboltable *stab, char *fname, unsigned short flags, SDL_bool above, SDL_bool verbose )
 {
   FILE *f;
   int i, j;
@@ -2370,7 +2339,7 @@ SDL_bool mon_new_symbols( char *fname, SDL_bool above )
     return SDL_FALSE;
   }
 
-  numsyms = 0;
+  stab->numsyms = 0;
   while( !feof( f ) )
   {
     char linetmp[256];
@@ -2394,18 +2363,26 @@ SDL_bool mon_new_symbols( char *fname, SDL_bool above )
 //    printf( "'%s' = %04X\n", linetmp, v );
     fflush( stdout );
 
-    if( v >= 0xc000 )
-      mon_addsym( v, SYMF_ROMDIS1, linetmp );
-    else
-      mon_addsym( v, 0, linetmp );
+    if( flags == SYM_BESTGUESS )
+    {
+      if( v >= 0xc000 )
+        mon_addsym( stab, v, SYMF_ROMDIS1, linetmp );
+      else
+        mon_addsym( stab, v, 0, linetmp );
+    } else {
+      mon_addsym( stab, v, flags, linetmp );
+    }
   }
 
   fclose( f );
   
-  if( above )
-    mon_printf_above( "Symbols loaded from '%s'", fname );
-  else
-    mon_printf( "Symbols loaded from '%s'", fname );
+  if( verbose )
+  {
+    if( above )
+      mon_printf_above( "Symbols loaded from '%s'", fname );
+    else
+      mon_printf( "Symbols loaded from '%s'", fname );
+  }
   return SDL_TRUE;
 }
 
@@ -2451,8 +2428,9 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           break;
 
         case 'z':  // Zap
-          numsyms = 0;
-          defaultsyms = NULL;
+          usersyms.numsyms = 0;
+          defaultsyms.syms = NULL;
+          defaultsyms.numsyms = 0;
           mon_str( "Symbols zapped!" );
           break;
 
@@ -2465,7 +2443,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
           i+=2;
 
-          mon_new_symbols( &cmd[i], SDL_FALSE );
+          mon_new_symbols( &usersyms, &cmd[i], SYM_BESTGUESS, SDL_FALSE, SDL_TRUE );
           break;
         
         default:

@@ -19,6 +19,52 @@
 **  Monitor/Debugger
 */
 
+#define SNAME_LEN 11              // Short name for symbols (with ...)
+#define SSNAME_LEN (SNAME_LEN-3)  // Short short name :)
+
+#define SYMB_ROMDIS0   0
+#define SYMF_ROMDIS0   (1<<SYMB_ROMDIS0)
+#define SYMB_ROMDIS1   1
+#define SYMF_ROMDIS1   (1<<SYMB_ROMDIS1)
+#define SYMB_MICRODISC 2
+#define SYMF_MICRODISC (1<<SYMB_MICRODISC)
+#define SYMB_JASMIN    3
+#define SYMF_JASMIN    (1<<SYMB_JASMIN)
+#define SYMB_TELEBANK0 4
+#define SYMF_TELEBANK0 (1<<SYMB_TELEBANK0)
+#define SYMB_TELEBANK1 5
+#define SYMF_TELEBANK1 (1<<SYMB_TELEBANK1)
+#define SYMB_TELEBANK2 6
+#define SYMF_TELEBANK2 (1<<SYMB_TELEBANK2)
+#define SYMB_TELEBANK3 7
+#define SYMF_TELEBANK3 (1<<SYMB_TELEBANK3)
+#define SYMB_TELEBANK4 8
+#define SYMF_TELEBANK4 (1<<SYMB_TELEBANK4)
+#define SYMB_TELEBANK5 9
+#define SYMF_TELEBANK5 (1<<SYMB_TELEBANK5)
+#define SYMB_TELEBANK6 10
+#define SYMF_TELEBANK6 (1<<SYMB_TELEBANK6)
+#define SYMB_TELEBANK7 11
+#define SYMF_TELEBANK7 (1<<SYMB_TELEBANK7)
+
+
+#define SYM_BESTGUESS  0xffff
+
+struct msym
+{
+  unsigned short addr;       // Address
+  unsigned short flags;
+  char sname[SNAME_LEN+1];   // Short name
+  char ssname[SSNAME_LEN+1]; // Short short name
+  char *name;                // Full name
+};
+
+struct symboltable
+{
+  unsigned int numsyms, symspace;
+  struct msym *syms;
+};
+
 void mon_init( struct machine *oric );
 void mon_render( struct machine *oric );
 void mon_update_regs( struct machine *oric );
@@ -26,6 +72,8 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender );
 void dbg_printf( char *fmt, ... );
 void mon_enter( struct machine *oric );
 void mon_shut( void );
-SDL_bool mon_new_symbols( char *fname, SDL_bool above );
+void mon_init_symtab( struct symboltable *stab );
+void mon_freesyms( struct symboltable *stab );
+SDL_bool mon_new_symbols( struct symboltable *stab, char *fname, unsigned short flags, SDL_bool above, SDL_bool verbose );
 void mon_state_reset( struct machine *oric );
 SDL_bool mon_getnum( struct machine *oric, unsigned int *num, char *buf, int *off, SDL_bool addrregs, SDL_bool nregs, SDL_bool viaregs, SDL_bool symbols );

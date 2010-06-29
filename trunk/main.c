@@ -33,8 +33,8 @@
 #include "8912.h"
 #include "gui.h"
 #include "disk.h"
-#include "machine.h"
 #include "monitor.h"
+#include "machine.h"
 #include "filereq.h"
 #include "msgbox.h"
 #include "avi.h"
@@ -46,6 +46,7 @@ extern SDL_bool warpspeed, soundon;
 Uint32 lastframetimes[FRAMES_TO_AVERAGE], frametimeave;
 extern char mon_bpmsg[];
 extern struct avi_handle *vidcap;
+extern struct symboltable usersyms;
 
 #ifdef __amigaos4__
 int32 timersigbit = -1;
@@ -460,7 +461,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 
   mon_init( oric );
   if( sto->start_syms[0] )
-    mon_new_symbols( sto->start_syms, SDL_TRUE );
+    mon_new_symbols( &usersyms, sto->start_syms, SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
 
   if( sto->start_breakpoint )
   {

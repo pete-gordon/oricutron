@@ -33,6 +33,7 @@
 #include "via.h"
 #include "gui.h"
 #include "disk.h"
+#include "monitor.h"
 #include "machine.h"
 #include "avi.h"
 
