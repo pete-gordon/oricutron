@@ -461,7 +461,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 
   mon_init( oric );
   if( sto->start_syms[0] )
-    mon_new_symbols( &usersyms, sto->start_syms, SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
+    mon_new_symbols( &usersyms, oric, sto->start_syms, SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
 
   if( sto->start_breakpoint )
   {
