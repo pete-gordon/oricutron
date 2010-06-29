@@ -772,7 +772,7 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   oric->lasttapefile[0] = 0;
   joinpath( tapepath, tapefile );
   tape_load_tap( oric, filetmp );
-  if( oric->symbolsautoload ) mon_new_symbols( &usersyms, "symbols", SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
+  if( oric->symbolsautoload ) mon_new_symbols( &usersyms, oric, "symbols", SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
   setemumode( oric, NULL, EM_RUNNING );
 }
 

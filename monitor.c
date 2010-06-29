@@ -520,7 +520,7 @@ static struct asminf asmtab[] = { { "BRK", 0x00,   -1,   -1,   -1,   -1,   -1,  
                                   { "SED", 0xf8,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
                                   { NULL, } };
 
-static struct disinf distab[] = { { "BRK", AM_IMP },  // 00
+static struct disinf distab[] = { { "BRK", AM_IMM },  // 00
                                   { "ORA", AM_ZIX },  // 01
                                   { "???", AM_IMP },  // 02
                                   { "???", AM_IMP },  // 03
@@ -930,8 +930,11 @@ struct msym *mon_tab_find_sym_by_addr( struct symboltable *stab, struct machine 
     {
       for( j=0, k=SYMF_TELEBANK0; j<8; j++, k<<=1 )
       {
-//        if( (stab->syms[i].flags&k) && ( 
+        if( (stab->syms[i].flags&k) && ( oric->tele_currbank != j ) )
+          break;
       }
+
+      if( j != 8 ) continue;
     } else {
       if( stab->syms[i].flags&SYMF_MICRODISC )
       {
@@ -961,7 +964,7 @@ struct msym *mon_tab_find_sym_by_addr( struct symboltable *stab, struct machine 
 
 struct msym *mon_tab_find_sym_by_name( struct symboltable *stab, struct machine *oric, char *name )
 {
-  int i, romdis;
+  int i, j, k, romdis;
 
   romdis = oric->romdis;
   if( ( oric->drivetype == DRV_JASMIN ) && ( oric->jasmin.olay ) )
@@ -969,14 +972,25 @@ struct msym *mon_tab_find_sym_by_name( struct symboltable *stab, struct machine 
 
   for( i=0; i<stab->numsyms; i++ )
   {
-    if( oric->type != MACH_TELESTRAT )
+    if( oric->type == MACH_TELESTRAT )
     {
-      if( (stab->syms[i].flags&SYMF_MICRODISC) && ( oric->drivetype != DRV_MICRODISC ) )
-        continue;
+      for( j=0, k=SYMF_TELEBANK0; j<8; j++, k<<=1 )
+      {
+        if( (stab->syms[i].flags&k) && ( oric->tele_currbank != j ) )
+          break;
+      }
+
+      if( j != 8 ) continue;
+    } else {
+      if( stab->syms[i].flags&SYMF_MICRODISC )
+      {
+        if( ( oric->drivetype != DRV_MICRODISC ) || ( !oric->md.diskrom ) )
+          continue;
+      }
 
       if( (stab->syms[i].flags&SYMF_JASMIN) && ( oric->drivetype != DRV_JASMIN ) )
         continue;
-
+    
       if( romdis )
       {
         if( (stab->syms[i].flags&SYMF_ROMDIS0) != 0 )
@@ -1003,7 +1017,6 @@ struct msym *mon_tab_find_sym_by_name( struct symboltable *stab, struct machine 
 struct msym *mon_find_sym_by_addr( struct machine *oric, unsigned short addr )
 {
   struct msym *ret;
-  int i;
 
   ret = mon_tab_find_sym_by_addr( &usersyms, oric, addr );
   if( !ret ) ret = mon_tab_find_sym_by_addr( &oric->romsyms, oric, addr );
@@ -1019,11 +1032,11 @@ struct msym *mon_find_sym_by_name( struct machine *oric, char *name )
   struct msym *ret;
 
   ret = mon_tab_find_sym_by_name( &usersyms, oric, name );
-  if( ( !ret ) && ( oric->disksyms ) )
-    ret = mon_tab_find_sym_by_name( oric->disksyms, oric, name );
-
+  if( !ret ) ret = mon_tab_find_sym_by_name( &oric->romsyms, oric, name );
+  if( ( !ret ) && ( oric->type == MACH_TELESTRAT ) ) ret = mon_tab_find_sym_by_name( &oric->tele_banksyms[oric->tele_currbank], oric, name );
+  if( ( !ret ) && ( oric->disksyms ) ) ret = mon_tab_find_sym_by_name( oric->disksyms, oric, name );
   if( ret ) return ret;
-  
+
   return mon_tab_find_sym_by_name( &defaultsyms, oric, name );
 }
 
@@ -2323,7 +2336,7 @@ SDL_bool mon_getnum( struct machine *oric, unsigned int *num, char *buf, int *of
   return SDL_TRUE;    
 }
 
-SDL_bool mon_new_symbols( struct symboltable *stab, char *fname, unsigned short flags, SDL_bool above, SDL_bool verbose )
+SDL_bool mon_new_symbols( struct symboltable *stab, struct machine *oric, char *fname, unsigned short flags, SDL_bool above, SDL_bool verbose )
 {
   FILE *f;
   int i, j;
@@ -2363,12 +2376,33 @@ SDL_bool mon_new_symbols( struct symboltable *stab, char *fname, unsigned short 
 //    printf( "'%s' = %04X\n", linetmp, v );
     fflush( stdout );
 
+    // Guess the flags!
     if( flags == SYM_BESTGUESS )
     {
+      // In the ROM area?
       if( v >= 0xc000 )
-        mon_addsym( stab, v, SYMF_ROMDIS1, linetmp );
-      else
+      {
+        // In a telestrat bank?
+        if( oric->type == MACH_TELESTRAT )
+        {
+          // Labels starting t0_ are assumed to be telestrat bank 0 (etc.)
+          if( ( linetmp[0] == 't' ) && 
+              ( ( linetmp[1] >= '0' ) && ( linetmp[1] <= '7' ) ) &&
+              ( linetmp[2] == '_' ) )
+          {
+            mon_addsym( stab, v, SYMF_TELEBANK0 << (linetmp[1]-'0'), linetmp );
+          } else {
+            // No hint fron the label name, just make it valid in any telestrat bank
+            mon_addsym( stab, v, SYMF_TELEBANK0|SYMF_TELEBANK1|SYMF_TELEBANK2|SYMF_TELEBANK3|SYMF_TELEBANK4|SYMF_TELEBANK5|SYMF_TELEBANK6|SYMF_TELEBANK7, linetmp );
+          }
+        } else {
+          // Its not a telestrat, so assume its in the overlay RAM
+          mon_addsym( stab, v, SYMF_ROMDIS1, linetmp );
+        }
+      } else {
+        // Normal memory
         mon_addsym( stab, v, 0, linetmp );
+      }
     } else {
       mon_addsym( stab, v, flags, linetmp );
     }
@@ -2443,7 +2477,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
           i+=2;
 
-          mon_new_symbols( &usersyms, &cmd[i], SYM_BESTGUESS, SDL_FALSE, SDL_TRUE );
+          mon_new_symbols( &usersyms, oric, &cmd[i], SYM_BESTGUESS, SDL_FALSE, SDL_TRUE );
           break;
         
         default:
