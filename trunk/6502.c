@@ -812,7 +812,7 @@ SDL_bool m6502_inst( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
   switch( op )
   {
     case 0x00: // { "BRK", AM_IMP },  // 00
-      PUSHW( cpu->pc+1 );
+      PUSHW( (cpu->pc+1) );
       PUSHB( MAKEFLAGS | (1<<4) );   // Set B on the stack
       cpu->f_i = 1;
       cpu->f_d = 0;

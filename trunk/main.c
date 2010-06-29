@@ -56,7 +56,7 @@ char __attribute__((used)) stackcookie[] = "$STACK: 1000000";
 #endif
 
 #if defined(__amigaos4__) || defined(__MORPHOS__)
-char __attribute__((used)) versiontag[] = "$VER: Oricutron " VERSION_FULL " (15.6.2010)";
+char __attribute__((used)) versiontag[] = "$VER: " APP_NAME_FULL " (15.6.2010)";
 #endif
 
 struct start_opts

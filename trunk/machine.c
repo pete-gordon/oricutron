@@ -1381,7 +1381,7 @@ void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
   if( !init_machine( oric, oric->type, SDL_FALSE ) )
   {
     shut();
-    exit(0);
+    exit( EXIT_FAILURE );
   }
 
   setmenutoggles( oric );
@@ -1406,7 +1406,6 @@ void swapmach( struct machine *oric, struct osdmenuitem *mitem, int which )
   if( !init_machine( oric, which, which!=oric->type ) )
   {
     shut();
-    exit(0);
+    exit( EXIT_FAILURE );
   }
 }
-
