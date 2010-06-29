@@ -33,6 +33,7 @@
 #include "8912.h"
 #include "gui.h"
 #include "disk.h"
+#include "monitor.h"
 #include "machine.h"
 
 extern char tapefile[], tapepath[];

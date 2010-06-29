@@ -47,9 +47,11 @@
 #include "8912.h"
 #include "gui.h"
 #include "disk.h"
-#include "machine.h"
 #include "monitor.h"
+#include "machine.h"
 #include "filereq.h"
+
+extern struct symboltable usersyms;
 
 char tapepath[4096], tapefile[512];
 char diskpath[4096], diskfile[512];
@@ -770,7 +772,7 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   oric->lasttapefile[0] = 0;
   joinpath( tapepath, tapefile );
   tape_load_tap( oric, filetmp );
-  if( oric->symbolsautoload ) mon_new_symbols( "symbols", SDL_TRUE );
+  if( oric->symbolsautoload ) mon_new_symbols( &usersyms, "symbols", SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
   setemumode( oric, NULL, EM_RUNNING );
 }
 

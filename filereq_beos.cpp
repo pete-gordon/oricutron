@@ -36,8 +36,8 @@ extern "C" {
 #include "8912.h"
 #include "disk.h"
 #include "gui.h"
-#include "machine.h"
 #include "monitor.h"
+#include "machine.h"
 #include "filereq.h"
 }
 

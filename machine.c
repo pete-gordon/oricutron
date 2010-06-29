@@ -34,8 +34,8 @@
 #include "8912.h"
 #include "gui.h"
 #include "disk.h"
-#include "machine.h"
 #include "monitor.h"
+#include "machine.h"
 #include "avi.h"
 #include "filereq.h"
 
@@ -54,6 +54,7 @@ int vidcapcount = 0;
 extern struct osdmenuitem hwopitems[];
 
 unsigned char rom_microdisc[8912], rom_jasmin[2048];
+struct symboltable sym_microdisc, sym_jasmin;
 SDL_bool microdiscrom_valid, jasminrom_valid;
 
 Uint8 oricpalette[] = { 0x00, 0x00, 0x00,
@@ -757,31 +758,56 @@ unsigned char microdisc_o16kread( struct m6502 *cpu, unsigned short addr )
   return oric->mem[addr&0x3fff];
 }
 
-static SDL_bool load_rom( char *fname, int size, unsigned char *where )
+static SDL_bool load_rom( char *fname, int size, unsigned char *where, struct symboltable *stab, int symflags )
 {
   FILE *f;
+  char *tmpname;
 
-  f = fopen( fname, "rb" );
+  // MinGW doesn't have asprintf :-(
+  tmpname = malloc( strlen( fname ) + 10 );
+  if( !tmpname ) return SDL_FALSE;
+
+  sprintf( tmpname, "%s.rom", fname );
+  f = fopen( tmpname, "rb" );
   if( !f )
   {
-    printf( "Unable to open '%s'\n", fname );
+    printf( "Unable to open '%s'\n", tmpname );
+    free( tmpname );
     return SDL_FALSE;
   }
 
   if( fread( where, size, 1, f ) != 1 )
   {
+    printf( "Unable to read '%s'\n", tmpname );
     fclose( f );
-    printf( "Unable to read '%s'\n", fname );
+    free( tmpname );
     return SDL_FALSE;
   }
 
   fclose( f );
+
+  sprintf( tmpname, "%s.sym", fname );
+  mon_new_symbols( stab, tmpname, symflags, SDL_FALSE, SDL_FALSE );
+  free( tmpname );
+
   return SDL_TRUE;
 }
 
 void preinit_machine( struct machine *oric )
 {
   int i;
+
+  mon_init_symtab( &sym_microdisc );
+  mon_init_symtab( &sym_jasmin );
+  mon_init_symtab( &oric->romsyms );
+  mon_init_symtab( &oric->tele_banksyms[0] );
+  mon_init_symtab( &oric->tele_banksyms[1] );
+  mon_init_symtab( &oric->tele_banksyms[2] );
+  mon_init_symtab( &oric->tele_banksyms[3] );
+  mon_init_symtab( &oric->tele_banksyms[4] );
+  mon_init_symtab( &oric->tele_banksyms[5] );
+  mon_init_symtab( &oric->tele_banksyms[6] );
+  mon_init_symtab( &oric->tele_banksyms[7] );
 
   oric->mem = NULL;
   oric->rom = NULL;
@@ -809,8 +835,8 @@ void preinit_machine( struct machine *oric )
     oric->diskname[i][0] = 0;
   }
 
-  microdiscrom_valid = load_rom( ROMPREFIX"microdis.rom", 8192, rom_microdisc );
-  jasminrom_valid    = load_rom( ROMPREFIX"jasmin.rom"  , 2048, rom_jasmin );
+  microdiscrom_valid = load_rom( ROMPREFIX"microdis", 8192, rom_microdisc, &sym_microdisc, SYMF_ROMDIS1|SYMF_MICRODISC );
+  jasminrom_valid    = load_rom( ROMPREFIX"jasmin"  , 2048, rom_jasmin,    &sym_jasmin,    SYMF_ROMDIS1|SYMF_JASMIN );
 }
 
 static SDL_bool shifted = SDL_FALSE;
@@ -1005,6 +1031,16 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   oric->vidbases[2] = 0xbb80;
   oric->vidbases[3] = 0xb400;
 
+  oric->romsyms.numsyms = 0;
+  oric->tele_banksyms[0].numsyms = 0;
+  oric->tele_banksyms[1].numsyms = 0;
+  oric->tele_banksyms[2].numsyms = 0;
+  oric->tele_banksyms[3].numsyms = 0;
+  oric->tele_banksyms[4].numsyms = 0;
+  oric->tele_banksyms[5].numsyms = 0;
+  oric->tele_banksyms[6].numsyms = 0;
+  oric->tele_banksyms[7].numsyms = 0;
+
   switch( type )
   {
     case MACH_ORIC1_16K:
@@ -1032,6 +1068,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           oric->cpu.write = microdisc_o16kwrite;
           oric->romdis = SDL_TRUE;
           microdisc_init( &oric->md, &oric->wddisk, oric );
+          oric->disksyms = &sym_microdisc;
           break;
         
         case DRV_JASMIN:
@@ -1039,16 +1076,18 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           oric->cpu.write = jasmin_o16kwrite;
           oric->romdis = SDL_FALSE;
           jasmin_init( &oric->jasmin, &oric->wddisk, oric );
+          oric->disksyms = &sym_jasmin;
           break;
 
         default:
           oric->cpu.read = o16kread;
           oric->cpu.write = o16kwrite;
           oric->romdis = SDL_FALSE;
+          oric->disksyms = NULL;
           break;
       }
 
-      if( !load_rom( ROMPREFIX"basic10.rom", 16384, &oric->rom[0] ) )
+      if( !load_rom( ROMPREFIX"basic10", 16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) )
         return SDL_FALSE;
 
       for( i=0; i<8; i++ )
@@ -1092,6 +1131,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           oric->cpu.write = microdisc_atmoswrite;
           oric->romdis = SDL_TRUE;
           microdisc_init( &oric->md, &oric->wddisk, oric );
+          oric->disksyms = &sym_microdisc;
           break;
         
         case DRV_JASMIN:
@@ -1099,16 +1139,18 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           oric->cpu.write = jasmin_atmoswrite;
           oric->romdis = SDL_FALSE;
           jasmin_init( &oric->jasmin, &oric->wddisk, oric );
+          oric->disksyms = &sym_jasmin;
           break;
 
         default:
           oric->cpu.read = atmosread;
           oric->cpu.write = atmoswrite;
           oric->romdis = SDL_FALSE;
+          oric->disksyms = NULL;
           break;
       }
 
-      if( !load_rom( ROMPREFIX"basic10.rom", 16384, &oric->rom[0] ) )
+      if( !load_rom( ROMPREFIX"basic10", 16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) )
         return SDL_FALSE;
 
       oric->pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
@@ -1158,6 +1200,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           oric->cpu.write = microdisc_atmoswrite;
           oric->romdis = SDL_TRUE;
           microdisc_init( &oric->md, &oric->wddisk, oric );
+          oric->disksyms = &sym_microdisc;
           break;
         
         case DRV_JASMIN:
@@ -1165,16 +1208,18 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           oric->cpu.write = jasmin_atmoswrite;
           oric->romdis = SDL_FALSE;
           jasmin_init( &oric->jasmin, &oric->wddisk, oric );
+          oric->disksyms = &sym_jasmin;
           break;
 
         default:
           oric->cpu.read = atmosread;
           oric->cpu.write = atmoswrite;
           oric->romdis = SDL_FALSE;
+          oric->disksyms = NULL;
           break;
       }
 
-      if( !load_rom( ROMPREFIX"basic11b.rom", 16384, &oric->rom[0] ) )
+      if( !load_rom( ROMPREFIX"basic11b", 16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) )
         return SDL_FALSE;
 
       oric->pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
@@ -1220,6 +1265,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->drivetype = DRV_MICRODISC;
       microdisc_init( &oric->md, &oric->wddisk, oric );
       oric->romdis = SDL_FALSE;
+      oric->disksyms = NULL;
 
       oric->tele_bank[0].type = TELEBANK_RAM;
       oric->tele_bank[0].ptr  = &oric->mem[0x0c000];
@@ -1238,10 +1284,10 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->tele_bank[7].type = TELEBANK_ROM;
       oric->tele_bank[7].ptr  = &oric->mem[0x28000];
 
-//      if( !load_rom( ROMPREFIX"telmatic.rom",  8192, &oric->tele_bank[3].ptr[8192] ) ) return SDL_FALSE;
-      if( !load_rom( ROMPREFIX"teleass.rom",  16384, oric->tele_bank[5].ptr ) ) return SDL_FALSE;
-      if( !load_rom( ROMPREFIX"hyperbas.rom", 16384, oric->tele_bank[6].ptr ) ) return SDL_FALSE;
-      if( !load_rom( ROMPREFIX"telmon24.rom", 16384, oric->tele_bank[7].ptr ) ) return SDL_FALSE;
+//      if( !load_rom( ROMPREFIX"telmatic",  8192, &oric->tele_bank[3].ptr[8192] ) ) return SDL_FALSE;
+      if( !load_rom( ROMPREFIX"teleass",  16384, oric->tele_bank[5].ptr, &oric->tele_banksyms[5], SYMF_TELEBANK5 ) ) return SDL_FALSE;
+      if( !load_rom( ROMPREFIX"hyperbas", 16384, oric->tele_bank[6].ptr, &oric->tele_banksyms[5], SYMF_TELEBANK6 ) ) return SDL_FALSE;
+      if( !load_rom( ROMPREFIX"telmon24", 16384, oric->tele_bank[7].ptr, &oric->tele_banksyms[5], SYMF_TELEBANK7 ) ) return SDL_FALSE;
 
       oric->tele_currbank = 7;
       oric->tele_banktype = oric->tele_bank[7].type;
@@ -1298,6 +1344,17 @@ void shut_machine( struct machine *oric )
   if( oric->mem ) { free( oric->mem ); oric->mem = NULL; oric->rom = NULL; }
   if( oric->scr ) { free( oric->scr ); oric->scr = NULL; }
   if( oric->prf ) { fclose( oric->prf ); oric->prf = NULL; }
+  mon_freesyms( &sym_microdisc );
+  mon_freesyms( &sym_jasmin );
+  mon_freesyms( &oric->romsyms );
+  mon_freesyms( &oric->tele_banksyms[0] );
+  mon_freesyms( &oric->tele_banksyms[1] );
+  mon_freesyms( &oric->tele_banksyms[2] );
+  mon_freesyms( &oric->tele_banksyms[3] );
+  mon_freesyms( &oric->tele_banksyms[4] );
+  mon_freesyms( &oric->tele_banksyms[5] );
+  mon_freesyms( &oric->tele_banksyms[6] );
+  mon_freesyms( &oric->tele_banksyms[7] );
 }
 
 void shut( void );
