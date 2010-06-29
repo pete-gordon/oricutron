@@ -1,0 +1,5 @@
+f800 jsRomStart
+fd00 jsEntryPoint
+fd51 jsReset
+fe71 jsPrintMsg
+fec7 jsIrq
