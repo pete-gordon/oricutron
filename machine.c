@@ -1075,6 +1075,8 @@ void clear_patches( struct machine *oric )
   oric->pch_tt_readbyte_storebyte_addr = -1;
   oric->pch_tt_readbyte_storezero_addr = -1;
   oric->pch_tt_available               = SDL_FALSE;
+
+  oric->azerty = SDL_FALSE;
 }
 
 void load_patches( struct machine *oric, char *fname )
@@ -1082,8 +1084,6 @@ void load_patches( struct machine *oric, char *fname )
   FILE *f;
   Sint32 i;
   char *tmpname;
-
-  clear_patches( oric );
 
   // MinGW doesn't have asprintf :-(
   tmpname = malloc( strlen( fname ) + 10 );
@@ -1111,6 +1111,7 @@ void load_patches( struct machine *oric, char *fname )
     if( read_config_int(  &filetmp[i], "tt_readbyte_storebyte_addr", &oric->pch_tt_readbyte_storebyte_addr ) ) continue;
     if( read_config_int(  &filetmp[i], "tt_readbyte_storezero_addr", &oric->pch_tt_readbyte_storezero_addr ) ) continue;
     if( read_config_bool( &filetmp[i], "tt_readbyte_setcarry",       &oric->pch_tt_readbyte_setcarry ) )       continue;
+    if( read_config_bool( &filetmp[i], "azerty",                     &oric->azerty ) ) continue;
   }
 
   fclose( f );
@@ -1151,6 +1152,8 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   oric->tele_banksyms[5].numsyms = 0;
   oric->tele_banksyms[6].numsyms = 0;
   oric->tele_banksyms[7].numsyms = 0;
+
+  clear_patches( oric );
 
   switch( type )
   {
@@ -1385,10 +1388,12 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         {
           oric->tele_bank[i].type = TELEBANK_ROM;
           if( !load_rom( oric, telebankfiles[i], -16384, oric->tele_bank[i].ptr, &oric->tele_banksyms[i], SYMF_TELEBANK1<<i ) ) return SDL_FALSE;
+          load_patches( oric, telebankfiles[i] );
         } else {
           oric->tele_bank[i].type = TELEBANK_RAM;
         }
       }
+
       clear_patches( oric );
 
       oric->tele_currbank = 7;

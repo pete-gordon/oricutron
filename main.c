@@ -76,7 +76,6 @@ struct start_opts
   char     start_tape[1024];
   char     start_syms[1024];
   char    *start_breakpoint;
-  SDL_bool start_azerty;
 };
 
 static char *machtypes[] = { "oric1",
@@ -256,7 +255,6 @@ static void load_config( struct start_opts *sto )
     if( read_config_string( &sto->lctmp[i], "diskimage",    sto->start_disk, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "tapeimage",    sto->start_tape, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "symbols",      sto->start_syms, 1024 ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "azerty",       &sto->start_azerty ) ) continue;
     if( read_config_string( &sto->lctmp[i], "tapepath",     tapepath, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "diskpath",     diskpath, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "telediskpath", telediskpath, 1024 ) ) continue;
@@ -480,8 +478,6 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
         usage( EXIT_FAILURE );
     }
   }
-
-  oric->azerty = sto->start_azerty;
 
   load_diskroms( oric );
 
