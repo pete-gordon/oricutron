@@ -1387,7 +1387,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         if( telebankfiles[i][0] )
         {
           oric->tele_bank[i].type = TELEBANK_ROM;
-          if( !load_rom( oric, telebankfiles[i], -16384, oric->tele_bank[i].ptr, &oric->tele_banksyms[i], SYMF_TELEBANK1<<i ) ) return SDL_FALSE;
+          if( !load_rom( oric, telebankfiles[i], -16384, oric->tele_bank[i].ptr, &oric->tele_banksyms[i], SYMF_TELEBANK0<<i ) ) return SDL_FALSE;
           load_patches( oric, telebankfiles[i] );
         } else {
           oric->tele_bank[i].type = TELEBANK_RAM;
