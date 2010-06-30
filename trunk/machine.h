@@ -124,6 +124,8 @@ struct machine
   SDL_bool symbolsautoload, symbolscase;
   char lasttapefile[20];
   char tapename[16];
+
+  SDL_bool azerty;
 };
 
 void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode );
