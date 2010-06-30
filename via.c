@@ -67,7 +67,7 @@ void tape_setmotor( struct machine *oric, SDL_bool motoron )
   refreshtape = SDL_TRUE;
 
   // "Real" tape emulation?
-  if( ( !oric->tapeturbo ) || ( oric->type != MACH_ATMOS ) )
+  if( ( !oric->tapeturbo ) || ( !oric->pch_tt_available ) )
   {
     // If we're stopping part way through a byte, just move
     // the current position on to the start of the next byte
