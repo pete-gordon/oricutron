@@ -22,7 +22,7 @@ VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) (c)2010 Peter Gordon (pete@pet
 CFLAGS = -Wall -O3
 CFLAGS += -DAPP_NAME_FULL='"$(APP_NAME) WIP"'
 #CFLAGS += -DAPP_NAME_FULL='"$(APP_NAME) $(VERSION_MAJ).$(VERSION_MIN)"'
-CFLAGS += -DVERSION_FULL='"$(VERSION_MAJ).$(VERSION_MIN)"' -DVERSION_COPYRIGHTS='$(VERSION_COPYRIGHTS)'
+CFLAGS += -DVERSION_COPYRIGHTS='$(VERSION_COPYRIGHTS)'
 LFLAGS = 
 
 CC = gcc
@@ -43,18 +43,18 @@ ifeq ($(OSTYPE),beos)
 PLATFORM ?= beos
 else
 UNAME_S = $(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-PLATFORM ?= osx
-endif
-ifeq ($(UNAME_S),Haiku)
-PLATFORM ?= haiku
-endif
-ifeq ($(UNAME_S),Linux)
-PLATFORM ?= linux
-endif
-ifeq ($(UNAME_S),MorphOS)
-PLATFORM ?= MorphOS
-endif
+  ifeq ($(UNAME_S),Darwin)
+  PLATFORM ?= osx
+  endif
+  ifeq ($(UNAME_S),Haiku)
+  PLATFORM ?= haiku
+  endif
+  ifeq ($(UNAME_S),Linux)
+  PLATFORM ?= linux
+  endif
+  ifeq ($(UNAME_S),MorphOS)
+  PLATFORM ?= MorphOS
+  endif
 endif
 # default
 PLATFORM ?= os4
@@ -65,7 +65,7 @@ PLATFORM ?= os4
 # Amiga OS4
 ifeq ($(PLATFORM),os4)
 CFLAGS += -mcrt=newlib -gstabs -I/SDK/Local/common/include/ -I/SDK/Local/common/include/SDL/ -I/SDK/Local/newlib/include/ -I/SDK/Local/newlib/include/SDL/
-LFLAGS += -lm `sdl-config --libs` -lm -mcrt=newlib -gstabs
+LFLAGS += -lm `sdl-config --libs` -mcrt=newlib -gstabs
 BDBLFLAGS += -lunix
 FILEREQ_SRC = filereq_amiga.c
 MSGBOX_SRC = msgbox_os4.c
@@ -226,7 +226,7 @@ $(RSRC_BEOS): oricutron.rdef
 	$(BEOS_RC) -o $@ $<
 
 clean:
-	rm -f $(TARGET) *.bak *.o $(RESOURCES) -R $(PKGDIR)
+	rm -f $(TARGET) *.bak *.o $(RESOURCES) -R $(PKGDIR) printer_out.txt
 
 
 install-beos install-haiku:
