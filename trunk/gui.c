@@ -207,13 +207,13 @@ struct osdmenu menus[] = { { "Main Menu",         0, mainitems },
 // Load a 24bit BMP for the GUI
 SDL_bool gimg_load( struct guiimg *gi )
 {
-  FILE *f;
+  SDL_RWops *f;
   Uint8 hdrbuf[640*3];
   Sint32 x, y;
   SDL_bool fileok;
 
   // Get the file
-  f = fopen( gi->filename, "rb" );
+  f = SDL_RWFromFile( gi->filename, "rb" );
   if( !f )
   {
     printf( "Unable to open '%s'\n", gi->filename );
@@ -221,9 +221,10 @@ SDL_bool gimg_load( struct guiimg *gi )
   }
 
   // Read the header
-  if( fread( hdrbuf, 54, 1, f ) != 1 )
+  if( SDL_RWread( f, hdrbuf, 54, 1 ) != 1 )
   {
     printf( "Error reading '%s'\n", gi->filename );
+    SDL_RWclose( f );
     return SDL_FALSE;
   }
 
@@ -238,6 +239,7 @@ SDL_bool gimg_load( struct guiimg *gi )
   if( !fileok )
   {
     printf( "'%s' needs to be a %dx%d, uncompressed, 24-bit BMP image\n", gi->filename, gi->w, gi->h );
+    SDL_RWclose( f );
     return SDL_FALSE;
   }
 
@@ -248,17 +250,20 @@ SDL_bool gimg_load( struct guiimg *gi )
   if( !gi->buf )
   {
     printf( "Out of memory\n" );
+    SDL_RWclose( f );
     return SDL_FALSE;
   }
 
   // BMPs are upside down!
   for( y=gi->h-1; y>=0; y-- )
   {
-    fread( hdrbuf, ((gi->w*3)+3)&0xfffffffc, 1, f );
+    SDL_RWread( f, hdrbuf, ((gi->w*3)+3)&0xfffffffc, 1 );
     for( x=0; x<gi->w; x++ )
       gi->buf[y*gi->w+x] = SDL_MapRGB( screen->format, hdrbuf[x*3+2], hdrbuf[x*3+1], hdrbuf[x*3] );
   }
-  
+
+  SDL_RWclose( f );
+
   return SDL_TRUE;
 }
 
