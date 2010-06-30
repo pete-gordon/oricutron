@@ -36,6 +36,7 @@
 #include "filereq.h"
 
 extern char diskfile[], diskpath[], filetmp[];
+extern char telediskfile[], telediskpath[];
 extern SDL_bool refreshdisks;
 
 #define GENERAL_DISK_DEBUG 1
@@ -63,7 +64,18 @@ void disk_popup( struct machine *oric, int drive )
 // Free a disk image and clear the pointer to it
 void diskimage_free( struct machine *oric, struct diskimage **dimg )
 {
+  char *dpath, *dfile;
+
   if( !(*dimg) ) return;
+
+  if( oric->type != MACH_TELESTRAT )
+  {
+    dpath = diskpath;
+    dfile = diskfile;
+  } else {
+    dpath = telediskpath;
+    dfile = telediskfile;
+  }
 
   if( (*dimg)->modified )
   {
@@ -72,9 +84,9 @@ void diskimage_free( struct machine *oric, struct diskimage **dimg )
     if( msgbox( oric, MSGBOX_YES_NO, modmsg ) )
     {
       sprintf( modmsg, "Save disk %d", (*dimg)->drivenum );
-      if( filerequester( oric, modmsg, diskpath, diskfile, FR_DISKSAVE ) )
+      if( filerequester( oric, modmsg, dpath, dfile, FR_DISKSAVE ) )
       {
-        joinpath( diskpath, diskfile );
+        joinpath( dpath, dfile );
         diskimage_save( oric, filetmp, (*dimg)->drivenum );
       }      
     }

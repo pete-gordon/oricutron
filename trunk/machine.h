@@ -132,6 +132,7 @@ SDL_bool video_doraster( struct machine *oric );
 SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender );
 
 void preinit_machine( struct machine *oric );
+void load_diskroms( struct machine *oric );
 SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints );
 void shut_machine( struct machine *oric );
 void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type );
