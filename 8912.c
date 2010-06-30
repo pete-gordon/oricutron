@@ -87,15 +87,27 @@ unsigned char *eshapes[] = { eshape0, // 0000
                              eshape4 };//1111
 
 
-// Oric keymap
+static unsigned short *keytab;
+
+// Oric keymap (QWERTY)
 //                                FE           FD           FB           F7           EF           DF           BF           7F
-static unsigned short keytab[] = { '7'        , 'n'        , '5'        , 'v'        , SDLK_RCTRL , '1'        , 'x'        , '3'        ,
+static unsigned short qwktab[] = { '7'        , 'n'        , '5'        , 'v'        , SDLK_RCTRL , '1'        , 'x'        , '3'        ,
                                    'j'        , 't'        , 'r'        , 'f'        , 0          , SDLK_ESCAPE, 'q'        , 'd'        ,
                                    'm'        , '6'        , 'b'        , '4'        , SDLK_LCTRL , 'z'        , '2'        , 'c'        ,
                                    'k'        , '9'        , ';'        , '-'        , '#'        , '\\'       , 0          , '\''       ,
                                    SDLK_SPACE , ','        , '.'        , SDLK_UP    , SDLK_LSHIFT, SDLK_LEFT  , SDLK_DOWN  , SDLK_RIGHT ,
                                    'u'        , 'i'        , 'o'        , 'p'        , SDLK_LALT  , SDLK_BACKSPACE, ']'     , '['        ,
                                    'y'        , 'h'        , 'g'        , 'e'        , SDLK_RALT  , 'a'        , 's'        , 'w'        ,
+                                   '8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, 0          , SDLK_EQUALS };
+
+// AZERTY
+static unsigned short azktab[] = { '7'        , 'n'        , '5'        , 'v'        , SDLK_RCTRL , '1'        , 'x'        , '3'        ,
+                                   'j'        , 't'        , 'r'        , 'f'        , 0          , SDLK_ESCAPE, 'a'        , 'd'        ,
+                                   'm'        , '6'        , 'b'        , '4'        , SDLK_LCTRL , 'w'        , '2'        , 'c'        ,
+                                   'k'        , '9'        , ';'        , '-'        , '#'        , '\\'       , 0          , '\''       ,
+                                   SDLK_SPACE , ','        , '.'        , SDLK_UP    , SDLK_LSHIFT, SDLK_LEFT  , SDLK_DOWN  , SDLK_RIGHT ,
+                                   'u'        , 'i'        , 'o'        , 'p'        , SDLK_LALT  , SDLK_BACKSPACE, ']'     , '['        ,
+                                   'y'        , 'h'        , 'g'        , 'e'        , SDLK_RALT  , 'q'        , 's'        , 'z'        ,
                                    '8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, 0          , SDLK_EQUALS };
 
 // Queue up some key presses. These key presses
@@ -494,6 +506,11 @@ void ay_unlockaudio( struct ay8912 *ay )
 SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
 {
   int i;
+
+  if( oric->azerty )
+    keytab = azktab;
+  else
+    keytab = qwktab;
 
   // No oric keys pressed
   for( i=0; i<8; i++ )
