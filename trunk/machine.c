@@ -38,6 +38,7 @@
 #include "machine.h"
 #include "avi.h"
 #include "filereq.h"
+#include "main.h"
 
 extern SDL_Surface *screen;
 extern int pixpitch;
@@ -1060,12 +1061,81 @@ void blank_ram( Sint32 how, Uint8 *mem, Uint32 size )
   }
 }
 
+void clear_patches( struct machine *oric )
+{
+  oric->pch_fd_getname_pc              = -1;
+  oric->pch_fd_getname_addr            = -1;
+  oric->pch_fd_available               = SDL_FALSE;
+
+  oric->pch_tt_getsync_pc              = -1;
+  oric->pch_tt_getsync_end_pc          = -1;
+  oric->pch_tt_getsync_loop_pc         = -1;
+  oric->pch_tt_readbyte_pc             = -1;
+  oric->pch_tt_readbyte_end_pc         = -1;
+  oric->pch_tt_readbyte_storebyte_addr = -1;
+  oric->pch_tt_readbyte_storezero_addr = -1;
+  oric->pch_tt_available               = SDL_FALSE;
+}
+
+void load_patches( struct machine *oric, char *fname )
+{
+  FILE *f;
+  Sint32 i;
+  char *tmpname;
+
+  clear_patches( oric );
+
+  // MinGW doesn't have asprintf :-(
+  tmpname = malloc( strlen( fname ) + 10 );
+  if( !tmpname ) return;
+
+  sprintf( tmpname, "%s.pch", fname );
+
+  f = fopen( tmpname, "r" );
+  free( tmpname );
+  if( !f ) return;
+
+  while( !feof( f ) )
+  {
+    if( !fgets( filetmp, 2048, f ) ) break;
+
+    for( i=0; isws( filetmp[i] ); i++ ) ;
+
+    if( read_config_int(  &filetmp[i], "fd_getname_pc",              &oric->pch_fd_getname_pc ) )              continue;
+    if( read_config_int(  &filetmp[i], "fd_getname_addr",            &oric->pch_fd_getname_addr ) )            continue;
+    if( read_config_int(  &filetmp[i], "tt_getsync_pc",              &oric->pch_tt_getsync_pc ) )              continue;
+    if( read_config_int(  &filetmp[i], "tt_getsync_end_pc",          &oric->pch_tt_getsync_end_pc ) )          continue;
+    if( read_config_int(  &filetmp[i], "tt_getsync_loop_pc",         &oric->pch_tt_getsync_loop_pc ) )         continue;
+    if( read_config_int(  &filetmp[i], "tt_readbyte_pc",             &oric->pch_tt_readbyte_pc ) )             continue;
+    if( read_config_int(  &filetmp[i], "tt_readbyte_end_pc",         &oric->pch_tt_readbyte_end_pc ) )         continue;
+    if( read_config_int(  &filetmp[i], "tt_readbyte_storebyte_addr", &oric->pch_tt_readbyte_storebyte_addr ) ) continue;
+    if( read_config_int(  &filetmp[i], "tt_readbyte_storezero_addr", &oric->pch_tt_readbyte_storezero_addr ) ) continue;
+    if( read_config_bool( &filetmp[i], "tt_readbyte_setcarry",       &oric->pch_tt_readbyte_setcarry ) )       continue;
+  }
+
+  fclose( f );
+
+  // Got all the addresses needed for each patch?
+  if( ( oric->pch_fd_getname_pc != -1 ) &&
+      ( oric->pch_fd_getname_addr != -1 ) )
+    oric->pch_fd_available = SDL_TRUE;
+
+  if( ( oric->pch_tt_getsync_pc ) &&
+      ( oric->pch_tt_getsync_end_pc ) &&
+      ( oric->pch_tt_getsync_loop_pc ) &&
+      ( oric->pch_tt_readbyte_pc ) &&
+      ( oric->pch_tt_readbyte_end_pc ) )
+    oric->pch_tt_available = SDL_TRUE;
+}
+
 SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints )
 {
   int i;
 
   oric->type = type;
   m6502_init( &oric->cpu, (void*)oric, nukebreakpoints );
+
+  oric->tapeturbo_syncstack = -1;
 
   oric->vidbases[0] = 0xa000;
   oric->vidbases[1] = 0x9800;
@@ -1128,8 +1198,8 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           break;
       }
 
-      if( !load_rom( oric, oric1romfile, -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) )
-        return SDL_FALSE;
+      if( !load_rom( oric, oric1romfile, -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) ) return SDL_FALSE;
+      load_patches( oric, oric1romfile );
 
       for( i=0; i<8; i++ )
       {
@@ -1191,8 +1261,8 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           break;
       }
 
-      if( !load_rom( oric, oric1romfile, -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) )
-        return SDL_FALSE;
+      if( !load_rom( oric, oric1romfile, -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) ) return SDL_FALSE;
+      load_patches( oric, oric1romfile );
 
       oric->pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
       oric->pal[1] = SDL_MapRGB( screen->format, 0xff, 0x00, 0x00 );
@@ -1260,8 +1330,8 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           break;
       }
 
-      if( !load_rom( oric, atmosromfile, -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) )
-        return SDL_FALSE;
+      if( !load_rom( oric, atmosromfile, -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) ) return SDL_FALSE;
+      load_patches( oric, atmosromfile );
 
       oric->pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
       oric->pal[1] = SDL_MapRGB( screen->format, 0xff, 0x00, 0x00 );
@@ -1319,6 +1389,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           oric->tele_bank[i].type = TELEBANK_RAM;
         }
       }
+      clear_patches( oric );
 
       oric->tele_currbank = 7;
       oric->tele_banktype = oric->tele_bank[7].type;

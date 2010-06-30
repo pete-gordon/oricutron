@@ -124,6 +124,24 @@ struct machine
   SDL_bool symbolsautoload, symbolscase;
   char lasttapefile[20];
   char tapename[16];
+  int tapeturbo_syncstack;
+
+  // Filename decoding patch addresses
+  int pch_fd_getname_pc;
+  int pch_fd_getname_addr;
+  SDL_bool pch_fd_available;
+
+  // Turbo tape patch addresses
+  int pch_tt_getsync_pc;
+  int pch_tt_getsync_end_pc;
+  int pch_tt_getsync_loop_pc;
+  int pch_tt_readbyte_pc;
+  int pch_tt_readbyte_end_pc;
+  int pch_tt_readbyte_storebyte_addr;
+  int pch_tt_readbyte_storezero_addr;
+  SDL_bool pch_tt_readbyte_setcarry;
+  SDL_bool pch_tt_available;
+
 
   SDL_bool azerty;
 };

@@ -38,6 +38,7 @@
 #include "filereq.h"
 #include "msgbox.h"
 #include "avi.h"
+#include "main.h"
 
 #define FRAMES_TO_AVERAGE 15
 
@@ -88,12 +89,6 @@ static char *disktypes[] = { "none",
                              "microdisc",
                              NULL };
 
-static SDL_bool isws( char c )
-{
-  if( ( c == 9 ) || ( c == 32 ) ) return SDL_TRUE;
-  return SDL_FALSE;
-}
-
 static SDL_bool istokend( char c )
 {
   if( isws( c ) ) return SDL_TRUE;
@@ -101,7 +96,7 @@ static SDL_bool istokend( char c )
   return SDL_FALSE;
 }
 
-static SDL_bool read_config_string( char *buf, char *token, char *dest, Sint32 maxlen )
+SDL_bool read_config_string( char *buf, char *token, char *dest, Sint32 maxlen )
 {
   Sint32 i, toklen, d;
 
@@ -147,7 +142,7 @@ static SDL_bool read_config_string( char *buf, char *token, char *dest, Sint32 m
   return SDL_TRUE;
 }
 
-static SDL_bool read_config_bool( char *buf, char *token, SDL_bool *dest )
+SDL_bool read_config_bool( char *buf, char *token, SDL_bool *dest )
 {
   Sint32 i, toklen;
 
@@ -170,7 +165,7 @@ static SDL_bool read_config_bool( char *buf, char *token, SDL_bool *dest )
   return SDL_TRUE;
 }
 
-static SDL_bool read_config_option( char *buf, char *token, Sint32 *dest, char **options )
+SDL_bool read_config_option( char *buf, char *token, Sint32 *dest, char **options )
 {
   Sint32 i, j, len;
 
@@ -203,13 +198,48 @@ static SDL_bool read_config_option( char *buf, char *token, Sint32 *dest, char *
   return SDL_TRUE;
 }
 
+SDL_bool read_config_int( char *buf, char *token, int *dest )
+{
+  Sint32 i, toklen;
+  int val, hv;
+
+  // Get the token length
+  toklen = strlen( token );
+
+  // Is this the token?
+  if( strncasecmp( buf, token, toklen ) != 0 ) return SDL_FALSE;
+  i = toklen;
+
+  // Check for whitespace, equals, whitespace
+  while( isws( buf[i] ) ) i++;
+  if( buf[i] != '=' ) return SDL_TRUE;
+  i++;
+  while( isws( buf[i] ) ) i++;
+
+  val = 0;
+  if( buf[i] == '$' )
+  {
+    i++;
+    while( (hv=hexit(buf[i])) != -1 )
+    {
+      val = (val<<4) + hv;
+      i++;
+    }
+  } else {
+    val = atoi( &buf[i] );
+  }
+
+  (*dest) = val;
+  return SDL_TRUE;
+}
+
 static void load_config( struct start_opts *sto )
 {
   FILE *f;
   Sint32 i, j;
   char tbtmp[32];
 
-  f = fopen( FILEPREFIX"oricutron.cfg", "rb" );
+  f = fopen( FILEPREFIX"oricutron.cfg", "r" );
   if( !f ) return;
 
   while( !feof( f ) )
