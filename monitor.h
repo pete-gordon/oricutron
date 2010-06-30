@@ -65,6 +65,10 @@ struct symboltable
   struct msym *syms;
 };
 
+SDL_bool isws( char c );
+SDL_bool ishex( char c );
+int hexit( char c );
+
 void mon_init( struct machine *oric );
 void mon_render( struct machine *oric );
 void mon_update_regs( struct machine *oric );
