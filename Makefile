@@ -183,13 +183,13 @@ ifeq ($(PLATFORMTYPE),beos)
 endif
 
 
-main.o: main.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h avi.h msgbox.h filereq.h
+main.o: main.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h avi.h msgbox.h filereq.h main.h
 	$(CC) -c main.c -o main.o $(CFLAGS)
 
 6502.o: 6502.c system.h 6502.h
 	$(CC) -c 6502.c -o 6502.o $(CFLAGS)
 
-machine.o: machine.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h avi.h
+machine.o: machine.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h avi.h main.h
 	$(CC) -c machine.c -o machine.o $(CFLAGS)
 
 gui.o: gui.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h filereq.h
