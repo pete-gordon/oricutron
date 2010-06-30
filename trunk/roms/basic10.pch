@@ -5,6 +5,14 @@
 ; and filename decoding.
 ;
 
+; ****** ROM INFORMATION ******
+
+; This part isn't actual patches, just information about
+; the hardware the ROM expects to be present.
+
+; Oric keyboard is AZERTY?
+azerty = no
+
 ; ****** FILENAME DECODING *******
 
 ; When the PC is about to execute this address, we should be at a point
