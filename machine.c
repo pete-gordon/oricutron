@@ -43,7 +43,14 @@ extern SDL_Surface *screen;
 extern int pixpitch;
 extern Uint16 gpal[];
 extern SDL_bool showfps, warpspeed, soundavailable, soundon;
-extern char diskpath[ ], diskfile[], filetmp[];
+extern char diskpath[], diskfile[], filetmp[];
+extern char telediskpath[], telediskfile[];
+
+char atmosromfile[1024];
+char oric1romfile[1024];
+char mdiscromfile[1024];
+char jasmnromfile[1024];
+char telebankfiles[8][1024];
 
 SDL_bool needclr = SDL_TRUE, refreshstatus = SDL_TRUE, refreshdisks = SDL_TRUE, refreshavi = SDL_TRUE, refreshtape = SDL_TRUE;
 
@@ -776,6 +783,25 @@ static SDL_bool load_rom( struct machine *oric, char *fname, int size, unsigned 
     return SDL_FALSE;
   }
 
+  if( size < 0 )
+  {
+    int filesize;
+    fseek( f, 0, SEEK_END );
+    filesize = ftell( f );
+    fseek( f, 0, SEEK_SET );
+
+    if( filesize > -size )
+    {
+      printf( "ROM '%s' exceeds %d bytes.\n", fname, -size );
+      fclose( f );
+      free( tmpname );
+      return SDL_FALSE;
+    }
+
+    where += (-size)-filesize;
+    size = filesize;
+  }
+
   if( fread( where, size, 1, f ) != 1 )
   {
     printf( "Unable to read '%s'\n", tmpname );
@@ -834,9 +860,12 @@ void preinit_machine( struct machine *oric )
     oric->wddisk.disk[i] = NULL;
     oric->diskname[i][0] = 0;
   }
+}
 
-  microdiscrom_valid = load_rom( oric, ROMPREFIX"microdis", 8192, rom_microdisc, &sym_microdisc, SYMF_ROMDIS1|SYMF_MICRODISC );
-  jasminrom_valid    = load_rom( oric, ROMPREFIX"jasmin"  , 2048, rom_jasmin,    &sym_jasmin,    SYMF_ROMDIS1|SYMF_JASMIN );
+void load_diskroms( struct machine *oric )
+{
+  microdiscrom_valid = load_rom( oric, mdiscromfile, 8192, rom_microdisc, &sym_microdisc, SYMF_ROMDIS1|SYMF_MICRODISC );
+  jasminrom_valid    = load_rom( oric, jasmnromfile, 2048, rom_jasmin,    &sym_jasmin,    SYMF_ROMDIS1|SYMF_JASMIN );
 }
 
 static SDL_bool shifted = SDL_FALSE;
@@ -909,10 +938,21 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
               if( shifted )
               {
                 char frname[64];
-                sprintf( frname, "Save disk %d", i );
-                if( filerequester( oric, frname, diskpath, diskfile, FR_DISKSAVE ) )
+                char *dpath, *dfile;
+
+                if( oric->type != MACH_TELESTRAT )
                 {
-                  joinpath( diskpath, diskfile );
+                  dpath = diskpath;
+                  dfile = diskfile;
+                } else {
+                  dpath = telediskpath;
+                  dfile = telediskfile;
+                }
+
+                sprintf( frname, "Save disk %d", i );
+                if( filerequester( oric, frname, dpath, dfile, FR_DISKSAVE ) )
+                {
+                  joinpath( dpath, dfile );
                   diskimage_save( oric, filetmp, i );
                 }
               } else {
@@ -1087,7 +1127,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           break;
       }
 
-      if( !load_rom( oric, ROMPREFIX"basic10", 16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) )
+      if( !load_rom( oric, oric1romfile, -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) )
         return SDL_FALSE;
 
       for( i=0; i<8; i++ )
@@ -1150,7 +1190,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           break;
       }
 
-      if( !load_rom( oric, ROMPREFIX"basic10", 16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) )
+      if( !load_rom( oric, oric1romfile, -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) )
         return SDL_FALSE;
 
       oric->pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
@@ -1219,7 +1259,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           break;
       }
 
-      if( !load_rom( oric, ROMPREFIX"basic11b", 16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) )
+      if( !load_rom( oric, atmosromfile, -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) )
         return SDL_FALSE;
 
       oric->pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
@@ -1267,27 +1307,17 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->romdis = SDL_FALSE;
       oric->disksyms = NULL;
 
-      oric->tele_bank[0].type = TELEBANK_RAM;
-      oric->tele_bank[0].ptr  = &oric->mem[0x0c000];
-      oric->tele_bank[1].type = TELEBANK_RAM;
-      oric->tele_bank[1].ptr  = &oric->mem[0x10000];
-      oric->tele_bank[2].type = TELEBANK_RAM;
-      oric->tele_bank[2].ptr  = &oric->mem[0x14000];
-      oric->tele_bank[3].type = TELEBANK_RAM;
-      oric->tele_bank[3].ptr  = &oric->mem[0x18000];
-      oric->tele_bank[4].type = TELEBANK_RAM;
-      oric->tele_bank[4].ptr  = &oric->mem[0x1c000];
-      oric->tele_bank[5].type = TELEBANK_ROM;
-      oric->tele_bank[5].ptr  = &oric->mem[0x20000];
-      oric->tele_bank[6].type = TELEBANK_ROM;
-      oric->tele_bank[6].ptr  = &oric->mem[0x24000];
-      oric->tele_bank[7].type = TELEBANK_ROM;
-      oric->tele_bank[7].ptr  = &oric->mem[0x28000];
-
-//      if( !load_rom( ROMPREFIX"telmatic",  8192, &oric->tele_bank[3].ptr[8192] ) ) return SDL_FALSE;
-      if( !load_rom( oric, ROMPREFIX"teleass",  16384, oric->tele_bank[5].ptr, &oric->tele_banksyms[5], SYMF_TELEBANK5 ) ) return SDL_FALSE;
-      if( !load_rom( oric, ROMPREFIX"hyperbas", 16384, oric->tele_bank[6].ptr, &oric->tele_banksyms[5], SYMF_TELEBANK6 ) ) return SDL_FALSE;
-      if( !load_rom( oric, ROMPREFIX"telmon24", 16384, oric->tele_bank[7].ptr, &oric->tele_banksyms[5], SYMF_TELEBANK7 ) ) return SDL_FALSE;
+      for( i=0; i<8; i++ )
+      {
+        oric->tele_bank[i].ptr  = &oric->mem[0x0c000+(i*0x4000)];
+        if( telebankfiles[i][0] )
+        {
+          oric->tele_bank[i].type = TELEBANK_ROM;
+          if( !load_rom( oric, telebankfiles[i], -16384, oric->tele_bank[i].ptr, &oric->tele_banksyms[i], SYMF_TELEBANK1<<i ) ) return SDL_FALSE;
+        } else {
+          oric->tele_bank[i].type = TELEBANK_RAM;
+        }
+      }
 
       oric->tele_currbank = 7;
       oric->tele_banktype = oric->tele_bank[7].type;

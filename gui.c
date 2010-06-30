@@ -55,6 +55,12 @@ extern struct symboltable usersyms;
 
 char tapepath[4096], tapefile[512];
 char diskpath[4096], diskfile[512];
+char telediskpath[4096], telediskfile[512];
+extern char atmosromfile[];
+extern char oric1romfile[];
+extern char mdiscromfile[];
+extern char jasmnromfile[];
+extern char telebankfiles[8][1024];
 //char snappath[4096], snapfile[512];
 char filetmp[4096+512];
 
@@ -779,8 +785,19 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 // "insert" a disk into the virtual disk drive, via filerequester
 void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
 {
-  if( !filerequester( oric, "Insert disk", diskpath, diskfile, FR_DISKLOAD ) ) return;
-  joinpath( diskpath, diskfile );
+  char *dpath, *dfile;
+
+  if( oric->type != MACH_TELESTRAT )
+  {
+    dpath = diskpath;
+    dfile = diskfile;
+  } else {
+    dpath = telediskpath;
+    dfile = telediskfile;
+  }
+
+  if( !filerequester( oric, "Insert disk", dpath, dfile, FR_DISKLOAD ) ) return;
+  joinpath( dpath, dfile );
   diskimage_load( oric, filetmp, drive );
 
   if( oric->drivetype == DRV_NONE )
@@ -1155,6 +1172,21 @@ void preinit_gui( void )
   strcpy( tapefile, "" );
   strcpy( diskpath, FILEPREFIX"disks" );
   strcpy( diskfile, "" );
+  strcpy( telediskpath, FILEPREFIX"teledisks" );
+  strcpy( telediskfile, "" );
+  strcpy( atmosromfile, ROMPREFIX"basic11b" );
+  strcpy( oric1romfile, ROMPREFIX"basic10" );
+  strcpy( mdiscromfile, ROMPREFIX"microdis" );
+  strcpy( jasmnromfile, ROMPREFIX"jasmin" );
+  telebankfiles[0][0] = 0;
+  telebankfiles[1][0] = 0;
+  telebankfiles[2][0] = 0;
+  telebankfiles[3][0] = 0;
+  telebankfiles[4][0] = 0;
+  strcpy( telebankfiles[5], ROMPREFIX"teleass" );
+  strcpy( telebankfiles[6], ROMPREFIX"hyperbas" );
+  strcpy( telebankfiles[7], ROMPREFIX"telmon24" );
+
 //  strcpy( snappath, FILEPREFIX"snapshots" );
 //  strcpy( snapfile, "" );
 }

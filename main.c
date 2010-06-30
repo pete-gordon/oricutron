@@ -47,6 +47,12 @@ Uint32 lastframetimes[FRAMES_TO_AVERAGE], frametimeave;
 extern char mon_bpmsg[];
 extern struct avi_handle *vidcap;
 extern struct symboltable usersyms;
+extern char tapepath[], diskpath[], telediskpath[];
+extern char atmosromfile[];
+extern char oric1romfile[];
+extern char mdiscromfile[];
+extern char jasmnromfile[];
+extern char telebankfiles[8][1024];
 
 #ifdef __amigaos4__
 int32 timersigbit = -1;
@@ -199,7 +205,8 @@ static SDL_bool read_config_option( char *buf, char *token, Sint32 *dest, char *
 static void load_config( struct start_opts *sto )
 {
   FILE *f;
-  Sint32 i;
+  Sint32 i, j;
+  char tbtmp[32];
 
   f = fopen( FILEPREFIX"oricutron.cfg", "rb" );
   if( !f ) return;
@@ -210,14 +217,26 @@ static void load_config( struct start_opts *sto )
 
     for( i=0; isws( sto->lctmp[i] ); i++ ) ;
 
-    if( read_config_option( &sto->lctmp[i], "machine",    &sto->start_machine, machtypes ) ) continue;
-    if( read_config_option( &sto->lctmp[i], "disktype",   &sto->start_disktype, disktypes ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "debug",      &sto->start_debug ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "fullscreen", &fullscreen ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "hwsurface",  &hwsurface ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "diskimage",  sto->start_disk, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "tapeimage",  sto->start_tape, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "symbols",    sto->start_syms, 1024 ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "machine",      &sto->start_machine, machtypes ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "disktype",     &sto->start_disktype, disktypes ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "debug",        &sto->start_debug ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "fullscreen",   &fullscreen ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "hwsurface",    &hwsurface ) ) continue;
+    if( read_config_string( &sto->lctmp[i], "diskimage",    sto->start_disk, 1024 ) ) continue;
+    if( read_config_string( &sto->lctmp[i], "tapeimage",    sto->start_tape, 1024 ) ) continue;
+    if( read_config_string( &sto->lctmp[i], "symbols",      sto->start_syms, 1024 ) ) continue;
+    if( read_config_string( &sto->lctmp[i], "tapepath",     tapepath, 1024 ) ) continue;
+    if( read_config_string( &sto->lctmp[i], "diskpath",     diskpath, 1024 ) ) continue;
+    if( read_config_string( &sto->lctmp[i], "telediskpath", telediskpath, 1024 ) ) continue;
+    if( read_config_string( &sto->lctmp[i], "atmosrom",     atmosromfile, 1024 ) ) continue;
+    if( read_config_string( &sto->lctmp[i], "oric1rom",     oric1romfile, 1024 ) ) continue;
+    if( read_config_string( &sto->lctmp[i], "mdiscrom",     mdiscromfile, 1024 ) ) continue;
+    if( read_config_string( &sto->lctmp[i], "jasminrom",    jasmnromfile, 1024 ) ) continue;
+    for( j=0; j<8; j++ )
+    {
+      sprintf( tbtmp, "telebank%c", j+'0' );
+      if( read_config_string( &sto->lctmp[i], tbtmp, telebankfiles[j], 1024 ) ) break;
+    }
   }
 
   fclose( f );
@@ -272,6 +291,9 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 #else
   hwsurface           = SDL_FALSE;
 #endif
+
+  preinit_machine( oric );
+  preinit_gui();
 
   load_config( sto );
 
@@ -427,13 +449,13 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
     }
   }
 
+  load_diskroms( oric );
+
   if( ( sto->start_disk[0] ) && ( sto->start_disktype == DRV_NONE ) )
     sto->start_disktype = DRV_MICRODISC;
 
   for( i=0; i<8; i++ ) lastframetimes[i] = 0;
   frametimeave = 0;
-  preinit_machine( oric );
-  preinit_gui();
 
 #ifdef __amigaos4__
   timersigbit = IExec->AllocSignal( -1 );
