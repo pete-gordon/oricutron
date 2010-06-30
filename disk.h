@@ -141,6 +141,7 @@ struct wd17xx
   int               delayeddrq;        // A cycle counter for simulating a delay before DRQ is asserted
   int               distatus;          // The new contents for r_status when delayedint expires (or -1 to leave it untouched)
   int               ddstatus;          // The new contents for r_status when delayeddrq expires (or -1 to leave it untouched)
+  Uint16            crc;
 };
 
 // Current state of the Microdisc hardware

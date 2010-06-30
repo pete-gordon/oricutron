@@ -47,6 +47,16 @@ static char sectordumpstr[64];
 static int sectordumpcount;
 #endif
 
+static Uint16 calc_crc( Uint16 crc, Uint8 value)
+{
+  crc  = ((unsigned char)(crc >> 8)) | (crc << 8);
+  crc ^= value;
+  crc ^= ((unsigned char)(crc & 0xff)) >> 4;
+  crc ^= (crc << 8) << 4;
+  crc ^= ((crc & 0xff) << 4) << 1;
+  return crc;
+}
+
 // Pop up disk image information for a couple of seconds
 void disk_popup( struct machine *oric, int drive )
 {
@@ -610,6 +620,7 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
 
           // Get the next byte from the sector
           wd->r_data = wd->currsector->data_ptr[wd->curroffs++];
+          wd->crc = calc_crc( wd->crc, wd->r_data );
 
           // Clear any previous DRQ
           wd->r_status &= ~WSF_DRQ;
@@ -633,6 +644,7 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
           // Has the whole sector been read?
           if( wd->curroffs > wd->currseclen )
           {
+            // If you want to do CRC checking, wd->crc should equal (wd->currsector->data_ptr[wd_curroffs]<<8)|wd->currsector->data_ptr[wd_curroffs+1] right here
 #if DEBUG_SECTOR_DUMP
             if( sectordumpcount )
             {
@@ -657,6 +669,7 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
               wd->r_sector++;
               wd->curroffs   = 0;
               wd->currsector = wd17xx_find_sector( wd, wd->r_sector );
+              wd->crc        = 0xe295;
               
               // If we hit the end of the track, thats fine, it just means the operation
               // is finished.
@@ -829,6 +842,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           wd->r_status   = WSF_BUSY|WSF_NOTREADY;
           wd->delayeddrq = 60;
           wd->currentop  = (data&0x10) ? COP_READ_SECTORS : COP_READ_SECTOR;
+          wd->crc        = 0xe295;
           refreshdisks = SDL_TRUE;
 #if DEBUG_SECTOR_DUMP
           sectordumpcount = 0;
@@ -869,6 +883,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           wd->r_status   = WSF_BUSY|WSF_NOTREADY;
           wd->delayeddrq = 500;
           wd->currentop  = (data&0x10) ? COP_WRITE_SECTORS : COP_WRITE_SECTOR;
+          wd->crc        = 0xe295;
           refreshdisks = SDL_TRUE;
           break;
         
@@ -977,6 +992,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           }
           if( wd->curroffs == 0 ) wd->currsector->data_ptr[wd->curroffs++]=0xf8;
           wd->currsector->data_ptr[wd->curroffs++] = wd->r_data;
+          wd->crc = calc_crc( wd->crc, wd->r_data );
           if( !wd->disk[wd->c_drive]->modified ) refreshdisks = SDL_TRUE;
           wd->disk[wd->c_drive]->modified = SDL_TRUE;
           wd->r_status &= ~WSF_DRQ;
@@ -984,6 +1000,8 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
 
           if( wd->curroffs > wd->currseclen )
           {
+            wd->currsector->data_ptr[wd->curroffs++] = wd->crc>>8;
+            wd->currsector->data_ptr[wd->curroffs++] = wd->crc;
             if( wd->currentop == COP_WRITE_SECTORS )
             {
 #if GENERAL_DISK_DEBUG
@@ -993,6 +1011,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
               wd->r_sector++;
               wd->curroffs   = 0;
               wd->currsector = wd17xx_find_sector( wd, wd->r_sector );
+              wd->crc        = 0xe295;
               
               if( !wd->currsector )
               {
