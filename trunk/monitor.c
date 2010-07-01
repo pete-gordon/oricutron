@@ -66,7 +66,7 @@ struct asminf
 extern struct textzone *tz[];
 extern char vsptmp[];
 
-static char distmp[80];
+static char distmp[128];
 static char ibuf[128], lastcmd;
 static char history[10][128];
 static int ilen, iloff=0, cursx, histu=0, histp=-1;
@@ -130,8 +130,7 @@ static struct msym defsym_tele[]  = { { 0x0300, 0,            "VIA_IORB"      , 
                                       { 0x032D, 0,            "VIA2_IFR"      , "VIA2_IFR"   , "VIA2_IFR" },
                                       { 0x032E, 0,            "VIA2_IER"      , "VIA2_IER"   , "VIA2_IER" },
                                       { 0x032F, 0,            "VIA2_IORA2"    , "VIA2_IO\x16", "VIA2_IORA2" },
-                                      { 0xc000, 0,            "BankedArea"    , "BankedA\x16", "BankedArea" },
-                                      { 0, 0, { 0, }, { 0, }, NULL } };
+                                      { 0xc000, 0,            "BankedArea"    , "BankedA\x16", "BankedArea" } };
 
 //                                                             12345678901       12345678 
 static struct msym defsym_atmos[] = { { 0x0300, 0,            "VIA_IORB"      , "VIA_IORB"   , "VIA_IORB" },
@@ -891,21 +890,39 @@ void mon_freesyms( struct symboltable *stab )
   stab->symspace = 0;
 }
 
-char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *looped )
+char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *looped, SDL_bool filemode )
 {
   unsigned short iaddr, addr;
   unsigned char op, a1, a2;
   int i;
-  char *tmpsname;
+  char *tmpsname, *disptr;
   char sname[SNAME_LEN+1];
   struct msym *csym;
+
+  disptr = distmp;
 
   iaddr = *paddr;
   if( looped ) *looped = SDL_FALSE;
 
   tmpsname = "";
-  csym = mon_find_sym_by_addr( oric, iaddr );
-  if( csym ) tmpsname = csym->sname;
+  if( !filemode )
+  {
+    csym = mon_find_sym_by_addr( oric, iaddr );
+    if( csym ) tmpsname = csym->sname;
+  } else {
+    csym = mon_find_sym_by_addr( oric, iaddr );
+    if( csym )
+    {
+      tmpsname = csym->name;
+
+      if( strlen( tmpsname ) > SNAME_LEN )
+      {
+        sprintf( distmp, "%s\n", tmpsname );
+        disptr = &distmp[strlen(distmp)];
+        tmpsname = "";
+      }
+    }
+  }
 
   strcpy( sname, tmpsname );
   for( i=strlen(sname); i<SNAME_LEN; i++ )
@@ -916,12 +933,12 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *lo
   switch( distab[op].amode )
   {
     case AM_IMP:
-      sprintf( distmp, "%s   %04X  %02X        %s", sname, iaddr, op, distab[op].name );
+      sprintf( disptr, "%s   %04X  %02X        %s", sname, iaddr, op, distab[op].name );
       break;
     
     case AM_IMM:
       a1 = mon_read( oric, (*paddr)++ );
-      sprintf( distmp, "%s   %04X  %02X %02X     %s #$%02X", sname, iaddr, op, a1, distab[op].name, a1 );
+      sprintf( disptr, "%s   %04X  %02X %02X     %s #$%02X", sname, iaddr, op, a1, distab[op].name, a1 );
       break;
 
     case AM_ZP:
@@ -930,11 +947,11 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *lo
       a1 = mon_read( oric, (*paddr)++ );
       csym = mon_find_sym_by_addr( oric, a1 );
       if( csym )
-        sprintf( distmp, "%s   %04X  %02X %02X     %s %s", sname, iaddr, op, a1, distab[op].name, csym->sname );
+        sprintf( disptr, "%s   %04X  %02X %02X     %s %s", sname, iaddr, op, a1, distab[op].name, filemode ? csym->name : csym->sname );
       else
-        sprintf( distmp, "%s   %04X  %02X %02X     %s $%02X", sname, iaddr, op, a1, distab[op].name, a1 );
+        sprintf( disptr, "%s   %04X  %02X %02X     %s $%02X", sname, iaddr, op, a1, distab[op].name, a1 );
       if( distab[op].amode == AM_ZP ) break;
-      strcat( distmp, distab[op].amode == AM_ZPX ? ",X" : ",Y" );
+      strcat( disptr, distab[op].amode == AM_ZPX ? ",X" : ",Y" );
       break;
     
     case AM_ABS:
@@ -944,29 +961,29 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *lo
       a2 = mon_read( oric, (*paddr)++ );
       csym = mon_find_sym_by_addr( oric, (a2<<8)|a1 );
       if( csym )
-        sprintf( distmp, "%s   %04X  %02X %02X %02X  %s %s", sname, iaddr, op, a1, a2, distab[op].name, csym->sname );
+        sprintf( disptr, "%s   %04X  %02X %02X %02X  %s %s", sname, iaddr, op, a1, a2, distab[op].name, filemode ? csym->name : csym->sname );
       else
-        sprintf( distmp, "%s   %04X  %02X %02X %02X  %s $%02X%02X", sname, iaddr, op, a1, a2, distab[op].name, a2, a1 );
+        sprintf( disptr, "%s   %04X  %02X %02X %02X  %s $%02X%02X", sname, iaddr, op, a1, a2, distab[op].name, a2, a1 );
       if( distab[op].amode == AM_ABS ) break;
-      strcat( distmp, distab[op].amode == AM_ABX ? ",X" : ",Y" );
+      strcat( disptr, distab[op].amode == AM_ABX ? ",X" : ",Y" );
       break;
 
     case AM_ZIX:
       a1 = mon_read( oric, (*paddr)++ );
       csym = mon_find_sym_by_addr( oric, a1 );
       if( csym )
-        sprintf( distmp, "%s   %04X  %02X %02X     %s (%s,X)", sname, iaddr, op, a1, distab[op].name, csym->ssname );
+        sprintf( disptr, "%s   %04X  %02X %02X     %s (%s,X)", sname, iaddr, op, a1, distab[op].name, filemode ? csym->name : csym->ssname );
       else
-        sprintf( distmp, "%s   %04X  %02X %02X     %s ($%02X,X)", sname, iaddr, op, a1, distab[op].name, a1 );
+        sprintf( disptr, "%s   %04X  %02X %02X     %s ($%02X,X)", sname, iaddr, op, a1, distab[op].name, a1 );
       break;
 
     case AM_ZIY:
       a1 = mon_read( oric, (*paddr)++ );
       csym = mon_find_sym_by_addr( oric, a1 );
       if( csym )     
-        sprintf( distmp, "%s   %04X  %02X %02X     %s (%s),Y", sname, iaddr, op, a1, distab[op].name, csym->ssname );
+        sprintf( disptr, "%s   %04X  %02X %02X     %s (%s),Y", sname, iaddr, op, a1, distab[op].name, filemode ? csym->name : csym->ssname );
       else
-        sprintf( distmp, "%s   %04X  %02X %02X     %s ($%02X),Y", sname, iaddr, op, a1, distab[op].name, a1 );
+        sprintf( disptr, "%s   %04X  %02X %02X     %s ($%02X),Y", sname, iaddr, op, a1, distab[op].name, a1 );
       break;
 
     case AM_REL:
@@ -974,9 +991,9 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *lo
       addr = ((*paddr)+((signed char)a1))&0xffff;
       csym = mon_find_sym_by_addr( oric, addr );
       if( csym )
-        sprintf( distmp, "%s   %04X  %02X %02X     %s %s", sname, iaddr, op, a1, distab[op].name, csym->sname );
+        sprintf( disptr, "%s   %04X  %02X %02X     %s %s", sname, iaddr, op, a1, distab[op].name, filemode ? csym->name : csym->sname );
       else
-        sprintf( distmp, "%s   %04X  %02X %02X     %s $%04X", sname, iaddr, op, a1, distab[op].name, addr );
+        sprintf( disptr, "%s   %04X  %02X %02X     %s $%04X", sname, iaddr, op, a1, distab[op].name, addr );
       break;
 
     case AM_IND:
@@ -984,19 +1001,19 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *lo
       a2 = mon_read( oric, (*paddr)++ );
       csym = mon_find_sym_by_addr( oric, (a2<<8)|a1 );
       if( csym )
-        sprintf( distmp, "%s   %04X  %02X %02X %02X  %s (%s)", sname, iaddr, op, a1, a2, distab[op].name, csym->sname );
+        sprintf( disptr, "%s   %04X  %02X %02X %02X  %s (%s)", sname, iaddr, op, a1, a2, distab[op].name, filemode ? csym->name : csym->sname );
       else
-        sprintf( distmp, "%s   %04X  %02X %02X %02X  %s ($%02X%02X)", sname, iaddr, op, a1, a2, distab[op].name, a2, a1 );
+        sprintf( disptr, "%s   %04X  %02X %02X %02X  %s ($%02X%02X)", sname, iaddr, op, a1, a2, distab[op].name, a2, a1 );
       break;
     
     default:
-      strcpy( distmp, "  WTF?" );
+      strcpy( disptr, "  WTF?" );
       break;
   }
 
-  for( i=strlen(distmp); i<47; i++ )
-    distmp[i] = 32;
-  distmp[i] = 0;
+  for( i=strlen(disptr); i<47; i++ )
+    disptr[i] = 32;
+  disptr[i] = 0;
 
   oric->cpu.anybp = SDL_FALSE;
   for( i=0; i<16; i++ )
@@ -1005,12 +1022,12 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *lo
     {
       oric->cpu.anybp = SDL_TRUE;
       if( iaddr == oric->cpu.breakpoints[i] )
-        distmp[SNAME_LEN+1] = '*';
+        disptr[SNAME_LEN+1] = '*';
     }
   }
 
   if( iaddr == oric->cpu.pc )
-    distmp[SNAME_LEN+2] = '>';
+    disptr[SNAME_LEN+2] = '>';
 
   if( ( looped ) && ( iaddr > *paddr ) )
     *looped = SDL_TRUE;
@@ -1087,7 +1104,7 @@ void mon_update_regs( struct machine *oric )
   {
     tzsetcol( tz[TZ_REGS], (addr==oric->cpu.pc) ? 1 : 2, 3 );
     tzstrpos( tz[TZ_REGS], 23, 7+i, "        " );
-    tzstrpos( tz[TZ_REGS],  2, 7+i, mon_disassemble( oric, &addr, NULL ) );
+    tzstrpos( tz[TZ_REGS],  2, 7+i, mon_disassemble( oric, &addr, NULL, SDL_FALSE ) );
   }
 
   if( cpu_oldvalid )
@@ -2539,7 +2556,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
         while( mon_addr <= v )
         {
           SDL_bool looped;
-          fprintf( f, "%s\n", mon_disassemble( oric, &mon_addr, &looped ) );
+          fprintf( f, "%s\n", mon_disassemble( oric, &mon_addr, &looped, SDL_TRUE ) );
           if( looped ) break;
         }
 
@@ -2553,7 +2570,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
         mon_addr = v;
 
       for( j=0; j<16; j++ )
-        mon_str( mon_disassemble( oric, &mon_addr, NULL ) );
+        mon_str( mon_disassemble( oric, &mon_addr, NULL, SDL_FALSE ) );
       break;
 
     case 'r':
@@ -3076,7 +3093,7 @@ static SDL_bool mon_assemble_line( struct machine *oric )
       break;
   }
 
-  mon_oprintf( mon_disassemble( oric, &mon_addr, NULL ) );
+  mon_oprintf( mon_disassemble( oric, &mon_addr, NULL, SDL_FALSE ) );
   return SDL_FALSE;
 }
 

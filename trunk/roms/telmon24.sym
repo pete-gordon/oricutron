@@ -1,2 +1,8 @@
 c000 tmEntryPoint
+c05b tmDiskReset
+c05d tmDiskResetLoop
 c2a6 tmVIAReset
+c4d1 tmDiskCmd
+d903 tmSetKeyColumn7f
+da1a tmAYWrite
+da4f tmAYSilent
