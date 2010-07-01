@@ -530,7 +530,6 @@ void via_main_w_pcr( struct via *v )
   {
     case 0x0c:
       updateay = SDL_TRUE;
-      updateay = SDL_TRUE;
       break;
   }
 
