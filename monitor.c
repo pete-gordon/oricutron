@@ -38,6 +38,7 @@
 #include "disk.h"
 #include "monitor.h"
 #include "machine.h"
+#include "ula.h"
 
 #define LOG_DEBUG 0
 
@@ -3435,7 +3436,7 @@ static unsigned int steppy_step( struct machine *oric )
   m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
   if( oric->cpu.rastercycles <= 0 )
   {
-    video_doraster( oric );
+    ula_doraster( oric );
     oric->cpu.rastercycles += oric->cyclesperraster;
   }
   
@@ -3484,7 +3485,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
           if( oric->cpu.rastercycles <= 0 )
           {
-            video_doraster( oric );
+            ula_doraster( oric );
             oric->cpu.rastercycles += oric->cyclesperraster;
           }
           *needrender = SDL_TRUE;
