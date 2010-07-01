@@ -148,7 +148,6 @@ struct machine
 
 void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode );
 void video_show( struct machine *oric );
-SDL_bool video_doraster( struct machine *oric );
 SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender );
 
 void preinit_machine( struct machine *oric );

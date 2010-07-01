@@ -39,6 +39,7 @@
 #include "msgbox.h"
 #include "avi.h"
 #include "main.h"
+#include "ula.h"
 
 #define FRAMES_TO_AVERAGE 15
 
@@ -322,6 +323,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   hwsurface           = SDL_FALSE;
 #endif
 
+  preinit_ula( oric );
   preinit_machine( oric );
   preinit_gui();
 
@@ -499,6 +501,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   if( !init_filerequester() ) { free( sto ); return SDL_FALSE; }
   if( !init_msgbox() ) { free( sto ); return SDL_FALSE; }
   oric->drivetype = sto->start_disktype;
+  if( !init_ula( oric ) ) { free( sto ); return SDL_FALSE; }
   if( !init_machine( oric, sto->start_machine, SDL_TRUE ) ) { free( sto ); return SDL_FALSE; }
 
   if( sto->start_debug )
@@ -539,6 +542,7 @@ void shut( struct machine *oric )
 {
   if( vidcap ) avi_close( &vidcap );
   shut_machine( oric );
+  shut_ula( oric );
   mon_shut();
   shut_filerequester();
   shut_msgbox();
@@ -606,8 +610,7 @@ int main( int argc, char *argv[] )
       if( oric.emu_mode == EM_PLEASEQUIT )
         break;
 
-      if( needrender )
-      {
+      if( needrender )      {
         render( &oric );
         needrender = SDL_FALSE;
       }
@@ -661,7 +664,7 @@ int main( int argc, char *argv[] )
 
             if( oric.cpu.rastercycles <= 0 )
             {
-              framedone = video_doraster( &oric );
+              framedone = ula_doraster( &oric );
               oric.cpu.rastercycles += oric.cyclesperraster;
             }
           }

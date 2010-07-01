@@ -171,8 +171,8 @@ install: install-$(PLATFORM)
 
 package: package-$(PLATFORM)
 
-$(TARGET): main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o msgbox.o avi.o $(EXTRAOBJS) $(RESOURCES)
-	$(CXX) -o $(TARGET) main.o 6502.o machine.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o msgbox.o avi.o $(EXTRAOBJS) $(LFLAGS)
+$(TARGET): main.o 6502.o machine.o ula.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o msgbox.o avi.o $(EXTRAOBJS) $(RESOURCES)
+	$(CXX) -o $(TARGET) main.o 6502.o machine.o ula.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o msgbox.o avi.o $(EXTRAOBJS) $(LFLAGS)
 ifeq ($(PLATFORMTYPE),beos)
 	$(BEOS_XRES) -o $(TARGET) $(RSRC_BEOS)
 	$(BEOS_SETVER) $(TARGET) \
@@ -183,7 +183,7 @@ ifeq ($(PLATFORMTYPE),beos)
 endif
 
 
-main.o: main.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h avi.h msgbox.h filereq.h main.h
+main.o: main.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h avi.h msgbox.h filereq.h main.h ula.h
 	$(CC) -c main.c -o main.o $(CFLAGS)
 
 6502.o: 6502.c system.h 6502.h
@@ -192,10 +192,13 @@ main.o: main.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h avi
 machine.o: machine.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h avi.h main.h
 	$(CC) -c machine.c -o machine.o $(CFLAGS)
 
+ula.o: ula.c ula.h system.h 6502.h via.h 8912.h disk.h monitor.h machine.h avi.h
+	$(CC) -c ula.c -o ula.o $(CFLAGS)
+
 gui.o: gui.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h filereq.h
 	$(CC) -c gui.c -o gui.o $(CFLAGS)
 
-monitor.o: monitor.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h
+monitor.o: monitor.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h ula.h
 	$(CC) -c monitor.c -o monitor.o $(CFLAGS)
 
 via.o: via.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h
