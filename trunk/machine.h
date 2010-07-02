@@ -144,6 +144,14 @@ struct machine
 
 
   SDL_bool azerty;
+
+  int rendermode;
+  void (*render_begin)(struct machine *);
+  void (*render_end)(struct machine *);
+  void (*render_textzone)(struct machine *, struct textzone *);
+  void (*render_video)(struct machine *, SDL_bool);
+  SDL_bool (*init_render)(struct machine *);
+  void (*shut_render)(struct machine *);
 };
 
 void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode );

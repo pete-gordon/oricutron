@@ -66,7 +66,6 @@ PLATFORM ?= os4
 ifeq ($(PLATFORM),os4)
 CFLAGS += -mcrt=newlib -gstabs -I/SDK/Local/common/include/ -I/SDK/Local/common/include/SDL/ -I/SDK/Local/newlib/include/ -I/SDK/Local/newlib/include/SDL/
 LFLAGS += -lm `sdl-config --libs` -mcrt=newlib -gstabs
-BDBLFLAGS += -lunix
 FILEREQ_SRC = filereq_amiga.c
 MSGBOX_SRC = msgbox_os4.c
 endif
@@ -81,7 +80,7 @@ endif
 # Windows 32bit
 ifeq ($(PLATFORM),win32)
 CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__
-LFLAGS += -lm -mwindows -lmingw32 -lSDLmain -lSDL
+LFLAGS += -lm -mwindows -lmingw32 -lSDLmain -lSDL -lopengl32
 TARGET = oricutron.exe
 FILEREQ_SRC = filereq_win32.c
 MSGBOX_SRC = msgbox_win32.c
@@ -171,8 +170,8 @@ install: install-$(PLATFORM)
 
 package: package-$(PLATFORM)
 
-$(TARGET): main.o 6502.o machine.o ula.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o msgbox.o avi.o $(EXTRAOBJS) $(RESOURCES)
-	$(CXX) -o $(TARGET) main.o 6502.o machine.o ula.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o msgbox.o avi.o $(EXTRAOBJS) $(LFLAGS)
+$(TARGET): main.o 6502.o machine.o ula.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o msgbox.o avi.o render_sw.o render_gl.o render_null.o $(EXTRAOBJS) $(RESOURCES)
+	$(CXX) -o $(TARGET) main.o 6502.o machine.o ula.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o msgbox.o avi.o render_sw.o render_gl.o render_null.o $(EXTRAOBJS) $(LFLAGS)
 ifeq ($(PLATFORMTYPE),beos)
 	$(BEOS_XRES) -o $(TARGET) $(RSRC_BEOS)
 	$(BEOS_SETVER) $(TARGET) \
@@ -194,6 +193,15 @@ machine.o: machine.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor
 
 ula.o: ula.c ula.h system.h 6502.h via.h 8912.h disk.h monitor.h machine.h avi.h
 	$(CC) -c ula.c -o ula.o $(CFLAGS)
+
+render_sw.o: render_sw.c render_sw.h system.h 6502.h via.h 8912.h disk.h monitor.h machine.h
+	$(CC) -c render_sw.c -o render_sw.o $(CFLAGS)
+
+render_gl.o: render_gl.c render_gl.h system.h 6502.h via.h 8912.h disk.h monitor.h machine.h
+	$(CC) -c render_gl.c -o render_gl.o $(CFLAGS)
+
+render_null.o: render_null.c render_null.h system.h 6502.h via.h 8912.h disk.h monitor.h machine.h
+	$(CC) -c render_null.c -o render_null.o $(CFLAGS)
 
 gui.o: gui.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h filereq.h
 	$(CC) -c gui.c -o gui.o $(CFLAGS)

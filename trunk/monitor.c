@@ -1501,50 +1501,74 @@ void mon_update_mwatch( struct machine *oric )
   tzstrpos( tz[TZ_MEMWATCH], 18, 9, mw_ibuf );
 }
 
-void mon_render( struct machine *oric )
+void mon_update( struct machine *oric )
 {
-  video_show( oric );
   mon_update_regs( oric );
-  
   switch( mshow )
   {
     case MSHOW_VIA:
       mon_update_via( oric, tz[TZ_VIA], &oric->via, &via_old, &via_oldvalid );
-      draw_textzone( tz[TZ_VIA] );
       break;
     
     case MSHOW_VIA2:
       mon_update_via( oric, tz[TZ_VIA2], &oric->tele_via, &via2_old, &via2_oldvalid );
-      draw_textzone( tz[TZ_VIA2] );
       break;
     
     case MSHOW_AY:
       mon_update_ay( oric );
-      draw_textzone( tz[TZ_AY] );
       break;
     
     case MSHOW_DISK:
       mon_update_disk( oric );
-      draw_textzone( tz[TZ_DISK] );
+      break;
+  }
+
+  switch( cshow )
+  {
+    case CSHOW_MWATCH:
+      mon_update_mwatch( oric );
+      break;
+  }
+}
+
+void mon_render( struct machine *oric )
+{
+  oric->render_video( oric, SDL_FALSE );
+  
+  switch( mshow )
+  {
+    case MSHOW_VIA:
+      oric->render_textzone( oric, tz[TZ_VIA] );
+      break;
+    
+    case MSHOW_VIA2:
+      oric->render_textzone( oric, tz[TZ_VIA2] );
+      break;
+    
+    case MSHOW_AY:
+      oric->render_textzone( oric, tz[TZ_AY] );
+      break;
+    
+    case MSHOW_DISK:
+      oric->render_textzone( oric, tz[TZ_DISK] );
       break;
   }
 
   switch( cshow )
   {
     case CSHOW_CONSOLE:
-      draw_textzone( tz[TZ_MONITOR] );
+      oric->render_textzone( oric, tz[TZ_MONITOR] );
       break;
     
     case CSHOW_DEBUG:
-      draw_textzone( tz[TZ_DEBUG] );
+      oric->render_textzone( oric, tz[TZ_DEBUG] );
       break;
 
     case CSHOW_MWATCH:
-      mon_update_mwatch( oric );
-      draw_textzone( tz[TZ_MEMWATCH] );
+      oric->render_textzone( oric, tz[TZ_MEMWATCH] );
       break;
-}
-  draw_textzone( tz[TZ_REGS] );
+  }
+  oric->render_textzone( oric, tz[TZ_REGS] );
 }
 
 void mon_hide_curs( void )

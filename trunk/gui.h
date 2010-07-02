@@ -19,6 +19,13 @@
 **  GUI
 */
 
+enum
+{
+  RENDERMODE_NULL = 0,
+  RENDERMODE_SW,
+  RENDERMODE_GL
+};
+
 // Reserve your textzones here!
 enum
 {
@@ -31,7 +38,7 @@ enum
   TZ_AY,
   TZ_DISK,
   TZ_MENU,
-  TZ_LAST
+  NUM_TZ
 };
 
 struct textzone
@@ -86,6 +93,8 @@ enum
   GIMG_LAST
 };
 
+#define NUM_GUI_COLS 9
+
 struct textzone *alloc_textzone( int x, int y, int w, int h, char *title );
 void free_textzone( struct textzone *ptz );
 
@@ -104,9 +113,9 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 void setmenutoggles( struct machine *oric );
 
 void render( struct machine *oric );
-void preinit_gui( void );
+void preinit_gui( struct machine *oric );
 SDL_bool init_gui( struct machine *oric );
-void shut_gui( void );
+void shut_gui( struct machine *oric );
 
 void draw_statusbar( void );
 void draw_disks( struct machine *oric );
