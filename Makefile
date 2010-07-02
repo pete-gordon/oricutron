@@ -101,7 +101,7 @@ CFLAGS += $(shell sdl-config --cflags)
 LFLAGS += $(shell sdl-config --libs)
 CFLAGS += -Wno-multichar
 CFLAGS += -g
-LFLAGS += -lbe -ltracker
+LFLAGS += -lbe -ltracker -lGL
 TARGET = oricutron
 INSTALLDIR = /boot/apps/Oricutron
 FILEREQ_SRC = filereq_beos.cpp
@@ -118,7 +118,8 @@ endif
 # Mac OS X
 ifeq ($(PLATFORM),osx)
 CFLAGS += $(shell sdl-config --cflags)
-LFLAGS += -lm $(shell sdl-config --libs)
+LFLAGS += $(shell sdl-config --libs)
+LFLAGS += -lm -Wl,-framework,OpenGL
 TARGET = oricutron
 FILEREQ_SRC = filereq_osx.m
 MSGBOX_SRC = msgbox_osx.m
