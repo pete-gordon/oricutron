@@ -142,6 +142,7 @@ void render_textzone_alloc_gl( struct machine *oric, int i )
   {
     tx[i+TEX_TZ].w = 0;
     tx[i+TEX_TZ].h = 0;
+    return;
   }
 
   glBindTexture( GL_TEXTURE_2D, tex[i+TEX_TZ] );
@@ -173,26 +174,25 @@ void render_textzone_gl( struct machine *oric, struct textzone *ptz )
 void render_video_gl( struct machine *oric, SDL_bool doublesize )
 {
   glBindTexture( GL_TEXTURE_2D, tex[TEX_VIDEO] );
-  glLoadIdentity();
-
   glColor4ub( 255, 255, 255, 255 );
+  glLoadIdentity();
 
   if( doublesize )
   {
     glBegin( GL_QUADS );
-      glTexCoord2f(          0.0f,          0.0f ); glVertex3f(   0.0f,  14.0f, 0.2f );
-      glTexCoord2f( 240.0f/256.0f,          0.0f ); glVertex3f( 640.0f,  14.0f, 0.2f );
-      glTexCoord2f( 240.0f/256.0f, 224.0f/256.0f ); glVertex3f( 640.0f, 462.0f, 0.2f );
-      glTexCoord2f(          0.0f, 224.0f/256.0f ); glVertex3f(   0.0f, 462.0f, 0.2f );
+      glTexCoord2f(          0.0f,          0.0f ); glVertex3f(   0.0f,  14.0f, 0.0f );
+      glTexCoord2f( 240.0f/256.0f,          0.0f ); glVertex3f( 640.0f,  14.0f, 0.0f );
+      glTexCoord2f( 240.0f/256.0f, 224.0f/256.0f ); glVertex3f( 640.0f, 462.0f, 0.0f );
+      glTexCoord2f(          0.0f, 224.0f/256.0f ); glVertex3f(   0.0f, 462.0f, 0.0f );
     glEnd();
     return;
   }
 
   glBegin( GL_QUADS );
-    glTexCoord2f(          0.0f,          0.0f ); glVertex3f(   0.0f,   4.0f, 0.2f );
-    glTexCoord2f( 240.0f/256.0f,          0.0f ); glVertex3f( 240.0f,   4.0f, 0.2f );
-    glTexCoord2f( 240.0f/256.0f, 224.0f/256.0f ); glVertex3f( 240.0f, 228.0f, 0.2f );
-    glTexCoord2f(          0.0f, 224.0f/256.0f ); glVertex3f(   0.0f, 228.0f, 0.2f );
+    glTexCoord2f(          0.0f,          0.0f ); glVertex3f(   0.0f,   4.0f, 0.0f );
+    glTexCoord2f( 240.0f/256.0f,          0.0f ); glVertex3f( 240.0f,   4.0f, 0.0f );
+    glTexCoord2f( 240.0f/256.0f, 224.0f/256.0f ); glVertex3f( 240.0f, 228.0f, 0.0f );
+    glTexCoord2f(          0.0f, 224.0f/256.0f ); glVertex3f(   0.0f, 228.0f, 0.0f );
   glEnd();
 }
 
@@ -230,15 +230,13 @@ SDL_bool init_render_gl( struct machine *oric )
   glLoadIdentity();
   glDisable( GL_DEPTH_TEST );
 
-  SDL_WM_SetCaption( APP_NAME_FULL, APP_NAME_FULL );
+  glGenTextures( NUM_TEXTURES, tex );
 
   // Allocate texture buffers
   tx[TEX_VIDEO].w = 256;
   tx[TEX_VIDEO].h = 256;
   tx[TEX_VIDEO].buf = malloc( 256*256*4 );
   if( !tx[TEX_VIDEO].buf ) return SDL_FALSE;
-
-  glGenTextures( NUM_TEXTURES, tex );
 
   glBindTexture( GL_TEXTURE_2D, tex[TEX_VIDEO] );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
@@ -249,6 +247,9 @@ SDL_bool init_render_gl( struct machine *oric )
 
   for( i=0; i<NUM_TZ; i++ )
     render_textzone_alloc_gl( oric, i );
+
+  SDL_WM_SetCaption( APP_NAME_FULL, APP_NAME_FULL );
+
 
   return SDL_TRUE;
 }
