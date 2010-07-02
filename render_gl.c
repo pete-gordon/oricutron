@@ -29,6 +29,8 @@
 #include <OpenGL/gl.h>
 #endif
 
+#include <SDL_endian.h>
+
 #include "6502.h"
 #include "via.h"
 #include "8912.h"
