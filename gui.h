@@ -77,7 +77,7 @@ struct guiimg
 {
   char *filename;
   Uint16 w, h;
-  Uint16 *buf;
+  Uint8 *buf;
 };
 
 enum
@@ -120,9 +120,9 @@ void preinit_gui( struct machine *oric );
 SDL_bool init_gui( struct machine *oric );
 void shut_gui( struct machine *oric );
 
-void draw_statusbar( void );
+void draw_statusbar( struct machine *oric );
 void draw_disks( struct machine *oric );
-void draw_avirec( SDL_bool recording );
+void draw_avirec( struct machine *oric, SDL_bool recording );
 void draw_tape( struct machine *oric );
 void statusprintstr( int x, Uint16 fc, char *str );
 void joinpath( char *path, char *file );

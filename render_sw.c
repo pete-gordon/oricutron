@@ -36,12 +36,15 @@ static int pixpitch;
 
 static Uint16 pal[8]; // Palette
 static Uint32 dpal[8];
+static Uint16 *mgimg[NUM_GIMG];
 
 extern SDL_bool fullscreen, hwsurface;
 static SDL_bool needclr;
 extern struct textzone *tz[NUM_TZ];
 extern unsigned char sgpal[];
 extern Uint8 oricpalette[];
+extern struct guiimg gimgs[NUM_GIMG];
+extern SDL_bool refreshstatus;
 
 // Our "lovely" hand-coded font
 extern unsigned char thefont[];
@@ -122,6 +125,43 @@ void render_textzone_sw( struct machine *oric, int i )
   }
 }
 
+// Draw a GUI image at X,Y
+void render_gimg_sw( int i, Sint32 xp, Sint32 yp )
+{
+  struct guiimg *gi = &gimgs[i];
+  Uint16 *sptr, *dptr;
+  Sint32 x, y;
+
+  sptr = mgimg[i];
+  dptr = &((Uint16 *)screen->pixels)[pixpitch*yp+xp];
+
+  for( y=0; y<gi->h; y++ )
+  {
+    for( x=0; x<gi->w; x++ )
+      *(dptr++) = *(sptr++);
+    dptr += pixpitch-gi->w;
+  }
+}
+
+// Draw part of an image (xp,yp = screen location, ox, oy = offset into image, w, h = dimensions)
+void render_gimgpart_sw( int i, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 oy, Sint32 w, Sint32 h )
+{
+  struct guiimg *gi = &gimgs[i];
+  Uint16 *sptr, *dptr;
+  Sint32 x, y;
+
+  sptr = &mgimg[i][oy*gi->w+ox];
+  dptr = &((Uint16 *)screen->pixels)[pixpitch*yp+xp];
+
+  for( y=0; y<h; y++ )
+  {
+    for( x=0; x<w; x++ )
+      *(dptr++) = *(sptr++);
+    sptr += gi->w-w;
+    dptr += pixpitch-w;
+  }
+}
+
 // Copy the video output buffer to the SDL surface
 void render_video_sw( struct machine *oric, SDL_bool doublesize )
 {
@@ -186,13 +226,18 @@ void render_video_sw( struct machine *oric, SDL_bool doublesize )
 
 void preinit_render_sw( struct machine *oric )
 {
+  Sint32 i;
+
   screen = NULL;
+
+  for( i=0; i<NUM_GIMG; i++ )
+    mgimg[i] = NULL;
 }
 
 SDL_bool init_render_sw( struct machine *oric )
 {
   Sint32 surfacemode;
-  int i;
+  int i, x, y;
 
   surfacemode = fullscreen ? SDL_FULLSCREEN : SDL_SWSURFACE;
   if( hwsurface ) { surfacemode &= ~SDL_SWSURFACE; surfacemode |= SDL_HWSURFACE; }
@@ -213,17 +258,38 @@ SDL_bool init_render_sw( struct machine *oric )
   for( i=0; i<8; i++ )
     pal[i] = SDL_MapRGB( screen->format, oricpalette[i*3], oricpalette[i*3+1], oricpalette[i*3+2] );
 
+  for( i=0; i<NUM_GIMG; i++ )
+  {
+    mgimg[i] = (Uint16 *)malloc( gimgs[i].w * gimgs[i].h * 2 );
+    if( !mgimg[i] ) return SDL_FALSE;
+
+    for( y=0; y<gimgs[i].h; y++ )
+    {
+      for( x=0; x<gimgs[i].w; x++ )
+        mgimg[i][y*gimgs[i].w+x] = SDL_MapRGB( screen->format, gimgs[i].buf[(y*gimgs[i].w+x)*3], gimgs[i].buf[(y*gimgs[i].w+x)*3+1], gimgs[i].buf[(y*gimgs[i].w+x)*3+2] );
+    }
+  }
+
   for( i=0; i<8; i++ )
     dpal[i] = (pal[i]<<16)|pal[i];
 
   pixpitch = screen->pitch / 2;
 
   needclr = SDL_TRUE;
+  refreshstatus = SDL_TRUE;
 
   return SDL_TRUE;
 }
 
 void shut_render_sw( struct machine *oric )
 {
+  Sint32 i;
+
+  for( i=0; i<NUM_GIMG; i++  )
+  {
+    if( mgimg[i] ) free( mgimg[i] );
+    mgimg[i] = NULL;
+  }
+
   // The surface will be freed by SDL_Quit, or a call to SDL_SetVideoMode from a different render module
 }

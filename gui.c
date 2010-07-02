@@ -221,7 +221,6 @@ struct osdmenu menus[] = { { "Main Menu",         0, mainitems },
 // Load a 24bit BMP for the GUI
 SDL_bool gimg_load( struct guiimg *gi )
 {
-/*
   SDL_RWops *f;
   Uint8 hdrbuf[640*3];
   Sint32 x, y;
@@ -260,7 +259,7 @@ SDL_bool gimg_load( struct guiimg *gi )
 
   // Get some RAM!
   if( !gi->buf )
-    gi->buf = malloc( gi->w * gi->h * 2 );
+    gi->buf = malloc( gi->w * gi->h * 3 );
 
   if( !gi->buf )
   {
@@ -274,57 +273,22 @@ SDL_bool gimg_load( struct guiimg *gi )
   {
     SDL_RWread( f, hdrbuf, ((gi->w*3)+3)&0xfffffffc, 1 );
     for( x=0; x<gi->w; x++ )
-      gi->buf[y*gi->w+x] = SDL_MapRGB( screen->format, hdrbuf[x*3+2], hdrbuf[x*3+1], hdrbuf[x*3] );
+    {
+      gi->buf[(y*gi->w+x)*3+0] = hdrbuf[x*3+2];
+      gi->buf[(y*gi->w+x)*3+1] = hdrbuf[x*3+1];
+      gi->buf[(y*gi->w+x)*3+2] = hdrbuf[x*3];
+    }
   }
 
   SDL_RWclose( f );
-*/
+
   return SDL_TRUE;
 }
 
-// Draw a GUI image at X,Y
-void gimg_draw( struct guiimg *gi, Sint32 xp, Sint32 yp )
-{
-/*
-  Uint16 *sptr, *dptr;
-  Sint32 x, y;
-
-  sptr = gi->buf;
-  dptr = &((Uint16 *)screen->pixels)[pixpitch*yp+xp];
-
-  for( y=0; y<gi->h; y++ )
-  {
-    for( x=0; x<gi->w; x++ )
-      *(dptr++) = *(sptr++);
-    dptr += pixpitch-gi->w;
-  }
-*/
-}
-
-// Draw part of an image (xp,yp = screen location, ox, oy = offset into image, w, h = dimensions)
-void gimg_drawpart( struct guiimg *gi, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 oy, Sint32 w, Sint32 h )
-{
-/*
-  Uint16 *sptr, *dptr;
-  Sint32 x, y;
-
-  sptr = &gi->buf[oy*gi->w+ox];
-  dptr = &((Uint16 *)screen->pixels)[pixpitch*yp+xp];
-
-  for( y=0; y<h; y++ )
-  {
-    for( x=0; x<w; x++ )
-      *(dptr++) = *(sptr++);
-    sptr += gi->w-w;
-    dptr += pixpitch-w;
-  }
-*/
-}
-
 // Draw the statusbar at the bottom
-void draw_statusbar( void )
+void draw_statusbar( struct machine *oric )
 {
-  gimg_draw( &gimgs[GIMG_STATUSBAR], 0, GIMG_POS_SBARY );
+  oric->render_gimg( GIMG_STATUSBAR, 0, GIMG_POS_SBARY );
 }
 
 // Overlay the disk icons onto the status bar
@@ -334,7 +298,7 @@ void draw_disks( struct machine *oric )
 
   if( oric->drivetype == DRV_NONE )
   {
-    gimg_drawpart( &gimgs[GIMG_STATUSBAR], GIMG_POS_DISKX, GIMG_POS_SBARY, GIMG_POS_DISKX, 0, 18*4, 16 );
+    oric->render_gimgpart( GIMG_STATUSBAR, GIMG_POS_DISKX, GIMG_POS_SBARY, GIMG_POS_DISKX, 0, 18*4, 16 );
     return;
   }
 
@@ -346,20 +310,20 @@ void draw_disks( struct machine *oric )
       j = ((oric->wddisk.c_drive==i)&&(oric->wddisk.currentop!=COP_NUFFINK)) ? GIMG_DISK_ACTIVE : GIMG_DISK_IDLE;
       if( oric->wddisk.disk[i]->modified ) j+=2;
     }
-    gimg_draw( &gimgs[j], GIMG_POS_DISKX+i*GIMG_W_DISK, GIMG_POS_SBARY );
+    oric->render_gimg( j, GIMG_POS_DISKX+i*GIMG_W_DISK, GIMG_POS_SBARY );
   }
 }
 
 // Overlay the AVI record icon onto the status bar
-void draw_avirec( SDL_bool recording )
+void draw_avirec( struct machine *oric, SDL_bool recording )
 {
   if( recording )
   {
-    gimg_draw( &gimgs[GIMG_AVI_RECORD], GIMG_POS_AVIRECX, GIMG_POS_SBARY );
+    oric->render_gimg( GIMG_AVI_RECORD, GIMG_POS_AVIRECX, GIMG_POS_SBARY );
     return;
   }
 
-  gimg_drawpart( &gimgs[GIMG_STATUSBAR], GIMG_POS_AVIRECX, GIMG_POS_SBARY, GIMG_POS_AVIRECX, 0, 16, 16 );
+  oric->render_gimgpart( GIMG_STATUSBAR, GIMG_POS_AVIRECX, GIMG_POS_SBARY, GIMG_POS_AVIRECX, 0, 16, 16 );
 }
 
 // Overlay the tape icon onto the status bar
@@ -367,23 +331,23 @@ void draw_tape( struct machine *oric )
 {
   if( !oric->tapebuf )
   {
-    gimg_draw( &gimgs[GIMG_TAPE_EJECTED], GIMG_POS_TAPEX, GIMG_POS_SBARY );
+    oric->render_gimg( GIMG_TAPE_EJECTED, GIMG_POS_TAPEX, GIMG_POS_SBARY );
     return;
   }
 
   if( oric->tapemotor )
   {
-    gimg_draw( &gimgs[GIMG_TAPE_PLAY], GIMG_POS_TAPEX, GIMG_POS_SBARY );
+    oric->render_gimg( GIMG_TAPE_PLAY, GIMG_POS_TAPEX, GIMG_POS_SBARY );
     return;
   }
 
   if( oric->tapeoffs >= oric->tapelen )
   {
-    gimg_draw( &gimgs[GIMG_TAPE_STOP], GIMG_POS_TAPEX, GIMG_POS_SBARY );
+    oric->render_gimg( GIMG_TAPE_STOP, GIMG_POS_TAPEX, GIMG_POS_SBARY );
     return;
   }
 
-  gimg_draw( &gimgs[GIMG_TAPE_PAUSE], GIMG_POS_TAPEX, GIMG_POS_SBARY );
+  oric->render_gimg( GIMG_TAPE_PAUSE, GIMG_POS_TAPEX, GIMG_POS_SBARY );
 }
 
 // Info popups
@@ -397,6 +361,32 @@ void do_popup( char *str )
   strncpy( popupstr, str, 40 ); popupstr[39] = 0;
   for( i=strlen(popupstr); i<39; i++ ) popupstr[i] = 32;
   popuptime = 100;
+}
+
+void render_status( struct machine *oric )
+{
+  if( refreshstatus )
+    draw_statusbar( oric );
+
+  if( refreshdisks || refreshstatus )
+  {
+    draw_disks( oric );
+    refreshdisks = SDL_FALSE;
+  }
+
+  if( refreshavi || refreshstatus )
+  {
+    draw_avirec( oric, vidcap != NULL );
+    refreshavi = SDL_FALSE;
+  }
+
+  if( refreshtape || refreshstatus )
+  {
+    draw_tape( oric );
+    refreshtape = SDL_FALSE;
+  }
+
+  refreshstatus = SDL_FALSE;
 }
 
 // Top-level rendering routine
@@ -414,34 +404,13 @@ void render( struct machine *oric )
   {
     case EM_MENU:
       oric->render_video( oric, SDL_TRUE );
+      render_status( oric );
       if( tz[TZ_MENU] ) oric->render_textzone( oric, TZ_MENU );
       break;
 
     case EM_RUNNING:
       oric->render_video( oric, SDL_TRUE );
-      if( refreshstatus )
-        draw_statusbar();
-
-      if( refreshdisks || refreshstatus )
-      {
-        draw_disks( oric );
-        refreshdisks = SDL_FALSE;
-      }
-
-      if( refreshavi || refreshstatus )
-      {
-        draw_avirec( vidcap != NULL );
-        refreshavi = SDL_FALSE;
-      }
-
-      if( refreshtape || refreshstatus )
-      {
-        draw_tape( oric );
-        refreshtape = SDL_FALSE;
-      }
-
-      refreshstatus = SDL_FALSE;
-
+      render_status( oric );
       if( showfps )
       {
         fps = 100000/(frametimeave?frametimeave:1);
@@ -1205,6 +1174,8 @@ void set_render_mode( struct machine *oric, int whichrendermode )
       oric->render_textzone_alloc = render_textzone_alloc_sw;
       oric->render_textzone_free  = render_textzone_free_sw;
       oric->render_textzone       = render_textzone_sw;
+      oric->render_gimg           = render_gimg_sw;
+      oric->render_gimgpart       = render_gimgpart_sw;
       oric->render_video          = render_video_sw;
       oric->init_render           = init_render_sw;
       oric->shut_render           = shut_render_sw;
@@ -1222,6 +1193,8 @@ void set_render_mode( struct machine *oric, int whichrendermode )
       oric->render_textzone_alloc = render_textzone_alloc_gl;
       oric->render_textzone_free  = render_textzone_free_gl;
       oric->render_textzone       = render_textzone_gl;
+      oric->render_gimg           = render_gimg_gl;
+      oric->render_gimgpart       = render_gimgpart_gl;
       oric->render_video          = render_video_gl;
       oric->init_render           = init_render_gl;
       oric->shut_render           = shut_render_gl;
@@ -1239,6 +1212,8 @@ void set_render_mode( struct machine *oric, int whichrendermode )
       oric->render_textzone_alloc = render_textzone_alloc_null;
       oric->render_textzone_free  = render_textzone_free_null;
       oric->render_textzone       = render_textzone_null;
+      oric->render_gimg           = render_gimg_null;
+      oric->render_gimgpart       = render_gimgpart_null;
       oric->render_video          = render_video_null;
       oric->init_render           = init_render_null;
       oric->shut_render           = shut_render_null;
@@ -1372,6 +1347,11 @@ SDL_bool init_gui( struct machine *oric )
 
   SDL_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
 
+  for( i=0; i<NUM_GIMG; i++ )
+  {
+    if( !gimg_load( &gimgs[i] ) ) return SDL_FALSE;
+  }
+
   set_render_mode( oric, RENDERMODE_GL );
   if( !oric->init_render( oric ) ) return SDL_FALSE;
 
@@ -1400,11 +1380,6 @@ SDL_bool init_gui( struct machine *oric )
   {
     soundon = SDL_TRUE;
     soundavailable = SDL_TRUE;
-  }
-
-  for( i=0; i<NUM_GIMG; i++ )
-  {
-    if( !gimg_load( &gimgs[i] ) ) return SDL_FALSE;
   }
 
   setmenutoggles( oric );
