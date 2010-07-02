@@ -46,6 +46,8 @@
 
 #define NUM_TEXTURES (TEX_TZ_LAST+1)
 
+extern SDL_bool refreshstatus;
+
 struct texture
 {
   int w, h;
@@ -58,6 +60,8 @@ static struct texture tx[NUM_TEXTURES];
 
 static struct SDL_Surface *screen;
 static Uint32 gpal[NUM_GUI_COLS];
+
+static float clrcol[3];
 
 extern unsigned char sgpal[];
 extern SDL_bool fullscreen;
@@ -159,8 +163,9 @@ static void update_video_texture( struct machine *oric )
 void render_begin_gl( struct machine *oric )
 {
   int i;
+  refreshstatus = SDL_TRUE;
 
-  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  glClearColor(clrcol[0], clrcol[1], clrcol[2], 1.0f);
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
   update_video_texture( oric );
@@ -243,6 +248,14 @@ void render_textzone_gl( struct machine *oric, int i )
     glTexCoord2f( tx[i+TEX_TZ].tw, tx[i+TEX_TZ].th ); glVertex3f( tz[i]->x+tz[i]->w*8, tz[i]->y+tz[i]->h*12, 0.0f );
     glTexCoord2f(            0.0f, tx[i+TEX_TZ].th ); glVertex3f(            tz[i]->x, tz[i]->y+tz[i]->h*12, 0.0f );
   glEnd();
+}
+
+void render_gimg_gl( int i, Sint32 xp, Sint32 yp )
+{
+}
+
+void render_gimgpart_gl( int i, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 oy, Sint32 w, Sint32 h )
+{
 }
 
 void render_video_gl( struct machine *oric, SDL_bool doublesize )
@@ -379,6 +392,10 @@ SDL_bool init_render_gl( struct machine *oric )
     render_textzone_alloc_gl( oric, i );
 
   SDL_WM_SetCaption( APP_NAME_FULL, APP_NAME_FULL );
+
+  clrcol[0] = ((float)sgpal[4*3+0])/255.0f;
+  clrcol[1] = ((float)sgpal[4*3+1])/255.0f;
+  clrcol[2] = ((float)sgpal[4*3+2])/255.0f;
 
   return SDL_TRUE;
 }

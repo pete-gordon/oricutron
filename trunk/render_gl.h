@@ -26,6 +26,8 @@ void render_end_gl( struct machine *oric );
 void render_textzone_alloc_gl( struct machine *oric, int i );
 void render_textzone_free_gl( struct machine *oric, int i );
 void render_textzone_gl( struct machine *oric, int i );
+void render_gimg_gl( int i, Sint32 xp, Sint32 yp );
+void render_gimgpart_gl( int i, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 oy, Sint32 w, Sint32 h );
 void render_video_gl( struct machine *oric, SDL_bool doublesize );
 void preinit_render_gl( struct machine *oric );
 SDL_bool init_render_gl( struct machine *oric );

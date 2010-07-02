@@ -24,6 +24,8 @@ void render_end_sw( struct machine *oric );
 void render_textzone_alloc_sw( struct machine *oric, int i );
 void render_textzone_free_sw( struct machine *oric, int i );
 void render_textzone_sw( struct machine *oric, int i );
+void render_gimg_sw( int i, Sint32 xp, Sint32 yp );
+void render_gimgpart_sw( int i, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 oy, Sint32 w, Sint32 h );
 void render_video_sw( struct machine *oric, SDL_bool doublesize );
 void preinit_render_sw( struct machine *oric );
 SDL_bool init_render_sw( struct machine *oric );
