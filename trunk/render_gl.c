@@ -19,6 +19,8 @@
 **  OpenGL rendering
 */
 
+#ifdef __OPENGL_AVAILABLE__
+
 #include "system.h"
 
 #ifndef __APPLE__
@@ -56,11 +58,57 @@ static struct SDL_Surface *screen;
 
 extern SDL_bool fullscreen;
 extern struct textzone *tz[NUM_TZ];
+extern Uint8 oricpalette[];
+
+static void update_textzone_texture( struct machine *oric, int i )
+{
+  if( !tz[i] ) return;
+  if( !tz[i]->modified ) return;
+  if( !tx[i+TEX_TZ].buf ) return;
+
+  tz[i]->modified = SDL_FALSE;
+}
+
+static void update_video_texture( struct machine *oric )
+{
+  int x, y, o, c;
+  Uint8 *sptr;
+
+  o = 0;
+  sptr = oric->scr;
+
+  for( y=0; y<224; y++ )
+  {
+    for( x=0; x<240; x++ )
+    {
+      c = *(sptr++) * 3;
+      tx[TEX_VIDEO].buf[o++] = oricpalette[c++];
+      tx[TEX_VIDEO].buf[o++] = oricpalette[c++];
+      tx[TEX_VIDEO].buf[o++] = oricpalette[c++];
+      tx[TEX_VIDEO].buf[o++] = 0xff;
+    }
+
+    o += (tx[TEX_VIDEO].w-240) * 4;
+  }
+
+  glBindTexture( GL_TEXTURE_2D, tex[TEX_VIDEO] );
+  glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[TEX_VIDEO].w, tx[TEX_VIDEO].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[TEX_VIDEO].buf );
+}
 
 void render_begin_gl( struct machine *oric )
 {
+  int i;
+
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+  update_video_texture( oric );
+  for( i=0; i<NUM_TZ; i++ )
+    update_textzone_texture( oric, i );
+
+  glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+  glEnable( GL_TEXTURE_2D );
+  glEnable( GL_BLEND );
 }
 
 void render_end_gl( struct machine *oric )
@@ -68,23 +116,7 @@ void render_end_gl( struct machine *oric )
   SDL_GL_SwapBuffers();
 }
 
-void render_textzone_gl( struct machine *oric, struct textzone *ptz )
-{
-}
-
-void render_video_gl( struct machine *oric, SDL_bool doublesize )
-{
-}
-
-void preinit_render_gl( struct machine *oric )
-{
-  int i;
-
-  for( i=0; i<NUM_TEXTURES; i++ )
-    tx[i].buf = NULL;
-}
-
-unsigned int rounduppow2( unsigned int x )
+static unsigned int rounduppow2( unsigned int x )
 {
   x--;
   x |= x >> 1;
@@ -95,6 +127,85 @@ unsigned int rounduppow2( unsigned int x )
   x++;
 
   return x;
+}
+
+void render_textzone_alloc_gl( struct machine *oric, int i )
+{
+  render_textzone_free_gl( oric, i );
+
+  if( !tz[i] ) return;
+
+  tx[i+TEX_TZ].w = rounduppow2( tz[i]->w * 8 );
+  tx[i+TEX_TZ].h = rounduppow2( tz[i]->h * 12 );
+  tx[i+TEX_TZ].buf = malloc( tx[i+TEX_TZ].w*tx[i+TEX_TZ].h*4 );
+  if( !tx[i+TEX_TZ].buf )
+  {
+    tx[i+TEX_TZ].w = 0;
+    tx[i+TEX_TZ].h = 0;
+  }
+
+  glBindTexture( GL_TEXTURE_2D, tex[i+TEX_TZ] );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+  glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[i+TEX_TZ].w, tx[i+TEX_TZ].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[i+TEX_TZ].buf );
+
+  tz[i]->modified = SDL_TRUE;
+}
+
+void render_textzone_free_gl( struct machine *oric, int i )
+{
+  if( tx[i+TEX_TZ].buf )
+  {
+    free( tx[i+TEX_TZ].buf );
+    tx[i+TEX_TZ].buf = NULL;
+  }
+
+  tx[i+TEX_TZ].w = 0;
+  tx[i+TEX_TZ].h = 0;
+}
+
+void render_textzone_gl( struct machine *oric, struct textzone *ptz )
+{
+}
+
+void render_video_gl( struct machine *oric, SDL_bool doublesize )
+{
+  glBindTexture( GL_TEXTURE_2D, tex[TEX_VIDEO] );
+  glLoadIdentity();
+
+  glColor4ub( 255, 255, 255, 255 );
+
+  if( doublesize )
+  {
+    glBegin( GL_QUADS );
+      glTexCoord2f(          0.0f,          0.0f ); glVertex3f(   0.0f,  14.0f, 0.2f );
+      glTexCoord2f( 240.0f/256.0f,          0.0f ); glVertex3f( 640.0f,  14.0f, 0.2f );
+      glTexCoord2f( 240.0f/256.0f, 224.0f/256.0f ); glVertex3f( 640.0f, 462.0f, 0.2f );
+      glTexCoord2f(          0.0f, 224.0f/256.0f ); glVertex3f(   0.0f, 462.0f, 0.2f );
+    glEnd();
+    return;
+  }
+
+  glBegin( GL_QUADS );
+    glTexCoord2f(          0.0f,          0.0f ); glVertex3f(   0.0f,   4.0f, 0.2f );
+    glTexCoord2f( 240.0f/256.0f,          0.0f ); glVertex3f( 240.0f,   4.0f, 0.2f );
+    glTexCoord2f( 240.0f/256.0f, 224.0f/256.0f ); glVertex3f( 240.0f, 228.0f, 0.2f );
+    glTexCoord2f(          0.0f, 224.0f/256.0f ); glVertex3f(   0.0f, 228.0f, 0.2f );
+  glEnd();
+}
+
+void preinit_render_gl( struct machine *oric )
+{
+  int i;
+
+  for( i=0; i<NUM_TEXTURES; i++ )
+  {
+    tx[i].w   = 0;
+    tx[i].h   = 0;
+    tx[i].buf = NULL;
+  }
 }
 
 SDL_bool init_render_gl( struct machine *oric )
@@ -127,31 +238,19 @@ SDL_bool init_render_gl( struct machine *oric )
   tx[TEX_VIDEO].buf = malloc( 256*256*4 );
   if( !tx[TEX_VIDEO].buf ) return SDL_FALSE;
 
-  for( i=0; i<=NUM_TZ; i++ )
-  {
-    tx[i+TEX_TZ].w = rounduppow2( tz[i]->w * 8 );
-    tx[i+TEX_TZ].h = rounduppow2( tz[i]->h * 12 );
-    tx[i+TEX_TZ].buf = malloc( tx[i+TEX_TZ].w*tx[i+TEX_TZ].h*4 );
-    if( !tx[i+TEX_TZ].buf )
-    {
-      printf( "Unable to allocate %dx%d texture", tx[i+TEX_TZ].w, tx[i+TEX_TZ].h );
-      return SDL_FALSE;
-    }
-  }
-
   glGenTextures( NUM_TEXTURES, tex );
 
-  for( i=0; i<NUM_TEXTURES; i++ )
-  {
-    glBindTexture( GL_TEXTURE_2D, tex[TEX_VIDEO] );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[i].w, tx[i].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[i].buf );
-  }
+  glBindTexture( GL_TEXTURE_2D, tex[TEX_VIDEO] );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+  glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[TEX_VIDEO].w, tx[TEX_VIDEO].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[TEX_VIDEO].buf );
 
-  return SDL_FALSE;
+  for( i=0; i<NUM_TZ; i++ )
+    render_textzone_alloc_gl( oric, i );
+
+  return SDL_TRUE;
 }
 
 void shut_render_gl( struct machine *oric )
@@ -162,5 +261,9 @@ void shut_render_gl( struct machine *oric )
   {
     if( tx[i].buf ) free( tx[i].buf );
     tx[i].buf = NULL;
+    tx[i].w = 0;
+    tx[i].h = 0;
   }
 }
+
+#endif //__OPENGL_AVAILABLE__

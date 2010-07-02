@@ -38,6 +38,8 @@ enum
   TZ_AY,
   TZ_DISK,
   TZ_MENU,
+  TZ_MSGBOX,
+  TZ_FILEREQ,
   NUM_TZ
 };
 
@@ -47,6 +49,8 @@ struct textzone
   int px, py, cfc, cbc;     // Current position and text colours
   unsigned char *tx;        // Text buffer
   unsigned char *fc, *bc;   // Colour buffers
+  void *renddata;           // Data used by the rendering module
+  SDL_bool modified;
 };
 
 // "on screen display" menus
@@ -90,13 +94,13 @@ enum
   GIMG_TAPE_PLAY,
   GIMG_TAPE_STOP,
   GIMG_AVI_RECORD,
-  GIMG_LAST
+  NUM_GIMG
 };
 
 #define NUM_GUI_COLS 9
 
-struct textzone *alloc_textzone( int x, int y, int w, int h, char *title );
-void free_textzone( struct textzone *ptz );
+SDL_bool alloc_textzone( struct machine *oric, int i, int x, int y, int w, int h, char *title );
+void free_textzone( struct machine *oric, int i );
 
 void do_popup( char *str );
 void makebox( struct textzone *ptz, int x, int y, int w, int h, int fg, int bg );

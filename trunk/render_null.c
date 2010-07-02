@@ -39,6 +39,14 @@ void render_end_null( struct machine *oric )
 {
 }
 
+void render_textzone_alloc_null( struct machine *oric, int i )
+{
+}
+
+void render_textzone_free_null( struct machine *oric, int i )
+{
+}
+
 void render_textzone_null( struct machine *oric, struct textzone *ptz )
 {
 }

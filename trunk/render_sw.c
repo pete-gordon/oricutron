@@ -30,13 +30,17 @@
 #include "render_sw.h"
 
 static struct SDL_Surface *screen;
-Uint16 gpal[NUM_GUI_COLS];
+static Uint16 gpal[NUM_GUI_COLS];
 // Cached screen->pitch
 static int pixpitch;
 
+static Uint16 pal[8]; // Palette
+static Uint32 dpal[8];
+
 extern SDL_bool fullscreen, hwsurface;
-SDL_bool needclr;
+static SDL_bool needclr;
 extern unsigned char sgpal[];
+extern Uint8 oricpalette[];
 
 // Our "lovely" hand-coded font
 extern unsigned char thefont[];
@@ -88,6 +92,14 @@ void render_end_sw( struct machine *oric )
     SDL_UnlockSurface( screen );
 
   SDL_Flip( screen );
+}
+
+void render_textzone_alloc_sw( struct machine *oric, int i )
+{
+}
+
+void render_textzone_free_sw( struct machine *oric, int i )
+{
 }
 
 void render_textzone_sw( struct machine *oric, struct textzone *ptz )
@@ -142,7 +154,7 @@ void render_video_sw( struct machine *oric, SDL_bool doublesize )
     {
       for( x=0; x<240; x++ )
       {
-        c = oric->dpal[*(sptr++)];
+        c = dpal[*(sptr++)];
         *(dptr2++) = c;
         *(dptr3++) = c;
       }
@@ -165,7 +177,7 @@ void render_video_sw( struct machine *oric, SDL_bool doublesize )
   for( ; y<228; y++ )
   {
     for( x=0; x<240; x++ )
-      *(dptr++) = oric->pal[*(sptr++)];
+      *(dptr++) = pal[*(sptr++)];
     dptr += pixpitch-240;
   }
 }
@@ -196,17 +208,11 @@ SDL_bool init_render_sw( struct machine *oric )
   for( i=0; i<NUM_GUI_COLS; i++ )
     gpal[i] = SDL_MapRGB( screen->format, sgpal[i*3  ], sgpal[i*3+1], sgpal[i*3+2] );
 
-  oric->pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
-  oric->pal[1] = SDL_MapRGB( screen->format, 0xff, 0x00, 0x00 );
-  oric->pal[2] = SDL_MapRGB( screen->format, 0x00, 0xff, 0x00 );
-  oric->pal[3] = SDL_MapRGB( screen->format, 0xff, 0xff, 0x00 );
-  oric->pal[4] = SDL_MapRGB( screen->format, 0x00, 0x00, 0xff );
-  oric->pal[5] = SDL_MapRGB( screen->format, 0xff, 0x00, 0xff );
-  oric->pal[6] = SDL_MapRGB( screen->format, 0x00, 0xff, 0xff );
-  oric->pal[7] = SDL_MapRGB( screen->format, 0xff, 0xff, 0xff );
+  for( i=0; i<8; i++ )
+    pal[i] = SDL_MapRGB( screen->format, oricpalette[i*3], oricpalette[i*3+1], oricpalette[i*3+2] );
 
   for( i=0; i<8; i++ )
-    oric->dpal[i] = (oric->pal[i]<<16)|oric->pal[i];
+    dpal[i] = (pal[i]<<16)|pal[i];
 
   pixpitch = screen->pitch / 2;
 

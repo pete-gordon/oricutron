@@ -76,7 +76,7 @@ extern struct avi_handle *vidcap;
 #define GIMG_W_AVIR 16
 
 // Images used in the GUI
-struct guiimg gimgs[GIMG_LAST] = { { IMAGEPREFIX"statusbar.bmp",              640, 16, NULL },
+struct guiimg gimgs[NUM_GIMG]  = { { IMAGEPREFIX"statusbar.bmp",              640, 16, NULL },
                                    { IMAGEPREFIX"disk_ejected.bmp",   GIMG_W_DISK, 16, NULL },
                                    { IMAGEPREFIX"disk_idle.bmp",      GIMG_W_DISK, 16, NULL },
                                    { IMAGEPREFIX"disk_active.bmp",    GIMG_W_DISK, 16, NULL },
@@ -481,6 +481,8 @@ void makebox( struct textzone *ptz, int x, int y, int w, int h, int fg, int bg )
   }
   ptz->tx[o] = 4;
   ptz->tx[bo] = 11;
+
+  ptz->modified = SDL_TRUE;
 }
 
 // Write a string to a textzone
@@ -516,6 +518,8 @@ void tzstr( struct textzone *ptz, char *text )
         break;
     }
   }
+
+  ptz->modified = SDL_TRUE;
 }
 
 // Print a formatted string into a textzone
@@ -633,12 +637,12 @@ void tzsettitle( struct textzone *ptz, char *title )
 }
 
 // Allocate a textzone structure
-struct textzone *alloc_textzone( int x, int y, int w, int h, char *title )
+SDL_bool alloc_textzone( struct machine *oric, int i, int x, int y, int w, int h, char *title )
 {
   struct textzone *ntz;
 
   ntz = malloc( sizeof( struct textzone ) + w*h*3 );
-  if( !ntz ) return NULL;
+  if( !ntz ) return SDL_FALSE;
 
   ntz->x = x;
   ntz->y = y;
@@ -654,14 +658,22 @@ struct textzone *alloc_textzone( int x, int y, int w, int h, char *title )
   ntz->px = 1;
   ntz->py = 1;
 
-  return ntz;
+  ntz->modified = SDL_TRUE;
+
+  tz[i] = ntz;
+  oric->render_textzone_alloc( oric, i );
+
+  return SDL_TRUE;
 }
 
 // Free a textzone structure
-void free_textzone( struct textzone *ptz )
+void free_textzone( struct machine *oric, int i )
 {
-  if( !ptz ) return;
-  free( ptz );
+  oric->render_textzone_free( oric, i );
+  if( !tz[i] ) return;
+  if( tz[i]->renddata ) free( tz[i]->renddata );
+  free( tz[i] );
+  tz[i] = NULL;
 }
 
 // Draw the current menu items into the menu textzone
@@ -941,7 +953,7 @@ void gotomenu( struct machine *oric, struct osdmenuitem *mitem, int menunum )
 {
   int i, w, keyw;
 
-  if( tz[TZ_MENU] ) { free_textzone( tz[TZ_MENU] ); tz[TZ_MENU] = NULL; }
+  if( tz[TZ_MENU] ) free_textzone( oric, TZ_MENU );
 
   cmenu = &menus[menunum];
   w = strlen( cmenu->title )+8;
@@ -961,8 +973,7 @@ void gotomenu( struct machine *oric, struct osdmenuitem *mitem, int menunum )
 
   w+=keyw+2; i+=2;
 
-  tz[TZ_MENU] = alloc_textzone( 320-w*4, 240-i*6, w, i, cmenu->title );
-  if( !tz[TZ_MENU] )
+  if( !alloc_textzone( oric, TZ_MENU, 320-w*4, 240-i*6, w, i, cmenu->title ) )
   {
     cmenu = NULL;
     oric->emu_mode = EM_RUNNING;
@@ -1140,30 +1151,38 @@ void set_render_mode( struct machine *oric, int whichrendermode )
   switch( whichrendermode )
   {
     case RENDERMODE_SW:
-      oric->render_begin    = render_begin_sw;
-      oric->render_end      = render_end_sw;
-      oric->render_textzone = render_textzone_sw;
-      oric->render_video    = render_video_sw;
-      oric->init_render     = init_render_sw;
-      oric->shut_render     = shut_render_sw;
+      oric->render_begin          = render_begin_sw;
+      oric->render_end            = render_end_sw;
+      oric->render_textzone_alloc = render_textzone_alloc_sw;
+      oric->render_textzone_free  = render_textzone_free_sw;
+      oric->render_textzone       = render_textzone_sw;
+      oric->render_video          = render_video_sw;
+      oric->init_render           = init_render_sw;
+      oric->shut_render           = shut_render_sw;
       break;
 
+#ifdef __OPENGL_AVAILABLE__
     case RENDERMODE_GL:
-      oric->render_begin    = render_begin_gl;
-      oric->render_end      = render_end_gl;
-      oric->render_textzone = render_textzone_gl;
-      oric->render_video    = render_video_gl;
-      oric->init_render     = init_render_gl;
-      oric->shut_render     = shut_render_gl;
+      oric->render_begin          = render_begin_gl;
+      oric->render_end            = render_end_gl;
+      oric->render_textzone_alloc = render_textzone_alloc_gl;
+      oric->render_textzone_free  = render_textzone_free_gl;
+      oric->render_textzone       = render_textzone_gl;
+      oric->render_video          = render_video_gl;
+      oric->init_render           = init_render_gl;
+      oric->shut_render           = shut_render_gl;
       break;
+#endif
 
     default:
-      oric->render_begin    = render_begin_null;
-      oric->render_end      = render_end_null;
-      oric->render_textzone = render_textzone_null;
-      oric->render_video    = render_video_null;
-      oric->init_render     = init_render_null;
-      oric->shut_render     = shut_render_null;
+      oric->render_begin          = render_begin_null;
+      oric->render_end            = render_end_null;
+      oric->render_textzone_alloc = render_textzone_alloc_null;
+      oric->render_textzone_free  = render_textzone_free_null;
+      oric->render_textzone       = render_textzone_null;
+      oric->render_video          = render_video_null;
+      oric->init_render           = init_render_null;
+      oric->shut_render           = shut_render_null;
       break;
   }
 }
@@ -1183,7 +1202,7 @@ void preinit_gui( struct machine *oric )
 {
   int i;
   for( i=0; i<NUM_TZ; i++ ) tz[i] = NULL;
-  for( i=0; i<GIMG_LAST; i++ ) gimgs[i].buf = NULL;
+  for( i=0; i<NUM_GIMG; i++ ) gimgs[i].buf = NULL;
   strcpy( tapepath, FILEPREFIX"tapes" );
   strcpy( tapefile, "" );
   strcpy( diskpath, FILEPREFIX"disks" );
@@ -1272,28 +1291,20 @@ SDL_bool init_gui( struct machine *oric )
   }
   need_sdl_quit = SDL_TRUE;
 
-  // Allocate all text zones
-  tz[TZ_MONITOR] = alloc_textzone( 0, 228, 50, 21, "Monitor" );
-  if( !tz[TZ_MONITOR] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
-  tz[TZ_DEBUG] = alloc_textzone( 0, 228, 50, 21, "Debug console" );
-  if( !tz[TZ_DEBUG] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
-  tz[TZ_MEMWATCH] = alloc_textzone( 0, 228, 50, 21, "Memory watch" );
-  if( !tz[TZ_MEMWATCH] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
-  tz[TZ_REGS] = alloc_textzone( 240, 0, 50, 19, "6502 Status" );
-  if( !tz[TZ_REGS] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
-  tz[TZ_VIA]  = alloc_textzone( 400, 228, 30, 21, "VIA Status" );
-  if( !tz[TZ_VIA] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
-  tz[TZ_VIA2]  = alloc_textzone( 400, 228, 30, 21, "Telestrat VIA Status" );
-  if( !tz[TZ_VIA2] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
-  tz[TZ_AY]   = alloc_textzone( 400, 228, 30, 21, "AY Status" );
-  if( !tz[TZ_AY] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
-  tz[TZ_DISK]   = alloc_textzone( 400, 228, 30, 21, "Disk Status" );
-  if( !tz[TZ_DISK] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
-
   SDL_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
 
-  set_render_mode( oric, RENDERMODE_SW );
+  set_render_mode( oric, RENDERMODE_GL );
   if( !oric->init_render( oric ) ) return SDL_FALSE;
+
+  // Allocate all text zones
+  if( !alloc_textzone( oric, TZ_MONITOR,    0, 228, 50, 21, "Monitor"              ) ) return SDL_FALSE;
+  if( !alloc_textzone( oric, TZ_DEBUG,      0, 228, 50, 21, "Debug console"        ) ) return SDL_FALSE;
+  if( !alloc_textzone( oric, TZ_MEMWATCH,   0, 228, 50, 21, "Memory watch"         ) ) return SDL_FALSE;
+  if( !alloc_textzone( oric, TZ_REGS,     240,   0, 50, 19, "6502 Status"          ) ) return SDL_FALSE;
+  if( !alloc_textzone( oric, TZ_VIA,      400, 228, 30, 21, "VIA Status"           ) ) return SDL_FALSE;
+  if( !alloc_textzone( oric, TZ_VIA2,     400, 228, 30, 21, "Telestrat VIA Status" ) ) return SDL_FALSE;
+  if( !alloc_textzone( oric, TZ_AY,       400, 228, 30, 21, "AY Status"            ) ) return SDL_FALSE;
+  if( !alloc_textzone( oric, TZ_DISK,     400, 228, 30, 21, "Disk Status"          ) ) return SDL_FALSE;
 
   // Set up SDL audio
   wanted.freq     = AUDIO_FREQ; 
@@ -1312,7 +1323,7 @@ SDL_bool init_gui( struct machine *oric )
     soundavailable = SDL_TRUE;
   }
 
-  for( i=0; i<GIMG_LAST; i++ )
+  for( i=0; i<NUM_GIMG; i++ )
   {
     if( !gimg_load( &gimgs[i] ) ) return SDL_FALSE;
   }
@@ -1329,7 +1340,7 @@ void shut_gui( struct machine *oric )
   oric->shut_render( oric );
 
   for( i=0; i<NUM_TZ; i++ )
-    free_textzone( tz[i] );
+    free_textzone( oric, i );
 
   if( need_sdl_quit ) SDL_Quit();
 }

@@ -101,8 +101,6 @@ struct machine
   unsigned char *vid_ch_data;
   unsigned char *vid_ch_base;
 
-  Uint16 pal[8]; // Palette
-  Uint32 dpal[8];
   Uint8  *scrpt;
   Uint8  *scr;
 
@@ -148,7 +146,11 @@ struct machine
   int rendermode;
   void (*render_begin)(struct machine *);
   void (*render_end)(struct machine *);
+  void (*render_textzone_alloc)(struct machine *, int);
+  void (*render_textzone_free)(struct machine *, int);
   void (*render_textzone)(struct machine *, struct textzone *);
+  void (*render_alloc_textzone)(struct machine *, struct textzone *);
+  void (*render_free_textzone)(struct machine *, struct textzone *);
   void (*render_video)(struct machine *, SDL_bool);
   SDL_bool (*init_render)(struct machine *);
   void (*shut_render)(struct machine *);

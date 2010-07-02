@@ -517,7 +517,7 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
     ay->keystates[i] = SDL_FALSE;
 
   // Reset all regs to 0
-  for( i=0; i<AY_LAST; i++ )
+  for( i=0; i<NUM_AY_REGS; i++ )
     ay->regs[i] = 0;
 
   // Reset the three audio channels
@@ -617,11 +617,11 @@ void ay_modeset( struct ay8912 *ay )
   switch( ay->bmode )
   {
     case AYBMF_BC1: // Read AY register
-      via_write_porta( &ay->oric->via, 0xff, (ay->creg>=AY_LAST) ? 0 : ay->eregs[ay->creg] );
+      via_write_porta( &ay->oric->via, 0xff, (ay->creg>=NUM_AY_REGS) ? 0 : ay->eregs[ay->creg] );
       break;
     
     case AYBMF_BDIR: // Write AY register
-      if( ay->creg >= AY_LAST ) break;
+      if( ay->creg >= NUM_AY_REGS ) break;
       v = via_read_porta( &ay->oric->via );
 
       if( ( ay->creg != AY_ENV_CYCLE ) || ( v != 0xff ) )

@@ -56,7 +56,7 @@ enum
   AY_ENV_PER_H,
   AY_ENV_CYCLE,
   AY_PORT_A,
-  AY_LAST
+  NUM_AY_REGS
 };
 
 struct aywrite
@@ -75,7 +75,7 @@ struct tnchange
 struct ay8912
 {
   Uint8           bmode, creg;
-  Uint8           regs[AY_LAST], eregs[AY_LAST];
+  Uint8           regs[NUM_AY_REGS], eregs[NUM_AY_REGS];
   SDL_bool        keystates[8], newnoise;
   SDL_bool        soundon;
   SDL_bool        tapenoiseon;
