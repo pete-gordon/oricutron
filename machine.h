@@ -148,7 +148,7 @@ struct machine
   void (*render_end)(struct machine *);
   void (*render_textzone_alloc)(struct machine *, int);
   void (*render_textzone_free)(struct machine *, int);
-  void (*render_textzone)(struct machine *, struct textzone *);
+  void (*render_textzone)(struct machine *, int);
   void (*render_alloc_textzone)(struct machine *, struct textzone *);
   void (*render_free_textzone)(struct machine *, struct textzone *);
   void (*render_video)(struct machine *, SDL_bool);

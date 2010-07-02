@@ -1538,37 +1538,37 @@ void mon_render( struct machine *oric )
   switch( mshow )
   {
     case MSHOW_VIA:
-      oric->render_textzone( oric, tz[TZ_VIA] );
+      oric->render_textzone( oric, TZ_VIA );
       break;
     
     case MSHOW_VIA2:
-      oric->render_textzone( oric, tz[TZ_VIA2] );
+      oric->render_textzone( oric, TZ_VIA2 );
       break;
     
     case MSHOW_AY:
-      oric->render_textzone( oric, tz[TZ_AY] );
+      oric->render_textzone( oric, TZ_AY );
       break;
     
     case MSHOW_DISK:
-      oric->render_textzone( oric, tz[TZ_DISK] );
+      oric->render_textzone( oric, TZ_DISK );
       break;
   }
 
   switch( cshow )
   {
     case CSHOW_CONSOLE:
-      oric->render_textzone( oric, tz[TZ_MONITOR] );
+      oric->render_textzone( oric, TZ_MONITOR );
       break;
     
     case CSHOW_DEBUG:
-      oric->render_textzone( oric, tz[TZ_DEBUG] );
+      oric->render_textzone( oric, TZ_DEBUG );
       break;
 
     case CSHOW_MWATCH:
-      oric->render_textzone( oric, tz[TZ_MEMWATCH] );
+      oric->render_textzone( oric, TZ_MEMWATCH );
       break;
   }
-  oric->render_textzone( oric, tz[TZ_REGS] );
+  oric->render_textzone( oric, TZ_REGS );
 }
 
 void mon_hide_curs( void )
