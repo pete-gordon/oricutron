@@ -26,6 +26,6 @@ enum
   MSGBOX_OK
 };
 
-SDL_bool init_msgbox( void );
-void shut_msgbox( void );
+SDL_bool init_msgbox( struct machine *oric );
+void shut_msgbox( struct machine *oric );
 SDL_bool msgbox( struct machine *oric, int type, char *msg );

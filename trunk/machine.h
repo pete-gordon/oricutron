@@ -140,8 +140,9 @@ struct machine
   SDL_bool pch_tt_readbyte_setcarry;
   SDL_bool pch_tt_available;
 
-
   SDL_bool azerty;
+
+  SDL_bool hstretch, scanlines;
 
   int rendermode;
   void (*render_begin)(struct machine *);

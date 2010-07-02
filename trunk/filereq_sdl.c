@@ -38,6 +38,7 @@
 
 // Externs
 extern SDL_Surface *screen;
+extern struct textzone *tz[NUM_TZ];
 
 // A directory entry in the file requester
 struct frq_ent
@@ -64,16 +65,16 @@ static int freqf_size=0, freqf_used=0, freqf_cgad=2;
 static struct frq_ent *freqfiles=NULL;
 static int freqf_clicktime=0;
 
-SDL_bool init_filerequester( void )
+SDL_bool init_filerequester( struct machine *oric )
 {
   if( !alloc_textzone( oric, TZ_FILEREQ, 160, 48, 40, 32, "Files" ) ) return SDL_FALSE;
 
   return SDL_TRUE;
 }
 
-void shut_filerequester( void )
+void shut_filerequester( struct machine *oric )
 {
-  free_textzone( TZ_FILEREQ );
+  free_textzone( oric, TZ_FILEREQ );
 }
 
 // Render the filerequester
@@ -82,7 +83,7 @@ static void filereq_render( struct machine *oric )
   oric->render_begin( oric );
 
   oric->render_video( oric, SDL_TRUE );
-  draw_textzone( tz[TZ_FILEREQ] );
+  oric->render_textzone( oric, TZ_FILEREQ );
 
   oric->render_end( oric );
 }

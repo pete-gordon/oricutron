@@ -38,9 +38,10 @@
 #include "machine.h"
 #include "render_gl.h"
 
-#define TEX_VIDEO   (0)
+#define TEX_VIDEO     (0)
+#define TEX_SCANLINES (1)
 
-#define TEX_TZ      (TEX_VIDEO+1)
+#define TEX_TZ      (TEX_SCANLINES+1)
 #define TEX_TZ_LAST ((NUM_TZ+TEX_TZ)-1)
 
 #define NUM_TEXTURES (TEX_TZ_LAST+1)
@@ -246,18 +247,44 @@ void render_textzone_gl( struct machine *oric, int i )
 
 void render_video_gl( struct machine *oric, SDL_bool doublesize )
 {
+  float l, r;
+  int y;
+
   glBindTexture( GL_TEXTURE_2D, tex[TEX_VIDEO] );
   glColor4ub( 255, 255, 255, 255 );
   glLoadIdentity();
 
   if( doublesize )
   {
+    if( oric->hstretch )
+    {
+      l = 0.0f;
+      r = 640.f;
+    } else {
+      l = 320.0f-240.0f;
+      r = 320.0f+240.0f;
+    }
+
     glBegin( GL_QUADS );
-      glTexCoord2f(          0.0f,          0.0f ); glVertex3f(   0.0f,  14.0f, 0.0f );
-      glTexCoord2f( 240.0f/256.0f,          0.0f ); glVertex3f( 640.0f,  14.0f, 0.0f );
-      glTexCoord2f( 240.0f/256.0f, 224.0f/256.0f ); glVertex3f( 640.0f, 462.0f, 0.0f );
-      glTexCoord2f(          0.0f, 224.0f/256.0f ); glVertex3f(   0.0f, 462.0f, 0.0f );
+      glTexCoord2f(          0.0f,          0.0f ); glVertex3f( l,  14.0f, 0.0f );
+      glTexCoord2f( 240.0f/256.0f,          0.0f ); glVertex3f( r,  14.0f, 0.0f );
+      glTexCoord2f( 240.0f/256.0f, 224.0f/256.0f ); glVertex3f( r, 462.0f, 0.0f );
+      glTexCoord2f(          0.0f, 224.0f/256.0f ); glVertex3f( l, 462.0f, 0.0f );
     glEnd();
+
+    if( !oric->scanlines ) return;
+
+    glBindTexture( GL_TEXTURE_2D, tex[TEX_SCANLINES] );
+    glBegin( GL_QUADS );
+    for( y=14; y<224*2+14; y+=32 )
+    {
+      glTexCoord2f( 0.0f, 0.0f ); glVertex3f( l,    y, 0.0f );
+      glTexCoord2f( 1.0f, 0.0f ); glVertex3f( r,    y, 0.0f );
+      glTexCoord2f( 1.0f, 1.0f ); glVertex3f( r, y+32, 0.0f );
+      glTexCoord2f( 0.0f, 1.0f ); glVertex3f( l, y+32, 0.0f );
+    }
+    glEnd();
+
     return;
   }
 
@@ -283,7 +310,7 @@ void preinit_render_gl( struct machine *oric )
 
 SDL_bool init_render_gl( struct machine *oric )
 {
-  int depth, i;
+  int depth, i, x, y;
   const SDL_VideoInfo *info = NULL;
 
   depth = 32;
@@ -317,6 +344,29 @@ SDL_bool init_render_gl( struct machine *oric )
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
   glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[TEX_VIDEO].w, tx[TEX_VIDEO].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[TEX_VIDEO].buf );
+
+  tx[TEX_SCANLINES].w = 32;
+  tx[TEX_SCANLINES].h = 32;
+  tx[TEX_SCANLINES].buf = malloc( 32*32*4 );
+  if( !tx[TEX_SCANLINES].buf ) return SDL_FALSE;
+
+  for( y=0; y<32; y++ )
+  {
+    for( x=0; x<32*4; )
+    {
+      tx[TEX_SCANLINES].buf[y*32*4+x++] = 0x00;
+      tx[TEX_SCANLINES].buf[y*32*4+x++] = 0x00;
+      tx[TEX_SCANLINES].buf[y*32*4+x++] = 0x00;
+      tx[TEX_SCANLINES].buf[y*32*4+x++] = (y&1) ? 0x50 : 0x00;
+    }
+  }
+
+  glBindTexture( GL_TEXTURE_2D, tex[TEX_SCANLINES] );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+  glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[TEX_SCANLINES].w, tx[TEX_SCANLINES].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[TEX_SCANLINES].buf );
 
   // Get the GUI palette
   for( i=0; i<NUM_GUI_COLS; i++ )

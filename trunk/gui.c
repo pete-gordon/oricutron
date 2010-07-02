@@ -136,6 +136,9 @@ void toggleautoinsrt( struct machine *oric, struct osdmenuitem *mitem, int dummy
 void togglesymbolsauto( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglecasesyms( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglevsynchack( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newrendermode );
+void togglehstretch( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 //void savesnap( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 
 // Menu definitions. Name, key name, SDL key code, function, parameter
@@ -152,7 +155,9 @@ struct osdmenuitem mainitems[] = { { "Insert tape...",         NULL,   0,       
 //                                   { OSDMENUBAR,               NULL,   0,        NULL,            0 },
                                    { "Hardware options...",    "H",    'h',      gotomenu,        1 },
                                    { "Audio options...",       "A",    'a',      gotomenu,        2 },
-                                   { "Video options...",       "V",    'v',      NULL,            0 },
+#ifdef __OPENGL_AVAILABLE__
+                                   { "Video options...",       "V",    'v',      gotomenu,        4 },
+#endif
                                    { "Debug options...",       "D",    'd',      gotomenu,        3 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0 },
                                    { "Reset",                  "[F4]", SDLK_F4,  resetoric,       0 },
@@ -192,10 +197,26 @@ struct osdmenuitem dbopitems[] = { { " Autoload symbols file", NULL,   0,       
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0 },
                                    { NULL, } };
 
+struct osdmenuitem vdopitems[] = { { " OpenGL rendering",      "O",    'o',      swap_render_mode, RENDERMODE_GL },
+                                   { " Software rendering",    "S",    's',      swap_render_mode, RENDERMODE_SW },
+                                   { OSDMENUBAR,               NULL,   0,        NULL,            0 },
+                                   { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0 },
+                                   { NULL, } };
+
+struct osdmenuitem glopitems[] = { { " OpenGL rendering",      "O",    'o',      swap_render_mode, RENDERMODE_GL },
+                                   { " Software rendering",    "S",    's',      swap_render_mode, RENDERMODE_SW },
+                                   { OSDMENUBAR,               NULL,   0,        NULL,            0 },
+                                   { " Horizontal stretch",    "H",    'h',      togglehstretch,  0 },
+                                   { " Scanlines",             "C",    'c',      togglescanlines, 0 },
+                                   { OSDMENUBAR,               NULL,   0,        NULL,            0 },
+                                   { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0 },
+                                   { NULL, } };
+
 struct osdmenu menus[] = { { "Main Menu",         0, mainitems },
                            { "Hardware options", 13, hwopitems },
                            { "Audio options",     3, auopitems },
-                           { "Debug options",     3, dbopitems } };
+                           { "Debug options",     3, dbopitems },
+                           { "Video options",     3, vdopitems } };
 
 // Load a 24bit BMP for the GUI
 SDL_bool gimg_load( struct guiimg *gi )
@@ -671,7 +692,6 @@ void free_textzone( struct machine *oric, int i )
 {
   oric->render_textzone_free( oric, i );
   if( !tz[i] ) return;
-  if( tz[i]->renddata ) free( tz[i]->renddata );
   free( tz[i] );
   tz[i] = NULL;
 }
@@ -948,6 +968,34 @@ void toggleautoinsrt( struct machine *oric, struct osdmenuitem *mitem, int dummy
   mitem->name = "\x0e""Autoinsert tape";
 }
 
+// Toggle hstretch on/off
+void togglehstretch( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+  if( oric->hstretch )
+  {
+    oric->hstretch = SDL_FALSE;
+    mitem->name = " Horizontal stretch";
+    return;
+  }
+
+  oric->hstretch = SDL_TRUE;
+  mitem->name = "\x0e""Horizontal stretch";
+}
+
+// Toggle scanlines on/off
+void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+  if( oric->scanlines )
+  {
+    oric->scanlines = SDL_FALSE;
+    mitem->name = " Scanlines";
+    return;
+  }
+
+  oric->scanlines = SDL_TRUE;
+  mitem->name = "\x0e""Scanlines";
+}
+
 // Go to a different menu
 void gotomenu( struct machine *oric, struct osdmenuitem *mitem, int menunum )
 {
@@ -1148,6 +1196,7 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
 void set_render_mode( struct machine *oric, int whichrendermode )
 {
+  oric->rendermode = whichrendermode;
   switch( whichrendermode )
   {
     case RENDERMODE_SW:
@@ -1159,6 +1208,11 @@ void set_render_mode( struct machine *oric, int whichrendermode )
       oric->render_video          = render_video_sw;
       oric->init_render           = init_render_sw;
       oric->shut_render           = shut_render_sw;
+      vdopitems[0].name = " OpenGL rendering";
+      vdopitems[1].name = "\x0e""Software rendering";
+      glopitems[0].name = " OpenGL rendering";
+      glopitems[1].name = "\x0e""Software rendering";
+      menus[4].items = vdopitems;
       break;
 
 #ifdef __OPENGL_AVAILABLE__
@@ -1171,6 +1225,11 @@ void set_render_mode( struct machine *oric, int whichrendermode )
       oric->render_video          = render_video_gl;
       oric->init_render           = init_render_gl;
       oric->shut_render           = shut_render_gl;
+      vdopitems[0].name = "\x0e""OpenGL rendering";
+      vdopitems[1].name = " Software rendering";
+      glopitems[0].name = "\x0e""OpenGL rendering";
+      glopitems[1].name = " Software rendering";
+      menus[4].items = glopitems;
       break;
 #endif
 
@@ -1183,17 +1242,27 @@ void set_render_mode( struct machine *oric, int whichrendermode )
       oric->render_video          = render_video_null;
       oric->init_render           = init_render_null;
       oric->shut_render           = shut_render_null;
+      vdopitems[0].name = " OpenGL rendering";
+      vdopitems[1].name = " Software rendering";
+      glopitems[0].name = " OpenGL rendering";
+      glopitems[1].name = " Software rendering";
+      menus[4].items = vdopitems;
       break;
   }
 }
 
-SDL_bool swap_render_mode( struct machine *oric, int newrendermode )
+void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newrendermode )
 {
+  if( oric->rendermode == newrendermode ) return;
   oric->shut_render( oric );
   set_render_mode( oric, newrendermode );
-  if( oric->init_render( oric ) ) return SDL_TRUE;
+  if( oric->init_render( oric ) )
+  {
+    oric->emu_mode = EM_RUNNING;
+    return;
+  }
   set_render_mode( oric, RENDERMODE_NULL );
-  return SDL_FALSE;
+  oric->emu_mode = EM_PLEASEQUIT; 
 }
 
 
@@ -1268,6 +1337,16 @@ void setmenutoggles( struct machine *oric )
     dbopitems[1].name = "\x0e""Case-sensitive symbols";
   else
     dbopitems[1].name = " Case-sensitive symbols";
+
+  if( oric->hstretch )
+    glopitems[3].name = "\x0e""Horizontal stretch";
+  else
+    glopitems[3].name = " Horizontal stretch";
+
+  if( oric->scanlines )
+    glopitems[4].name = "\x0e""Scanlines";
+  else
+    glopitems[4].name = " Scanlines";
 
   hwopitems[6].func = microdiscrom_valid ? setdrivetype : NULL;
   hwopitems[7].func = jasminrom_valid ? setdrivetype : NULL;

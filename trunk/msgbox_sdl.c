@@ -43,6 +43,7 @@ struct msgboxbut
 };
 
 extern SDL_Surface *screen;
+extern struct textzone *tz[NUM_TZ];
 static struct msgboxbut *btns;
 static int cbtn;
 
@@ -57,16 +58,16 @@ static struct msgboxbut ocbuts[] = { {  2, 5, "   OK   " },
 static struct msgboxbut obuts[]  = { { 26, 5, "   OK   " },
                                      { -1,-1, NULL } };
 
-SDL_bool init_msgbox( void )
+SDL_bool init_msgbox( struct machine *oric )
 {
   if( !alloc_textzone( oric, TZ_MSGBOX, 80, 120, 60, 8, "Oricutron Request" ) ) return SDL_FALSE;
 
   return SDL_TRUE;
 }
 
-void shut_msgbox( void )
+void shut_msgbox( struct machine *oric )
 {
-  free_textzone( TZ_MSGBOX );
+  free_textzone( oric, TZ_MSGBOX );
 }
 
 // Render the filerequester
@@ -91,7 +92,7 @@ static void msgbox_render( struct machine *oric )
   oric->render_begin( oric );
 
   oric->render_video( oric, SDL_TRUE );
-  draw_textzone( tz[TZ_MSGBOX] );
+  oric->render_textzone( oric, TZ_MSGBOX );
 
   oric->render_end( oric );
 }

@@ -29,8 +29,6 @@
 #include "machine.h"
 #include "render_null.h"
 
-static struct SDL_Surface *screen;
-
 void render_begin_null( struct machine *oric )
 {
 }

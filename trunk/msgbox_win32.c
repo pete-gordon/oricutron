@@ -39,12 +39,12 @@
 #include "machine.h"
 #include "msgbox.h"
 
-SDL_bool init_msgbox( void )
+SDL_bool init_msgbox( struct machine *oric )
 {
   return SDL_TRUE;
 }
 
-void shut_msgbox( void )
+void shut_msgbox( struct machine *oric )
 {
 }
 
