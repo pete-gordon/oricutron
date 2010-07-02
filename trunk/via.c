@@ -184,7 +184,7 @@ void tape_autoinsert( struct machine *oric )
 {
   char *odir;
 
-  if( strncmp( &oric->mem[oric->pch_fd_getname_addr], oric->lasttapefile, 16 ) == 0 )
+  if( strncmp( (char *)&oric->mem[oric->pch_fd_getname_addr], oric->lasttapefile, 16 ) == 0 )
     oric->mem[oric->pch_fd_getname_addr] = 0;
 
   // Try and load the tape image
