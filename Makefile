@@ -238,7 +238,8 @@ $(RSRC_BEOS): oricutron.rdef
 	$(BEOS_RC) -o $@ $<
 
 clean:
-	rm -f $(TARGET) *.bak *.o $(RESOURCES) -R $(PKGDIR) printer_out.txt
+	rm -f $(TARGET) *.bak *.o $(RESOURCES) printer_out.txt
+	rm -rf "$(PKGDIR)"
 
 
 install-beos install-haiku:
