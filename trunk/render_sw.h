@@ -23,7 +23,7 @@ void render_begin_sw( struct machine *oric );
 void render_end_sw( struct machine *oric );
 void render_textzone_alloc_sw( struct machine *oric, int i );
 void render_textzone_free_sw( struct machine *oric, int i );
-void render_textzone_sw( struct machine *oric, struct textzone *ptz );
+void render_textzone_sw( struct machine *oric, int i );
 void render_video_sw( struct machine *oric, SDL_bool doublesize );
 void preinit_render_sw( struct machine *oric );
 SDL_bool init_render_sw( struct machine *oric );

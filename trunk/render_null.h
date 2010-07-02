@@ -23,7 +23,7 @@ void render_begin_null( struct machine *oric );
 void render_end_null( struct machine *oric );
 void render_textzone_alloc_null( struct machine *oric, int i );
 void render_textzone_free_null( struct machine *oric, int i );
-void render_textzone_null( struct machine *oric, struct textzone *ptz );
+void render_textzone_null( struct machine *oric, int i );
 void render_video_null( struct machine *oric, SDL_bool doublesize );
 void preinit_render_null( struct machine *oric );
 SDL_bool init_render_null( struct machine *oric );

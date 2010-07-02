@@ -48,6 +48,7 @@
 struct texture
 {
   int w, h;
+  float tw, th;
   Uint8 *buf;
 };
 
@@ -55,16 +56,75 @@ static GLuint tex[NUM_TEXTURES];
 static struct texture tx[NUM_TEXTURES];
 
 static struct SDL_Surface *screen;
+static Uint32 gpal[NUM_GUI_COLS];
 
+extern unsigned char sgpal[];
 extern SDL_bool fullscreen;
 extern struct textzone *tz[NUM_TZ];
 extern Uint8 oricpalette[];
 
+// Our "lovely" hand-coded font
+extern unsigned char thefont[];
+
+// Print a char onto a textzone texture
+//   i         = textzone number
+//   x,y       = location
+//   ch        = which char to draw
+//   fcol      = foreground colour
+//   bcol      = background colour
+//   solidfont = use background colour
+static void printchar( int i, int x, int y, unsigned char ch, Uint32 fcol, Uint32 bcol, SDL_bool solidfont )
+{
+  int px, py, c;
+  unsigned char *fptr;
+  struct texture *ptx = &tx[i+TEX_TZ];
+  Uint32 *ptr;
+
+  if( ch > 127 ) return;
+
+  ptr = (Uint32 *)&ptx->buf[(y*ptx->w+x)*4];
+
+  fptr = &thefont[ch*12];
+
+  for( py=0; py<12; py++ )
+  {
+    for( c=0x80, px=0; px<8; px++, c>>=1 )
+    {
+      if( (*fptr)&c )
+      {
+        *(ptr++) = fcol;
+      } else {
+        if( solidfont )
+          *(ptr++) = bcol;
+        else
+          ptr++;
+      }
+    }
+
+    ptr += ptx->w-8;
+    fptr++;
+  }
+}
+
 static void update_textzone_texture( struct machine *oric, int i )
 {
+  int x, y, px, py, o;
+
   if( !tz[i] ) return;
   if( !tz[i]->modified ) return;
   if( !tx[i+TEX_TZ].buf ) return;
+
+  o = 0;
+
+  for( y=0, py=0; y<tz[i]->h; y++, py+=12 )
+  {
+    for( x=0, px=0; x<tz[i]->w; x++, o++, px+=8 )
+      printchar( i, px, py, tz[i]->tx[o], gpal[tz[i]->fc[o]], gpal[tz[i]->bc[o]], SDL_TRUE );
+  }
+  
+
+  glBindTexture( GL_TEXTURE_2D, tex[i+TEX_TZ] );
+  glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[i+TEX_TZ].w, tx[i+TEX_TZ].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[i+TEX_TZ].buf );
 
   tz[i]->modified = SDL_FALSE;
 }
@@ -145,6 +205,9 @@ void render_textzone_alloc_gl( struct machine *oric, int i )
     return;
   }
 
+  tx[i+TEX_TZ].tw = ((float)(tz[i]->w*8)) / ((float)tx[i+TEX_TZ].w);
+  tx[i+TEX_TZ].th = ((float)(tz[i]->h*12)) / ((float)tx[i+TEX_TZ].h);
+
   glBindTexture( GL_TEXTURE_2D, tex[i+TEX_TZ] );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
@@ -167,8 +230,18 @@ void render_textzone_free_gl( struct machine *oric, int i )
   tx[i+TEX_TZ].h = 0;
 }
 
-void render_textzone_gl( struct machine *oric, struct textzone *ptz )
+void render_textzone_gl( struct machine *oric, int i )
 {
+  if( !tz[i] ) return;
+  if( !tx[i+TEX_TZ].buf ) return;
+
+  glBindTexture( GL_TEXTURE_2D, tex[i+TEX_TZ] );
+  glBegin( GL_QUADS );
+    glTexCoord2f(            0.0f,            0.0f ); glVertex3f(            tz[i]->x,             tz[i]->y, 0.0f );
+    glTexCoord2f( tx[i+TEX_TZ].tw,            0.0f ); glVertex3f( tz[i]->x+tz[i]->w*8,             tz[i]->y, 0.0f );
+    glTexCoord2f( tx[i+TEX_TZ].tw, tx[i+TEX_TZ].th ); glVertex3f( tz[i]->x+tz[i]->w*8, tz[i]->y+tz[i]->h*12, 0.0f );
+    glTexCoord2f(            0.0f, tx[i+TEX_TZ].th ); glVertex3f(            tz[i]->x, tz[i]->y+tz[i]->h*12, 0.0f );
+  glEnd();
 }
 
 void render_video_gl( struct machine *oric, SDL_bool doublesize )
@@ -245,11 +318,17 @@ SDL_bool init_render_gl( struct machine *oric )
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
   glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[TEX_VIDEO].w, tx[TEX_VIDEO].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[TEX_VIDEO].buf );
 
+  // Get the GUI palette
+  for( i=0; i<NUM_GUI_COLS; i++ )
+  {
+    gpal[i] = (sgpal[i*3]<<24)|(sgpal[i*3+1]<<16)|(sgpal[i*3+2]<<8)|0xff;
+    gpal[i] = _BE32( gpal[i] );
+  }
+
   for( i=0; i<NUM_TZ; i++ )
     render_textzone_alloc_gl( oric, i );
 
   SDL_WM_SetCaption( APP_NAME_FULL, APP_NAME_FULL );
-
 
   return SDL_TRUE;
 }

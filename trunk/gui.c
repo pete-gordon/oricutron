@@ -393,7 +393,7 @@ void render( struct machine *oric )
   {
     case EM_MENU:
       oric->render_video( oric, SDL_TRUE );
-      if( tz[TZ_MENU] ) oric->render_textzone( oric, tz[TZ_MENU] );
+      if( tz[TZ_MENU] ) oric->render_textzone( oric, TZ_MENU );
       break;
 
     case EM_RUNNING:

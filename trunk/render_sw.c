@@ -39,6 +39,7 @@ static Uint32 dpal[8];
 
 extern SDL_bool fullscreen, hwsurface;
 static SDL_bool needclr;
+extern struct textzone *tz[NUM_TZ];
 extern unsigned char sgpal[];
 extern Uint8 oricpalette[];
 
@@ -102,9 +103,10 @@ void render_textzone_free_sw( struct machine *oric, int i )
 {
 }
 
-void render_textzone_sw( struct machine *oric, struct textzone *ptz )
+void render_textzone_sw( struct machine *oric, int i )
 {
   int x, y, o;
+  struct textzone *ptz = tz[i];
   Uint16 *sp;
 
   sp = &((Uint16 *)screen->pixels)[pixpitch*ptz->y+ptz->x];
