@@ -41,20 +41,16 @@
 #include "main.h"
 #include "ula.h"
 
-extern SDL_Surface *screen;
-extern int pixpitch;
-extern Uint16 gpal[];
 extern SDL_bool showfps, warpspeed, soundavailable, soundon;
 extern char diskpath[], diskfile[], filetmp[];
 extern char telediskpath[], telediskfile[];
+extern SDL_bool refreshstatus, refreshavi;
 
 char atmosromfile[1024];
 char oric1romfile[1024];
 char mdiscromfile[1024];
 char jasmnromfile[1024];
 char telebankfiles[8][1024];
-
-SDL_bool needclr = SDL_TRUE, refreshstatus = SDL_TRUE, refreshdisks = SDL_TRUE, refreshavi = SDL_TRUE, refreshtape = SDL_TRUE;
 
 struct avi_handle *vidcap = NULL;
 char vidcapname[128];
@@ -101,92 +97,6 @@ void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode )
       if( soundavailable )
         SDL_PauseAudio( 1 );
       break;
-  }
-}
-
-// Copy the video output buffer to the SDL surface
-void video_show( struct machine *oric )
-{
-  int x, y;
-  Uint8 *sptr;
-  Uint16 *dptr;
-  Uint32 *dptr2, *dptr3, c, pp2;
-
-  if( !oric->scr )
-    return;
-    
-  pp2 = pixpitch/2;
-
-  if( ( oric->vid_double ) && ( oric->emu_mode != EM_DEBUG ) )
-  {
-    if( needclr )
-    {
-      refreshstatus = SDL_TRUE;
-      dptr = (Uint16 *)screen->pixels;
-      for( y=0; y<480; y++ )
-      {
-        for( x=0; x<640; x++ )
-          *(dptr++) = gpal[4];
-        dptr += pixpitch-640;
-      }
-      needclr = SDL_FALSE;
-    }
-
-    if( refreshstatus )
-      draw_statusbar();
-
-    if( refreshdisks || refreshstatus )
-    {
-      draw_disks( oric );
-      refreshdisks = SDL_FALSE;
-    }
-
-    if( refreshavi || refreshstatus )
-    {
-      draw_avirec( vidcap != NULL );
-      refreshavi = SDL_FALSE;
-    }
-
-    if( refreshtape || refreshstatus )
-    {
-      draw_tape( oric );
-      refreshtape = SDL_FALSE;
-    }
-
-    refreshstatus = SDL_FALSE;
-
-    sptr = oric->scr;
-    dptr2 = (Uint32 *)(&((Uint16 *)screen->pixels)[320-240+pixpitch*(240-226)]);
-    dptr3 = dptr2+pp2;
-    for( y=0; y<224; y++ )
-    {
-      for( x=0; x<240; x++ )
-      {
-        c = oric->dpal[*(sptr++)];
-        *(dptr2++) = c;
-        *(dptr3++) = c;
-      }
-      dptr2 += pixpitch-240;
-      dptr3 += pixpitch-240;
-    }
-    return;
-  }
-
-  needclr = SDL_TRUE;
-
-  sptr = oric->scr;
-  dptr = (Uint16 *)screen->pixels;
-
-  for( y=0; y<4; y++ )
-  {
-    memset( dptr, 0, 480 );
-    dptr += pixpitch;
-  }
-  for( ; y<228; y++ )
-  {
-    for( x=0; x<240; x++ )
-      *(dptr++) = oric->pal[*(sptr++)];
-    dptr += pixpitch-240;
   }
 }
 
@@ -711,7 +621,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
         
         case SDLK_F5:
           showfps = showfps ? SDL_FALSE : SDL_TRUE;
-          if( !showfps ) needclr = SDL_TRUE;
+          if( !showfps ) refreshstatus = SDL_TRUE;
           break;
 
         case SDLK_F6:
@@ -997,12 +907,6 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       if( !load_rom( oric, oric1romfile, -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) ) return SDL_FALSE;
       load_patches( oric, oric1romfile );
 
-      for( i=0; i<8; i++ )
-      {
-        oric->pal[i] = SDL_MapRGB( screen->format, oricpalette[i*3], oricpalette[i*3+1], oricpalette[i*3+2] );
-        oric->dpal[i] = (oric->pal[i]<<16)|oric->pal[i];
-      }
-
       oric->cyclesperraster = 64;
       oric->vid_start = 65;
       oric->vid_maxrast = 312;
@@ -1056,18 +960,6 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
 
       if( !load_rom( oric, oric1romfile, -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) ) return SDL_FALSE;
       load_patches( oric, oric1romfile );
-
-      oric->pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
-      oric->pal[1] = SDL_MapRGB( screen->format, 0xff, 0x00, 0x00 );
-      oric->pal[2] = SDL_MapRGB( screen->format, 0x00, 0xff, 0x00 );
-      oric->pal[3] = SDL_MapRGB( screen->format, 0xff, 0xff, 0x00 );
-      oric->pal[4] = SDL_MapRGB( screen->format, 0x00, 0x00, 0xff );
-      oric->pal[5] = SDL_MapRGB( screen->format, 0xff, 0x00, 0xff );
-      oric->pal[6] = SDL_MapRGB( screen->format, 0x00, 0xff, 0xff );
-      oric->pal[7] = SDL_MapRGB( screen->format, 0xff, 0xff, 0xff );
-
-      for( i=0; i<8; i++ )
-        oric->dpal[i] = (oric->pal[i]<<16)|oric->pal[i];
 
       oric->cyclesperraster = 64;
       oric->vid_start = 65;
@@ -1123,18 +1015,6 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       if( !load_rom( oric, atmosromfile, -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) ) return SDL_FALSE;
       load_patches( oric, atmosromfile );
 
-      oric->pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
-      oric->pal[1] = SDL_MapRGB( screen->format, 0xff, 0x00, 0x00 );
-      oric->pal[2] = SDL_MapRGB( screen->format, 0x00, 0xff, 0x00 );
-      oric->pal[3] = SDL_MapRGB( screen->format, 0xff, 0xff, 0x00 );
-      oric->pal[4] = SDL_MapRGB( screen->format, 0x00, 0x00, 0xff );
-      oric->pal[5] = SDL_MapRGB( screen->format, 0xff, 0x00, 0xff );
-      oric->pal[6] = SDL_MapRGB( screen->format, 0x00, 0xff, 0xff );
-      oric->pal[7] = SDL_MapRGB( screen->format, 0xff, 0xff, 0xff );
-
-      for( i=0; i<8; i++ )
-        oric->dpal[i] = (oric->pal[i]<<16)|oric->pal[i];
-
       oric->cyclesperraster = 64;
       oric->vid_start = 65;
       oric->vid_maxrast = 312;
@@ -1183,18 +1063,6 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->tele_currbank = 7;
       oric->tele_banktype = oric->tele_bank[7].type;
       oric->rom           = oric->tele_bank[7].ptr;
-
-      oric->pal[0] = SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 );
-      oric->pal[1] = SDL_MapRGB( screen->format, 0xff, 0x00, 0x00 );
-      oric->pal[2] = SDL_MapRGB( screen->format, 0x00, 0xff, 0x00 );
-      oric->pal[3] = SDL_MapRGB( screen->format, 0xff, 0xff, 0x00 );
-      oric->pal[4] = SDL_MapRGB( screen->format, 0x00, 0x00, 0xff );
-      oric->pal[5] = SDL_MapRGB( screen->format, 0xff, 0x00, 0xff );
-      oric->pal[6] = SDL_MapRGB( screen->format, 0x00, 0xff, 0xff );
-      oric->pal[7] = SDL_MapRGB( screen->format, 0xff, 0xff, 0xff );
-
-      for( i=0; i<8; i++ )
-        oric->dpal[i] = (oric->pal[i]<<16)|oric->pal[i];
 
       oric->cyclesperraster = 64;
       oric->vid_start = 65;

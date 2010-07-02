@@ -40,6 +40,8 @@
 #include "avi.h"
 #include "main.h"
 #include "ula.h"
+#include "render_sw.h"
+#include "render_gl.h"
 
 #define FRAMES_TO_AVERAGE 15
 
@@ -325,7 +327,9 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 
   preinit_ula( oric );
   preinit_machine( oric );
-  preinit_gui();
+  preinit_render_sw( oric );
+  preinit_render_gl( oric );
+  preinit_gui( oric );
 
   load_config( sto );
 
@@ -546,7 +550,7 @@ void shut( struct machine *oric )
   mon_shut();
   shut_filerequester();
   shut_msgbox();
-  shut_gui();
+  shut_gui( oric );
 #ifdef __amigaos4__
   IExec->FreeSignal( timersigbit );
 #endif

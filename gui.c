@@ -50,6 +50,9 @@
 #include "monitor.h"
 #include "machine.h"
 #include "filereq.h"
+#include "render_sw.h"
+#include "render_gl.h"
+#include "render_null.h"
 
 extern struct symboltable usersyms;
 
@@ -63,6 +66,10 @@ extern char jasmnromfile[];
 extern char telebankfiles[8][1024];
 //char snappath[4096], snapfile[512];
 char filetmp[4096+512];
+
+SDL_bool refreshstatus = SDL_TRUE, refreshdisks = SDL_TRUE, refreshavi = SDL_TRUE, refreshtape = SDL_TRUE;
+extern struct avi_handle *vidcap;
+
 
 #define GIMG_W_DISK 18
 #define GIMG_W_TAPE 20
@@ -81,8 +88,6 @@ struct guiimg gimgs[GIMG_LAST] = { { IMAGEPREFIX"statusbar.bmp",              64
                                    { IMAGEPREFIX"tape_stop.bmp",      GIMG_W_TAPE, 16, NULL },
                                    { IMAGEPREFIX"avirec.bmp",         GIMG_W_AVIR, 16, NULL } };
 
-extern SDL_bool fullscreen, hwsurface;
-SDL_Surface *screen = NULL;
 SDL_bool need_sdl_quit = SDL_FALSE;
 SDL_bool soundavailable, soundon;
 extern SDL_bool microdiscrom_valid, jasminrom_valid;
@@ -92,12 +97,6 @@ extern SDL_bool microdiscrom_valid, jasminrom_valid;
 #define GIMG_POS_TAPEX   (640-4-GIMG_W_TAPE)
 #define GIMG_POS_DISKX   (GIMG_POS_TAPEX-(6+(GIMG_W_DISK*4)))
 #define GIMG_POS_AVIRECX (GIMG_POS_DISKX-(6+GIMG_W_AVIR))
-
-// Our "lovely" hand-coded font
-extern unsigned char thefont[];
-
-// Believe it or not, i have defined more than 2 shades of blue :)
-#define NUM_GUI_COLS 9
 
 // Text zone (and other gui area) colours
 unsigned char sgpal[] = { 0x00, 0x00, 0x00,     // 0 = black
@@ -110,18 +109,12 @@ unsigned char sgpal[] = { 0x00, 0x00, 0x00,     // 0 = black
                           0xa0, 0xa0, 0x00,     // 7 = yellow
                           0x80, 0x00, 0x00 };   // 8 = dark red
 
-// GUI colours in display format
-Uint16 gpal[NUM_GUI_COLS];
-
 // All the textzones. Spaces in this array
 // are reserved in gui.h
-struct textzone *tz[TZ_LAST];
+struct textzone *tz[NUM_TZ];
 
 // Temporary string buffer
 char vsptmp[VSPTMPSIZE];
-
-// Cached screen->pitch
-int pixpitch;
 
 // FPS calculation vars
 extern Uint32 frametimeave;
@@ -207,6 +200,7 @@ struct osdmenu menus[] = { { "Main Menu",         0, mainitems },
 // Load a 24bit BMP for the GUI
 SDL_bool gimg_load( struct guiimg *gi )
 {
+/*
   SDL_RWops *f;
   Uint8 hdrbuf[640*3];
   Sint32 x, y;
@@ -263,13 +257,14 @@ SDL_bool gimg_load( struct guiimg *gi )
   }
 
   SDL_RWclose( f );
-
+*/
   return SDL_TRUE;
 }
 
 // Draw a GUI image at X,Y
 void gimg_draw( struct guiimg *gi, Sint32 xp, Sint32 yp )
 {
+/*
   Uint16 *sptr, *dptr;
   Sint32 x, y;
 
@@ -282,11 +277,13 @@ void gimg_draw( struct guiimg *gi, Sint32 xp, Sint32 yp )
       *(dptr++) = *(sptr++);
     dptr += pixpitch-gi->w;
   }
+*/
 }
 
 // Draw part of an image (xp,yp = screen location, ox, oy = offset into image, w, h = dimensions)
 void gimg_drawpart( struct guiimg *gi, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 oy, Sint32 w, Sint32 h )
 {
+/*
   Uint16 *sptr, *dptr;
   Sint32 x, y;
 
@@ -300,6 +297,7 @@ void gimg_drawpart( struct guiimg *gi, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 o
     sptr += gi->w-w;
     dptr += pixpitch-w;
   }
+*/
 }
 
 // Draw the statusbar at the bottom
@@ -386,18 +384,43 @@ void render( struct machine *oric )
   char tmp[64];
   int perc, fps; //, i;
 
-  if( SDL_MUSTLOCK( screen ) )
-    SDL_LockSurface( screen );
+  if( oric->emu_mode == EM_DEBUG )
+    mon_update( oric );
+
+  oric->render_begin( oric );
 
   switch( oric->emu_mode )
   {
     case EM_MENU:
-      video_show( oric );
-      if( tz[TZ_MENU] ) draw_textzone( tz[TZ_MENU] );
+      oric->render_video( oric, SDL_TRUE );
+      if( tz[TZ_MENU] ) oric->render_textzone( oric, tz[TZ_MENU] );
       break;
 
     case EM_RUNNING:
-      video_show( oric );
+      oric->render_video( oric, SDL_TRUE );
+      if( refreshstatus )
+        draw_statusbar();
+
+      if( refreshdisks || refreshstatus )
+      {
+        draw_disks( oric );
+        refreshdisks = SDL_FALSE;
+      }
+
+      if( refreshavi || refreshstatus )
+      {
+        draw_avirec( vidcap != NULL );
+        refreshavi = SDL_FALSE;
+      }
+
+      if( refreshtape || refreshstatus )
+      {
+        draw_tape( oric );
+        refreshtape = SDL_FALSE;
+      }
+
+      refreshstatus = SDL_FALSE;
+
       if( showfps )
       {
         fps = 100000/(frametimeave?frametimeave:1);
@@ -406,15 +429,15 @@ void render( struct machine *oric )
         else
           perc = 166667/(frametimeave?frametimeave:1);
         sprintf( tmp, "%4d.%02d%% - %4dFPS", perc/100, perc%100, fps/100 );
-        statusprintstr( 0, gpal[1], tmp );
+//        statusprintstr( 0, gpal[1], tmp );
       }
       if( popuptime > 0 )
       {
         popuptime--;
-        if( popuptime == 0 )
-          printstr( 320, 0, gpal[1], gpal[4], "                                        " );
-        else
-          printstr( 320, 0, gpal[1], gpal[4], popupstr );
+//        if( popuptime == 0 )
+//          printstr( 320, 0, gpal[1], gpal[4], "                                        " );
+//        else
+//          printstr( 320, 0, gpal[1], gpal[4], popupstr );
       }
       break;
 
@@ -423,45 +446,7 @@ void render( struct machine *oric )
       break;
   }
 
-  if( SDL_MUSTLOCK( screen ) )
-    SDL_UnlockSurface( screen );
-
-  SDL_Flip( screen );
-}
-
-// Print a char onto a 16-bit framebuffer
-//   ptr       = where to draw it
-//   ch        = which char to draw
-//   fcol      = foreground colour
-//   bcol      = background colour
-//   solidfont = use background colour
-static void printchar( Uint16 *ptr, unsigned char ch, Uint16 fcol, Uint16 bcol, SDL_bool solidfont )
-{
-  int px, py, c;
-  unsigned char *fptr;
-
-  if( ch > 127 ) return;
-
-  fptr = &thefont[ch*12];
-
-  for( py=0; py<12; py++ )
-  {
-    for( c=0x80, px=0; px<8; px++, c>>=1 )
-    {
-      if( (*fptr)&c )
-      {
-        *(ptr++) = fcol;
-      } else {
-        if( solidfont )
-          *(ptr++) = bcol;
-        else
-          ptr++;
-      }
-    }
-
-    ptr += pixpitch - 8;
-    fptr++;
-  }
+  oric->render_end( oric );
 }
 
 // Draws a box in a textzone (uses the box chars in the font)
@@ -574,25 +559,7 @@ void tzsetcol( struct textzone *ptz, int fc, int bc )
   ptz->cbc = bc;
 }
 
-// Render a textzone onto the SDL surface
-void draw_textzone( struct textzone *ptz )
-{
-  int x, y, o;
-  Uint16 *sp;
-
-  sp = &((Uint16 *)screen->pixels)[pixpitch*ptz->y+ptz->x];
-  o = 0;
-  for( y=0; y<ptz->h; y++ )
-  {
-    for( x=0; x<ptz->w; x++, o++ )
-    {
-      printchar( sp, ptz->tx[o], gpal[ptz->fc[o]], gpal[ptz->bc[o]], SDL_TRUE );
-      sp += 8;
-    }
-    sp += pixpitch*12-8*ptz->w;
-  }
-}
-
+/*
 // Print a string directly onto the SDL surface
 //   x,y   = location
 //   fc,bc = colours
@@ -644,6 +611,7 @@ void statusprintstr( int x, Uint16 fc, char *str )
   for( i=0; str[i]; i++, x+=8 )
     statusprintchar( x, fc, str[i] );
 }
+*/
 
 // Set the title of a textzone
 void tzsettitle( struct textzone *ptz, char *title )
@@ -1167,11 +1135,54 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
   return done;
 }
 
+void set_render_mode( struct machine *oric, int whichrendermode )
+{
+  switch( whichrendermode )
+  {
+    case RENDERMODE_SW:
+      oric->render_begin    = render_begin_sw;
+      oric->render_end      = render_end_sw;
+      oric->render_textzone = render_textzone_sw;
+      oric->render_video    = render_video_sw;
+      oric->init_render     = init_render_sw;
+      oric->shut_render     = shut_render_sw;
+      break;
+
+    case RENDERMODE_GL:
+      oric->render_begin    = render_begin_gl;
+      oric->render_end      = render_end_gl;
+      oric->render_textzone = render_textzone_gl;
+      oric->render_video    = render_video_gl;
+      oric->init_render     = init_render_gl;
+      oric->shut_render     = shut_render_gl;
+      break;
+
+    default:
+      oric->render_begin    = render_begin_null;
+      oric->render_end      = render_end_null;
+      oric->render_textzone = render_textzone_null;
+      oric->render_video    = render_video_null;
+      oric->init_render     = init_render_null;
+      oric->shut_render     = shut_render_null;
+      break;
+  }
+}
+
+SDL_bool swap_render_mode( struct machine *oric, int newrendermode )
+{
+  oric->shut_render( oric );
+  set_render_mode( oric, newrendermode );
+  if( oric->init_render( oric ) ) return SDL_TRUE;
+  set_render_mode( oric, RENDERMODE_NULL );
+  return SDL_FALSE;
+}
+
+
 // Set things to default that can't fail
-void preinit_gui( void )
+void preinit_gui( struct machine *oric )
 {
   int i;
-  for( i=0; i<TZ_LAST; i++ ) tz[i] = NULL;
+  for( i=0; i<NUM_TZ; i++ ) tz[i] = NULL;
   for( i=0; i<GIMG_LAST; i++ ) gimgs[i].buf = NULL;
   strcpy( tapepath, FILEPREFIX"tapes" );
   strcpy( tapefile, "" );
@@ -1191,7 +1202,7 @@ void preinit_gui( void )
   strcpy( telebankfiles[5], ROMPREFIX"teleass" );
   strcpy( telebankfiles[6], ROMPREFIX"hyperbas" );
   strcpy( telebankfiles[7], ROMPREFIX"telmon24" );
-
+  set_render_mode( oric, RENDERMODE_NULL );
 //  strcpy( snappath, FILEPREFIX"snapshots" );
 //  strcpy( snapfile, "" );
 }
@@ -1252,7 +1263,6 @@ SDL_bool init_gui( struct machine *oric )
 {
   int i;
   SDL_AudioSpec wanted;
-  Sint32 surfacemode;
 
   // Go SDL!
   if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO ) < 0 )
@@ -1261,43 +1271,6 @@ SDL_bool init_gui( struct machine *oric )
     return SDL_FALSE;
   }
   need_sdl_quit = SDL_TRUE;
-
-  surfacemode = fullscreen ? SDL_FULLSCREEN : SDL_SWSURFACE;
-  if( hwsurface ) { surfacemode &= ~SDL_SWSURFACE; surfacemode |= SDL_HWSURFACE; }
-
-  SDL_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
-
-  screen = SDL_SetVideoMode( 640, 480, 16, surfacemode );
-  if( !screen )
-  {
-    printf( "SDL video failed\n" );
-    return SDL_FALSE;
-  }
-
-  // Set up SDL audio
-  wanted.freq     = AUDIO_FREQ; 
-  wanted.format   = AUDIO_S16SYS; 
-  wanted.channels = 2; /* 1 = mono, 2 = stereo */
-  wanted.samples  = AUDIO_BUFLEN;
-
-  wanted.callback = (void*)ay_callback;
-  wanted.userdata = &oric->ay;
-
-  soundavailable = SDL_FALSE;
-  soundon = SDL_FALSE;
-  if( SDL_OpenAudio( &wanted, NULL ) >= 0 )
-  {
-    soundon = SDL_TRUE;
-    soundavailable = SDL_TRUE;
-  }
-
-  SDL_WM_SetCaption( APP_NAME_FULL, APP_NAME_FULL );
-
-  // Get the GUI palette
-  for( i=0; i<NUM_GUI_COLS; i++ )
-    gpal[i] = SDL_MapRGB( screen->format, sgpal[i*3  ], sgpal[i*3+1], sgpal[i*3+2] );
-
-  pixpitch = screen->pitch / 2;
 
   // Allocate all text zones
   tz[TZ_MONITOR] = alloc_textzone( 0, 228, 50, 21, "Monitor" );
@@ -1317,6 +1290,28 @@ SDL_bool init_gui( struct machine *oric )
   tz[TZ_DISK]   = alloc_textzone( 400, 228, 30, 21, "Disk Status" );
   if( !tz[TZ_DISK] ) { printf( "Out of memory\n" ); return SDL_FALSE; }
 
+  SDL_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
+
+  set_render_mode( oric, RENDERMODE_SW );
+  if( !oric->init_render( oric ) ) return SDL_FALSE;
+
+  // Set up SDL audio
+  wanted.freq     = AUDIO_FREQ; 
+  wanted.format   = AUDIO_S16SYS; 
+  wanted.channels = 2; /* 1 = mono, 2 = stereo */
+  wanted.samples  = AUDIO_BUFLEN;
+
+  wanted.callback = (void*)ay_callback;
+  wanted.userdata = &oric->ay;
+
+  soundavailable = SDL_FALSE;
+  soundon = SDL_FALSE;
+  if( SDL_OpenAudio( &wanted, NULL ) >= 0 )
+  {
+    soundon = SDL_TRUE;
+    soundavailable = SDL_TRUE;
+  }
+
   for( i=0; i<GIMG_LAST; i++ )
   {
     if( !gimg_load( &gimgs[i] ) ) return SDL_FALSE;
@@ -1327,11 +1322,13 @@ SDL_bool init_gui( struct machine *oric )
 }
 
 // Bye bye.
-void shut_gui( void )
+void shut_gui( struct machine *oric )
 {
   int i;
 
-  for( i=0; i<TZ_LAST; i++ )
+  oric->shut_render( oric );
+
+  for( i=0; i<NUM_TZ; i++ )
     free_textzone( tz[i] );
 
   if( need_sdl_quit ) SDL_Quit();
