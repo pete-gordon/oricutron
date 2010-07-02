@@ -79,16 +79,12 @@ void shut_filerequester( void )
 // Render the filerequester
 static void filereq_render( struct machine *oric )
 {
-  if( SDL_MUSTLOCK( screen ) )
-    SDL_LockSurface( screen );
+  oric->render_begin( oric );
 
-  video_show( oric );
+  oric->render_video( oric, SDL_TRUE );
   draw_textzone( tz[TZ_FILEREQ] );
 
-  if( SDL_MUSTLOCK( screen ) )
-    SDL_UnlockSurface( screen );
-
-  SDL_Flip( screen );
+  oric->render_end( oric );
 }
 
 // Add a file to the list of files to show in the file requester

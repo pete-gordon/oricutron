@@ -88,16 +88,12 @@ static void msgbox_render( struct machine *oric )
     tzstrpos( tz[TZ_MSGBOX], btns[i].x, btns[i].y, btns[i].str );
   }
 
-  if( SDL_MUSTLOCK( screen ) )
-    SDL_LockSurface( screen );
+  oric->render_begin( oric );
 
-  video_show( oric );
+  oric->render_video( oric, SDL_TRUE );
   draw_textzone( tz[TZ_MSGBOX] );
 
-  if( SDL_MUSTLOCK( screen ) )
-    SDL_UnlockSurface( screen );
-
-  SDL_Flip( screen );
+  oric->render_end( oric );
 }
 
 static int msgbox_checkover( int x, int y )
