@@ -38,7 +38,6 @@
 
 // Externs
 extern SDL_Surface *screen;
-static struct textzone *tz = NULL;
 
 // A directory entry in the file requester
 struct frq_ent
@@ -67,15 +66,14 @@ static int freqf_clicktime=0;
 
 SDL_bool init_filerequester( void )
 {
-  tz = alloc_textzone( 160, 48, 40, 32, "Files" );
-  if( !tz ) return SDL_FALSE;
+  if( !alloc_textzone( oric, TZ_FILEREQ, 160, 48, 40, 32, "Files" ) ) return SDL_FALSE;
 
   return SDL_TRUE;
 }
 
 void shut_filerequester( void )
 {
-  if( tz ) free_textzone( tz );
+  free_textzone( TZ_FILEREQ );
 }
 
 // Render the filerequester
@@ -85,7 +83,7 @@ static void filereq_render( struct machine *oric )
     SDL_LockSurface( screen );
 
   video_show( oric );
-  draw_textzone( tz );
+  draw_textzone( tz[TZ_FILEREQ] );
 
   if( SDL_MUSTLOCK( screen ) )
     SDL_UnlockSurface( screen );
@@ -201,24 +199,24 @@ static void filereq_showfiles( int offset, int cfile )
   {
     // Set the colours
     if( (i+offset) < freqf_used )
-      tzsetcol( tz, freqfiles[i+offset].isdir ? 1 : 0, (i+offset)==cfile ? 7 : 6 );
+      tzsetcol( tz[TZ_FILEREQ], freqfiles[i+offset].isdir ? 1 : 0, (i+offset)==cfile ? 7 : 6 );
     else
-      tzsetcol( tz, 0, 6 );
+      tzsetcol( tz[TZ_FILEREQ], 0, 6 );
 
     // Clear this line
-    o = (i+1)*tz->w+1;
+    o = (i+1)*tz[TZ_FILEREQ]->w+1;
     for( j=0; j<38; j++, o++ )
     {
-      tz->fc[o] = tz->cfc;
-      tz->bc[o] = tz->cbc;
-      tz->tx[o] = 32;
+      tz[TZ_FILEREQ]->fc[o] = tz[TZ_FILEREQ]->cfc;
+      tz[TZ_FILEREQ]->bc[o] = tz[TZ_FILEREQ]->cbc;
+      tz[TZ_FILEREQ]->tx[o] = 32;
     }
 
     if( (i+offset) >= freqf_used )
       continue;
 
     // Print the name
-    tzstrpos( tz, 1, i+1, freqfiles[i+offset].showname );
+    tzstrpos( tz[TZ_FILEREQ], 1, i+1, freqfiles[i+offset].showname );
   }
 }
 
@@ -239,22 +237,22 @@ static void filereq_drawtbox( struct frq_textbox *tb, SDL_bool active )
 {
   int i, j, o;
 
-  tzsetcol( tz, 0, active ? 7 : 6 );
-  o = (tb->y*tz->w)+tb->x;
+  tzsetcol( tz[TZ_FILEREQ], 0, active ? 7 : 6 );
+  o = (tb->y*tz[TZ_FILEREQ]->w)+tb->x;
   for( i=0,j=tb->vpos; i<tb->w; i++, o++, j++ )
   {
     if( ( active ) && ( j==tb->cpos ) )
     {
-      tz->fc[o] = tz->cbc;
-      tz->bc[o] = tz->cfc;
+      tz[TZ_FILEREQ]->fc[o] = tz[TZ_FILEREQ]->cbc;
+      tz[TZ_FILEREQ]->bc[o] = tz[TZ_FILEREQ]->cfc;
     } else {
-      tz->fc[o] = tz->cfc;
-      tz->bc[o] = tz->cbc;
+      tz[TZ_FILEREQ]->fc[o] = tz[TZ_FILEREQ]->cfc;
+      tz[TZ_FILEREQ]->bc[o] = tz[TZ_FILEREQ]->cbc;
     }
     if( j < tb->slen )
-      tz->tx[o] = tb->buf[j];
+      tz[TZ_FILEREQ]->tx[o] = tb->buf[j];
     else
-      tz->tx[o] = 32;
+      tz[TZ_FILEREQ]->tx[o] = 32;
   }
 }
 
@@ -305,10 +303,10 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   filereq_settbox( &freqf_tbox[0], path );
   filereq_settbox( &freqf_tbox[1], fname );
 
-  tzsettitle( tz, title );
-  tzsetcol( tz, 2, 3 );
-  tzstrpos( tz, 1, 28, "Path:" );
-  tzstrpos( tz, 1, 30, "File:" );
+  tzsettitle( tz[TZ_FILEREQ], title );
+  tzsetcol( tz[TZ_FILEREQ], 2, 3 );
+  tzstrpos( tz[TZ_FILEREQ], 1, 28, "Path:" );
+  tzstrpos( tz[TZ_FILEREQ], 1, 30, "File:" );
 
   if( !filereq_scan( path ) )
   {
@@ -349,15 +347,15 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
     switch( event.type )
     {
       case SDL_MOUSEMOTION:
-        mx = (event.motion.x - tz->x)/8;
-        my = (event.motion.y - tz->y)/12;
+        mx = (event.motion.x - tz[TZ_FILEREQ]->x)/8;
+        my = (event.motion.y - tz[TZ_FILEREQ]->y)/12;
         break;
 
       case SDL_MOUSEBUTTONDOWN:
         if( event.button.button == SDL_BUTTON_LEFT )
         {
-          mx = (event.button.x - tz->x)/8;
-          my = (event.button.y - tz->y)/12;
+          mx = (event.button.x - tz[TZ_FILEREQ]->x)/8;
+          my = (event.button.y - tz[TZ_FILEREQ]->y)/12;
           mclick = SDL_GetTicks();
         }
         break;

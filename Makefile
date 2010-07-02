@@ -64,8 +64,8 @@ PLATFORM ?= os4
 
 # Amiga OS4
 ifeq ($(PLATFORM),os4)
-CFLAGS += -mcrt=newlib -gstabs -I/SDK/Local/common/include/ -I/SDK/Local/common/include/SDL/ -I/SDK/Local/newlib/include/ -I/SDK/Local/newlib/include/SDL/
-LFLAGS += -lm `sdl-config --libs` -mcrt=newlib -gstabs
+CFLAGS += -mcrt=newlib -gstabs -I/SDK/Local/common/include/ -I/SDK/Local/common/include/SDL/ -I/SDK/Local/newlib/include/ -I/SDK/Local/newlib/include/SDL/ -D__OPENGL_AVAILABLE__
+LFLAGS += -lm `sdl-config --libs` -lGL -mcrt=newlib -gstabs
 FILEREQ_SRC = filereq_amiga.c
 MSGBOX_SRC = msgbox_os4.c
 endif
@@ -79,7 +79,7 @@ endif
 
 # Windows 32bit
 ifeq ($(PLATFORM),win32)
-CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__
+CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__
 LFLAGS += -lm -mwindows -lmingw32 -lSDLmain -lSDL -lopengl32
 TARGET = oricutron.exe
 FILEREQ_SRC = filereq_win32.c
@@ -97,7 +97,7 @@ PLATFORMTYPE = beos
 endif
 
 ifeq ($(PLATFORMTYPE),beos)
-CFLAGS += $(shell sdl-config --cflags)
+CFLAGS += -D__OPENGL_AVAILABLE__ $(shell sdl-config --cflags)
 LFLAGS += $(shell sdl-config --libs)
 CFLAGS += -Wno-multichar
 CFLAGS += -g
@@ -117,7 +117,7 @@ endif
 
 # Mac OS X
 ifeq ($(PLATFORM),osx)
-CFLAGS += $(shell sdl-config --cflags)
+CFLAGS += -D__OPENGL_AVAILABLE__ $(shell sdl-config --cflags)
 LFLAGS += $(shell sdl-config --libs)
 LFLAGS += -lm -Wl,-framework,OpenGL
 TARGET = oricutron

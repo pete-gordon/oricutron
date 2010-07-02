@@ -43,7 +43,6 @@ struct msgboxbut
 };
 
 extern SDL_Surface *screen;
-static struct textzone *tz = NULL;
 static struct msgboxbut *btns;
 static int cbtn;
 
@@ -60,15 +59,14 @@ static struct msgboxbut obuts[]  = { { 26, 5, "   OK   " },
 
 SDL_bool init_msgbox( void )
 {
-  tz = alloc_textzone( 80, 120, 60, 8, "Oricutron Request" );
-  if( !tz ) return SDL_FALSE;
+  if( !alloc_textzone( oric, TZ_MSGBOX, 80, 120, 60, 8, "Oricutron Request" ) ) return SDL_FALSE;
 
   return SDL_TRUE;
 }
 
 void shut_msgbox( void )
 {
-  if( tz ) free_textzone( tz );
+  free_textzone( TZ_MSGBOX );
 }
 
 // Render the filerequester
@@ -80,21 +78,21 @@ static void msgbox_render( struct machine *oric )
   {
     if( i==cbtn )
     {
-      tz->cfc = 1;
-      tz->cbc = 2;
+      tz[TZ_MSGBOX]->cfc = 1;
+      tz[TZ_MSGBOX]->cbc = 2;
     } else {
-      tz->cfc = 2;
-      tz->cbc = 5;
+      tz[TZ_MSGBOX]->cfc = 2;
+      tz[TZ_MSGBOX]->cbc = 5;
     }
 
-    tzstrpos( tz, btns[i].x, btns[i].y, btns[i].str );
+    tzstrpos( tz[TZ_MSGBOX], btns[i].x, btns[i].y, btns[i].str );
   }
 
   if( SDL_MUSTLOCK( screen ) )
     SDL_LockSurface( screen );
 
   video_show( oric );
-  draw_textzone( tz );
+  draw_textzone( tz[TZ_MSGBOX] );
 
   if( SDL_MUSTLOCK( screen ) )
     SDL_UnlockSurface( screen );
@@ -132,16 +130,16 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
   {
     for( j=0; j<3; j++ )
     {
-      tz->fc[lines[j]+i] = 2;
-      tz->bc[lines[j]+i] = 3;
-      tz->tx[lines[j]+i] = 32;
+      tz[TZ_MSGBOX]->fc[lines[j]+i] = 2;
+      tz[TZ_MSGBOX]->bc[lines[j]+i] = 3;
+      tz[TZ_MSGBOX]->tx[lines[j]+i] = 32;
     }
   }
 
   for( i=0; msg[i]; i++ ) if( (msg[i]=='\r')||(msg[i]=='\n') ) break;
 
   for( j=0, k=30-i/2; j<i; j++, k++ )
-    tz->tx[lines[0]+k] = msg[j];
+    tz[TZ_MSGBOX]->tx[lines[0]+k] = msg[j];
   
   while( (msg[i]=='\r')||(msg[i]=='\n') ) i++;
   if( msg[i] )
@@ -149,7 +147,7 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
     msg2 = &msg[i];
     i = strlen( msg2 );
     for( j=0, k=30-i/2; j<i; j++, k++ )
-      tz->tx[lines[1]+k] = msg2[j];
+      tz[TZ_MSGBOX]->tx[lines[1]+k] = msg2[j];
   }
 
   switch( type )
@@ -186,8 +184,8 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
     {
       case SDL_MOUSEMOTION:
         if( presson != -1 ) break;
-        mx = (event.motion.x - tz->x)/8;
-        my = (event.motion.y - tz->y)/12;
+        mx = (event.motion.x - tz[TZ_MSGBOX]->x)/8;
+        my = (event.motion.y - tz[TZ_MSGBOX]->y)/12;
         i = msgbox_checkover( mx, my );
         if( i == -1 ) break;
         if( i != cbtn )
@@ -200,8 +198,8 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
       case SDL_MOUSEBUTTONDOWN:
         if( event.button.button == SDL_BUTTON_LEFT )
         {
-          mx = (event.motion.x - tz->x)/8;
-          my = (event.motion.y - tz->y)/12;
+          mx = (event.motion.x - tz[TZ_MSGBOX]->x)/8;
+          my = (event.motion.y - tz[TZ_MSGBOX]->y)/12;
           i = msgbox_checkover( mx, my );
           if( i == -1 ) break;
           cbtn = i;
@@ -214,8 +212,8 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
         if( event.button.button == SDL_BUTTON_LEFT )
         {
           if( presson == -1 ) break;
-          mx = (event.motion.x - tz->x)/8;
-          my = (event.motion.y - tz->y)/12;
+          mx = (event.motion.x - tz[TZ_MSGBOX]->x)/8;
+          my = (event.motion.y - tz[TZ_MSGBOX]->y)/12;
           i = msgbox_checkover( mx, my );
           if( i == presson )
           {
