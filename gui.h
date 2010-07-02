@@ -49,7 +49,6 @@ struct textzone
   int px, py, cfc, cbc;     // Current position and text colours
   unsigned char *tx;        // Text buffer
   unsigned char *fc, *bc;   // Colour buffers
-  void *renddata;           // Data used by the rendering module
   SDL_bool modified;
 };
 

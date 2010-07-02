@@ -46,7 +46,7 @@ static struct FileRequester *req = NULL;
 struct AslIFace *IAsl = NULL;
 #endif
 
-SDL_bool init_filerequester( void )
+SDL_bool init_filerequester( struct machine *oric )
 {
   AslBase = OpenLibrary( "asl.library", 39 );
   if( !AslBase ) return SDL_FALSE;
@@ -62,7 +62,7 @@ SDL_bool init_filerequester( void )
   return SDL_TRUE;
 }
 
-void shut_filerequester( void )
+void shut_filerequester( struct machine *oric )
 {
   if( req ) FreeAslRequest( req );
 #ifdef __amigaos4__

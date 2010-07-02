@@ -502,8 +502,8 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 #endif
 
   if( !init_gui( oric ) ) { free( sto ); return SDL_FALSE; }
-  if( !init_filerequester() ) { free( sto ); return SDL_FALSE; }
-  if( !init_msgbox() ) { free( sto ); return SDL_FALSE; }
+  if( !init_filerequester( oric ) ) { free( sto ); return SDL_FALSE; }
+  if( !init_msgbox( oric ) ) { free( sto ); return SDL_FALSE; }
   oric->drivetype = sto->start_disktype;
   if( !init_ula( oric ) ) { free( sto ); return SDL_FALSE; }
   if( !init_machine( oric, sto->start_machine, SDL_TRUE ) ) { free( sto ); return SDL_FALSE; }
@@ -548,8 +548,8 @@ void shut( struct machine *oric )
   shut_machine( oric );
   shut_ula( oric );
   mon_shut();
-  shut_filerequester();
-  shut_msgbox();
+  shut_filerequester( oric );
+  shut_msgbox( oric );
   shut_gui( oric );
 #ifdef __amigaos4__
   IExec->FreeSignal( timersigbit );

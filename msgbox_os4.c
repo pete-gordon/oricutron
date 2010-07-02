@@ -48,7 +48,7 @@ struct Library *RequesterBase = NULL;
 struct IntuitionIFace *IIntuition = NULL;
 struct RequesterIFace *IRequester = NULL;
 
-SDL_bool init_msgbox( void )
+SDL_bool init_msgbox( struct machine *oric )
 {
   IntuitionBase = IExec->OpenLibrary( "intuition.library", 51 );
   if( !IntuitionBase )
@@ -81,7 +81,7 @@ SDL_bool init_msgbox( void )
   return SDL_TRUE;
 }
 
-void shut_msgbox( void )
+void shut_msgbox( struct machine *oric )
 {
   if( IRequester ) IExec->DropInterface( (struct Interface *)IRequester );
   if( RequesterBase ) IExec->CloseLibrary( RequesterBase );

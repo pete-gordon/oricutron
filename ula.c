@@ -244,6 +244,8 @@ SDL_bool ula_doraster( struct machine *oric )
 void preinit_ula( struct machine *oric )
 {
   oric->scr = NULL;
+  oric->hstretch = SDL_TRUE;
+  oric->scanlines = SDL_FALSE;
 }
 
 SDL_bool init_ula( struct machine *oric )

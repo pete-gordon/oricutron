@@ -101,12 +101,12 @@ PanelLooper::Wait()
 }
 
 
-SDL_bool init_filerequester( void )
+SDL_bool init_filerequester( struct machine *oric )
 {
   return SDL_TRUE;
 }
 
-void shut_filerequester( void )
+void shut_filerequester( struct machine *oric )
 {
 }
 
