@@ -29,7 +29,9 @@
 #include <OpenGL/gl.h>
 #endif
 
+#ifndef __WIN32__
 #include <SDL_endian.h>
+#endif
 
 #include "6502.h"
 #include "via.h"
@@ -43,10 +45,13 @@
 #define TEX_VIDEO     (0)
 #define TEX_SCANLINES (1)
 
-#define TEX_TZ      (TEX_SCANLINES+1)
-#define TEX_TZ_LAST ((NUM_TZ+TEX_TZ)-1)
+#define TEX_TZ        (TEX_SCANLINES+1)
+#define TEX_TZ_LAST   ((NUM_TZ+TEX_TZ)-1)
 
-#define NUM_TEXTURES (TEX_TZ_LAST+1)
+#define TEX_GIMG      (TEX_TZ_LAST+1)
+#define TEX_GIMG_LAST ((NUM_GIMG+TEX_GIMG)-1)
+
+#define NUM_TEXTURES  (TEX_GIMG_LAST+1)
 
 extern SDL_bool refreshstatus;
 
@@ -69,6 +74,7 @@ extern unsigned char sgpal[];
 extern SDL_bool fullscreen;
 extern struct textzone *tz[NUM_TZ];
 extern Uint8 oricpalette[];
+extern struct guiimg gimgs[NUM_GIMG];
 
 // Our "lovely" hand-coded font
 extern unsigned char thefont[];
@@ -261,10 +267,31 @@ void render_textzone_gl( struct machine *oric, int i )
 
 void render_gimg_gl( int i, Sint32 xp, Sint32 yp )
 {
+  glBindTexture( GL_TEXTURE_2D, tex[i+TEX_GIMG] );
+  glBegin( GL_QUADS );
+    glTexCoord2f(              0.0f,              0.0f ); glVertex3f(            xp,            yp, 0.0f );
+    glTexCoord2f( tx[i+TEX_GIMG].tw,              0.0f ); glVertex3f( xp+gimgs[i].w,            yp, 0.0f );
+    glTexCoord2f( tx[i+TEX_GIMG].tw, tx[i+TEX_GIMG].th ); glVertex3f( xp+gimgs[i].w, yp+gimgs[i].h, 0.0f );
+    glTexCoord2f(              0.0f, tx[i+TEX_GIMG].th ); glVertex3f(            xp, yp+gimgs[i].h, 0.0f );
+  glEnd();
 }
 
 void render_gimgpart_gl( int i, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 oy, Sint32 w, Sint32 h )
 {
+  float texl, text, texr, texb;
+
+  texl = ((float)ox)/((float)tx[i+TEX_GIMG].w);
+  text = ((float)oy)/((float)tx[i+TEX_GIMG].h);
+  texr = ((float)ox+w)/((float)tx[i+TEX_GIMG].w);
+  texb = ((float)oy+h)/((float)tx[i+TEX_GIMG].h);
+
+  glBindTexture( GL_TEXTURE_2D, tex[i+TEX_GIMG] );
+  glBegin( GL_QUADS );
+    glTexCoord2f( texl, text ); glVertex3f(   xp,   yp, 0.0f );
+    glTexCoord2f( texr, text ); glVertex3f( xp+w,   yp, 0.0f );
+    glTexCoord2f( texr, texb ); glVertex3f( xp+w, yp+h, 0.0f );
+    glTexCoord2f( texl, texb ); glVertex3f(   xp, yp+h, 0.0f );
+  glEnd();
 }
 
 void render_video_gl( struct machine *oric, SDL_bool doublesize )
@@ -306,7 +333,6 @@ void render_video_gl( struct machine *oric, SDL_bool doublesize )
       glTexCoord2f( 0.0f, 1.0f ); glVertex3f( l, y+32, 0.0f );
     }
     glEnd();
-
     return;
   }
 
@@ -320,7 +346,9 @@ void render_video_gl( struct machine *oric, SDL_bool doublesize )
 
 void preinit_render_gl( struct machine *oric )
 {
-  int i;
+  Sint32 i;
+
+  screen = NULL;
 
   for( i=0; i<NUM_TEXTURES; i++ )
   {
@@ -389,6 +417,34 @@ SDL_bool init_render_gl( struct machine *oric )
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
   glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[TEX_SCANLINES].w, tx[TEX_SCANLINES].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[TEX_SCANLINES].buf );
+
+  for( i=0; i<NUM_GIMG; i++ )
+  {
+    tx[i+TEX_GIMG].w   = rounduppow2( gimgs[i].w );
+    tx[i+TEX_GIMG].h   = rounduppow2( gimgs[i].h );
+    tx[i+TEX_GIMG].buf = malloc( tx[i+TEX_GIMG].w * tx[i+TEX_GIMG].h * 4 );
+    if( !tx[i+TEX_GIMG].buf ) return SDL_FALSE;
+
+    tx[i+TEX_GIMG].tw = ((float)gimgs[i].w) / ((float)tx[i+TEX_GIMG].w);
+    tx[i+TEX_GIMG].th = ((float)gimgs[i].h) / ((float)tx[i+TEX_GIMG].h);
+
+    for( y=0; y<gimgs[i].h; y++ )
+    {
+      for( x=0; x<gimgs[i].w; x++ )
+      {
+        tx[i+TEX_GIMG].buf[(y*tx[i+TEX_GIMG].w+x)*4  ] = gimgs[i].buf[(y*gimgs[i].w+x)*3];
+        tx[i+TEX_GIMG].buf[(y*tx[i+TEX_GIMG].w+x)*4+1] = gimgs[i].buf[(y*gimgs[i].w+x)*3+1];
+        tx[i+TEX_GIMG].buf[(y*tx[i+TEX_GIMG].w+x)*4+2] = gimgs[i].buf[(y*gimgs[i].w+x)*3+2];
+        tx[i+TEX_GIMG].buf[(y*tx[i+TEX_GIMG].w+x)*4+3] = 0xff;
+      }
+    }
+    glBindTexture( GL_TEXTURE_2D, tex[i+TEX_GIMG] );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[i+TEX_GIMG].w, tx[i+TEX_GIMG].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[i+TEX_GIMG].buf );
+  }
 
   // Get the GUI palette
   for( i=0; i<NUM_GUI_COLS; i++ )
