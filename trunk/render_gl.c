@@ -129,7 +129,6 @@ static void update_textzone_texture( struct machine *oric, int i )
       printchar( i, px, py, tz[i]->tx[o], gpal[tz[i]->fc[o]], gpal[tz[i]->bc[o]], SDL_TRUE );
   }
   
-
   glBindTexture( GL_TEXTURE_2D, tex[i+TEX_TZ] );
   glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[i+TEX_TZ].w, tx[i+TEX_TZ].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[i+TEX_TZ].buf );
 
@@ -144,7 +143,7 @@ static void update_video_texture( struct machine *oric )
   o = 0;
   sptr = oric->scr;
 
-  for( y=0; y<224; y++ )
+  for( y=0; y<225; y++ )
   {
     for( x=0; x<240; x++ )
     {
@@ -154,8 +153,16 @@ static void update_video_texture( struct machine *oric )
       tx[TEX_VIDEO].buf[o++] = oricpalette[c++];
       tx[TEX_VIDEO].buf[o++] = 0xff;
     }
+    
+    // Repeat the right and bottom borders to prevent linear interpolation to
+    // garbage at the edges (GL_CLAMP takes care of the left and top)
+    tx[TEX_VIDEO].buf[o++] = oricpalette[c-3];
+    tx[TEX_VIDEO].buf[o++] = oricpalette[c-2];
+    tx[TEX_VIDEO].buf[o++] = oricpalette[c-1];
+    tx[TEX_VIDEO].buf[o++] = 0xff;
 
-    o += (tx[TEX_VIDEO].w-240) * 4;
+    o += (tx[TEX_VIDEO].w-241) * 4;
+    if( y == 223 ) { sptr -= 240; }
   }
 
   glBindTexture( GL_TEXTURE_2D, tex[TEX_VIDEO] );
@@ -354,8 +361,8 @@ SDL_bool init_render_gl( struct machine *oric )
   if( !tx[TEX_VIDEO].buf ) return SDL_FALSE;
 
   glBindTexture( GL_TEXTURE_2D, tex[TEX_VIDEO] );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
   glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[TEX_VIDEO].w, tx[TEX_VIDEO].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[TEX_VIDEO].buf );
@@ -377,8 +384,8 @@ SDL_bool init_render_gl( struct machine *oric )
   }
 
   glBindTexture( GL_TEXTURE_2D, tex[TEX_SCANLINES] );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
   glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[TEX_SCANLINES].w, tx[TEX_SCANLINES].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[TEX_SCANLINES].buf );
