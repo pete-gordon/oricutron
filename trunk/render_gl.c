@@ -186,10 +186,6 @@ void render_begin_gl( struct machine *oric )
   update_video_texture( oric );
   for( i=0; i<NUM_TZ; i++ )
     update_textzone_texture( oric, i );
-
-  glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-  glEnable( GL_TEXTURE_2D );
-  glEnable( GL_BLEND );
 }
 
 void render_end_gl( struct machine *oric )
@@ -300,8 +296,6 @@ void render_video_gl( struct machine *oric, SDL_bool doublesize )
   int y;
 
   glBindTexture( GL_TEXTURE_2D, tex[TEX_VIDEO] );
-  glColor4ub( 255, 255, 255, 255 );
-  glLoadIdentity();
 
   if( doublesize )
   {
@@ -379,8 +373,13 @@ SDL_bool init_render_gl( struct machine *oric )
   glMatrixMode( GL_MODELVIEW );
   glLoadIdentity();
   glDisable( GL_DEPTH_TEST );
+  glColor4ub( 255, 255, 255, 255 );
 
   glGenTextures( NUM_TEXTURES, tex );
+
+  glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+  glEnable( GL_TEXTURE_2D );
+  glEnable( GL_BLEND );
 
   // Allocate texture buffers
   tx[TEX_VIDEO].w = 256;
