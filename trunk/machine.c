@@ -41,7 +41,7 @@
 #include "main.h"
 #include "ula.h"
 
-extern SDL_bool showfps, warpspeed, soundavailable, soundon;
+extern SDL_bool warpspeed, soundavailable, soundon;
 extern char diskpath[], diskfile[], filetmp[];
 extern char telediskpath[], telediskfile[];
 extern SDL_bool refreshstatus, refreshavi;
@@ -558,6 +558,12 @@ void preinit_machine( struct machine *oric )
   oric->prclose = 0;
   oric->lasttapefile[0] = 0;
   oric->azerty = SDL_FALSE;
+  oric->showfps = SDL_TRUE;
+  oric->popupstr[0] = 0;
+  oric->newpopupstr = SDL_FALSE;
+  oric->popuptime = 0;
+  oric->statusstr[0] = 0;
+  oric->newstatusstr = SDL_FALSE;
 
   oric->drivetype = DRV_NONE;
   for( i=0; i<MAX_DRIVES; i++ )
@@ -620,8 +626,10 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           break;
         
         case SDLK_F5:
-          showfps = showfps ? SDL_FALSE : SDL_TRUE;
-          if( !showfps ) refreshstatus = SDL_TRUE;
+          oric->showfps = oric->showfps ? SDL_FALSE : SDL_TRUE;
+          refreshstatus = SDL_TRUE;
+          oric->statusstr[0] = 0;
+          oric->newstatusstr = SDL_TRUE;
           break;
 
         case SDLK_F6:
@@ -673,7 +681,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
              ay_lockaudio( &oric->ay );
              avi_close( &vidcap );
              ay_unlockaudio( &oric->ay );
-             do_popup( "AVI capture stopped" );
+             do_popup( oric, "AVI capture stopped" );
              refreshavi = SDL_TRUE;
              break;
            }
@@ -685,7 +693,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
            if( vidcap )
            {
              vidcapcount++;
-             do_popup( vidcapname );
+             do_popup( oric, vidcapname );
            }
            refreshavi = SDL_TRUE;
            break;

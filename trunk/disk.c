@@ -63,12 +63,12 @@ void disk_popup( struct machine *oric, int drive )
   char tmp[40];
   if( !oric->diskname[drive][0] )
   {
-    do_popup( "\x14\x15\x13" );
+    do_popup( oric, "\x14\x15\x13" );
     return;
   }
 
   sprintf( tmp, "\x14\x15""%d %-16s", drive, oric->diskname[drive] );
-  do_popup( tmp );
+  do_popup( oric, tmp );
 }
 
 // Free a disk image and clear the pointer to it
@@ -224,7 +224,7 @@ SDL_bool diskimage_save( struct machine *oric, char *fname, int drive )
   f = fopen( fname, "wb" );
   if( !f )
   {
-    do_popup( "\x14\x15Save failed" );
+    do_popup( oric, "\x14\x15Save failed" );
     return SDL_FALSE;
   }
 
@@ -232,7 +232,7 @@ SDL_bool diskimage_save( struct machine *oric, char *fname, int drive )
   if( fwrite( oric->wddisk.disk[drive]->rawimage, oric->wddisk.disk[drive]->rawimagelen, 1, f ) != 1 )
   {
     fclose( f );
-    do_popup( "\x14\x15Save failed" );
+    do_popup( oric, "\x14\x15Save failed" );
     return SDL_FALSE;
   }
 
@@ -283,7 +283,7 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
   oric->wddisk.disk[drive] = diskimage_alloc( len );
   if( !oric->wddisk.disk[drive] )
   {
-    do_popup( "\x14\x15""Out of memory" );
+    do_popup( oric, "\x14\x15""Out of memory" );
     fclose( f );
     return SDL_FALSE;
   }
@@ -293,7 +293,7 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
   {
     fclose( f );
     disk_eject( oric, drive );
-    do_popup( "\x14\x15""Read error" );
+    do_popup( oric, "\x14\x15""Read error" );
     return SDL_FALSE;
   }
 
@@ -303,7 +303,7 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
   if( strncmp( (char *)oric->wddisk.disk[drive]->rawimage, "MFM_DISK", 8 ) != 0 )
   {
     disk_eject( oric, drive );
-    do_popup( "\x14\x15""Invalid disk image" );
+    do_popup( oric, "\x14\x15""Invalid disk image" );
     return SDL_FALSE;
   }
 
@@ -318,7 +318,7 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
       ( oric->wddisk.disk[drive]->numsides > 2 ) )
   {
     disk_eject( oric, drive );
-    do_popup( "\x14\x15""Invalid disk image" );
+    do_popup( oric, "\x14\x15""Invalid disk image" );
     return SDL_FALSE;
   }
 
@@ -330,14 +330,14 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
   oric->wddisk.disk[drive]->filename[4096+511] = 0;
 
   // Come up with a suitable short name for popups etc.
-  if( strlen( fname ) > 15 )
+  if( strlen( fname ) > 31 )
   {
-    strncpy( oric->diskname[drive], &fname[strlen(fname)-15], 16 );
+    strncpy( oric->diskname[drive], &fname[strlen(fname)-31], 32 );
     oric->diskname[drive][0] = 22;
   } else {
-    strncpy( oric->diskname[drive], fname, 16 );
+    strncpy( oric->diskname[drive], fname, 32 );
   }
-  oric->diskname[drive][15] = 0;
+  oric->diskname[drive][31] = 0;
 
   // Do the popup
   disk_popup( oric, drive );

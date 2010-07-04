@@ -48,13 +48,13 @@ void tape_popup( struct machine *oric )
   if( !oric->tapename[0] )
   {
     // Eject symbol
-    do_popup( "\x0f\x10\x13" );
+    do_popup( oric, "\x0f\x10\x13" );
     return;
   }
 
   // Tape image name
   sprintf( tmp, "\x0f\x10""%c %-16s", oric->tapemotor ? 18 : 17, oric->tapename );
-  do_popup( tmp );
+  do_popup( oric, tmp );
 }
 
 // Set the tape motor on or off
@@ -166,14 +166,14 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
   tape_rewind( oric );
 
   // Make a displayable version of the image filename
-  if( strlen( fname ) > 15 )
+  if( strlen( fname ) > 31 )
   {
-    strncpy( oric->tapename, &fname[strlen(fname)-15], 16 );
+    strncpy( oric->tapename, &fname[strlen(fname)-31], 32 );
     oric->tapename[0] = 22;
   } else {
-    strncpy( oric->tapename, fname, 16 );
+    strncpy( oric->tapename, fname, 32 );
   }
-  oric->tapename[15] = 0;
+  oric->tapename[31] = 0;
 
   // Show it in the popup
   tape_popup( oric );
@@ -473,11 +473,11 @@ void lprintchar( struct machine *oric, char c )
     oric->prf = fopen( "printer_out.txt", "a" );
     if( !oric->prf )
     {
-      do_popup( "Printing failed :-(" );
+      do_popup( oric, "Printing failed :-(" );
       return;
     }
     
-    do_popup( "Printing to 'printer_out.txt'" );
+    do_popup( oric, "Printing to 'printer_out.txt'" );
   }
   
   // Put the char to the file, set up the timers

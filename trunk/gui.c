@@ -118,7 +118,7 @@ char vsptmp[VSPTMPSIZE];
 
 // FPS calculation vars
 extern Uint32 frametimeave;
-SDL_bool showfps=SDL_TRUE,warpspeed=SDL_FALSE;
+SDL_bool warpspeed=SDL_FALSE;
 
 // Current menu, and highlighted item number
 struct osdmenu *cmenu = NULL;
@@ -350,17 +350,12 @@ void draw_tape( struct machine *oric )
   oric->render_gimg( GIMG_TAPE_PAUSE, GIMG_POS_TAPEX, GIMG_POS_SBARY );
 }
 
-// Info popups
-static int popuptime=0;
-static char popupstr[40];
-
 // Pop up some info!
-void do_popup( char *str )
+void do_popup( struct machine *oric, char *str )
 {
-  int i;
-  strncpy( popupstr, str, 40 ); popupstr[39] = 0;
-  for( i=strlen(popupstr); i<39; i++ ) popupstr[i] = 32;
-  popuptime = 100;
+  strncpy( oric->popupstr, str, 40 ); oric->popupstr[39] = 0;
+  oric->newpopupstr = SDL_TRUE;
+  oric->popuptime = 100;
 }
 
 void render_status( struct machine *oric )
@@ -392,7 +387,6 @@ void render_status( struct machine *oric )
 // Top-level rendering routine
 void render( struct machine *oric )
 {
-  char tmp[64];
   int perc, fps; //, i;
 
   if( oric->emu_mode == EM_DEBUG )
@@ -411,23 +405,24 @@ void render( struct machine *oric )
     case EM_RUNNING:
       oric->render_video( oric, SDL_TRUE );
       render_status( oric );
-      if( showfps )
+      if( oric->showfps )
       {
         fps = 100000/(frametimeave?frametimeave:1);
         if( oric->vid_freq )
           perc = 200000/(frametimeave?frametimeave:1);
         else
           perc = 166667/(frametimeave?frametimeave:1);
-        sprintf( tmp, "%4d.%02d%% - %4dFPS", perc/100, perc%100, fps/100 );
-//        statusprintstr( 0, gpal[1], tmp );
+        sprintf( oric->statusstr, "%4d.%02d%% - %4dFPS", perc/100, perc%100, fps/100 );
+        oric->newstatusstr = SDL_TRUE;
       }
-      if( popuptime > 0 )
+      if( oric->popuptime > 0 )
       {
-        popuptime--;
-//        if( popuptime == 0 )
-//          printstr( 320, 0, gpal[1], gpal[4], "                                        " );
-//        else
-//          printstr( 320, 0, gpal[1], gpal[4], popupstr );
+        oric->popuptime--;
+        if( oric->popuptime == 0 )
+        {
+          oric->popupstr[0] = 0;
+          oric->newpopupstr = SDL_TRUE;
+        }
       }
       break;
 
