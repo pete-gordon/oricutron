@@ -115,18 +115,21 @@ void render_end_sw( struct machine *oric )
 {
   int i;
 
-  if( oric->popupstr[0] )
+  if( oric->emu_mode == EM_RUNNING )
   {
-    Uint16 *dptr = &((Uint16 *)screen->pixels)[320];
-    for( i=0; oric->popupstr[i]; i++, dptr += 8 )
-      printchar( dptr, oric->popupstr[i], gpal[1], gpal[4], SDL_TRUE );
-  }
+    if( oric->popupstr[0] )
+    {
+      Uint16 *dptr = &((Uint16 *)screen->pixels)[320];
+      for( i=0; oric->popupstr[i]; i++, dptr += 8 )
+        printchar( dptr, oric->popupstr[i], gpal[1], gpal[4], SDL_TRUE );
+    }
   
-  if( oric->statusstr[0] )
-  {
-    Uint16 *dptr = &((Uint16 *)screen->pixels)[pixpitch*466];
-    for( i=0; oric->statusstr[i]; i++, dptr += 8 )
-      printchar( dptr, oric->statusstr[i], gpal[1], 0, SDL_FALSE );
+    if( oric->statusstr[0] )
+    {
+      Uint16 *dptr = &((Uint16 *)screen->pixels)[pixpitch*466];
+      for( i=0; oric->statusstr[i]; i++, dptr += 8 )
+        printchar( dptr, oric->statusstr[i], gpal[1], 0, SDL_FALSE );
+    }
   }
 
   if( SDL_MUSTLOCK( screen ) )
