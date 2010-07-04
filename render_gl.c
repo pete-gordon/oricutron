@@ -211,26 +211,29 @@ void render_begin_gl( struct machine *oric )
 
 void render_end_gl( struct machine *oric )
 {
-  if( oric->popupstr[0] )
+  if( oric->emu_mode == EM_RUNNING )
   {
-    glBindTexture( GL_TEXTURE_2D, tex[TEX_POPUP] );
-    glBegin( GL_QUADS );
-      glTexCoord2f(          0.0f,        0.0f ); glVertex3f( 320.0f,  0.0f, 0.0f );
-      glTexCoord2f( 320.0f/512.0f,        0.0f ); glVertex3f( 640.0f,  0.0f, 0.0f );
-      glTexCoord2f( 320.0f/512.0f, 12.0f/32.0f ); glVertex3f( 640.0f, 12.0f, 0.0f );
-      glTexCoord2f(          0.0f, 12.0f/32.0f ); glVertex3f( 320.0f, 12.0f, 0.0f );
-    glEnd();    
-  }
+    if( oric->popupstr[0] )
+    {
+      glBindTexture( GL_TEXTURE_2D, tex[TEX_POPUP] );
+      glBegin( GL_QUADS );
+        glTexCoord2f(          0.0f,        0.0f ); glVertex3f( 320.0f,  0.0f, 0.0f );
+        glTexCoord2f( 320.0f/512.0f,        0.0f ); glVertex3f( 640.0f,  0.0f, 0.0f );
+        glTexCoord2f( 320.0f/512.0f, 12.0f/32.0f ); glVertex3f( 640.0f, 12.0f, 0.0f );
+        glTexCoord2f(          0.0f, 12.0f/32.0f ); glVertex3f( 320.0f, 12.0f, 0.0f );
+      glEnd();    
+    }
 
-  if( oric->statusstr[0] )
-  {
-    glBindTexture( GL_TEXTURE_2D, tex[TEX_STATUS] );
-    glBegin( GL_QUADS );
-      glTexCoord2f(          0.0f,        0.0f ); glVertex3f(   0.0f, 466.0f, 0.0f );
-      glTexCoord2f( 320.0f/512.0f,        0.0f ); glVertex3f( 320.0f, 466.0f, 0.0f );
-      glTexCoord2f( 320.0f/512.0f, 12.0f/32.0f ); glVertex3f( 320.0f, 478.0f, 0.0f );
-      glTexCoord2f(          0.0f, 12.0f/32.0f ); glVertex3f(   0.0f, 478.0f, 0.0f );
-    glEnd();    
+    if( oric->statusstr[0] )
+    {
+      glBindTexture( GL_TEXTURE_2D, tex[TEX_STATUS] );
+      glBegin( GL_QUADS );
+        glTexCoord2f(          0.0f,        0.0f ); glVertex3f(   0.0f, 466.0f, 0.0f );
+        glTexCoord2f( 320.0f/512.0f,        0.0f ); glVertex3f( 320.0f, 466.0f, 0.0f );
+        glTexCoord2f( 320.0f/512.0f, 12.0f/32.0f ); glVertex3f( 320.0f, 478.0f, 0.0f );
+        glTexCoord2f(          0.0f, 12.0f/32.0f ); glVertex3f(   0.0f, 478.0f, 0.0f );
+      glEnd();    
+    }
   }
 
   SDL_GL_SwapBuffers();
