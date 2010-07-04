@@ -72,7 +72,7 @@ endif
 
 # MorphOS
 ifeq ($(PLATFORM),MorphOS)
-CFLAGS += `sdl-config --cflags`
+CFLAGS += `sdl-config --cflags` -D__OPENGL_AVAILABLE__
 LFLAGS += `sdl-config --libs` -s
 FILEREQ_SRC = filereq_amiga.c
 endif
