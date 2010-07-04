@@ -44,8 +44,10 @@
 
 #define TEX_VIDEO     (0)
 #define TEX_SCANLINES (1)
+#define TEX_STATUS    (2)
+#define TEX_POPUP     (3)
 
-#define TEX_TZ        (TEX_SCANLINES+1)
+#define TEX_TZ        (TEX_POPUP+1)
 #define TEX_TZ_LAST   ((NUM_TZ+TEX_TZ)-1)
 
 #define TEX_GIMG      (TEX_TZ_LAST+1)
@@ -80,7 +82,7 @@ extern struct guiimg gimgs[NUM_GIMG];
 extern unsigned char thefont[];
 
 // Print a char onto a textzone texture
-//   i         = textzone number
+//   i         = texture number
 //   x,y       = location
 //   ch        = which char to draw
 //   fcol      = foreground colour
@@ -90,7 +92,7 @@ static void printchar( int i, int x, int y, unsigned char ch, Uint32 fcol, Uint3
 {
   int px, py, c;
   unsigned char *fptr;
-  struct texture *ptx = &tx[i+TEX_TZ];
+  struct texture *ptx = &tx[i];
   Uint32 *ptr;
 
   if( ch > 127 ) return;
@@ -132,7 +134,7 @@ static void update_textzone_texture( struct machine *oric, int i )
   for( y=0, py=0; y<tz[i]->h; y++, py+=12 )
   {
     for( x=0, px=0; x<tz[i]->w; x++, o++, px+=8 )
-      printchar( i, px, py, tz[i]->tx[o], gpal[tz[i]->fc[o]], gpal[tz[i]->bc[o]], SDL_TRUE );
+      printchar( i+TEX_TZ, px, py, tz[i]->tx[o], gpal[tz[i]->fc[o]], gpal[tz[i]->bc[o]], SDL_TRUE );
   }
   
   glBindTexture( GL_TEXTURE_2D, tex[i+TEX_TZ] );
@@ -180,16 +182,57 @@ void render_begin_gl( struct machine *oric )
   int i;
   refreshstatus = SDL_TRUE;
 
-  glClearColor(clrcol[0], clrcol[1], clrcol[2], 1.0f);
-  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
   update_video_texture( oric );
   for( i=0; i<NUM_TZ; i++ )
     update_textzone_texture( oric, i );
+
+  if( oric->newpopupstr )
+  {
+    memset( tx[TEX_POPUP].buf, 0, tx[TEX_POPUP].w*tx[TEX_POPUP].h*4 );
+    for( i=0; oric->popupstr[i]; i++ )
+      printchar( TEX_POPUP, i*8, 0, oric->popupstr[i], gpal[1], gpal[4], SDL_TRUE );
+    glBindTexture( GL_TEXTURE_2D, tex[TEX_POPUP] );
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[TEX_POPUP].w, tx[TEX_POPUP].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[TEX_POPUP].buf );
+    oric->newpopupstr = SDL_FALSE;
+  }
+  
+  if( oric->newstatusstr )
+  {
+    memset( tx[TEX_STATUS].buf, 0, tx[TEX_STATUS].w*tx[TEX_STATUS].h*4 );
+    for( i=0; oric->statusstr[i]; i++ )
+      printchar( TEX_STATUS, i*8, 0, oric->statusstr[i], gpal[1], gpal[4], SDL_FALSE );
+    glBindTexture( GL_TEXTURE_2D, tex[TEX_STATUS] );
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[TEX_STATUS].w, tx[TEX_STATUS].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[TEX_STATUS].buf );
+  }
+    
+  glClearColor(clrcol[0], clrcol[1], clrcol[2], 1.0f);
+  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 }
 
 void render_end_gl( struct machine *oric )
 {
+  if( oric->popupstr[0] )
+  {
+    glBindTexture( GL_TEXTURE_2D, tex[TEX_POPUP] );
+    glBegin( GL_QUADS );
+      glTexCoord2f(          0.0f,        0.0f ); glVertex3f( 320.0f,  0.0f, 0.0f );
+      glTexCoord2f( 320.0f/512.0f,        0.0f ); glVertex3f( 640.0f,  0.0f, 0.0f );
+      glTexCoord2f( 320.0f/512.0f, 12.0f/32.0f ); glVertex3f( 640.0f, 12.0f, 0.0f );
+      glTexCoord2f(          0.0f, 12.0f/32.0f ); glVertex3f( 320.0f, 12.0f, 0.0f );
+    glEnd();    
+  }
+
+  if( oric->statusstr[0] )
+  {
+    glBindTexture( GL_TEXTURE_2D, tex[TEX_STATUS] );
+    glBegin( GL_QUADS );
+      glTexCoord2f(          0.0f,        0.0f ); glVertex3f(   0.0f, 466.0f, 0.0f );
+      glTexCoord2f( 320.0f/512.0f,        0.0f ); glVertex3f( 320.0f, 466.0f, 0.0f );
+      glTexCoord2f( 320.0f/512.0f, 12.0f/32.0f ); glVertex3f( 320.0f, 478.0f, 0.0f );
+      glTexCoord2f(          0.0f, 12.0f/32.0f ); glVertex3f(   0.0f, 478.0f, 0.0f );
+    glEnd();    
+  }
+
   SDL_GL_SwapBuffers();
 }
 
@@ -212,8 +255,17 @@ void render_textzone_alloc_gl( struct machine *oric, int i )
 
   if( !tz[i] ) return;
 
+#ifdef __amigaos4__
+// seems to be a bug in OS4 SDL or GL that reallocating the texture
+// a different size causes problems :-/ Or it might just be me being
+// stupid, but i can't see how at this time. Anyway; say hello to mr.
+// ugly workaround
+  tx[i+TEX_TZ].w = 512;
+  tx[i+TEX_TZ].h = 512;
+#else
   tx[i+TEX_TZ].w = rounduppow2( tz[i]->w * 8 );
   tx[i+TEX_TZ].h = rounduppow2( tz[i]->h * 12 );
+#endif
   tx[i+TEX_TZ].buf = malloc( tx[i+TEX_TZ].w*tx[i+TEX_TZ].h*4 );
   if( !tx[i+TEX_TZ].buf )
   {
@@ -352,6 +404,25 @@ void preinit_render_gl( struct machine *oric )
   }
 }
 
+static SDL_bool go_go_gadget_texture( int i, int w, int h, int blendtype, SDL_bool callteximg2d )
+{
+  tx[i].w = w;
+  tx[i].h = h;
+  tx[i].buf = malloc( w*h*4 );
+  if( !tx[i].buf ) return SDL_FALSE;
+  
+  memset( tx[i].buf, 0, w*h*4 );
+
+  glBindTexture( GL_TEXTURE_2D, tex[i] );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, blendtype );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, blendtype );
+  if( callteximg2d )glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[i].buf );
+  
+  return SDL_TRUE;
+}
+
 SDL_bool init_render_gl( struct machine *oric )
 {
   int depth, i, x, y;
@@ -382,22 +453,10 @@ SDL_bool init_render_gl( struct machine *oric )
   glEnable( GL_BLEND );
 
   // Allocate texture buffers
-  tx[TEX_VIDEO].w = 256;
-  tx[TEX_VIDEO].h = 256;
-  tx[TEX_VIDEO].buf = malloc( 256*256*4 );
-  if( !tx[TEX_VIDEO].buf ) return SDL_FALSE;
-
-  glBindTexture( GL_TEXTURE_2D, tex[TEX_VIDEO] );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-  glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[TEX_VIDEO].w, tx[TEX_VIDEO].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[TEX_VIDEO].buf );
-
-  tx[TEX_SCANLINES].w = 32;
-  tx[TEX_SCANLINES].h = 32;
-  tx[TEX_SCANLINES].buf = malloc( 32*32*4 );
-  if( !tx[TEX_SCANLINES].buf ) return SDL_FALSE;
+  if( !go_go_gadget_texture( TEX_VIDEO,     256, 256, GL_LINEAR,  SDL_TRUE ) )  return SDL_FALSE;
+  if( !go_go_gadget_texture( TEX_SCANLINES,  32,  32, GL_NEAREST, SDL_FALSE ) ) return SDL_FALSE;
+  if( !go_go_gadget_texture( TEX_STATUS,    512,  32, GL_NEAREST, SDL_TRUE ) )  return SDL_FALSE;
+  if( !go_go_gadget_texture( TEX_POPUP,     512,  32, GL_NEAREST, SDL_TRUE ) )  return SDL_FALSE;
 
   for( y=0; y<32; y++ )
   {
@@ -409,20 +468,11 @@ SDL_bool init_render_gl( struct machine *oric )
       tx[TEX_SCANLINES].buf[y*32*4+x++] = (y&1) ? 0x50 : 0x00;
     }
   }
-
-  glBindTexture( GL_TEXTURE_2D, tex[TEX_SCANLINES] );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
   glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[TEX_SCANLINES].w, tx[TEX_SCANLINES].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[TEX_SCANLINES].buf );
 
   for( i=0; i<NUM_GIMG; i++ )
   {
-    tx[i+TEX_GIMG].w   = rounduppow2( gimgs[i].w );
-    tx[i+TEX_GIMG].h   = rounduppow2( gimgs[i].h );
-    tx[i+TEX_GIMG].buf = malloc( tx[i+TEX_GIMG].w * tx[i+TEX_GIMG].h * 4 );
-    if( !tx[i+TEX_GIMG].buf ) return SDL_FALSE;
+    if( !go_go_gadget_texture( i+TEX_GIMG, rounduppow2( gimgs[i].w ), rounduppow2( gimgs[i].h ), GL_NEAREST, SDL_FALSE ) ) return SDL_FALSE;
 
     tx[i+TEX_GIMG].tw = ((float)gimgs[i].w) / ((float)tx[i+TEX_GIMG].w);
     tx[i+TEX_GIMG].th = ((float)gimgs[i].h) / ((float)tx[i+TEX_GIMG].h);
@@ -437,11 +487,6 @@ SDL_bool init_render_gl( struct machine *oric )
         tx[i+TEX_GIMG].buf[(y*tx[i+TEX_GIMG].w+x)*4+3] = 0xff;
       }
     }
-    glBindTexture( GL_TEXTURE_2D, tex[i+TEX_GIMG] );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[i+TEX_GIMG].w, tx[i+TEX_GIMG].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[i+TEX_GIMG].buf );
   }
 

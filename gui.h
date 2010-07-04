@@ -101,7 +101,7 @@ enum
 SDL_bool alloc_textzone( struct machine *oric, int i, int x, int y, int w, int h, char *title );
 void free_textzone( struct machine *oric, int i );
 
-void do_popup( char *str );
+void do_popup( struct machine *oric, char *str );
 void makebox( struct textzone *ptz, int x, int y, int w, int h, int fg, int bg );
 void tzsettitle( struct textzone *ptz, char *title );
 void tzstr( struct textzone *ptz, char *text );
@@ -126,3 +126,4 @@ void draw_avirec( struct machine *oric, SDL_bool recording );
 void draw_tape( struct machine *oric );
 void statusprintstr( int x, Uint16 fc, char *str );
 void joinpath( char *path, char *file );
+

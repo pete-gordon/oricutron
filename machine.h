@@ -110,7 +110,7 @@ struct machine
   struct wd17xx    wddisk;
   struct microdisc md;
   struct jasmin jasmin;
-  char diskname[MAX_DRIVES][16];
+  char diskname[MAX_DRIVES][32];
   
   FILE *prf;
   int prclose, prclock;
@@ -121,7 +121,7 @@ struct machine
   SDL_bool tapemotor, tapenoise, tapeturbo, autorewind, autoinsert;
   SDL_bool symbolsautoload, symbolscase;
   char lasttapefile[20];
-  char tapename[16];
+  char tapename[32];
   int tapeturbo_syncstack;
 
   // Filename decoding patch addresses
@@ -157,6 +157,16 @@ struct machine
   void (*render_video)(struct machine *, SDL_bool);
   SDL_bool (*init_render)(struct machine *);
   void (*shut_render)(struct machine *);
+  
+  char popupstr[40];
+  int popuptime;
+  SDL_bool newpopupstr;
+  
+  char statusstr[40];
+  SDL_bool newstatusstr;
+  
+  SDL_bool showfps;
+  
 };
 
 void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode );
