@@ -465,9 +465,10 @@ SDL_bool init_render_gl( struct machine *oric )
       tx[TEX_SCANLINES].buf[y*32*4+x++] = 0x00;
       tx[TEX_SCANLINES].buf[y*32*4+x++] = 0x00;
       tx[TEX_SCANLINES].buf[y*32*4+x++] = 0x00;
-      tx[TEX_SCANLINES].buf[y*32*4+x++] = (y&1) ? 0x50 : 0x00;
+      tx[TEX_SCANLINES].buf[y*32*4+x++] = (y&1) ? 0x30 : 0x00;
     }
   }
+  glBindTexture( GL_TEXTURE_2D, tex[TEX_SCANLINES] );
   glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[TEX_SCANLINES].w, tx[TEX_SCANLINES].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[TEX_SCANLINES].buf );
 
   for( i=0; i<NUM_GIMG; i++ )
