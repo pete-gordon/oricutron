@@ -328,7 +328,9 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   preinit_ula( oric );
   preinit_machine( oric );
   preinit_render_sw( oric );
+#ifdef __OPENGL_AVAILABLE__
   preinit_render_gl( oric );
+#endif
   preinit_gui( oric );
 
   load_config( sto );

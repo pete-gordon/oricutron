@@ -261,4 +261,3 @@ void shut_ula( struct machine *oric )
   if( oric->scr ) free( oric->scr );
   oric->scr = NULL;
 }
-
