@@ -234,6 +234,9 @@ avi.o: avi.c system.h avi.h
 winicon.o: winicon.ico oricutron.rc
 	windres -i oricutron.rc -o winicon.o
 
+Oricutron.guide: ReadMe.txt
+	rx ReadMe2Guide <ReadMe.txt >Oricutron.guide
+
 $(RSRC_BEOS): oricutron.rdef
 	$(BEOS_RC) -o $@ $<
 
@@ -252,13 +255,16 @@ install-beos install-haiku:
 install-linux:
 	install -m 755 $(TARGET) $(INSTALLDIR)/bin
 
+
+package-MorphOS: Oricutron.guide
+	lha -r u RAM:$(PKGDIR) // $(TARGET) $(TARGET).info
+
 package-beos package-haiku:
 	mkdir -p $(PKGDIR)/images
 	copyattr -d $(TARGET) $(PKGDIR)
 	copyattr -d images/* $(PKGDIR)/images
 	install -m 644 $(DOCFILES) $(PKGDIR)
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
-	
 
 package-osx:
 	mkdir -p $(PKGDIR)/Oriculator.app/Contents/MacOS
