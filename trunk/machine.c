@@ -557,8 +557,7 @@ void preinit_machine( struct machine *oric )
   oric->prclock = 0;
   oric->prclose = 0;
   oric->lasttapefile[0] = 0;
-  oric->azerty = SDL_FALSE;
-  oric->qwertz = SDL_FALSE;
+  oric->keymap = KMAP_QWERTY;
   oric->showfps = SDL_TRUE;
   oric->popupstr[0] = 0;
   oric->newpopupstr = SDL_FALSE;
@@ -788,9 +787,13 @@ void clear_patches( struct machine *oric )
   oric->pch_tt_readbyte_storezero_addr = -1;
   oric->pch_tt_available               = SDL_FALSE;
 
-  oric->azerty = SDL_FALSE;
-  oric->qwertz = SDL_FALSE;
+  oric->keymap = KMAP_QWERTY;
 }
+
+static char *keymapnames[] = { "qwerty",
+                               "azerty",
+                               "qwertz",
+                               NULL };
 
 void load_patches( struct machine *oric, char *fname )
 {
@@ -814,18 +817,17 @@ void load_patches( struct machine *oric, char *fname )
 
     for( i=0; isws( filetmp[i] ); i++ ) ;
 
-    if( read_config_int(  &filetmp[i], "fd_getname_pc",              &oric->pch_fd_getname_pc ) )              continue;
-    if( read_config_int(  &filetmp[i], "fd_getname_addr",            &oric->pch_fd_getname_addr ) )            continue;
-    if( read_config_int(  &filetmp[i], "tt_getsync_pc",              &oric->pch_tt_getsync_pc ) )              continue;
-    if( read_config_int(  &filetmp[i], "tt_getsync_end_pc",          &oric->pch_tt_getsync_end_pc ) )          continue;
-    if( read_config_int(  &filetmp[i], "tt_getsync_loop_pc",         &oric->pch_tt_getsync_loop_pc ) )         continue;
-    if( read_config_int(  &filetmp[i], "tt_readbyte_pc",             &oric->pch_tt_readbyte_pc ) )             continue;
-    if( read_config_int(  &filetmp[i], "tt_readbyte_end_pc",         &oric->pch_tt_readbyte_end_pc ) )         continue;
-    if( read_config_int(  &filetmp[i], "tt_readbyte_storebyte_addr", &oric->pch_tt_readbyte_storebyte_addr ) ) continue;
-    if( read_config_int(  &filetmp[i], "tt_readbyte_storezero_addr", &oric->pch_tt_readbyte_storezero_addr ) ) continue;
-    if( read_config_bool( &filetmp[i], "tt_readbyte_setcarry",       &oric->pch_tt_readbyte_setcarry ) )       continue;
-    if( read_config_bool( &filetmp[i], "azerty",                     &oric->azerty ) ) continue;
-    if( read_config_bool( &filetmp[i], "qwertz",                     &oric->qwertz ) ) continue;
+    if( read_config_int(    &filetmp[i], "fd_getname_pc",              &oric->pch_fd_getname_pc ) )              continue;
+    if( read_config_int(    &filetmp[i], "fd_getname_addr",            &oric->pch_fd_getname_addr ) )            continue;
+    if( read_config_int(    &filetmp[i], "tt_getsync_pc",              &oric->pch_tt_getsync_pc ) )              continue;
+    if( read_config_int(    &filetmp[i], "tt_getsync_end_pc",          &oric->pch_tt_getsync_end_pc ) )          continue;
+    if( read_config_int(    &filetmp[i], "tt_getsync_loop_pc",         &oric->pch_tt_getsync_loop_pc ) )         continue;
+    if( read_config_int(    &filetmp[i], "tt_readbyte_pc",             &oric->pch_tt_readbyte_pc ) )             continue;
+    if( read_config_int(    &filetmp[i], "tt_readbyte_end_pc",         &oric->pch_tt_readbyte_end_pc ) )         continue;
+    if( read_config_int(    &filetmp[i], "tt_readbyte_storebyte_addr", &oric->pch_tt_readbyte_storebyte_addr ) ) continue;
+    if( read_config_int(    &filetmp[i], "tt_readbyte_storezero_addr", &oric->pch_tt_readbyte_storezero_addr ) ) continue;
+    if( read_config_bool(   &filetmp[i], "tt_readbyte_setcarry",       &oric->pch_tt_readbyte_setcarry ) )       continue;
+    if( read_config_option( &filetmp[i], "keymap",                   &oric->keymap, keymapnames ) )              continue; 
   }
 
   fclose( f );

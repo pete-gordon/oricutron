@@ -50,6 +50,13 @@ enum
   TELEBANK_HALFNHALF
 };
 
+enum
+{
+  KMAP_QWERTY = 0,
+  KMAP_AZERTY,
+  KMAP_QWERTZ
+};
+
 struct telebankinfo
 {
   unsigned char type;
@@ -140,7 +147,7 @@ struct machine
   SDL_bool pch_tt_readbyte_setcarry;
   SDL_bool pch_tt_available;
 
-  SDL_bool azerty, qwertz;
+  Sint32 keymap;
 
   SDL_bool hstretch, scanlines;
 
