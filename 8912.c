@@ -517,13 +517,12 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
 {
   int i;
 
-  if( oric->azerty )
-    keytab = azktab;
-  else
-    if( oric->qwertz )
-      keytab = qzktab;
-    else
-      keytab = qwktab;
+  switch( oric->keymap )
+  {
+    case KMAP_AZERTY: keytab = azktab; break;
+    case KMAP_QWERTZ: keytab = qzktab; break;
+    default:            keytab = qwktab; break;
+  }
 
   // No oric keys pressed
   for( i=0; i<8; i++ )
