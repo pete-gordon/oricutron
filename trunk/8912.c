@@ -110,6 +110,16 @@ static unsigned short azktab[] = { '7'        , 'n'        , '5'        , 'v'   
                                    'y'        , 'h'        , 'g'        , 'e'        , SDLK_RALT  , 'q'        , 's'        , 'z'        ,
                                    '8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, 0          , SDLK_EQUALS };
 
+// QWERTZ
+static unsigned short qzktab[] = { '7'        , 'n'        , '5'        , 'v'        , SDLK_RCTRL , '1'        , 'x'        , '3'        ,
+                                   'j'        , 't'        , 'r'        , 'f'        , 0          , SDLK_ESCAPE, 'q'        , 'd'        ,
+                                   'm'        , '6'        , 'b'        , '4'        , SDLK_LCTRL , 'y'        , '2'        , 'c'        ,
+                                   'k'        , '9'        , ';'        , '-'        , '#'        , '\\'       , 0          , '\''       ,
+                                   SDLK_SPACE , ','        , '.'        , SDLK_UP    , SDLK_LSHIFT, SDLK_LEFT  , SDLK_DOWN  , SDLK_RIGHT ,
+                                   'u'        , 'i'        , 'o'        , 'p'        , SDLK_LALT  , SDLK_BACKSPACE, ']'     , '['        ,
+                                   'z'        , 'h'        , 'g'        , 'e'        , SDLK_RALT  , 'a'        , 's'        , 'w'        ,
+                                   '8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, 0          , SDLK_EQUALS };
+
 // Queue up some key presses. These key presses
 // are only detected by the standard ROM routines.
 void queuekeys( char *str )
@@ -510,7 +520,10 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
   if( oric->azerty )
     keytab = azktab;
   else
-    keytab = qwktab;
+    if( oric->qwertz )
+      keytab = qzktab;
+    else
+      keytab = qwktab;
 
   // No oric keys pressed
   for( i=0; i<8; i++ )

@@ -558,6 +558,7 @@ void preinit_machine( struct machine *oric )
   oric->prclose = 0;
   oric->lasttapefile[0] = 0;
   oric->azerty = SDL_FALSE;
+  oric->qwertz = SDL_FALSE;
   oric->showfps = SDL_TRUE;
   oric->popupstr[0] = 0;
   oric->newpopupstr = SDL_FALSE;
@@ -788,6 +789,7 @@ void clear_patches( struct machine *oric )
   oric->pch_tt_available               = SDL_FALSE;
 
   oric->azerty = SDL_FALSE;
+  oric->qwertz = SDL_FALSE;
 }
 
 void load_patches( struct machine *oric, char *fname )
@@ -823,6 +825,7 @@ void load_patches( struct machine *oric, char *fname )
     if( read_config_int(  &filetmp[i], "tt_readbyte_storezero_addr", &oric->pch_tt_readbyte_storezero_addr ) ) continue;
     if( read_config_bool( &filetmp[i], "tt_readbyte_setcarry",       &oric->pch_tt_readbyte_setcarry ) )       continue;
     if( read_config_bool( &filetmp[i], "azerty",                     &oric->azerty ) ) continue;
+    if( read_config_bool( &filetmp[i], "qwertz",                     &oric->qwertz ) ) continue;
   }
 
   fclose( f );

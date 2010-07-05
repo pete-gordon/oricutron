@@ -12,7 +12,7 @@
 
 ; Oric keyboard is locale?
 azerty = no
-qwertz = no
+qwertz = yes
 
 ; ****** FILENAME DECODING *******
 
