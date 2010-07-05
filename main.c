@@ -284,7 +284,7 @@ static void usage( int ret )
           "                      \"atmos\" or \"a\" for Oric atmos\n"
           "                      \"oric1\" or \"1\" for Oric 1\n"
           "                      \"o16k\" for Oric 1 16k\n"
-          "                      \"telestrat\" for Telestrat\n"
+          "                      \"telestrat\" or \"t\" for Telestrat\n"
           "\n"
           "  -d / --disk       = Specify a disk image to use in drive 0\n"
           "  -t / --tape       = Specify a tape image to use\n"
