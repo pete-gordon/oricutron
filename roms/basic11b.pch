@@ -10,8 +10,9 @@
 ; This part isn't actual patches, just information about
 ; the hardware the ROM expects to be present.
 
-; Oric keyboard is AZERTY?
+; Oric keyboard is locale?
 azerty = no
+qwertz = no
 
 ; ****** FILENAME DECODING *******
 
