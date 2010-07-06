@@ -1347,7 +1347,11 @@ SDL_bool init_gui( struct machine *oric )
     if( !gimg_load( &gimgs[i] ) ) return SDL_FALSE;
   }
 
+#ifdef __OPENGL_AVAILABLE__
   set_render_mode( oric, RENDERMODE_GL );
+#else
+  set_render_mode( oric, RENDERMODE_SW );
+#endif
   if( !oric->init_render( oric ) ) return SDL_FALSE;
 
   // Allocate all text zones
