@@ -171,8 +171,8 @@ install: install-$(PLATFORM)
 
 package: package-$(PLATFORM)
 
-$(TARGET): main.o 6502.o machine.o ula.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o msgbox.o avi.o render_sw.o render_gl.o render_null.o $(EXTRAOBJS) $(RESOURCES)
-	$(CXX) -o $(TARGET) main.o 6502.o machine.o ula.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o msgbox.o avi.o render_sw.o render_gl.o render_null.o $(EXTRAOBJS) $(LFLAGS)
+$(TARGET): main.o 6502.o machine.o ula.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o msgbox.o avi.o render_sw.o render_gl.o render_null.o joystick.o $(EXTRAOBJS) $(RESOURCES)
+	$(CXX) -o $(TARGET) main.o 6502.o machine.o ula.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o msgbox.o avi.o render_sw.o render_gl.o render_null.o joystick.o $(EXTRAOBJS) $(LFLAGS)
 ifeq ($(PLATFORMTYPE),beos)
 	$(BEOS_XRES) -o $(TARGET) $(RSRC_BEOS)
 	$(BEOS_SETVER) $(TARGET) \
@@ -183,7 +183,7 @@ ifeq ($(PLATFORMTYPE),beos)
 endif
 
 
-main.o: main.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h avi.h msgbox.h filereq.h main.h ula.h
+main.o: main.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h avi.h msgbox.h filereq.h main.h ula.h joystick.h
 	$(CC) -c main.c -o main.o $(CFLAGS)
 
 6502.o: 6502.c system.h 6502.h
@@ -230,6 +230,9 @@ msgbox.o: $(MSGBOX_SRC) msgbox.h system.h 6502.h via.h 8912.h gui.h disk.h machi
 
 avi.o: avi.c system.h avi.h
 	$(CC) -c avi.c -o avi.o $(CFLAGS)
+
+joystick.o: joystick.c system.h 6502.h via.h 8912.h gui.h disk.h monitor.h machine.h joystick.h
+	$(CC) -c joystick.c -o joystick.o $(CFLAGS)
 
 winicon.o: winicon.ico oricutron.rc
 	windres -i oricutron.rc -o winicon.o
