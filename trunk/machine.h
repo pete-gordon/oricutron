@@ -174,6 +174,12 @@ struct machine
   
   SDL_bool showfps;
   
+  Sint16 joy_iface;
+  Sint16 joymode_a, joymode_b;
+  Sint16 telejoymode_a, telejoymode_b;
+  Sint16 kbjoy1[6], kbjoy2[6];
+
+  SDL_Joystick *sdljoy_a, *sdljoy_b;
 };
 
 void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode );

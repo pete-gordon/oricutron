@@ -564,6 +564,8 @@ void preinit_machine( struct machine *oric )
   oric->popuptime = 0;
   oric->statusstr[0] = 0;
   oric->newstatusstr = SDL_FALSE;
+  oric->sdljoy_a = NULL;
+  oric->sdljoy_b = NULL;
 
   oric->drivetype = DRV_NONE;
   for( i=0; i<MAX_DRIVES; i++ )

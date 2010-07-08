@@ -42,6 +42,7 @@
 #include "ula.h"
 #include "render_sw.h"
 #include "render_gl.h"
+#include "joystick.h"
 
 #define FRAMES_TO_AVERAGE 15
 
@@ -79,6 +80,13 @@ struct start_opts
   char     start_tape[1024];
   char     start_syms[1024];
   char    *start_breakpoint;
+  Sint32   start_joyiface;
+  Sint32   start_joy_a;
+  Sint32   start_joy_b;
+  Sint32   start_telejoy_a;
+  Sint32   start_telejoy_b;
+  Sint16   start_kbjoy1[6];
+  Sint16   start_kbjoy2[6];
 };
 
 static char *machtypes[] = { "oric1",
@@ -86,10 +94,33 @@ static char *machtypes[] = { "oric1",
                              "atmos",
                              "telestrat",
                              NULL };
+
 static char *disktypes[] = { "none",
                              "jasmin",
                              "microdisc",
                              NULL };
+
+static char *joyifacetypes[] = { "none",
+                                 "altai",
+                                 "ijk",
+                                 NULL };
+
+static char *joymodes[] = { "none",
+                            "kbjoy1",
+                            "kbjoy2",
+                            "sdljoy0",
+                            "sdljoy1",
+                            "sdljoy2",
+                            "sdljoy3",
+                            "sdljoy4",
+                            "sdljoy5",
+                            "sdljoy6",
+                            "sdljoy7",
+                            "sdljoy8",
+                            "sdljoy9",
+                            "mouse",
+                            NULL };
+
 
 static SDL_bool istokend( char c )
 {
@@ -121,6 +152,7 @@ SDL_bool read_config_string( char *buf, char *token, char *dest, Sint32 maxlen )
   d=0;
   while( buf[i] != '\'' )
   {
+    if( d >= (maxlen-1) ) break;
     if( !buf[i] ) break;
 
     if( ( buf[i] == '\\' ) && ( buf[i+1] == '\'' ) )
@@ -235,6 +267,64 @@ SDL_bool read_config_int( char *buf, char *token, int *dest )
   return SDL_TRUE;
 }
 
+SDL_bool read_config_joykey( char *buf, char *token, Sint16 *dest )
+{
+  Sint32 i, toklen, d;
+  Sint16 thekey;
+  char keyname[32];
+
+  // Get the token length
+  toklen = strlen( token );
+
+  // Is this the token?
+  if( strncasecmp( buf, token, toklen ) != 0 ) return SDL_FALSE;
+  i = toklen;
+
+  // Check for whitespace, equals, whitespace, single quote
+  while( isws( buf[i] ) ) i++;
+  if( buf[i] != '=' ) return SDL_TRUE;
+  i++;
+  while( isws( buf[i] ) ) i++;
+  if( buf[i] != '\'' ) return SDL_TRUE;
+  i++;
+
+  // Copy and un-escape the string
+  d=0;
+  while( buf[i] != '\'' )
+  {
+    if( d >= 31 ) break;
+    if( !buf[i] ) break;
+
+    if( ( buf[i] == '\\' ) && ( buf[i+1] == '\'' ) )
+    {
+      keyname[d++] = '\'';
+      i+=2;
+      continue;
+    }
+
+    if( ( buf[i] == '\\' ) && ( buf[i+1] == '\\' ) )
+    {
+      keyname[d++] = '\\';
+      i+=2;
+      continue;
+    }
+
+    keyname[d++] = buf[i++];
+  }
+
+  keyname[d] = 0;
+
+  thekey = joy_keyname_to_sym( keyname );
+
+  if( thekey )
+  {
+    *dest = thekey;
+    return SDL_TRUE;
+  }
+
+  return SDL_FALSE;
+}
+
 static void load_config( struct start_opts *sto )
 {
   FILE *f;
@@ -270,6 +360,23 @@ static void load_config( struct start_opts *sto )
       sprintf( tbtmp, "telebank%c", j+'0' );
       if( read_config_string( &sto->lctmp[i], tbtmp, telebankfiles[j], 1024 ) ) break;
     }
+    if( read_config_option( &sto->lctmp[i], "joyinterface", &sto->start_joyiface, joyifacetypes ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "joystick_a",   &sto->start_joy_a,     joymodes ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "joystick_b",   &sto->start_joy_b,     joymodes ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "telejoy_a",    &sto->start_telejoy_a, joymodes ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "telejoy_b",    &sto->start_telejoy_b, joymodes ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy1_up",    &sto->start_kbjoy1[0] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy1_down",  &sto->start_kbjoy1[1] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy1_left",  &sto->start_kbjoy1[2] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy1_right", &sto->start_kbjoy1[3] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy1_fire1", &sto->start_kbjoy1[4] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy1_fire2", &sto->start_kbjoy1[5] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy2_up",    &sto->start_kbjoy2[0] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy2_down",  &sto->start_kbjoy2[1] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy2_left",  &sto->start_kbjoy2[2] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy2_right", &sto->start_kbjoy2[3] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy2_fire1", &sto->start_kbjoy2[4] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy2_fire2", &sto->start_kbjoy2[5] ) ) continue;
   }
 
   fclose( f );
@@ -508,6 +615,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   if( !init_msgbox( oric ) ) { free( sto ); return SDL_FALSE; }
   oric->drivetype = sto->start_disktype;
   if( !init_ula( oric ) ) { free( sto ); return SDL_FALSE; }
+  if( !init_joy( oric ) ) { free( sto ); return SDL_FALSE; }
   if( !init_machine( oric, sto->start_machine, SDL_TRUE ) ) { free( sto ); return SDL_FALSE; }
 
   if( sto->start_debug )
@@ -548,6 +656,7 @@ void shut( struct machine *oric )
 {
   if( vidcap ) avi_close( &vidcap );
   shut_machine( oric );
+  shut_joy( oric );
   shut_ula( oric );
   mon_shut();
   shut_filerequester( oric );
