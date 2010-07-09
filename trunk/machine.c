@@ -40,6 +40,7 @@
 #include "filereq.h"
 #include "main.h"
 #include "ula.h"
+#include "joystick.h"
 
 extern SDL_bool warpspeed, soundavailable, soundon;
 extern char diskpath[], diskfile[], filetmp[];
@@ -567,6 +568,24 @@ void preinit_machine( struct machine *oric )
   oric->sdljoy_a = NULL;
   oric->sdljoy_b = NULL;
 
+  oric->joy_iface = JOYIFACE_NONE;
+  oric->joymode_a = JOYMODE_KB1;
+  oric->joymode_b = JOYMODE_NONE;
+  oric->telejoymode_a = JOYMODE_KB1;
+  oric->telejoymode_b = JOYMODE_NONE;
+  oric->kbjoy1[0] = SDLK_KP8;
+  oric->kbjoy1[1] = SDLK_KP2;
+  oric->kbjoy1[2] = SDLK_KP4;
+  oric->kbjoy1[3] = SDLK_KP6;
+  oric->kbjoy1[4] = SDLK_KP_ENTER;
+  oric->kbjoy1[5] = SDLK_KP_PLUS;
+  oric->kbjoy2[0] = 'w';
+  oric->kbjoy2[1] = 's';
+  oric->kbjoy2[2] = 'a';
+  oric->kbjoy2[3] = 'd';
+  oric->kbjoy2[4] = SDLK_SPACE;
+  oric->kbjoy2[5] = 'n';
+
   oric->drivetype = DRV_NONE;
   for( i=0; i<MAX_DRIVES; i++ )
   {
@@ -585,6 +604,9 @@ static SDL_bool shifted = SDL_FALSE;
 SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 {
   Sint32 i;
+
+  if( joy_filter_event( ev, oric ) )
+    return SDL_FALSE;
 
 //  char stmp[32];
   switch( ev->type )
@@ -1095,6 +1117,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   via_init( &oric->via, oric, VIA_MAIN );
   via_init( &oric->tele_via, oric, VIA_TELESTRAT );
   ay_init( &oric->ay, oric );
+  joy_setup( oric );
   oric->cpu.rastercycles = oric->cyclesperraster;
   oric->frames = 0;
   oric->vid_double = SDL_TRUE;

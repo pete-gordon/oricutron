@@ -80,13 +80,6 @@ struct start_opts
   char     start_tape[1024];
   char     start_syms[1024];
   char    *start_breakpoint;
-  Sint32   start_joyiface;
-  Sint32   start_joy_a;
-  Sint32   start_joy_b;
-  Sint32   start_telejoy_a;
-  Sint32   start_telejoy_b;
-  Sint16   start_kbjoy1[6];
-  Sint16   start_kbjoy2[6];
 };
 
 static char *machtypes[] = { "oric1",
@@ -325,7 +318,7 @@ SDL_bool read_config_joykey( char *buf, char *token, Sint16 *dest )
   return SDL_FALSE;
 }
 
-static void load_config( struct start_opts *sto )
+static void load_config( struct start_opts *sto, struct machine *oric )
 {
   FILE *f;
   Sint32 i, j;
@@ -360,23 +353,23 @@ static void load_config( struct start_opts *sto )
       sprintf( tbtmp, "telebank%c", j+'0' );
       if( read_config_string( &sto->lctmp[i], tbtmp, telebankfiles[j], 1024 ) ) break;
     }
-    if( read_config_option( &sto->lctmp[i], "joyinterface", &sto->start_joyiface, joyifacetypes ) ) continue;
-    if( read_config_option( &sto->lctmp[i], "joystick_a",   &sto->start_joy_a,     joymodes ) ) continue;
-    if( read_config_option( &sto->lctmp[i], "joystick_b",   &sto->start_joy_b,     joymodes ) ) continue;
-    if( read_config_option( &sto->lctmp[i], "telejoy_a",    &sto->start_telejoy_a, joymodes ) ) continue;
-    if( read_config_option( &sto->lctmp[i], "telejoy_b",    &sto->start_telejoy_b, joymodes ) ) continue;
-    if( read_config_joykey( &sto->lctmp[i], "kbjoy1_up",    &sto->start_kbjoy1[0] ) ) continue;
-    if( read_config_joykey( &sto->lctmp[i], "kbjoy1_down",  &sto->start_kbjoy1[1] ) ) continue;
-    if( read_config_joykey( &sto->lctmp[i], "kbjoy1_left",  &sto->start_kbjoy1[2] ) ) continue;
-    if( read_config_joykey( &sto->lctmp[i], "kbjoy1_right", &sto->start_kbjoy1[3] ) ) continue;
-    if( read_config_joykey( &sto->lctmp[i], "kbjoy1_fire1", &sto->start_kbjoy1[4] ) ) continue;
-    if( read_config_joykey( &sto->lctmp[i], "kbjoy1_fire2", &sto->start_kbjoy1[5] ) ) continue;
-    if( read_config_joykey( &sto->lctmp[i], "kbjoy2_up",    &sto->start_kbjoy2[0] ) ) continue;
-    if( read_config_joykey( &sto->lctmp[i], "kbjoy2_down",  &sto->start_kbjoy2[1] ) ) continue;
-    if( read_config_joykey( &sto->lctmp[i], "kbjoy2_left",  &sto->start_kbjoy2[2] ) ) continue;
-    if( read_config_joykey( &sto->lctmp[i], "kbjoy2_right", &sto->start_kbjoy2[3] ) ) continue;
-    if( read_config_joykey( &sto->lctmp[i], "kbjoy2_fire1", &sto->start_kbjoy2[4] ) ) continue;
-    if( read_config_joykey( &sto->lctmp[i], "kbjoy2_fire2", &sto->start_kbjoy2[5] ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "joyinterface", &oric->joy_iface, joyifacetypes ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "joystick_a",   &oric->joymode_a,     joymodes ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "joystick_b",   &oric->joymode_b,     joymodes ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "telejoy_a",    &oric->telejoymode_a, joymodes ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "telejoy_b",    &oric->telejoymode_b, joymodes ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy1_up",    &oric->kbjoy1[0] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy1_down",  &oric->kbjoy1[1] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy1_left",  &oric->kbjoy1[2] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy1_right", &oric->kbjoy1[3] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy1_fire1", &oric->kbjoy1[4] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy1_fire2", &oric->kbjoy1[5] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy2_up",    &oric->kbjoy2[0] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy2_down",  &oric->kbjoy2[1] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy2_left",  &oric->kbjoy2[2] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy2_right", &oric->kbjoy2[3] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy2_fire1", &oric->kbjoy2[4] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy2_fire2", &oric->kbjoy2[5] ) ) continue;
   }
 
   fclose( f );
@@ -440,7 +433,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 #endif
   preinit_gui( oric );
 
-  load_config( sto );
+  load_config( sto, oric );
 
   for( i=1; i<argc; i++ )
   {
