@@ -64,6 +64,7 @@ struct texture
   Uint8 *buf;
 };
 
+static SDL_bool dodeltex = SDL_FALSE;
 static GLuint tex[NUM_TEXTURES];
 static struct texture tx[NUM_TEXTURES];
 
@@ -398,6 +399,7 @@ void preinit_render_gl( struct machine *oric )
   Sint32 i;
 
   screen = NULL;
+  dodeltex = SDL_FALSE;
 
   for( i=0; i<NUM_TEXTURES; i++ )
   {
@@ -450,6 +452,7 @@ SDL_bool init_render_gl( struct machine *oric )
   glColor4ub( 255, 255, 255, 255 );
 
   glGenTextures( NUM_TEXTURES, tex );
+  dodeltex = SDL_TRUE;
 
   glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
   glEnable( GL_TEXTURE_2D );
@@ -516,6 +519,12 @@ SDL_bool init_render_gl( struct machine *oric )
 void shut_render_gl( struct machine *oric )
 {
   int i;
+
+  if( dodeltex )
+  {
+    glDeleteTextures( NUM_TEXTURES, tex );
+    dodeltex = SDL_FALSE;
+  }
 
   for( i=0; i<NUM_TEXTURES; i++ )
   {
