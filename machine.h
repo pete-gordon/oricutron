@@ -174,9 +174,9 @@ struct machine
   
   SDL_bool showfps;
   
-  Sint16 joy_iface;
-  Sint16 joymode_a, joymode_b;
-  Sint16 telejoymode_a, telejoymode_b;
+  Sint32 joy_iface;
+  Sint32 joymode_a, joymode_b;
+  Sint32 telejoymode_a, telejoymode_b;
   Sint16 kbjoy1[6], kbjoy2[6];
 
   SDL_Joystick *sdljoy_a, *sdljoy_b;

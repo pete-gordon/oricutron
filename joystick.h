@@ -51,3 +51,4 @@ void shut_joy( struct machine *oric );
 
 Sint16 joy_keyname_to_sym( char *name );
 void joy_setup( struct machine *oric );
+SDL_bool joy_filter_event( SDL_Event *ev, struct machine *oric );

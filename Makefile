@@ -189,7 +189,7 @@ main.o: main.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h avi
 6502.o: 6502.c system.h 6502.h
 	$(CC) -c 6502.c -o 6502.o $(CFLAGS)
 
-machine.o: machine.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h avi.h main.h
+machine.o: machine.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h avi.h main.h joystick.h
 	$(CC) -c machine.c -o machine.o $(CFLAGS)
 
 ula.o: ula.c ula.h system.h 6502.h via.h 8912.h disk.h monitor.h machine.h avi.h
