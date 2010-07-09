@@ -2179,19 +2179,22 @@ SDL_bool mon_new_symbols( struct symboltable *stab, struct machine *oric, char *
 
     if( !fgets( linetmp, 256, f ) ) break;
 
-    for( i=0, v=0; i<4; i++ )
+    if( sscanf( linetmp, "al %06X .%s", &v, linetmp ) != 2 )
     {
-      j = hexit( linetmp[i] );
-      if( j == -1 ) break;
-      v = (v<<4)|j;
-    }
-    if( i < 4 ) continue;
-    if( linetmp[4] != 32 ) continue;
-    if( !issymstart( linetmp[5] ) ) continue;
+        for( i=0, v=0; i<4; i++ )
+        {
+          j = hexit( linetmp[i] );
+          if( j == -1 ) break;
+          v = (v<<4)|j;
+        }
+        if( i < 4 ) continue;
+        if( linetmp[4] != 32 ) continue;
+        if( !issymstart( linetmp[5] ) ) continue;
 
-    for( i=5,j=0; issymchar(linetmp[i]); i++,j++ )
-      linetmp[j] = linetmp[i];
-    linetmp[j] = 0;
+        for( i=5,j=0; issymchar(linetmp[i]); i++,j++ )
+          linetmp[j] = linetmp[i];
+        linetmp[j] = 0;
+    }
 
 //    printf( "'%s' = %04X\n", linetmp, v );
     fflush( stdout );
