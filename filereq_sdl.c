@@ -360,6 +360,16 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
 
     switch( event.type )
     {
+      case SDL_ACTIVEEVENT:
+        switch( event.active.type )
+        {
+          case SDL_APPINPUTFOCUS:
+          case SDL_APPACTIVE:
+            filereq_render( oric );
+            break;
+        }
+        break;
+
       case SDL_MOUSEBUTTONDOWN:
         if( ( mx < 1 ) || ( mx > 38 ) )
           break;
