@@ -409,6 +409,27 @@ void preinit_render_gl( struct machine *oric )
   }
 }
 
+SDL_bool render_togglefullscreen_gl( struct machine *oric )
+{
+#if defined(__amigaos4__) || defined(__linux__)
+  // Use SDL_WM_ToggleFullScreen on systems where it is supported
+  if( SDL_WM_ToggleFullScreen( screen ) )
+  {
+    fullscreen = !fullscreen;
+    return SDL_TRUE;
+  }
+
+  return SDL_FALSE;
+#else
+  oric->shut_render( oric );
+  fullscreen = !fullscreen;
+  if( oric->init_render( oric ) ) return SDL_TRUE;
+  set_render_mode( oric, RENDERMODE_NULL );
+  oric->emu_mode = EM_PLEASEQUIT; 
+  return SDL_FALSE;
+#endif
+}
+
 static SDL_bool go_go_gadget_texture( int i, int w, int h, int blendtype, SDL_bool callteximg2d )
 {
   tx[i].w = w;

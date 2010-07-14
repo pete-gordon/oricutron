@@ -55,6 +55,7 @@
 #include "render_null.h"
 
 extern struct symboltable usersyms;
+extern SDL_bool fullscreen;
 
 char tapepath[4096], tapefile[512];
 char diskpath[4096], diskfile[512];
@@ -139,6 +140,7 @@ void togglevsynchack( struct machine *oric, struct osdmenuitem *mitem, int dummy
 void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newrendermode );
 void togglehstretch( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void togglefullscreen( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 //void savesnap( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 
 // Menu definitions. Name, key name, SDL key code, function, parameter
@@ -200,12 +202,16 @@ struct osdmenuitem dbopitems[] = { { " Autoload symbols file", NULL,   0,       
 struct osdmenuitem vdopitems[] = { { " OpenGL rendering",      "O",    'o',      swap_render_mode, RENDERMODE_GL },
                                    { " Software rendering",    "S",    's',      swap_render_mode, RENDERMODE_SW },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0 },
+                                   { " Fullscreen",            "F",    'f',      togglefullscreen, 0 },
+                                   { " Scanlines",             "C",    'c',      togglescanlines, 0 },
+                                   { OSDMENUBAR,               NULL,   0,        NULL,            0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0 },
                                    { NULL, } };
 
 struct osdmenuitem glopitems[] = { { " OpenGL rendering",      "O",    'o',      swap_render_mode, RENDERMODE_GL },
                                    { " Software rendering",    "S",    's',      swap_render_mode, RENDERMODE_SW },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0 },
+                                   { " Fullscreen",            "F",    'f',      togglefullscreen, 0 },
                                    { " Horizontal stretch",    "H",    'h',      togglehstretch,  0 },
                                    { " Scanlines",             "C",    'c',      togglescanlines, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0 },
@@ -932,6 +938,22 @@ void toggleautoinsrt( struct machine *oric, struct osdmenuitem *mitem, int dummy
   mitem->name = "\x0e""Autoinsert tape";
 }
 
+// Toggle fullscreen on/off
+void togglefullscreen( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+  if( !oric->render_togglefullscreen( oric ) ) return; // Failed :-(
+
+  if( fullscreen )
+  {
+    vdopitems[3].name = "\x0e""Fullscreen";
+    glopitems[3].name = "\x0e""Fullscreen";
+    return;
+  }
+
+  vdopitems[3].name = " Fullscreen";
+  glopitems[3].name = " Fullscreen";
+}
+
 // Toggle hstretch on/off
 void togglehstretch( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
@@ -952,12 +974,14 @@ void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy
   if( oric->scanlines )
   {
     oric->scanlines = SDL_FALSE;
-    mitem->name = " Scanlines";
+    vdopitems[4].name = " Scanlines";
+    glopitems[5].name = " Scanlines";
     return;
   }
 
   oric->scanlines = SDL_TRUE;
-  mitem->name = "\x0e""Scanlines";
+  vdopitems[4].name = "\x0e""Scanlines";
+  glopitems[5].name = "\x0e""Scanlines";
 }
 
 // Go to a different menu
@@ -1172,6 +1196,7 @@ void set_render_mode( struct machine *oric, int whichrendermode )
       oric->render_gimg           = render_gimg_sw;
       oric->render_gimgpart       = render_gimgpart_sw;
       oric->render_video          = render_video_sw;
+      oric->render_togglefullscreen = render_togglefullscreen_sw;
       oric->init_render           = init_render_sw;
       oric->shut_render           = shut_render_sw;
       vdopitems[0].name = " OpenGL rendering";
@@ -1191,6 +1216,7 @@ void set_render_mode( struct machine *oric, int whichrendermode )
       oric->render_gimg           = render_gimg_gl;
       oric->render_gimgpart       = render_gimgpart_gl;
       oric->render_video          = render_video_gl;
+      oric->render_togglefullscreen = render_togglefullscreen_gl;
       oric->init_render           = init_render_gl;
       oric->shut_render           = shut_render_gl;
       vdopitems[0].name = "\x0e""OpenGL rendering";
@@ -1210,6 +1236,7 @@ void set_render_mode( struct machine *oric, int whichrendermode )
       oric->render_gimg           = render_gimg_null;
       oric->render_gimgpart       = render_gimgpart_null;
       oric->render_video          = render_video_null;
+      oric->render_togglefullscreen = render_togglefullscreen_null;
       oric->init_render           = init_render_null;
       oric->shut_render           = shut_render_null;
       vdopitems[0].name = " OpenGL rendering";
@@ -1308,15 +1335,28 @@ void setmenutoggles( struct machine *oric )
   else
     dbopitems[1].name = " Case-sensitive symbols";
 
+  if( fullscreen )
+  {
+    vdopitems[3].name = "\x0e""Fullscreen";
+    glopitems[3].name = "\x0e""Fullscreen";
+  } else {
+    vdopitems[3].name = " Fullscreen";
+    glopitems[3].name = " Fullscreen";
+  }
+
   if( oric->hstretch )
-    glopitems[3].name = "\x0e""Horizontal stretch";
+    glopitems[4].name = "\x0e""Horizontal stretch";
   else
-    glopitems[3].name = " Horizontal stretch";
+    glopitems[4].name = " Horizontal stretch";
 
   if( oric->scanlines )
-    glopitems[4].name = "\x0e""Scanlines";
-  else
-    glopitems[4].name = " Scanlines";
+  {
+    vdopitems[4].name = "\x0e""Scanlines";
+    glopitems[5].name = "\x0e""Scanlines";
+  } else {
+    vdopitems[4].name = " Scanlines";
+    glopitems[5].name = " Scanlines";
+  }
 
   hwopitems[6].func = microdiscrom_valid ? setdrivetype : NULL;
   hwopitems[7].func = jasminrom_valid ? setdrivetype : NULL;

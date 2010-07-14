@@ -27,6 +27,7 @@ void render_textzone_null( struct machine *oric, int i );
 void render_gimg_null( int i, Sint32 xp, Sint32 yp );
 void render_gimgpart_null( int i, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 oy, Sint32 w, Sint32 h );
 void render_video_null( struct machine *oric, SDL_bool doublesize );
+SDL_bool render_togglefullscreen_null( struct machine *oric );
 void preinit_render_null( struct machine *oric );
 SDL_bool init_render_null( struct machine *oric );
 void shut_render_null( struct machine *oric );

@@ -34,8 +34,8 @@ static Uint16 gpal[NUM_GUI_COLS];
 // Cached screen->pitch
 static int pixpitch;
 
-static Uint16 pal[8]; // Palette
-static Uint32 dpal[8];
+static Uint16 pal[8*2]; // Palette
+static Uint32 dpal[8*2];
 static Uint16 *mgimg[NUM_GIMG];
 
 extern SDL_bool fullscreen, hwsurface;
@@ -208,7 +208,7 @@ void render_video_sw( struct machine *oric, SDL_bool doublesize )
   int x, y;
   Uint8 *sptr;
   Uint16 *dptr;
-  Uint32 *dptr2, *dptr3, c, pp2;
+  Uint32 *dptr2, *dptr3, c, c2, pp2;
 
   if( !oric->scr )
     return;
@@ -232,16 +232,32 @@ void render_video_sw( struct machine *oric, SDL_bool doublesize )
     sptr = oric->scr;
     dptr2 = (Uint32 *)(&((Uint16 *)screen->pixels)[320-240+pixpitch*(240-226)]);
     dptr3 = dptr2+pp2;
-    for( y=0; y<224; y++ )
+    if( oric->scanlines )
     {
-      for( x=0; x<240; x++ )
+      for( y=0; y<224; y++ )
       {
-        c = dpal[*(sptr++)];
-        *(dptr2++) = c;
-        *(dptr3++) = c;
+        for( x=0; x<240; x++ )
+        {
+          c2 = dpal[(*sptr)+8];
+          c = dpal[*(sptr++)];
+          *(dptr2++) = c;
+          *(dptr3++) = c2;
+        }
+        dptr2 += pixpitch-240;
+        dptr3 += pixpitch-240;
       }
-      dptr2 += pixpitch-240;
-      dptr3 += pixpitch-240;
+    } else {
+      for( y=0; y<224; y++ )
+      {
+        for( x=0; x<240; x++ )
+        {
+          c = dpal[*(sptr++)];
+          *(dptr2++) = c;
+          *(dptr3++) = c;
+        }
+        dptr2 += pixpitch-240;
+        dptr3 += pixpitch-240;
+      }
     }
     return;
   }
@@ -274,6 +290,27 @@ void preinit_render_sw( struct machine *oric )
     mgimg[i] = NULL;
 }
 
+SDL_bool render_togglefullscreen_sw( struct machine *oric )
+{
+#if defined(__amigaos4__) || defined(__linux__)
+  // Use SDL_WM_ToggleFullScreen on systems where it is supported
+  if( SDL_WM_ToggleFullScreen( screen ) )
+  {
+    fullscreen = !fullscreen;
+    return SDL_TRUE;
+  }
+
+  return SDL_FALSE;
+#else
+  oric->shut_render( oric );
+  fullscreen = !fullscreen;
+  if( oric->init_render( oric ) ) return SDL_TRUE;
+  set_render_mode( oric, RENDERMODE_NULL );
+  oric->emu_mode = EM_PLEASEQUIT; 
+  return SDL_FALSE;
+#endif
+}
+
 SDL_bool init_render_sw( struct machine *oric )
 {
   Sint32 surfacemode;
@@ -296,7 +333,10 @@ SDL_bool init_render_sw( struct machine *oric )
     gpal[i] = SDL_MapRGB( screen->format, sgpal[i*3  ], sgpal[i*3+1], sgpal[i*3+2] );
 
   for( i=0; i<8; i++ )
-    pal[i] = SDL_MapRGB( screen->format, oricpalette[i*3], oricpalette[i*3+1], oricpalette[i*3+2] );
+  {
+    pal[i  ] = SDL_MapRGB( screen->format, oricpalette[i*3], oricpalette[i*3+1], oricpalette[i*3+2] );
+    pal[i+8] = SDL_MapRGB( screen->format, oricpalette[i*3]/2, oricpalette[i*3+1]/2, oricpalette[i*3+2]/2 );
+  }
 
   for( i=0; i<NUM_GIMG; i++ )
   {
@@ -310,7 +350,7 @@ SDL_bool init_render_sw( struct machine *oric )
     }
   }
 
-  for( i=0; i<8; i++ )
+  for( i=0; i<8*2; i++ )
     dpal[i] = (pal[i]<<16)|pal[i];
 
   pixpitch = screen->pitch / 2;
