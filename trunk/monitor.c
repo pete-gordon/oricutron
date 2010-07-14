@@ -3486,6 +3486,16 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
   donkey = SDL_FALSE;
   switch( ev->type )
   {
+    case SDL_ACTIVEEVENT:
+      switch( ev->active.type )
+      {
+        case SDL_APPINPUTFOCUS:
+        case SDL_APPACTIVE:
+          *needrender = SDL_TRUE;
+          break;
+      }
+      break;
+
     case SDL_KEYUP:
       switch( ev->key.keysym.sym )
       {

@@ -179,6 +179,16 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
 
     switch( event.type )
     {
+      case SDL_ACTIVEEVENT:
+        switch( event.active.type )
+        {
+          case SDL_APPINPUTFOCUS:
+          case SDL_APPACTIVE:
+            filereq_render( oric );
+            break;
+        }
+        break;
+
       case SDL_MOUSEMOTION:
         if( presson != -1 ) break;
         mx = (event.motion.x - tz[TZ_MSGBOX]->x)/8;

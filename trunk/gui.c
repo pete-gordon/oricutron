@@ -1051,6 +1051,16 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
   switch( ev->type )
   {
+    case SDL_ACTIVEEVENT:
+      switch( ev->active.type )
+      {
+        case SDL_APPINPUTFOCUS:
+        case SDL_APPACTIVE:
+          *needrender = SDL_TRUE;
+          break;
+      }
+      break;
+
     case SDL_MOUSEMOTION:
     case SDL_MOUSEBUTTONDOWN:
       x = (ev->motion.x - tz[TZ_MENU]->x)/8;
