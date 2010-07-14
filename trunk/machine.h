@@ -162,6 +162,7 @@ struct machine
   void (*render_alloc_textzone)(struct machine *, struct textzone *);
   void (*render_free_textzone)(struct machine *, struct textzone *);
   void (*render_video)(struct machine *, SDL_bool);
+  SDL_bool (*render_togglefullscreen)(struct machine *oric);
   SDL_bool (*init_render)(struct machine *);
   void (*shut_render)(struct machine *);
   

@@ -114,6 +114,7 @@ void printstr( int x, int y, Uint16 fc, Uint16 bc, char *str );
 void gotomenu( struct machine *oric, struct osdmenuitem *mitem, int menunum );
 SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender );
 void setmenutoggles( struct machine *oric );
+void set_render_mode( struct machine *oric, int whichrendermode );
 
 void render( struct machine *oric );
 void preinit_gui( struct machine *oric );

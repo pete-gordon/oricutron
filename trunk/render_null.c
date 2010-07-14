@@ -61,6 +61,11 @@ void render_video_null( struct machine *oric, SDL_bool doublesize )
 {
 }
 
+SDL_bool render_togglefullscreen_null( struct machine *oric )
+{
+  return SDL_TRUE;
+}
+
 SDL_bool init_render_null( struct machine *oric )
 {
   return SDL_TRUE;

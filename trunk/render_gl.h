@@ -31,6 +31,7 @@ void render_gimgpart_gl( int i, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 oy, Sint
 void render_video_gl( struct machine *oric, SDL_bool doublesize );
 void preinit_render_gl( struct machine *oric );
 SDL_bool init_render_gl( struct machine *oric );
+SDL_bool render_togglefullscreen_gl( struct machine *oric );
 void shut_render_gl( struct machine *oric );
 
 #endif //__OPENGL_AVAILABLE__
