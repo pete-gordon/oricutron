@@ -35,6 +35,7 @@
 #include "gui.h"
 #include "disk.h"
 #include "monitor.h"
+#include "6551.h"
 #include "machine.h"
 #include "avi.h"
 #include "filereq.h"
@@ -160,7 +161,10 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
         break;
       
       case 0x10:
-        microdisc_write( &oric->md, addr, data );
+        if( addr >= 0x31c )
+          acia_write( &oric->tele_acia, addr, data );
+        else
+          microdisc_write( &oric->md, addr, data );
         break;
       
       default:
@@ -346,6 +350,11 @@ unsigned char telestratread( struct m6502 *cpu, unsigned short addr )
     switch( addr & 0x0f0 )
     {
       case 0x010:
+        if( addr >= 0x31c )
+        {
+          return acia_read( &oric->tele_acia, addr );
+        }
+
         return microdisc_read( &oric->md, addr );
 
       case 0x020:
@@ -647,6 +656,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           m6502_reset( &oric->cpu );
           via_init( &oric->via, oric, VIA_MAIN );
           via_init( &oric->tele_via, oric, VIA_TELESTRAT );
+          acia_init( &oric->tele_acia, oric );
           break;
         
         case SDLK_F5:
@@ -1116,6 +1126,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   m6502_reset( &oric->cpu );
   via_init( &oric->via, oric, VIA_MAIN );
   via_init( &oric->tele_via, oric, VIA_TELESTRAT );
+  acia_init( &oric->tele_acia, oric );
   ay_init( &oric->ay, oric );
   joy_setup( oric );
   oric->cpu.rastercycles = oric->cyclesperraster;

@@ -37,10 +37,11 @@
 #include "gui.h"
 #include "disk.h"
 #include "monitor.h"
+#include "6551.h"
 #include "machine.h"
 #include "ula.h"
 
-#define LOG_DEBUG 0
+#define LOG_DEBUG 1
 
 #if LOG_DEBUG
 #ifdef __amigaos4__ 
@@ -115,6 +116,16 @@ static struct msym defsym_tele[]  = { { 0x0300, 0,            "VIA_IORB"      , 
                                       { 0x030D, 0,            "VIA_IFR"       , "VIA_IFR"    , "VIA_IFR" },
                                       { 0x030E, 0,            "VIA_IER"       , "VIA_IER"    , "VIA_IER" },
                                       { 0x030F, 0,            "VIA_IORA2"     , "VIA_IORA2"  , "VIA_IORA2" },
+                                      { 0x0310, 0,            "WD17_COMMA\x16", "WD17_CO\x16", "WD17_COMMAND" },
+                                      { 0x0311, 0,            "WD17_TRACK\x16", "WD17_TR\x16", "WD17_TRACK" },
+                                      { 0x0312, 0,            "WD17_SECTO\x16", "WD17_SE\x16", "WD17_SECTOR" },
+                                      { 0x0313, 0,            "WD17_DATA"     , "WD17_DA\x16", "WD17_DATA" },
+                                      { 0x0314, 0,            "MDSC_STATUS"   , "MDSC_ST\x16", "MDSC_STATUS" },
+                                      { 0x0318, 0,            "MDSC_DRQ"      , "MDSC_DR\x16", "MDSC_DRQ" },
+                                      { 0x031c, 0,            "ACIA_DATA"     , "ACIA_DA\x16", "ACIA_DATA" },
+                                      { 0x031d, 0,            "ACIA_STATUS"   , "ACIA_ST\x16", "ACIA_STATUS" },
+                                      { 0x031e, 0,            "ACIA_COMMAND"  , "ACIA_CO\x16", "ACIA_COMMAND" },
+                                      { 0x031f, 0,            "ACIA_CONTROL"  , "ACIA_CO\x16", "ACIA_CONTROL" },
                                       { 0x0320, 0,            "VIA2_IORB"     , "VIA2_IORB"  , "VIA2_IORB" },
                                       { 0x0321, 0,            "VIA2_IORA"     , "VIA2_IORA"  , "VIA2_IORA" },
                                       { 0x0322, 0,            "VIA2_DDRB"     , "VIA2_DDRB"  , "VIA2_DDRB" },
@@ -3459,6 +3470,7 @@ static unsigned int steppy_step( struct machine *oric )
   if( oric->type == MACH_TELESTRAT )
   {
     via_clock( &oric->tele_via, oric->cpu.icycles );
+    acia_clock( &oric->tele_acia, oric->cpu.icycles );
   }
   m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
   if( oric->cpu.rastercycles <= 0 )
@@ -3518,6 +3530,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           if( oric->type == MACH_TELESTRAT )
           {
             via_clock( &oric->tele_via, oric->cpu.icycles );
+            acia_clock( &oric->tele_acia, oric->cpu.icycles );
           }
           m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
           if( oric->cpu.rastercycles <= 0 )

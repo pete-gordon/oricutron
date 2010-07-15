@@ -31,6 +31,7 @@
 #include "gui.h"
 #include "disk.h"
 #include "monitor.h"
+#include "6551.h"
 #include "machine.h"
 #include "msgbox.h"
 #include "filereq.h"
@@ -39,7 +40,7 @@ extern char diskfile[], diskpath[], filetmp[];
 extern char telediskfile[], telediskpath[];
 extern SDL_bool refreshdisks;
 
-#define GENERAL_DISK_DEBUG 1
+#define GENERAL_DISK_DEBUG 0
 #define DEBUG_SECTOR_DUMP  0
 
 #if DEBUG_SECTOR_DUMP

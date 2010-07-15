@@ -79,6 +79,7 @@ struct machine
   struct telebankinfo tele_bank[8];
   struct symboltable  tele_banksyms[8];
   struct via          tele_via;
+  struct acia         tele_acia;
   int                 tele_currbank;
   unsigned char       tele_banktype;
 
