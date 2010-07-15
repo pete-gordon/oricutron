@@ -576,6 +576,7 @@ void preinit_machine( struct machine *oric )
   oric->newstatusstr = SDL_FALSE;
   oric->sdljoy_a = NULL;
   oric->sdljoy_b = NULL;
+  oric->rampattern = 0;
 
   oric->joy_iface = JOYIFACE_NONE;
   oric->joymode_a = JOYMODE_KB1;
@@ -851,15 +852,15 @@ void load_patches( struct machine *oric, char *fname )
 
     for( i=0; isws( filetmp[i] ); i++ ) ;
 
-    if( read_config_int(    &filetmp[i], "fd_getname_pc",              &oric->pch_fd_getname_pc ) )              continue;
-    if( read_config_int(    &filetmp[i], "fd_getname_addr",            &oric->pch_fd_getname_addr ) )            continue;
-    if( read_config_int(    &filetmp[i], "tt_getsync_pc",              &oric->pch_tt_getsync_pc ) )              continue;
-    if( read_config_int(    &filetmp[i], "tt_getsync_end_pc",          &oric->pch_tt_getsync_end_pc ) )          continue;
-    if( read_config_int(    &filetmp[i], "tt_getsync_loop_pc",         &oric->pch_tt_getsync_loop_pc ) )         continue;
-    if( read_config_int(    &filetmp[i], "tt_readbyte_pc",             &oric->pch_tt_readbyte_pc ) )             continue;
-    if( read_config_int(    &filetmp[i], "tt_readbyte_end_pc",         &oric->pch_tt_readbyte_end_pc ) )         continue;
-    if( read_config_int(    &filetmp[i], "tt_readbyte_storebyte_addr", &oric->pch_tt_readbyte_storebyte_addr ) ) continue;
-    if( read_config_int(    &filetmp[i], "tt_readbyte_storezero_addr", &oric->pch_tt_readbyte_storezero_addr ) ) continue;
+    if( read_config_int(    &filetmp[i], "fd_getname_pc",              &oric->pch_fd_getname_pc, 0, 65535 ) )              continue;
+    if( read_config_int(    &filetmp[i], "fd_getname_addr",            &oric->pch_fd_getname_addr, 0, 65535 ) )            continue;
+    if( read_config_int(    &filetmp[i], "tt_getsync_pc",              &oric->pch_tt_getsync_pc, 0, 65535 ) )              continue;
+    if( read_config_int(    &filetmp[i], "tt_getsync_end_pc",          &oric->pch_tt_getsync_end_pc, 0, 65535 ) )          continue;
+    if( read_config_int(    &filetmp[i], "tt_getsync_loop_pc",         &oric->pch_tt_getsync_loop_pc, 0, 65535 ) )         continue;
+    if( read_config_int(    &filetmp[i], "tt_readbyte_pc",             &oric->pch_tt_readbyte_pc, 0, 65535 ) )             continue;
+    if( read_config_int(    &filetmp[i], "tt_readbyte_end_pc",         &oric->pch_tt_readbyte_end_pc, 0, 65535 ) )         continue;
+    if( read_config_int(    &filetmp[i], "tt_readbyte_storebyte_addr", &oric->pch_tt_readbyte_storebyte_addr, 0, 65535 ) ) continue;
+    if( read_config_int(    &filetmp[i], "tt_readbyte_storezero_addr", &oric->pch_tt_readbyte_storezero_addr, 0, 65535 ) ) continue;
     if( read_config_bool(   &filetmp[i], "tt_readbyte_setcarry",       &oric->pch_tt_readbyte_setcarry ) )       continue;
     if( read_config_option( &filetmp[i], "keymap",                   &oric->keymap, keymapnames ) )              continue; 
   }
@@ -921,7 +922,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         return SDL_FALSE;
       }
 
-      blank_ram( 0, oric->mem, 16384+16384 );      
+      blank_ram( oric->rampattern, oric->mem, 16384+16384 );      
 
       oric->rom = &oric->mem[16384];
 
@@ -975,7 +976,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         return SDL_FALSE;
       }
 
-      blank_ram( 0, oric->mem, 65536+16384 );      
+      blank_ram( oric->rampattern, oric->mem, 65536+16384 );      
 
       oric->rom = &oric->mem[65536];
 
@@ -1029,7 +1030,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         return SDL_FALSE;
       }
 
-      blank_ram( 0, oric->mem, 65536+16384 );      
+      blank_ram( oric->rampattern, oric->mem, 65536+16384 );      
 
       oric->rom = &oric->mem[65536];
 
@@ -1083,7 +1084,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         return SDL_FALSE;
       }
 
-      blank_ram( 0, oric->mem, 65536+16384*7 );      
+      blank_ram( oric->rampattern, oric->mem, 65536+16384*7 );      
 
       oric->cpu.read = telestratread;
       oric->cpu.write = telestratwrite;

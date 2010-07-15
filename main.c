@@ -76,6 +76,7 @@ struct start_opts
   char     lctmp[2048];
   Sint32   start_machine;
   Sint32   start_disktype;
+  Sint32   start_rendermode;
   SDL_bool start_debug;
   char     start_disk[1024];
   char     start_tape[1024];
@@ -115,6 +116,10 @@ static char *joymodes[] = { "none",
                             "mouse",
                             NULL };
 
+static char *rendermodes[] = { "{{INVALID}}",
+                               "soft",
+                               "opengl",
+                               NULL };
 
 static SDL_bool istokend( char c )
 {
@@ -210,6 +215,10 @@ SDL_bool read_config_option( char *buf, char *token, Sint32 *dest, char **option
   i++;
   while( isws( buf[i] ) ) i++;
 
+  // Huh!?
+  if( strncmp( &buf[i], "{{INVALID}}", 11 ) == 0 )
+    return SDL_FALSE;
+
   for( j=0; options[j]; j++ )
   {
     len = strlen( options[j] );
@@ -226,7 +235,7 @@ SDL_bool read_config_option( char *buf, char *token, Sint32 *dest, char **option
   return SDL_TRUE;
 }
 
-SDL_bool read_config_int( char *buf, char *token, int *dest )
+SDL_bool read_config_int( char *buf, char *token, int *dest, int min, int max )
 {
   Sint32 i, toklen;
   int val, hv;
@@ -256,6 +265,9 @@ SDL_bool read_config_int( char *buf, char *token, int *dest )
   } else {
     val = atoi( &buf[i] );
   }
+
+  if( val < min ) val = min;
+  if( val > max ) val = max;
 
   (*dest) = val;
   return SDL_TRUE;
@@ -339,6 +351,8 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_bool(   &sto->lctmp[i], "debug",        &sto->start_debug ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "fullscreen",   &fullscreen ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "hwsurface",    &hwsurface ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "scanlines",    &oric->scanlines ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "hstretch",     &oric->hstretch ) ) continue;
     if( read_config_string( &sto->lctmp[i], "diskimage",    sto->start_disk, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "tapeimage",    sto->start_tape, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "symbols",      sto->start_syms, 1024 ) ) continue;
@@ -349,6 +363,15 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_string( &sto->lctmp[i], "oric1rom",     oric1romfile, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "mdiscrom",     mdiscromfile, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "jasminrom",    jasmnromfile, 1024 ) ) continue;
+    if( read_config_int(    &sto->lctmp[i], "rampattern",   &oric->rampattern, 0, 1 ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "rendermode",   &sto->start_rendermode, rendermodes ) )
+    {
+#ifndef __OPENGL_AVAILABLE__
+      if( sto->start_rendermode == RENDERMODE_GL )
+        sto->start_rendermode = RENDERMODE_SW;
+#endif
+      continue;
+    }
     for( j=0; j<8; j++ )
     {
       sprintf( tbtmp, "telebank%c", j+'0' );
@@ -397,6 +420,13 @@ static void usage( int ret )
           "  -s / --symbols    = Load symbols from a file\n"
           "  -f / --fullscreen = Run oricutron fullscreen\n"
           "  -w / --window     = Run oricutron in a window\n"
+#ifdef __OPENGL_AVAILABLE__
+          "  -R / --rendermode = Render mode. Valid modes:\n"
+          "\n"
+          "                      \"soft\" for software rendering\n"
+          "                      \"opengl\" for OpenGL\n"
+          "\n"
+#endif
           "  -b / --debug      = Start oricutron in the debugger\n"
           "  -r / --breakpoint = Set a breakpoint\n" );
   exit(ret);
@@ -415,6 +445,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   sto->start_machine  = MACH_ATMOS;
   sto->start_disktype = DRV_NONE;
   sto->start_debug    = SDL_FALSE;
+  sto->start_rendermode = RENDERMODE_SW;
   sto->start_disk[0]  = 0;
   sto->start_tape[0]  = 0;
   sto->start_syms[0]  = 0;
@@ -464,6 +495,9 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           if( strcasecmp( tmp, "drive"      ) == 0 ) { opt_type = 'k'; break; }
           if( strcasecmp( tmp, "symbols"    ) == 0 ) { opt_type = 's'; break; }
           if( strcasecmp( tmp, "breakpoint" ) == 0 ) { opt_type = 'r'; break; }
+#ifdef __OPENGL_AVAILABLE__
+          if( strcasecmp( tmp, "rendermode" ) == 0 ) { opt_type = 'R'; break; }
+#endif
           break;
         
         default:
@@ -480,7 +514,11 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
               case 't':
               case 'k':
               case 's':
-                opt_arg = argv[i+1];
+              case 'r':
+#ifdef __OPENGL_AVAILABLE__
+              case 'R':
+#endif
+              opt_arg = argv[i+1];
                 i++;
             }
           }
@@ -565,6 +603,18 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
             printf( "Breakpoint address or symbol expected\r\n" );
           break;
 
+#ifdef __OPENGL_AVAILABLE__
+        case 'R': // Render mode
+          if( opt_arg )
+          {
+            if( strcasecmp( opt_arg, "soft" ) == 0 )   { sto->start_rendermode = RENDERMODE_SW; break; }
+            if( strcasecmp( opt_arg, "opengl" ) == 0 ) { sto->start_rendermode = RENDERMODE_GL; break; }
+          }
+
+          printf( "Invalid render mode\n" );
+          break;
+#endif
+
         case 'h':
           usage( EXIT_SUCCESS );
           break;
@@ -604,7 +654,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   maintask = IExec->FindTask( NULL );
 #endif
 
-  if( !init_gui( oric ) ) { free( sto ); return SDL_FALSE; }
+  if( !init_gui( oric, sto->start_rendermode ) ) { free( sto ); return SDL_FALSE; }
   if( !init_filerequester( oric ) ) { free( sto ); return SDL_FALSE; }
   if( !init_msgbox( oric ) ) { free( sto ); return SDL_FALSE; }
   oric->drivetype = sto->start_disktype;

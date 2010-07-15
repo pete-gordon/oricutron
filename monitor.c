@@ -2994,7 +2994,8 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           //          |          -          |          -          |
           mon_str( "  F2 : Quit Monitor     F3 : Toggle Console" );
           mon_str( "  F4 : Toggle info      F9 : Reset cycles" );
-          mon_str( "  F10: Step CPU" );
+          mon_str( "  F10: Step into        F11: Step over" );
+          mon_str( "  F12: Skip inst." );
           mon_str( " " );
           mon_str( "COMMANDS:" );
           mon_str( "  a <addr>              - Assemble" );
@@ -3007,12 +3008,12 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "  bz                    - Zap breakpoints" );
           mon_str( "  bzm                   - Zap mem breakpoints" );
           mon_str( "  d <addr>              - Disassemble" );
-          mon_str( "  df <addr> <end> <file>- Disassemble to file" );
           mon_str( "---- MORE" );
           helpcount++;
           break;
         
         case 1:
+          mon_str( "  df <addr> <end> <file>- Disassemble to file" );
           mon_str( "  m <addr>              - Dump memory" );
           mon_str( "  mw <addr>             - Memory watch at addr" );
           mon_str( "  r <reg> <val>         - Set <reg> to <val>" );

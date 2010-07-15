@@ -1324,7 +1324,7 @@ void setmenutoggles( struct machine *oric )
 }
 
 // Initialise the GUI
-SDL_bool init_gui( struct machine *oric )
+SDL_bool init_gui( struct machine *oric, Sint32 rendermode )
 {
   int i;
   SDL_AudioSpec wanted;
@@ -1344,11 +1344,7 @@ SDL_bool init_gui( struct machine *oric )
     if( !gimg_load( &gimgs[i] ) ) return SDL_FALSE;
   }
 
-//#ifdef __OPENGL_AVAILABLE__
-//  set_render_mode( oric, RENDERMODE_GL );
-//#else
-  set_render_mode( oric, RENDERMODE_SW );
-//#endif
+  set_render_mode( oric, rendermode );
   if( !oric->init_render( oric ) ) return SDL_FALSE;
 
   // Allocate all text zones
