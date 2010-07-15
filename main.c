@@ -662,9 +662,6 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   if( !init_joy( oric ) ) { free( sto ); return SDL_FALSE; }
   if( !init_machine( oric, sto->start_machine, SDL_TRUE ) ) { free( sto ); return SDL_FALSE; }
 
-  if( sto->start_debug )
-    setemumode( oric, NULL, EM_DEBUG );
-
   if( sto->start_disk[0] ) diskimage_load( oric, sto->start_disk, 0 );
   if( sto->start_tape[0] )
   {
@@ -691,6 +688,8 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
     oric->cpu.anybp = SDL_TRUE;
   }
 
+  if( sto->start_debug )
+    setemumode( oric, NULL, EM_DEBUG );
 
   free( sto );
   return SDL_TRUE;
