@@ -26,6 +26,7 @@
 #if defined(__amigaos4__) || defined(__MORPHOS__)
 #include <proto/dos.h>
 #include <dos/dostags.h>
+#include <proto/amigaguide.h>
 #endif
 
 #include "system.h"
@@ -745,11 +746,25 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
 #ifdef __MORPHOS__
         case SDLK_HELP:
-           SystemTags( "Multiview Oricutron.guide",
-             SYS_Input, Open( "NIL:", MODE_NEWFILE ),
-             SYS_Output, Open( "NIL:", MODE_NEWFILE ),
-             SYS_Asynch, TRUE,
-             TAG_DONE );
+           {
+           struct NewAmigaGuide nag =
+           { (BPTR) NULL,
+             "Oricutron.guide",
+             NULL,
+             NULL,
+             NULL,
+             NULL,
+             NULL,
+             0,
+             NULL,
+             "MAIN",
+             0,
+             NULL,
+             NULL
+           };
+
+           OpenAmigaGuide(&nag, TAG_DONE);
+           }
            break;
 #endif
 
