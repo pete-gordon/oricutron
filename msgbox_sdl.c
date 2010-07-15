@@ -70,7 +70,7 @@ void shut_msgbox( struct machine *oric )
   free_textzone( oric, TZ_MSGBOX );
 }
 
-// Render the filerequester
+// Render the messagebox
 static void msgbox_render( struct machine *oric )
 {
   int i;
@@ -184,7 +184,7 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
         {
           case SDL_APPINPUTFOCUS:
           case SDL_APPACTIVE:
-            filereq_render( oric );
+            msgbox_render( oric );
             break;
         }
         break;
