@@ -124,8 +124,8 @@ static struct msym defsym_tele[]  = { { 0x0300, 0,            "VIA_IORB"      , 
                                       { 0x0318, 0,            "MDSC_DRQ"      , "MDSC_DR\x16", "MDSC_DRQ" },
                                       { 0x031c, 0,            "ACIA_DATA"     , "ACIA_DA\x16", "ACIA_DATA" },
                                       { 0x031d, 0,            "ACIA_STATUS"   , "ACIA_ST\x16", "ACIA_STATUS" },
-                                      { 0x031e, 0,            "ACIA_COMMAND"  , "ACIA_CO\x16", "ACIA_COMMAND" },
-                                      { 0x031f, 0,            "ACIA_CONTROL"  , "ACIA_CO\x16", "ACIA_CONTROL" },
+                                      { 0x031e, 0,            "ACIA_COMMA\x16", "ACIA_CO\x16", "ACIA_COMMAND" },
+                                      { 0x031f, 0,            "ACIA_CONTR\x16", "ACIA_CO\x16", "ACIA_CONTROL" },
                                       { 0x0320, 0,            "VIA2_IORB"     , "VIA2_IORB"  , "VIA2_IORB" },
                                       { 0x0321, 0,            "VIA2_IORA"     , "VIA2_IORA"  , "VIA2_IORA" },
                                       { 0x0322, 0,            "VIA2_DDRB"     , "VIA2_DDRB"  , "VIA2_DDRB" },
@@ -2445,8 +2445,6 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
         case 'z':  // Zap
           usersyms.numsyms = 0;
-          defaultsyms.syms = NULL;
-          defaultsyms.numsyms = 0;
           mon_str( "Symbols zapped!" );
           break;
 
