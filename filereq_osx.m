@@ -33,6 +33,7 @@
 #include "disk.h"
 #include "gui.h"
 #include "monitor.h"
+#include "6551.h"
 #include "machine.h"
 #include "filereq.h"
 
@@ -51,7 +52,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   SDL_bool ret;
 
   NSString *pat = nil;
-  NSString *msg = @"Select the file to open.";
+  //NSString *msg = @"Select the file to open.";
   bool dosavemode = false;
 
   switch( type )
