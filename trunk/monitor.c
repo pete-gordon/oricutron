@@ -2461,6 +2461,29 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
           mon_new_symbols( &usersyms, oric, &cmd[i], SYM_BESTGUESS, SDL_FALSE, SDL_TRUE );
           break;
+
+        case 'x':  // Export
+          if( !isws( cmd[i+1] ) )
+          {
+            mon_str( "???" );
+            break;
+          }
+
+          i+=2;
+
+          f = fopen( &cmd[i], "w" );
+          if( !f )
+          {
+            mon_printf( "Unable to open '%s' for writing", &cmd[i] );
+            break;
+          }
+
+          for( j=0; j<usersyms.numsyms; j++ )
+            fprintf( f, "%04X %s\n", usersyms.syms[j].addr, usersyms.syms[j].name );
+          fclose( f );
+
+          mon_printf( "User symbols exported to '%s'", &cmd[i] );
+          break;
         
         default:
           mon_str( "???" );
@@ -2995,12 +3018,13 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "  r <reg> <val>         - Set <reg> to <val>" );
           mon_str( "  q, x or qm            - Quit monitor" );
           mon_str( "  qe                    - Quit emulator" );
-          mon_str( "  sa <name> <addr>      - Add or move symbol" );
-          mon_str( "  sk <name>             - Kill symbol" );
+          mon_str( "  sa <name> <addr>      - Add or move user sym." );
+          mon_str( "  sk <name>             - Kill user symbol" );
           mon_str( "  sc                    - Symbols not case-sens." );
           mon_str( "  sC                    - Symbols case-sensitive" );
-          mon_str( "  sl <file>             - Load symbols" );
-          mon_str( "  sz                    - Zap symbols" );
+          mon_str( "  sl <file>             - Load user symbols" );
+          mon_str( "  sx <file>             - Export user symbols" );
+          mon_str( "  sz                    - Zap user symbols" );
           mon_str( "  wm <addr> <len> <file>- Write mem to disk" );
           helpcount = 0;
           lastcmd = 0;
