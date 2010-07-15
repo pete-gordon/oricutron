@@ -242,7 +242,8 @@ winicon.o: winicon.ico oricutron.rc
 	windres -i oricutron.rc -o winicon.o
 
 Oricutron.guide: ReadMe.txt
-	rx ReadMe2Guide <ReadMe.txt >Oricutron.guide
+	rx ReadMe2Guide <ReadMe.txt >$@
+	-GuideCheck $@ NoNodes
 
 $(RSRC_BEOS): oricutron.rdef
 	$(BEOS_RC) -o $@ $<

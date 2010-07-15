@@ -1,6 +1,6 @@
 @database ""
 @author "ReadMe2Guide"
-@node "Main" "Main"
+@node Main "Main"
 Oricutron 0.6
 -------------
 
@@ -9,11 +9,8 @@ Oricutron 0.6
 This is a work in progress.
 
 
-@next "Current status"
 @endnode
-@node "Current status" "Current status"
-@prev "Main"
-@toc "Main"
+@node Currentstatus "Current status"
 Current status
 ==============
 
@@ -28,11 +25,8 @@ The Telestrat is not emulated at all yet. Also, "Turbo Tape" only works in
 Atmos mode.
 
 
-@next "Thanks"
 @endnode
-@node "Thanks" "Thanks"
-@prev "Current status"
-@toc "Main"
+@node Thanks "Thanks"
 Thanks
 ======
 
@@ -45,11 +39,8 @@ jede, thrust26, mmu_man and everyone else for their help and feedback!
 Thanks to Stefan Haubenthal for the MorphOS port!
 
 
-@next "AVI export notes"
 @endnode
-@node "AVI export notes" "AVI export notes"
-@prev "Thanks"
-@toc "Main"
+@node AVIexportnotes "AVI export notes"
 AVI export notes
 ================
 
@@ -62,11 +53,8 @@ of MPlayer, so it will sound crappy and have wrong colours until those bugs
 are fixed :-(
 
 
-@next "Command line"
 @endnode
-@node "Command line" "Command line"
-@prev "AVI export notes"
-@toc "Main"
+@node Commandline "Command line"
 Command line
 ============
 
@@ -114,29 +102,31 @@ oricutron -ddemos/barbitoric.dsk -f
 
 
 
-@next "Keys"
 @endnode
-@node "Keys" "Keys"
-@prev "Command line"
-@toc "Main"
+@node Keys "Keys"
 Keys
 ====
 
+@endnode
+@node Inemulator "In emulator"
 In emulator
 -----------
 
   F1       - Bring up the menu
   F2       - Go to debugger/monitor
   F3       - Reset button (NMI)
-  F4       - Hard Reset
+  F4       - Hard reset
   Shift+F4 - Jasmin reset
   F5       - Toggle FPS
   F6       - Toggle warp speed
   F7       - Save all modified disks
   Shift+F7 - Save all modified disks to new disk images
   F10      - Start/Stop AVI capture
+  Help     - Show guide
 
 
+@endnode
+@node Inmenus "In menus"
 In menus
 --------
 
@@ -147,6 +137,8 @@ In menus
   (or use the mouse)
 
 
+@endnode
+@node InDebuggerMonitor "In Debugger/Monitor"
 In Debugger/Monitor
 -------------------
 
@@ -176,11 +168,8 @@ In Debugger/Monitor
   Tab               - Switch windows in split mode
 
 
-@next "Monitor instructions"
 @endnode
-@node "Monitor instructions" "Monitor instructions"
-@prev "Keys"
-@toc "Main"
+@node Monitorinstructions "Monitor instructions"
 Monitor instructions
 ====================
 
@@ -214,11 +203,8 @@ Commands:
   wm <addr> <len> <filename> - Write Oric memory to disk (as seen from the 6502).
 
 
-@next "Breakpoints"
 @endnode
-@node "Breakpoints" "Breakpoints"
-@prev "Monitor instructions"
-@toc "Main"
+@node Breakpoints "Breakpoints"
 Breakpoints
 ===========
 
