@@ -2164,6 +2164,85 @@ SDL_bool mon_getnum( struct machine *oric, unsigned int *num, char *buf, int *of
   return SDL_TRUE;    
 }
 
+Uint16 mon_sym_best_guess( struct machine *oric, Uint16 addr, char *symname, SDL_bool use_emu_state )
+{
+  // In the ROM area?
+  if( addr >= 0xc000 )
+  {
+    // In a telestrat bank?
+    if( oric->type == MACH_TELESTRAT )
+    {
+      // Labels starting t0_ are assumed to be telestrat bank 0 (etc.)
+      if( ( symname[0] == 't' ) && 
+          ( ( symname[1] >= '0' ) && ( symname[1] <= '7' ) ) &&
+          ( symname[2] == '_' ) )
+        return SYMF_TELEBANK0 << (symname[1]-'0');
+
+      // No hint from the label name. Can we attempt to use the current telestrat bank?
+      if( use_emu_state )
+        return SYMF_TELEBANK0 << oric->tele_currbank;
+
+      // Just make it valid in any telestrat bank
+      return SYMF_TELEBANK0|SYMF_TELEBANK1|SYMF_TELEBANK2|SYMF_TELEBANK3|SYMF_TELEBANK4|SYMF_TELEBANK5|SYMF_TELEBANK6|SYMF_TELEBANK7;
+    }
+
+    // Its not a telestrat, so its ROM or overlay
+    if( use_emu_state )
+    {
+      int romdis = oric->romdis;
+      if( ( oric->drivetype == DRV_JASMIN ) && ( oric->jasmin.olay ) )
+        romdis = 1;
+
+      return romdis ? SYMF_ROMDIS1 : SYMF_ROMDIS0;
+    }
+
+    return SYMF_ROMDIS1;
+  }
+
+  // Normal memory
+  return 0;
+}
+
+SDL_bool mon_replace_or_add_symbol( struct symboltable *stab, struct machine *oric, char *symname, unsigned short flags, Uint16 addr )
+{
+  int i;
+  char symtmp[160];
+
+  for( i=0; issymchar(symname[i]); i++ )
+    symtmp[i] = symname[i];
+  symtmp[i] = 0;
+
+  // Is it a dynamic symbol table?
+  if( stab->symspace == -1 ) return SDL_FALSE;
+
+  if( flags == SYM_BESTGUESS )
+    flags = mon_sym_best_guess( oric, addr, symtmp, SDL_TRUE );
+
+  for( i=0; i<stab->numsyms; i++ )
+  {
+    if( !oric->symbolscase )
+    {
+      if( strcasecmp( symtmp, stab->syms[i].name ) == 0 )
+        break;
+    } else {
+      if( strcmp( symtmp, stab->syms[i].name ) == 0 )
+        break;
+    }
+  }
+
+  // Replace existing symbol?
+  if( i < stab->numsyms )
+  {
+    stab->syms[i].addr  = addr;
+    stab->syms[i].flags = flags;
+    return SDL_TRUE;
+  }
+
+  return mon_addsym( stab, addr, flags, symtmp );
+}
+
+
+
 SDL_bool mon_new_symbols( struct symboltable *stab, struct machine *oric, char *fname, unsigned short flags, SDL_bool above, SDL_bool verbose )
 {
   FILE *f;
@@ -2213,30 +2292,7 @@ SDL_bool mon_new_symbols( struct symboltable *stab, struct machine *oric, char *
     // Guess the flags!
     if( flags == SYM_BESTGUESS )
     {
-      // In the ROM area?
-      if( v >= 0xc000 )
-      {
-        // In a telestrat bank?
-        if( oric->type == MACH_TELESTRAT )
-        {
-          // Labels starting t0_ are assumed to be telestrat bank 0 (etc.)
-          if( ( linetmp[0] == 't' ) && 
-              ( ( linetmp[1] >= '0' ) && ( linetmp[1] <= '7' ) ) &&
-              ( linetmp[2] == '_' ) )
-          {
-            mon_addsym( stab, v, SYMF_TELEBANK0 << (linetmp[1]-'0'), linetmp );
-          } else {
-            // No hint fron the label name, just make it valid in any telestrat bank
-            mon_addsym( stab, v, SYMF_TELEBANK0|SYMF_TELEBANK1|SYMF_TELEBANK2|SYMF_TELEBANK3|SYMF_TELEBANK4|SYMF_TELEBANK5|SYMF_TELEBANK6|SYMF_TELEBANK7, linetmp );
-          }
-        } else {
-          // Its not a telestrat, so assume its in the overlay RAM
-          mon_addsym( stab, v, SYMF_ROMDIS1, linetmp );
-        }
-      } else {
-        // Normal memory
-        mon_addsym( stab, v, 0, linetmp );
-      }
+      mon_addsym( stab, v, mon_sym_best_guess( oric, v, linetmp, SDL_FALSE ), linetmp );
     } else {
       mon_addsym( stab, v, flags, linetmp );
     }
@@ -3005,13 +3061,27 @@ static SDL_bool mon_decodeoperand( struct machine *oric, char *ptr, int *type, u
 
 static SDL_bool mon_assemble_line( struct machine *oric )
 {
-  int i, j, amode;
+  int i, j, addsym, amode;
   unsigned short val;
 
   i=0;
   while( isws( ibuf[i] ) ) i++;
 
   if( ibuf[i] == 0 ) return SDL_TRUE;
+
+  // Starts with a label?
+  j = i;
+  addsym = -1;
+  if( issymstart( ibuf[j] ) )
+  {
+    while( issymchar( ibuf[j] ) ) j++;
+    if( ibuf[j] == ':' )
+    {
+      addsym = i;
+      i = j+1;
+      while( isws( ibuf[i] ) ) i++;
+    }
+  }
 
   for( j=0; asmtab[j].name; j++ )
   {
@@ -3131,6 +3201,9 @@ static SDL_bool mon_assemble_line( struct machine *oric )
       oric->cpu.write( &oric->cpu, mon_addr+2, (val>>8)&0xff );
       break;
   }
+  
+  if( addsym != -1 )
+    mon_replace_or_add_symbol( &usersyms, oric, &ibuf[addsym], SYM_BESTGUESS, mon_addr );
 
   mon_oprintf( mon_disassemble( oric, &mon_addr, NULL, SDL_FALSE ) );
   return SDL_FALSE;
