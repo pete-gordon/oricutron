@@ -175,6 +175,8 @@ struct machine
   SDL_bool newstatusstr;
   
   SDL_bool showfps;
+
+  int rampattern;
   
   Sint32 joy_iface;
   Sint32 joymode_a, joymode_b;

@@ -118,7 +118,7 @@ void set_render_mode( struct machine *oric, int whichrendermode );
 
 void render( struct machine *oric );
 void preinit_gui( struct machine *oric );
-SDL_bool init_gui( struct machine *oric );
+SDL_bool init_gui( struct machine *oric, Sint32 rendermode );
 void shut_gui( struct machine *oric );
 
 void draw_statusbar( struct machine *oric );
