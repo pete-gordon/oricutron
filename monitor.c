@@ -745,7 +745,7 @@ struct msym *mon_tab_find_sym_by_addr( struct symboltable *stab, struct machine 
   return NULL;
 }
 
-struct msym *mon_tab_find_sym_by_name( struct symboltable *stab, struct machine *oric, char *name )
+struct msym *mon_tab_find_sym_by_name( struct symboltable *stab, struct machine *oric, char *name, int *symnum )
 {
   int i, j, k, romdis;
 
@@ -790,13 +790,20 @@ struct msym *mon_tab_find_sym_by_name( struct symboltable *stab, struct machine 
     if( !oric->symbolscase )
     {
       if( strcasecmp( name, stab->syms[i].name ) == 0 )
+      {
+        if( symnum ) (*symnum) = i;
         return &stab->syms[i];
+      }
     } else {
       if( strcmp( name, stab->syms[i].name ) == 0 )
+      {
+        if( symnum ) (*symnum) = i;
         return &stab->syms[i];
+      }
     }
   }
 
+  if( symnum) (*symnum) = -1;
   return NULL;
 }
 
@@ -817,18 +824,20 @@ struct msym *mon_find_sym_by_name( struct machine *oric, char *name )
 {
   struct msym *ret;
 
-  ret = mon_tab_find_sym_by_name( &usersyms, oric, name );
-  if( !ret ) ret = mon_tab_find_sym_by_name( &oric->romsyms, oric, name );
-  if( ( !ret ) && ( oric->type == MACH_TELESTRAT ) ) ret = mon_tab_find_sym_by_name( &oric->tele_banksyms[oric->tele_currbank], oric, name );
-  if( ( !ret ) && ( oric->disksyms ) ) ret = mon_tab_find_sym_by_name( oric->disksyms, oric, name );
+  ret = mon_tab_find_sym_by_name( &usersyms, oric, name, NULL );
+  if( !ret ) ret = mon_tab_find_sym_by_name( &oric->romsyms, oric, name, NULL );
+  if( ( !ret ) && ( oric->type == MACH_TELESTRAT ) ) ret = mon_tab_find_sym_by_name( &oric->tele_banksyms[oric->tele_currbank], oric, name, NULL );
+  if( ( !ret ) && ( oric->disksyms ) ) ret = mon_tab_find_sym_by_name( oric->disksyms, oric, name, NULL );
   if( ret ) return ret;
 
-  return mon_tab_find_sym_by_name( &defaultsyms, oric, name );
+  return mon_tab_find_sym_by_name( &defaultsyms, oric, name, NULL );
 }
 
-SDL_bool mon_addsym( struct symboltable *stab, unsigned short addr, unsigned short flags, char *name )
+SDL_bool mon_addsym( struct symboltable *stab, unsigned short addr, unsigned short flags, char *name, struct msym **symptr )
 {
   int i;
+
+  if( symptr ) (*symptr) = NULL;
 
   // Is it a dynamic symbol table?
   if( stab->symspace == -1 ) return SDL_FALSE;
@@ -879,6 +888,8 @@ SDL_bool mon_addsym( struct symboltable *stab, unsigned short addr, unsigned sho
   } else {
     strcpy( stab->syms[stab->numsyms].ssname, name );
   }
+
+  if( symptr ) *(symptr) = &stab->syms[stab->numsyms];
 
   stab->numsyms++;
 
@@ -2203,10 +2214,11 @@ Uint16 mon_sym_best_guess( struct machine *oric, Uint16 addr, char *symname, SDL
   return 0;
 }
 
-SDL_bool mon_replace_or_add_symbol( struct symboltable *stab, struct machine *oric, char *symname, unsigned short flags, Uint16 addr )
+struct msym *mon_replace_or_add_symbol( struct symboltable *stab, struct machine *oric, char *symname, unsigned short flags, Uint16 addr )
 {
   int i;
   char symtmp[160];
+  struct msym *retval;
 
   for( i=0; issymchar(symname[i]); i++ )
     symtmp[i] = symname[i];
@@ -2235,10 +2247,11 @@ SDL_bool mon_replace_or_add_symbol( struct symboltable *stab, struct machine *or
   {
     stab->syms[i].addr  = addr;
     stab->syms[i].flags = flags;
-    return SDL_TRUE;
+    return &stab->syms[i];
   }
 
-  return mon_addsym( stab, addr, flags, symtmp );
+  mon_addsym( stab, addr, flags, symtmp, &retval );
+  return retval;
 }
 
 
@@ -2292,9 +2305,9 @@ SDL_bool mon_new_symbols( struct symboltable *stab, struct machine *oric, char *
     // Guess the flags!
     if( flags == SYM_BESTGUESS )
     {
-      mon_addsym( stab, v, mon_sym_best_guess( oric, v, linetmp, SDL_FALSE ), linetmp );
+      mon_addsym( stab, v, mon_sym_best_guess( oric, v, linetmp, SDL_FALSE ), linetmp, NULL );
     } else {
-      mon_addsym( stab, v, flags, linetmp );
+      mon_addsym( stab, v, flags, linetmp, NULL );
     }
   }
 
@@ -2316,6 +2329,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
   unsigned int v, w;
   SDL_bool done = SDL_FALSE;
   unsigned char *tmem;
+  struct msym *tmpsym;
   FILE *f;
 
   i=0;
@@ -2350,6 +2364,84 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           oric->symbolscase = SDL_TRUE;
           mon_str( "Symbols are case-sensitive" );
           break;
+        
+        case 'a':  // add
+          if( !isws( cmd[i+1] ) )
+          {
+            mon_str( "???" );
+            break;
+          }
+
+          i+=2;
+          while( isws( cmd[i] ) ) i++;
+
+          if( !issymstart( cmd[i] ) )
+          {
+            mon_str( "Expected symbol name and address" );
+            break;
+          }
+
+          j = i;
+          while( issymchar( cmd[i] ) ) i++;
+
+          if( !isws( cmd[i] ) )
+          {
+            mon_str( "Expected symbol name and address" );
+            break;
+          }
+
+          if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+          {
+            mon_str( "Address expected" );
+            break;
+          }
+
+          tmpsym = mon_replace_or_add_symbol( &usersyms, oric, &cmd[j], SYM_BESTGUESS, v );
+          if( !tmpsym )
+          {
+            mon_str( "Failed for some reason" );
+            break;
+          }
+
+          mon_printf( "%s = %04X", tmpsym->name, tmpsym->addr );
+          break;
+        
+        case 'k':  // kill
+          if( !isws( cmd[i+1] ) )
+          {
+            mon_str( "???" );
+            break;
+          }
+
+          i+=2;
+          while( isws( cmd[i] ) ) i++;
+
+          if( !issymstart( cmd[i] ) )
+          {
+            mon_str( "Symbol expected" );
+            break;
+          }
+
+          j = i;
+          while( issymchar( cmd[i] ) ) i++;
+
+          if( cmd[i] != 0 )
+          {
+            mon_printf( "Expected end of line at '%s'", &cmd[i] );
+            break;
+          }
+
+          if( !mon_tab_find_sym_by_name( &usersyms, oric, &cmd[j], &k ) )
+          {
+            mon_printf( "Couldn't find '%s' in the user symbol table", &cmd[j] );
+            break;
+          }
+
+          for( ; k<(usersyms.numsyms-1); k++ )
+            usersyms.syms[k] = usersyms.syms[k+1];
+          usersyms.numsyms--;
+          mon_printf( "Killed symbol '%s'", &cmd[j] );
+          break;
 
         case 'z':  // Zap
           usersyms.numsyms = 0;
@@ -2359,7 +2451,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           break;
 
         case 'l':  // Load
-          if( cmd[i+1] != 32 )
+          if( !isws( cmd[i+1] ) )
           {
             mon_str( "???" );
             break;
@@ -2903,6 +2995,8 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "  r <reg> <val>         - Set <reg> to <val>" );
           mon_str( "  q, x or qm            - Quit monitor" );
           mon_str( "  qe                    - Quit emulator" );
+          mon_str( "  sa <name> <addr>      - Add or move symbol" );
+          mon_str( "  sk <name>             - Kill symbol" );
           mon_str( "  sc                    - Symbols not case-sens." );
           mon_str( "  sC                    - Symbols case-sensitive" );
           mon_str( "  sl <file>             - Load symbols" );
