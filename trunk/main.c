@@ -34,6 +34,7 @@
 #include "gui.h"
 #include "disk.h"
 #include "monitor.h"
+#include "6551.h"
 #include "machine.h"
 #include "filereq.h"
 #include "msgbox.h"
@@ -754,6 +755,7 @@ int main( int argc, char *argv[] )
               if( oric.type == MACH_TELESTRAT )
               {
                 via_clock( &oric.tele_via, oric.cpu.icycles );
+                acia_clock( &oric.tele_acia, oric.cpu.icycles );
               }
               breaky = m6502_inst( &oric.cpu, SDL_TRUE, mon_bpmsg );
               if( oric.emu_mode != EM_RUNNING )

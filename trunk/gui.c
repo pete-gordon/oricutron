@@ -48,6 +48,7 @@
 #include "gui.h"
 #include "disk.h"
 #include "monitor.h"
+#include "6551.h"
 #include "machine.h"
 #include "filereq.h"
 #include "render_sw.h"
@@ -553,60 +554,6 @@ void tzsetcol( struct textzone *ptz, int fc, int bc )
   ptz->cfc = fc;
   ptz->cbc = bc;
 }
-
-/*
-// Print a string directly onto the SDL surface
-//   x,y   = location
-//   fc,bc = colours
-//   str   = string
-void printstr( int x, int y, Uint16 fc, Uint16 bc, char *str )
-{
-  Uint16 *ptr;
-  int i;
-
-  ptr = &((Uint16 *)screen->pixels)[pixpitch*y+x];
-  for( i=0; str[i]; i++, ptr += 8)
-    printchar( ptr, str[i], fc, bc, SDL_TRUE );
-}
-
-static void statusprintchar( int x, Uint16 fc, char c )
-{
-  int px, py, cp;
-  unsigned char *fptr;
-  Uint16 *ptr, *statptr;
-
-  if( c&0x80 ) return;
-
-  ptr = &((Uint16 *)screen->pixels)[pixpitch*(GIMG_POS_SBARY+2)+x];
-  statptr = &gimgs[GIMG_STATUSBAR].buf[2*640+x];
-
-  fptr = &thefont[c*12];
-
-  for( py=0; py<12; py++ )
-  {
-    for( cp=0x80, px=0; px<8; px++, cp>>=1, ptr++, statptr++ )
-    {
-      if( (*fptr)&cp )
-      {
-        *ptr = fc;
-      } else {
-        *ptr = *statptr;
-      }
-    }
-
-    ptr += pixpitch - 8;
-    statptr += 640-8;
-    fptr++;
-  }
-}
-
-void statusprintstr( int x, Uint16 fc, char *str )
-{
-  int i;
-  for( i=0; str[i]; i++, x+=8 )
-    statusprintchar( x, fc, str[i] );
-}
-*/
 
 // Set the title of a textzone
 void tzsettitle( struct textzone *ptz, char *title )

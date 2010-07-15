@@ -171,8 +171,8 @@ install: install-$(PLATFORM)
 
 package: package-$(PLATFORM)
 
-$(TARGET): main.o 6502.o machine.o ula.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o msgbox.o avi.o render_sw.o render_gl.o render_null.o joystick.o $(EXTRAOBJS) $(RESOURCES)
-	$(CXX) -o $(TARGET) main.o 6502.o machine.o ula.o gui.o font.o monitor.o via.o 8912.o disk.o filereq.o msgbox.o avi.o render_sw.o render_gl.o render_null.o joystick.o $(EXTRAOBJS) $(LFLAGS)
+$(TARGET): main.o 6502.o machine.o ula.o gui.o font.o monitor.o via.o 8912.o 6551.o disk.o filereq.o msgbox.o avi.o render_sw.o render_gl.o render_null.o joystick.o $(EXTRAOBJS) $(RESOURCES)
+	$(CXX) -o $(TARGET) main.o 6502.o machine.o ula.o gui.o font.o monitor.o via.o 8912.o 6551.o disk.o filereq.o msgbox.o avi.o render_sw.o render_gl.o render_null.o joystick.o $(EXTRAOBJS) $(LFLAGS)
 ifeq ($(PLATFORMTYPE),beos)
 	$(BEOS_XRES) -o $(TARGET) $(RSRC_BEOS)
 	$(BEOS_SETVER) $(TARGET) \
@@ -183,56 +183,60 @@ ifeq ($(PLATFORMTYPE),beos)
 endif
 
 
-main.o: main.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h avi.h msgbox.h filereq.h main.h ula.h joystick.h
+main.o: main.c system.h 6502.h via.h 8912.h gui.h disk.h 6551.h machine.h monitor.h avi.h msgbox.h filereq.h main.h ula.h joystick.h
 	$(CC) -c main.c -o main.o $(CFLAGS)
 
 6502.o: 6502.c system.h 6502.h
 	$(CC) -c 6502.c -o 6502.o $(CFLAGS)
 
-machine.o: machine.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h avi.h main.h joystick.h
+machine.o: machine.c system.h 6502.h via.h 8912.h gui.h disk.h 6551.h machine.h monitor.h avi.h main.h joystick.h
 	$(CC) -c machine.c -o machine.o $(CFLAGS)
 
-ula.o: ula.c ula.h system.h 6502.h via.h 8912.h disk.h monitor.h machine.h avi.h
+ula.o: ula.c ula.h system.h 6502.h via.h 8912.h disk.h monitor.h 6551.h machine.h avi.h
 	$(CC) -c ula.c -o ula.o $(CFLAGS)
 
-render_sw.o: render_sw.c render_sw.h system.h 6502.h via.h 8912.h disk.h monitor.h machine.h
+render_sw.o: render_sw.c render_sw.h system.h 6502.h via.h 8912.h disk.h monitor.h 6551.h machine.h
 	$(CC) -c render_sw.c -o render_sw.o $(CFLAGS)
 
-render_gl.o: render_gl.c render_gl.h system.h 6502.h via.h 8912.h disk.h monitor.h machine.h
+render_gl.o: render_gl.c render_gl.h system.h 6502.h via.h 8912.h disk.h monitor.h 6551.h machine.h
 	$(CC) -c render_gl.c -o render_gl.o $(CFLAGS)
 
-render_null.o: render_null.c render_null.h system.h 6502.h via.h 8912.h disk.h monitor.h machine.h
+render_null.o: render_null.c render_null.h system.h 6502.h via.h 8912.h disk.h monitor.h 6551.h machine.h
 	$(CC) -c render_null.c -o render_null.o $(CFLAGS)
 
-gui.o: gui.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h filereq.h
+gui.o: gui.c system.h 6502.h via.h 8912.h gui.h disk.h 6551.h machine.h monitor.h filereq.h
 	$(CC) -c gui.c -o gui.o $(CFLAGS)
 
-monitor.o: monitor.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h ula.h
+monitor.o: monitor.c system.h 6502.h via.h 8912.h gui.h disk.h 6551.h machine.h monitor.h ula.h
 	$(CC) -c monitor.c -o monitor.o $(CFLAGS)
 
-via.o: via.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h
+via.o: via.c system.h 6502.h via.h 8912.h gui.h disk.h 6551.h machine.h
 	$(CC) -c via.c -o via.o $(CFLAGS)
 
-disk.o: disk.c system.h 6502.h via.h 8912.h gui.h disk.h machine.h monitor.h msgbox.h
+6551.o: 6551.c system.h 6502.h via.h 8912.h gui.h disk.h 6551.h machine.h
+	$(CC) -c 6551.c -o 6551.o $(CFLAGS)
+
+disk.o: disk.c system.h 6502.h via.h 8912.h gui.h disk.h 6551.h machine.h monitor.h msgbox.h
 	$(CC) -c disk.c -o disk.o $(CFLAGS)
 
-8912.o: 8912.c system.h 6502.h 8912.h via.h gui.h disk.h machine.h avi.h
+8912.o: 8912.c system.h 6502.h 8912.h via.h gui.h disk.h 6551.h machine.h avi.h
 	$(CC) -c 8912.c -o 8912.o $(CFLAGS)
 
 font.o: font.c
 	$(CC) -c font.c -o font.o $(CFLAGS)
 
-filereq.o: $(FILEREQ_SRC) filereq.h system.h 6502.h via.h 8912.h gui.h disk.h machine.h
+filereq.o: $(FILEREQ_SRC) filereq.h system.h 6502.h via.h 8912.h gui.h disk.h 6551.h machine.h
 	$(CC) -c $(FILEREQ_SRC) -o filereq.o $(CFLAGS)
 
-msgbox.o: $(MSGBOX_SRC) msgbox.h system.h 6502.h via.h 8912.h gui.h disk.h machine.h
+msgbox.o: $(MSGBOX_SRC) msgbox.h system.h 6502.h via.h 8912.h gui.h disk.h 6551.h machine.h
 	$(CC) -c $(MSGBOX_SRC) -o msgbox.o $(CFLAGS)
 
 avi.o: avi.c system.h avi.h
 	$(CC) -c avi.c -o avi.o $(CFLAGS)
 
-joystick.o: joystick.c system.h 6502.h via.h 8912.h gui.h disk.h monitor.h machine.h joystick.h
+joystick.o: joystick.c system.h 6502.h via.h 8912.h gui.h disk.h monitor.h 6551.h machine.h joystick.h
 	$(CC) -c joystick.c -o joystick.o $(CFLAGS)
+
 
 winicon.o: winicon.ico oricutron.rc
 	windres -i oricutron.rc -o winicon.o
