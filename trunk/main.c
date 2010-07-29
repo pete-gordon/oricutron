@@ -96,7 +96,7 @@ static char *disktypes[] = { "none",
                              NULL };
 
 static char *joyifacetypes[] = { "none",
-                                 "altai",
+                                 "altai|pase",
                                  "ijk",
                                  NULL };
 
@@ -201,6 +201,7 @@ SDL_bool read_config_bool( char *buf, char *token, SDL_bool *dest )
 SDL_bool read_config_option( char *buf, char *token, Sint32 *dest, char **options )
 {
   Sint32 i, j, len;
+  char *thisopt;
 
   // Get the token length
   len = strlen( token );
@@ -221,14 +222,22 @@ SDL_bool read_config_option( char *buf, char *token, Sint32 *dest, char **option
 
   for( j=0; options[j]; j++ )
   {
-    len = strlen( options[j] );
-    if( strncasecmp( &buf[i], options[j], len ) == 0 )
+    thisopt = options[j];
+    while( thisopt[0] )
     {
-      if( istokend( buf[i+len] ) )
+      len = 0;
+      while( (thisopt[len]!=0) && (thisopt[len]!='|') ) len++;
+
+      if( strncasecmp( &buf[i], thisopt, len ) == 0 )
       {
-        *dest = j;
-        return SDL_TRUE;
+        if( istokend( buf[i+len] ) )
+        {
+          *dest = j;
+          return SDL_TRUE;
+        }
       }
+      thisopt += len;
+      if( thisopt[0] == '|' ) thisopt++;
     }
   }
 
