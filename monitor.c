@@ -2681,51 +2681,80 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
     case 'm':
       lastcmd = cmd[i];
       i++;
-      
-      if( cmd[i] == 'w' )
-      {
-        lastcmd = 0;
-        i++;
 
-        if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
-        {
-          mon_str( "Bad address" );
+      switch( cmd[i] )
+      {
+        case 'm':
+          lastcmd = 0;
+          i++;
+
+          if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+          {
+            mon_str( "Bad address" );
+            break;
+          }
+
+          if( !mon_getnum( oric, &w, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+          {
+            mon_str( "Value expected" );
+            break;
+          }
+
+          oric->cpu.write( &oric->cpu, v, w );
           break;
-        }
-        
-        if( mw_split )
-        {
-          mw_addr[mw_which] = v;
-        } else {
-          mw_which = 0;
-          mw_addr[0] = v;
-        }
-        cshow = CSHOW_MWATCH;
-        break;
-      }
-      
-      if( mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
-        mon_addr = v;
 
-      for( j=0; j<16; j++ )
-      {
-        sprintf( vsptmp, "%04X  ", mon_addr );
-        for( k=0; k<8; k++ )
-        {
-          sprintf( &vsptmp[128], "%02X ", mon_read( oric, mon_addr+k ) );
-          strcat( vsptmp, &vsptmp[128] );
-        }
-        l = strlen( vsptmp );
-        vsptmp[l++] = 32;
-        vsptmp[l++] = '\'';
-        for( k=0; k<8; k++ )
-        {
-          v = mon_read( oric, mon_addr++ );
-          vsptmp[l++] = ((v>31)&&(v<128))?v:'.';
-        }
-        vsptmp[l++] = '\'';
-        vsptmp[l++] = 0;
-        mon_str( vsptmp );
+        case 'w':
+          lastcmd = 0;
+          i++;
+
+          if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+          {
+            mon_str( "Bad address" );
+            break;
+          }
+        
+          if( mw_split )
+          {
+            mw_addr[mw_which] = v;
+          } else {
+            mw_which = 0;
+            mw_addr[0] = v;
+          }
+          cshow = CSHOW_MWATCH;
+          break;
+        
+        default:
+          if( ( cmd[i] != 0 ) && ( !isws( cmd[i] ) ) )
+          {
+            mon_str( "???" );
+            break;
+          }
+
+
+          if( mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+            mon_addr = v;
+
+          for( j=0; j<16; j++ )
+          {
+            sprintf( vsptmp, "%04X  ", mon_addr );
+            for( k=0; k<8; k++ )
+            {
+              sprintf( &vsptmp[128], "%02X ", mon_read( oric, mon_addr+k ) );
+              strcat( vsptmp, &vsptmp[128] );
+            }
+            l = strlen( vsptmp );
+            vsptmp[l++] = 32;
+            vsptmp[l++] = '\'';
+            for( k=0; k<8; k++ )
+            {
+              v = mon_read( oric, mon_addr++ );
+              vsptmp[l++] = ((v>31)&&(v<128))?v:'.';
+            }
+            vsptmp[l++] = '\'';
+            vsptmp[l++] = 0;
+            mon_str( vsptmp );
+          }
+          break;
       }
       break;
     
@@ -3013,6 +3042,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
         case 1:
           mon_str( "  df <addr> <end> <file>- Disassemble to file" );
           mon_str( "  m <addr>              - Dump memory" );
+          mon_str( "  mm <addr> <value>     - Modify memory" );
           mon_str( "  mw <addr>             - Memory watch at addr" );
           mon_str( "  r <reg> <val>         - Set <reg> to <val>" );
           mon_str( "  q, x or qm            - Quit monitor" );
