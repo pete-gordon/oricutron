@@ -5,7 +5,7 @@
 # PLATFORM = beos
 # PLATFORM = haiku
 # PLATFORM = osx
-# PLATFORM = linux
+# PLATFORM = Linux
 # PLATFORM = gphwiz
 # PLATFORM = aitouchbook
 
