@@ -19,6 +19,8 @@
 **  Software rendering
 */
 
+#include <stdlib.h>
+
 #include "system.h"
 #include "6502.h"
 #include "via.h"
