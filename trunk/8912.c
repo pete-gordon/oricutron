@@ -348,7 +348,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
   if( !tapenoise ) ay->tapeout = 0;
 
   out = (Uint16 *)stream;
-  for( i=0,j=0; i<AUDIO_BUFLEN; i++ )
+  for( i=0,j=0; i<AUDIO_BUFLEN && i<length/(2*sizeof(Uint16)); i++ )
   {
     ay->ccyc = ay->ccycle>>FPBITS;
 
@@ -385,7 +385,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
 
   if( dcadjustave )
   {
-    for( i=0, j=0; i<AUDIO_BUFLEN; i++ )
+    for( i=0, j=0; i<AUDIO_BUFLEN && i<length/(2*sizeof(Uint16)); i++ )
     {
       out[j++] -= dcadjustave;
       out[j++] -= dcadjustave;
