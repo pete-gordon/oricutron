@@ -734,6 +734,15 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
            refreshavi = SDL_TRUE;
            break;
 
+#if defined( __BEOS__ ) || defined( __HAIKU__ )
+        case SDLK_F8:
+          clipboard_copy( oric );
+          break;
+        case SDLK_F9:
+          clipboard_paste( oric );
+          break;
+#endif
+
 #ifdef __amigaos4__
         case SDLK_HELP:
            IDOS->SystemTags( "Multiview Oricutron.guide",

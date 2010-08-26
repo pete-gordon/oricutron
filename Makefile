@@ -106,6 +106,8 @@ TARGET = oricutron
 INSTALLDIR = /boot/apps/Oricutron
 FILEREQ_SRC = filereq_beos.cpp
 MSGBOX_SRC = msgbox_beos.cpp
+CLIPBOARD_SRC = clipboard_beos.cpp
+EXTRAOBJS = clipboard.o
 BEOS_BERES := beres
 BEOS_RC := rc
 BEOS_XRES := xres
@@ -237,6 +239,8 @@ avi.o: avi.c system.h avi.h
 joystick.o: joystick.c system.h 6502.h via.h 8912.h gui.h disk.h monitor.h 6551.h machine.h joystick.h
 	$(CC) -c joystick.c -o joystick.o $(CFLAGS)
 
+clipboard.o: $(CLIPBOARD_SRC)  system.h 6502.h via.h 8912.h gui.h disk.h monitor.h 6551.h machine.h
+	$(CC) -c $(CLIPBOARD_SRC) -o clipboard.o $(CFLAGS)
 
 winicon.o: winicon.ico oricutron.rc
 	windres -i oricutron.rc -o winicon.o
