@@ -483,7 +483,7 @@ unsigned char microdisc_o16kread( struct m6502 *cpu, unsigned short addr )
 
 static SDL_bool load_rom( struct machine *oric, char *fname, int size, unsigned char *where, struct symboltable *stab, int symflags )
 {
-  FILE *f;
+  SDL_RWops *f;
   char *tmpname;
 
   // MinGW doesn't have asprintf :-(
@@ -491,7 +491,7 @@ static SDL_bool load_rom( struct machine *oric, char *fname, int size, unsigned 
   if( !tmpname ) return SDL_FALSE;
 
   sprintf( tmpname, "%s.rom", fname );
-  f = fopen( tmpname, "rb" );
+  f = SDL_RWFromFile( tmpname, "rb" );
   if( !f )
   {
     printf( "Unable to open '%s'\n", tmpname );
@@ -502,14 +502,14 @@ static SDL_bool load_rom( struct machine *oric, char *fname, int size, unsigned 
   if( size < 0 )
   {
     int filesize;
-    fseek( f, 0, SEEK_END );
-    filesize = ftell( f );
-    fseek( f, 0, SEEK_SET );
+    SDL_RWseek( f, 0, SEEK_END );
+    filesize = SDL_RWtell( f );
+    SDL_RWseek( f, 0, SEEK_SET );
 
     if( filesize > -size )
     {
       printf( "ROM '%s' exceeds %d bytes.\n", fname, -size );
-      fclose( f );
+      SDL_RWclose( f );
       free( tmpname );
       return SDL_FALSE;
     }
@@ -518,15 +518,15 @@ static SDL_bool load_rom( struct machine *oric, char *fname, int size, unsigned 
     size = filesize;
   }
 
-  if( fread( where, size, 1, f ) != 1 )
+  if( SDL_RWread( f, where, size, 1 ) != 1 )
   {
     printf( "Unable to read '%s'\n", tmpname );
-    fclose( f );
+    SDL_RWclose( f );
     free( tmpname );
     return SDL_FALSE;
   }
 
-  fclose( f );
+  SDL_RWclose( f );
 
   sprintf( tmpname, "%s.sym", fname );
   mon_new_symbols( stab, oric, tmpname, symflags, SDL_FALSE, SDL_FALSE );
