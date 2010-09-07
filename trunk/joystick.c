@@ -88,7 +88,7 @@ static struct keyjoydef keyjoytab[] = { { "BACKSPACE",   SDLK_BACKSPACE },
                                         { NULL,          0 } };
 
 static SDL_bool joysubinited = SDL_FALSE;
-static Uint8 joystate_a[6], joystate_b[6];
+Uint8 joystate_a[6], joystate_b[6];
 
 static SDL_bool is_real_joystick( Sint16 joymode )
 {
@@ -248,6 +248,65 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
   return swallowit;
 }
 
+void joy_buildmask( struct machine *oric )
+{
+  Uint8 mkmask = 0xff;
+  Uint8 joysel = oric->via.read_port_a( &oric->via );
+
+  switch( oric->joy_iface )
+  {
+    case JOYIFACE_ALTAI:
+      if( joysel & 0x80 )
+      {
+        if( joystate_a[0] ) mkmask &= 0xef;
+        if( joystate_a[1] ) mkmask &= 0xf7;
+        if( joystate_a[2] ) mkmask &= 0xfe;
+        if( joystate_a[3] ) mkmask &= 0xfd;
+        if( joystate_a[4] ) mkmask &= 0xdf;
+      }
+
+      if( joysel & 0x40 )
+      {
+        if( joystate_b[0] ) mkmask &= 0xef;
+        if( joystate_b[1] ) mkmask &= 0xf7;
+        if( joystate_b[2] ) mkmask &= 0xfe;
+        if( joystate_b[3] ) mkmask &= 0xfd;
+        if( joystate_b[4] ) mkmask &= 0xdf;
+      }
+      break;
+    
+    case JOYIFACE_IJK:
+      if( ((oric->via.ddrb & 0x10)==0) ||
+          ((oric->via.read_port_b( &oric->via )&0x10)!=0) )
+        break;
+
+      mkmask &= 0xdf;
+
+      if( ( joysel & 0xc0 ) == 0xc0 ) break;
+
+      if( joysel & 0x40 )
+      {
+        if( joystate_a[0] ) mkmask &= 0xef;
+        if( joystate_a[1] ) mkmask &= 0xf7;
+        if( joystate_a[2] ) mkmask &= 0xfd;
+        if( joystate_a[3] ) mkmask &= 0xfe;
+        if( joystate_a[4] ) mkmask &= 0xfb;
+      }
+
+      if( joysel & 0x80 )
+      {
+        if( joystate_b[0] ) mkmask &= 0xef;
+        if( joystate_b[1] ) mkmask &= 0xf7;
+        if( joystate_b[2] ) mkmask &= 0xfd;
+        if( joystate_b[3] ) mkmask &= 0xfe;
+        if( joystate_b[4] ) mkmask &= 0xfb;
+      }
+      break;
+  }
+
+  oric->joymask = mkmask;
+}
+
 SDL_bool joy_filter_event( SDL_Event *ev, struct machine *oric )
 {
   SDL_bool swallow_event;
@@ -257,6 +316,8 @@ SDL_bool joy_filter_event( SDL_Event *ev, struct machine *oric )
 
   if( swallow_event )
   {
+    joy_buildmask( oric );
+
     char testytesttest[64];
     sprintf( testytesttest, "A: %d%d%d%d-%d%d B: %d%d%d%d-%d%d",
       joystate_a[0], joystate_a[1], joystate_a[2], joystate_a[3],

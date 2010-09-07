@@ -2871,7 +2871,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           break;
 
         case REG_VIA_IRA:
-          via_write_porta( &oric->via, 0xff, v );
+          oric->via.write_port_a( &oric->via, 0xff, v );
           break;
 
         case REG_VIA_ORA:
@@ -2883,7 +2883,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           break;
 
         case REG_VIA_IRB:
-          via_write_portb( &oric->via, 0xff, v );
+          oric->via.write_port_b( &oric->via, 0xff, v );
           break;
 
         case REG_VIA_ORB:
