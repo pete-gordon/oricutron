@@ -58,6 +58,7 @@ extern char atmosromfile[];
 extern char oric1romfile[];
 extern char mdiscromfile[];
 extern char jasmnromfile[];
+extern char pravzromfile[];
 extern char telebankfiles[8][1024];
 
 #ifdef __amigaos4__
@@ -88,11 +89,13 @@ static char *machtypes[] = { "oric1",
                              "oric1-16k",
                              "atmos",
                              "telestrat",
+                             "pravetz|pravetz8d",
                              NULL };
 
 static char *disktypes[] = { "none",
                              "jasmin",
                              "microdisc",
+                             "pravetz",
                              NULL };
 
 static char *joyifacetypes[] = { "none",
@@ -372,6 +375,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_string( &sto->lctmp[i], "oric1rom",     oric1romfile, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "mdiscrom",     mdiscromfile, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "jasminrom",    jasmnromfile, 1024 ) ) continue;
+    if( read_config_string( &sto->lctmp[i], "pravetzrom",   pravzromfile, 1024 ) ) continue;
     if( read_config_int(    &sto->lctmp[i], "rampattern",   &oric->rampattern, 0, 1 ) ) continue;
     if( read_config_option( &sto->lctmp[i], "rendermode",   &sto->start_rendermode, rendermodes ) )
     {
@@ -418,6 +422,7 @@ static void usage( int ret )
           "                      \"oric1\" or \"1\" for Oric 1\n"
           "                      \"o16k\" for Oric 1 16k\n"
           "                      \"telestrat\" or \"t\" for Telestrat\n"
+          "                      \"pravetz\", \"pravetz8d\" or \"p\" for Pravetz 8D\n"
           "\n"
           "  -d / --disk       = Specify a disk image to use in drive 0\n"
           "  -t / --tape       = Specify a tape image to use\n"
@@ -425,6 +430,7 @@ static void usage( int ret )
           "  \n"
           "                      \"microdisc\" or \"m\" for Microdisc\n"
           "                      \"jasmin\" or \"j\" for Jasmin\n"
+          "                      \"pravetz\" or \"p\" for Pravetz\n"
           "\n"
           "  -s / --symbols    = Load symbols from a file\n"
           "  -f / --fullscreen = Run oricutron fullscreen\n"
@@ -539,13 +545,16 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
         case 'm':  // Machine type
           if( opt_arg )
           {
-            if( strcasecmp( opt_arg, "atmos" ) == 0 ) { sto->start_machine = MACH_ATMOS;     break; }
-            if( strcasecmp( opt_arg, "a"     ) == 0 ) { sto->start_machine = MACH_ATMOS;     break; }
-            if( strcasecmp( opt_arg, "oric1" ) == 0 ) { sto->start_machine = MACH_ORIC1;     break; }
-            if( strcasecmp( opt_arg, "1"     ) == 0 ) { sto->start_machine = MACH_ORIC1;     break; }
-            if( strcasecmp( opt_arg, "o16k"  ) == 0 ) { sto->start_machine = MACH_ORIC1_16K; break; }
-            if( strcasecmp( opt_arg, "telestrat" ) == 0 ) { sto->start_machine = MACH_TELESTRAT;     break; }
-            if( strcasecmp( opt_arg, "t"     ) == 0 ) { sto->start_machine = MACH_TELESTRAT;     break; }
+            if( strcasecmp( opt_arg, "atmos"     ) == 0 ) { sto->start_machine = MACH_ATMOS;     break; }
+            if( strcasecmp( opt_arg, "a"         ) == 0 ) { sto->start_machine = MACH_ATMOS;     break; }
+            if( strcasecmp( opt_arg, "oric1"     ) == 0 ) { sto->start_machine = MACH_ORIC1;     break; }
+            if( strcasecmp( opt_arg, "1"         ) == 0 ) { sto->start_machine = MACH_ORIC1;     break; }
+            if( strcasecmp( opt_arg, "o16k"      ) == 0 ) { sto->start_machine = MACH_ORIC1_16K; break; }
+            if( strcasecmp( opt_arg, "telestrat" ) == 0 ) { sto->start_machine = MACH_TELESTRAT; break; }
+            if( strcasecmp( opt_arg, "t"         ) == 0 ) { sto->start_machine = MACH_TELESTRAT; break; }
+            if( strcasecmp( opt_arg, "pravetz"   ) == 0 ) { sto->start_machine = MACH_PRAVETZ;   break; }
+            if( strcasecmp( opt_arg, "pravetz8d" ) == 0 ) { sto->start_machine = MACH_PRAVETZ;   break; }
+            if( strcasecmp( opt_arg, "p"         ) == 0 ) { sto->start_machine = MACH_PRAVETZ;   break; }
           }
           
           printf( "Invalid machine type\n" );
@@ -578,6 +587,8 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
             if( strcasecmp( opt_arg, "m"         ) == 0 ) { sto->start_disktype = DRV_MICRODISC; break; }
             if( strcasecmp( opt_arg, "jasmin"    ) == 0 ) { sto->start_disktype = DRV_JASMIN;    break; }
             if( strcasecmp( opt_arg, "j"         ) == 0 ) { sto->start_disktype = DRV_JASMIN;    break; }
+            if( strcasecmp( opt_arg, "pravetz"   ) == 0 ) { sto->start_disktype = DRV_PRAVETZ;   break; }
+            if( strcasecmp( opt_arg, "p"         ) == 0 ) { sto->start_disktype = DRV_PRAVETZ;   break; }
           }
 
           printf( "Invalid drive type\n" );

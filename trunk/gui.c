@@ -65,6 +65,7 @@ extern char atmosromfile[];
 extern char oric1romfile[];
 extern char mdiscromfile[];
 extern char jasmnromfile[];
+extern char pravzromfile[];
 extern char telebankfiles[8][1024];
 //char snappath[4096], snapfile[512];
 char filetmp[4096+512];
@@ -174,10 +175,12 @@ struct osdmenuitem hwopitems[] = { { " Oric-1",                "1",    SDLK_1,  
                                    { " Oric-1 16K",            "2",    SDLK_2,   swapmach,        (0xffff<<16)|MACH_ORIC1_16K },
                                    { " Atmos",                 "3",    SDLK_3,   swapmach,        (0xffff<<16)|MACH_ATMOS },
                                    { " Telestrat",             "4",    SDLK_4,   swapmach,        (DRV_NONE<<16)|MACH_TELESTRAT },
+                                   { " Pravetz 8D",            "5",    SDLK_5,   swapmach,        (DRV_NONE<<16)|MACH_PRAVETZ },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0 },
                                    { " No disk",               "X",    'x',      setdrivetype,    DRV_NONE },
                                    { " Microdisc",             "M",    'm',      setdrivetype,    DRV_MICRODISC },
                                    { " Jasmin",                "J",    'j',      setdrivetype,    DRV_JASMIN },
+                                   { " Pravetz",               "P",    'p',      NULL,            0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0 },
                                    { " Turbo tape",            NULL,   0,        toggletapeturbo, 0 },
                                    { " Autoinsert tape",       NULL,   0,        toggleautoinsrt, 0 },
@@ -1236,6 +1239,7 @@ void preinit_gui( struct machine *oric )
   strcpy( oric1romfile, ROMPREFIX"basic10" );
   strcpy( mdiscromfile, ROMPREFIX"microdis" );
   strcpy( jasmnromfile, ROMPREFIX"jasmin" );
+  strcpy( pravzromfile, ROMPREFIX"pravetzt" );
   telebankfiles[0][0] = 0;
   telebankfiles[1][0] = 0;
   telebankfiles[2][0] = 0;
@@ -1263,24 +1267,24 @@ void setmenutoggles( struct machine *oric )
     auopitems[1].name = " Tape noise";
 
   if( oric->tapeturbo )
-    hwopitems[9].name = "\x0e""Turbo tape";
+    hwopitems[11].name = "\x0e""Turbo tape";
   else
-    hwopitems[9].name = " Turbo tape";
+    hwopitems[11].name = " Turbo tape";
 
   if( oric->autoinsert )
-    hwopitems[10].name = "\x0e""Autoinsert tape";
+    hwopitems[12].name = "\x0e""Autoinsert tape";
   else
-    hwopitems[10].name = " Autoinsert tape";
+    hwopitems[12].name = " Autoinsert tape";
 
   if( oric->autorewind )
-    hwopitems[11].name = "\x0e""Autorewind tape";
+    hwopitems[13].name = "\x0e""Autorewind tape";
   else
-    hwopitems[11].name = " Autorewind tape";
+    hwopitems[13].name = " Autorewind tape";
 
   if( oric->vsynchack )
-    hwopitems[13].name = "\x0e""VSync hack";
+    hwopitems[15].name = "\x0e""VSync hack";
   else
-    hwopitems[13].name = " VSync hack";
+    hwopitems[15].name = " VSync hack";
 
   if( oric->symbolsautoload )
     dbopitems[0].name = "\x0e""Autoload symbols file";
@@ -1315,12 +1319,12 @@ void setmenutoggles( struct machine *oric )
     glopitems[5].name = " Scanlines";
   }
 
-  hwopitems[6].func = microdiscrom_valid ? setdrivetype : NULL;
-  hwopitems[7].func = jasminrom_valid ? setdrivetype : NULL;
+  hwopitems[7].func = microdiscrom_valid ? setdrivetype : NULL;
+  hwopitems[8].func = jasminrom_valid ? setdrivetype : NULL;
 
-  hwopitems[5].name = oric->drivetype==DRV_NONE      ? "\x0e""No disk"   : " No disk";
-  hwopitems[6].name = oric->drivetype==DRV_MICRODISC ? "\x0e""Microdisc" : " Microdisc";
-  hwopitems[7].name = oric->drivetype==DRV_JASMIN    ? "\x0e""Jasmin"    : " Jasmin";
+  hwopitems[6].name = oric->drivetype==DRV_NONE      ? "\x0e""No disk"   : " No disk";
+  hwopitems[7].name = oric->drivetype==DRV_MICRODISC ? "\x0e""Microdisc" : " Microdisc";
+  hwopitems[8].name = oric->drivetype==DRV_JASMIN    ? "\x0e""Jasmin"    : " Jasmin";
 }
 
 // Initialise the GUI
