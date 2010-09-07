@@ -580,11 +580,11 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
 */
 void ay_update_keybits( struct ay8912 *ay )
 {
-  ay->currkeyoffs = via_read_portb( &ay->oric->via ) & 0x7;
+  ay->currkeyoffs = ay->oric->via.read_port_b( &ay->oric->via ) & 0x7;
   if( ay->keystates[ay->currkeyoffs] & (ay->eregs[AY_PORT_A]^0xff) )
-    via_write_portb( &ay->oric->via, 0x08, 0x08 );
+    ay->oric->via.write_port_b( &ay->oric->via, 0x08, 0x08 );
   else
-    via_write_portb( &ay->oric->via, 0x08, 0x00 );
+    ay->oric->via.write_port_b( &ay->oric->via, 0x08, 0x00 );
 }
 
 /*
@@ -614,9 +614,9 @@ void ay_keypress( struct ay8912 *ay, unsigned short key, SDL_bool down )
   if( ay->currkeyoffs == (i>>3) )
   {
     if( ay->keystates[ay->currkeyoffs] & (ay->eregs[AY_PORT_A]^0xff) )
-      via_write_portb( &ay->oric->via, 0x08, 0x08 );
+      ay->oric->via.write_port_b( &ay->oric->via, 0x08, 0x08 );
     else
-      via_write_portb( &ay->oric->via, 0x08, 0x00 );
+      ay->oric->via.write_port_b( &ay->oric->via, 0x08, 0x00 );
   }
 }
 
@@ -630,12 +630,12 @@ void ay_modeset( struct ay8912 *ay )
   switch( ay->bmode )
   {
     case AYBMF_BC1: // Read AY register
-      via_write_porta( &ay->oric->via, 0xff, (ay->creg>=NUM_AY_REGS) ? 0 : ay->eregs[ay->creg] );
+      ay->oric->via.write_port_a( &ay->oric->via, 0xff, (ay->creg>=NUM_AY_REGS) ? 0 : ay->eregs[ay->creg] );
       break;
     
     case AYBMF_BDIR: // Write AY register
       if( ay->creg >= NUM_AY_REGS ) break;
-      v = via_read_porta( &ay->oric->via );
+      v = ay->oric->via.read_port_a( &ay->oric->via );
 
       if( ( ay->creg != AY_ENV_CYCLE ) || ( v != 0xff ) )
         ay->eregs[ay->creg] = v;

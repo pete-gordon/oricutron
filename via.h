@@ -73,6 +73,11 @@ struct via
   void (*cb2pulsed)(struct via *);
   void (*cb2shifted)(struct via *);
 
+  unsigned char (*read_port_a)(struct via *);
+  unsigned char (*read_port_b)(struct via *);
+  void (*write_port_a)(struct via *v, unsigned char, unsigned char);
+  void (*write_port_b)(struct via *v, unsigned char, unsigned char);
+
   struct machine *oric;
   int irqbit;
 };
@@ -148,15 +153,6 @@ void via_write_CA1( struct via *v, unsigned char data );
 void via_write_CA2( struct via *v, unsigned char data );
 void via_write_CB1( struct via *v, unsigned char data );
 void via_write_CB2( struct via *v, unsigned char data );
-
-// Read ports from external device
-unsigned char via_read_porta( struct via *v );
-unsigned char via_read_portb( struct via *v );
-
-// Write ports from external device
-// v = VIA, mask = bits connected to writing device, data = new state for those bits
-void via_write_porta( struct via *v, unsigned char mask, unsigned char data );
-void via_write_portb( struct via *v, unsigned char mask, unsigned char data );
 
 // Write to IFR from the monitor
 void via_mon_write_ifr( struct via *v, unsigned char data );

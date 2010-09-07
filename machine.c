@@ -581,6 +581,7 @@ void preinit_machine( struct machine *oric )
   oric->rampattern = 0;
 
   oric->joy_iface = JOYIFACE_NONE;
+  oric->joymask   = 0xff;
   oric->joymode_a = JOYMODE_KB1;
   oric->joymode_b = JOYMODE_NONE;
   oric->telejoymode_a = JOYMODE_KB1;

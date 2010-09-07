@@ -31,9 +31,10 @@ AR = ar
 RANLIB = ranlib
 DEBUGLIB =
 TARGET = oricutron
-FILEREQ_SRC = filereq_sdl.c
-MSGBOX_SRC = msgbox_sdl.c
+FILEREQ_OBJ = filereq_sdl.o
+MSGBOX_OBJ = msgbox_sdl.o
 EXTRAOBJS =
+CUSTOMBJS =
 PKGDIR = Oricutron_$(PLATFORM)_v$(VERSION_MAJ)$(VERSION_MIN)
 DOCFILES = ReadMe.txt oricutron.cfg ChangeLog.txt
 
@@ -66,15 +67,15 @@ PLATFORM ?= os4
 ifeq ($(PLATFORM),os4)
 CFLAGS += -mcrt=newlib -gstabs -I/SDK/Local/common/include/ -I/SDK/Local/common/include/SDL/ -I/SDK/Local/newlib/include/ -I/SDK/Local/newlib/include/SDL/ -D__OPENGL_AVAILABLE__
 LFLAGS += -lm `sdl-config --libs` -lGL -mcrt=newlib -gstabs
-FILEREQ_SRC = filereq_amiga.c
-MSGBOX_SRC = msgbox_os4.c
+FILEREQ_OBJ = filereq_amiga.o
+MSGBOX_OBJ = msgbox_os4.o
 endif
 
 # MorphOS
 ifeq ($(PLATFORM),MorphOS)
 CFLAGS += `sdl-config --cflags` -D__OPENGL_AVAILABLE__
 LFLAGS += `sdl-config --libs` -s
-FILEREQ_SRC = filereq_amiga.c
+FILEREQ_OBJ = filereq_amiga.o
 endif
 
 # Windows 32bit
@@ -82,9 +83,9 @@ ifeq ($(PLATFORM),win32)
 CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__
 LFLAGS += -lm -mwindows -lmingw32 -lSDLmain -lSDL -lopengl32
 TARGET = oricutron.exe
-FILEREQ_SRC = filereq_win32.c
-MSGBOX_SRC = msgbox_win32.c
-EXTRAOBJS = winicon.o
+FILEREQ_OBJ = filereq_win32.o
+MSGBOX_OBJ = msgbox_win32.o
+CUSTOMOBJS = winicon.o
 endif
 
 # BeOS / Haiku
@@ -104,10 +105,9 @@ CFLAGS += -g
 LFLAGS += -lbe -ltracker -lGL
 TARGET = oricutron
 INSTALLDIR = /boot/apps/Oricutron
-FILEREQ_SRC = filereq_beos.cpp
-MSGBOX_SRC = msgbox_beos.cpp
-CLIPBOARD_SRC = clipboard_beos.cpp
-EXTRAOBJS = clipboard.o
+FILEREQ_OBJ =
+MSGBOX_OBJ = 
+CUSTOMOBJS = clipboard_beos.o msgbox_beos.o filereq_beos.o
 BEOS_BERES := beres
 BEOS_RC := rc
 BEOS_XRES := xres
@@ -123,8 +123,9 @@ CFLAGS += -D__OPENGL_AVAILABLE__ $(shell sdl-config --cflags)
 LFLAGS += $(shell sdl-config --libs)
 LFLAGS += -lm -Wl,-framework,OpenGL
 TARGET = oricutron
-FILEREQ_SRC = filereq_osx.m
-MSGBOX_SRC = msgbox_osx.m
+FILEREQ_OBJ =
+MSGBOX_OBJ =
+CUSTOMOBJS = filereq_osx.o msgbox_osx.o
 endif
 
 # Linux
@@ -164,6 +165,28 @@ endif
  
 ####### SHOULDN'T HAVE TO CHANGE THIS STUFF #######
 
+OBJECTS = \
+	main.o \
+	6502.o \
+	machine.o \
+	ula.o \
+	gui.o \
+	font.o \
+	monitor.o \
+	via.o \
+	8912.o \
+	6551.o \
+	disk.o \
+	avi.o \
+	render_sw.o \
+	render_gl.o \
+	render_null.o \
+	joystick.o \
+	$(FILEREQ_OBJ) \
+	$(MSGBOX_OBJ) \
+	$(EXTRAOBJS)
+
+
 all: $(TARGET)
 
 run: $(TARGET)
@@ -173,8 +196,8 @@ install: install-$(PLATFORM)
 
 package: package-$(PLATFORM)
 
-$(TARGET): main.o 6502.o machine.o ula.o gui.o font.o monitor.o via.o 8912.o 6551.o disk.o filereq.o msgbox.o avi.o render_sw.o render_gl.o render_null.o joystick.o $(EXTRAOBJS) $(RESOURCES)
-	$(CXX) -o $(TARGET) main.o 6502.o machine.o ula.o gui.o font.o monitor.o via.o 8912.o 6551.o disk.o filereq.o msgbox.o avi.o render_sw.o render_gl.o render_null.o joystick.o $(EXTRAOBJS) $(LFLAGS)
+$(TARGET): $(OBJECTS) $(CUSTOMOBJS) $(RESOURCES)
+	$(CXX) -o $(TARGET) $(OBJECTS) $(CUSTOMOBJS) $(LFLAGS)
 ifeq ($(PLATFORMTYPE),beos)
 	$(BEOS_XRES) -o $(TARGET) $(RSRC_BEOS)
 	$(BEOS_SETVER) $(TARGET) \
@@ -185,62 +208,39 @@ ifeq ($(PLATFORMTYPE),beos)
 endif
 
 
-main.o: main.c system.h 6502.h via.h 8912.h gui.h disk.h 6551.h machine.h monitor.h avi.h msgbox.h filereq.h main.h ula.h joystick.h
-	$(CC) -c main.c -o main.o $(CFLAGS)
+-include $(OBJECTS:.o=.d)
 
-6502.o: 6502.c system.h 6502.h
-	$(CC) -c 6502.c -o 6502.o $(CFLAGS)
+# Rules based build for standard *.c to *.o compilation
+$(OBJECTS): %.o: %.c
+	$(CC) -c $(CFLAGS) $*.c -o $*.o
+	@$(CC) -MM $(CFLAGS) $*.c > $*.d
 
-machine.o: machine.c system.h 6502.h via.h 8912.h gui.h disk.h 6551.h machine.h monitor.h avi.h main.h joystick.h
-	$(CC) -c machine.c -o machine.o $(CFLAGS)
 
-ula.o: ula.c ula.h system.h 6502.h via.h 8912.h disk.h monitor.h 6551.h machine.h avi.h
-	$(CC) -c ula.c -o ula.o $(CFLAGS)
+# Custom object building (for *.cpp, or *.m, or whatever)
+-include clipboard_beos.d
+clipboard_beos.o: clipboard_beos.cpp 
+	$(CC) -c $(CFLAGS) clipboard_beos.cpp -o clipboard_beos.o
+	@$(CC) -MM $(CFLAGS) clipboard_beos.cpp > clipboard_beos.d
 
-render_sw.o: render_sw.c render_sw.h system.h 6502.h via.h 8912.h disk.h monitor.h 6551.h machine.h
-	$(CC) -c render_sw.c -o render_sw.o $(CFLAGS)
+-include filereq_beos.d
+filereq_beos.o: filereq_beos.cpp
+	$(CC) -c $(CFLAGS) filereq_beos.cpp -o filereq_beos.o
+	@$(CC) -MM $(CFLAGS) filereq_beos.cpp > filereq_beos.d
 
-render_gl.o: render_gl.c render_gl.h system.h 6502.h via.h 8912.h disk.h monitor.h 6551.h machine.h
-	$(CC) -c render_gl.c -o render_gl.o $(CFLAGS)
+-include msgbox_beos.d
+msgbox_beos.o: msxbox_beos.cpp
+	$(CC) -c $(CFLAGS) msgbox_beos.cpp -o msgbox_beos.o
+	@$(CC) -MM $(CFLAGS) msgbox_beos.cpp > msgbox_beos.d
 
-render_null.o: render_null.c render_null.h system.h 6502.h via.h 8912.h disk.h monitor.h 6551.h machine.h
-	$(CC) -c render_null.c -o render_null.o $(CFLAGS)
+-include filereq_osx.d
+filereq_osx.o: filereq_beos.m
+	$(CC) -c $(CFLAGS) filereq_osx.m -o filereq_osx.o
+	@$(CC) -MM $(CFLAGS) filereq_osx.m > filereq_osx.d
 
-gui.o: gui.c system.h 6502.h via.h 8912.h gui.h disk.h 6551.h machine.h monitor.h filereq.h
-	$(CC) -c gui.c -o gui.o $(CFLAGS)
-
-monitor.o: monitor.c system.h 6502.h via.h 8912.h gui.h disk.h 6551.h machine.h monitor.h ula.h
-	$(CC) -c monitor.c -o monitor.o $(CFLAGS)
-
-via.o: via.c system.h 6502.h via.h 8912.h gui.h disk.h 6551.h machine.h
-	$(CC) -c via.c -o via.o $(CFLAGS)
-
-6551.o: 6551.c system.h 6502.h via.h 8912.h gui.h disk.h 6551.h machine.h
-	$(CC) -c 6551.c -o 6551.o $(CFLAGS)
-
-disk.o: disk.c system.h 6502.h via.h 8912.h gui.h disk.h 6551.h machine.h monitor.h msgbox.h
-	$(CC) -c disk.c -o disk.o $(CFLAGS)
-
-8912.o: 8912.c system.h 6502.h 8912.h via.h gui.h disk.h 6551.h machine.h avi.h
-	$(CC) -c 8912.c -o 8912.o $(CFLAGS)
-
-font.o: font.c
-	$(CC) -c font.c -o font.o $(CFLAGS)
-
-filereq.o: $(FILEREQ_SRC) filereq.h system.h 6502.h via.h 8912.h gui.h disk.h 6551.h machine.h
-	$(CC) -c $(FILEREQ_SRC) -o filereq.o $(CFLAGS)
-
-msgbox.o: $(MSGBOX_SRC) msgbox.h system.h 6502.h via.h 8912.h gui.h disk.h 6551.h machine.h
-	$(CC) -c $(MSGBOX_SRC) -o msgbox.o $(CFLAGS)
-
-avi.o: avi.c system.h avi.h
-	$(CC) -c avi.c -o avi.o $(CFLAGS)
-
-joystick.o: joystick.c system.h 6502.h via.h 8912.h gui.h disk.h monitor.h 6551.h machine.h joystick.h
-	$(CC) -c joystick.c -o joystick.o $(CFLAGS)
-
-clipboard.o: $(CLIPBOARD_SRC)  system.h 6502.h via.h 8912.h gui.h disk.h monitor.h 6551.h machine.h
-	$(CC) -c $(CLIPBOARD_SRC) -o clipboard.o $(CFLAGS)
+-include msgbox_beos.d
+msgbox_osx.o: msxbox_osx.m
+	$(CC) -c $(CFLAGS) msgbox_osx.m -o msgbox_osx.o
+	@$(CC) -MM $(CFLAGS) msgbox_osx.m > msgbox_osx.d
 
 winicon.o: winicon.ico oricutron.rc
 	windres -i oricutron.rc -o winicon.o

@@ -36,6 +36,7 @@
 #include "monitor.h"
 #include "6551.h"
 #include "machine.h"
+#include "joystick.h"
 
 extern char tapefile[], tapepath[];
 extern SDL_bool refreshtape;
@@ -489,6 +490,48 @@ void lprintchar( struct machine *oric, char c )
 }
 
 
+// Update the CPU IRQ flags depending on the state of the VIA
+static inline void via_check_irq( struct via *v )
+{
+  if( ( v->ier & v->ifr )&0x7f )
+  {
+    v->oric->cpu.irq  |= v->irqbit;
+    v->ifr |= 0x80;
+  } else {
+    v->oric->cpu.irq &= ~v->irqbit;
+    v->ifr &= 0x7f;
+  }
+}
+
+// Set a bit in the IFR
+static inline void via_set_irq( struct via *v, unsigned char bit )
+{
+  v->ifr |= bit;
+  if( ( v->ier & v->ifr )&0x7f )
+    v->ifr |= 0x80;
+
+  if( ( v->ier & bit ) == 0 ) return;
+  v->oric->cpu.irq |= v->irqbit;
+}
+
+// Clear a bit in the IFR
+static inline void via_clr_irq( struct via *v, unsigned char bit )
+{
+  if( bit & VIRQF_CA1 )
+    v->iral = v->ira;
+
+  if( bit & VIRQF_CA2 )
+    v->irbl = v->irb;
+
+  v->ifr &= ~bit;
+  if( (( v->ier & v->ifr )&0x7f) == 0 )
+  {
+    v->oric->cpu.irq &= ~v->irqbit;
+    v->ifr &= 0x7f;
+  }
+}
+
+
 void via_main_w_iorb( struct via *v, unsigned char oldorb )
 {
   // Look for negative edge on printer strobe
@@ -518,8 +561,14 @@ void via_main_w_iora2( struct via *v )
   ay_modeset( &v->oric->ay );
 }
 
+void via_main_w_ddra( struct via *v )
+{
+  joy_buildmask( v->oric );
+}
+
 void via_main_w_ddrb( struct via *v )
 {
+  joy_buildmask( v->oric );
   ay_update_keybits( &v->oric->ay );
 }
 
@@ -628,6 +677,66 @@ void via_tele_w_ddra( struct via *v )
   v->oric->rom           = v->oric->tele_bank[v->oric->tele_currbank].ptr;
 }
 
+// Read ports from external device
+unsigned char via_read_porta( struct via *v )
+{
+  return v->ora & v->ddra;
+}
+
+unsigned char via_read_portb( struct via *v )
+{
+  return v->orb & v->ddrb;
+}
+
+// Write ports from external device
+void via_main_write_porta( struct via *v, unsigned char mask, unsigned char data )
+{
+  v->ira = (v->ira&~mask)|(data&mask);
+  v->ira &= v->oric->joymask;
+
+  if( (!(v->acr&ACRF_PALATCH)) ||
+      (!(v->ifr&VIRQF_CA1)) )
+    v->iral = v->ira;
+}
+
+void via_tele_write_porta( struct via *v, unsigned char mask, unsigned char data )
+{
+  v->ira = (v->ira&~mask)|(data&mask);
+
+  if( (!(v->acr&ACRF_PALATCH)) ||
+      (!(v->ifr&VIRQF_CA1)) )
+    v->iral = v->ira;
+}
+
+void via_write_portb( struct via *v, unsigned char mask, unsigned char data )
+{
+  unsigned char lastpb6;
+
+  lastpb6 = v->irb&0x40;
+  v->irb = (v->irb&~mask)|(data&mask);
+
+  if( (!(v->acr&ACRF_PBLATCH)) ||
+      (!(v->acr&VIRQF_CB1)) )
+    v->irbl = v->irb;
+
+  // Is timer 2 counting PB6 negative transisions?
+  if( ( v->acr & ACRF_T2CON ) == 0 ) return;
+
+  // Was there a negative transision?
+  if( ( !lastpb6 ) || ( v->irb&0x40 ) ) return;
+
+  // Count it
+  v->t2c--;
+  if( v->t2run )
+  {
+    if( v->t2c == 0 )
+    {
+      via_set_irq( v, VIRQF_T2 );
+      v->t2run = SDL_FALSE;
+    }
+  }
+}
+
 // Init/Reset VIA
 void via_init( struct via *v, struct machine *oric, int viatype )
 {
@@ -669,7 +778,7 @@ void via_init( struct via *v, struct machine *oric, int viatype )
       v->w_iorb     = via_main_w_iorb;
       v->w_iora     = via_main_w_iora;
       v->w_iora2    = via_main_w_iora2;
-      v->w_ddra     = NULL;
+      v->w_ddra     = via_main_w_ddra;
       v->w_ddrb     = via_main_w_ddrb;
       v->w_pcr      = via_main_w_pcr;
       v->w_ca2ext   = via_main_w_ca2ext;
@@ -681,6 +790,10 @@ void via_init( struct via *v, struct machine *oric, int viatype )
       v->cb2pulsed  = via_main_cb2pulsed;
       v->cb2shifted = via_main_cb2pulsed;  // Does the same (for now)
       v->irqbit     = IRQF_VIA;
+      v->read_port_a  = via_read_porta;
+      v->read_port_b  = via_read_portb;
+      v->write_port_a = via_main_write_porta;
+      v->write_port_b = via_write_portb;
       break;
 
     case VIA_TELESTRAT:
@@ -699,48 +812,11 @@ void via_init( struct via *v, struct machine *oric, int viatype )
       v->cb2pulsed  = NULL;
       v->cb2shifted = NULL;
       v->irqbit     = IRQF_VIA2;
+      v->read_port_a  = via_read_porta;
+      v->read_port_b  = via_read_portb;
+      v->write_port_a = via_tele_write_porta;
+      v->write_port_b = via_write_portb;
       break;
-  }
-}
-
-// Update the CPU IRQ flags depending on the state of the VIA
-static inline void via_check_irq( struct via *v )
-{
-  if( ( v->ier & v->ifr )&0x7f )
-  {
-    v->oric->cpu.irq  |= v->irqbit;
-    v->ifr |= 0x80;
-  } else {
-    v->oric->cpu.irq &= ~v->irqbit;
-    v->ifr &= 0x7f;
-  }
-}
-
-// Set a bit in the IFR
-static inline void via_set_irq( struct via *v, unsigned char bit )
-{
-  v->ifr |= bit;
-  if( ( v->ier & v->ifr )&0x7f )
-    v->ifr |= 0x80;
-
-  if( ( v->ier & bit ) == 0 ) return;
-  v->oric->cpu.irq |= v->irqbit;
-}
-
-// Clear a bit in the IFR
-static inline void via_clr_irq( struct via *v, unsigned char bit )
-{
-  if( bit & VIRQF_CA1 )
-    v->iral = v->ira;
-
-  if( bit & VIRQF_CA2 )
-    v->irbl = v->irb;
-
-  v->ifr &= ~bit;
-  if( (( v->ier & v->ifr )&0x7f) == 0 )
-  {
-    v->oric->cpu.irq &= ~v->irqbit;
-    v->ifr &= 0x7f;
   }
 }
 
@@ -1340,53 +1416,4 @@ void via_write_CB2( struct via *v, unsigned char data )
   }
 
   if( v->w_cb2ext ) v->w_cb2ext( v );
-}
-
-// Read ports from external device
-unsigned char via_read_porta( struct via *v )
-{
-  return v->ora & v->ddra;
-}
-
-unsigned char via_read_portb( struct via *v )
-{
-  return v->orb & v->ddrb;
-}
-
-// Write ports from external device
-void via_write_porta( struct via *v, unsigned char mask, unsigned char data )
-{
-  v->ira = (v->ira&~mask)|(data&mask);
-  if( (!(v->acr&ACRF_PALATCH)) ||
-      (!(v->ifr&VIRQF_CA1)) )
-    v->iral = v->ira;
-}
-
-void via_write_portb( struct via *v, unsigned char mask, unsigned char data )
-{
-  unsigned char lastpb6;
-
-  lastpb6 = v->irb&0x40;
-  v->irb = (v->irb&~mask)|(data&mask);
-
-  if( (!(v->acr&ACRF_PBLATCH)) ||
-      (!(v->acr&VIRQF_CB1)) )
-    v->irbl = v->irb;
-
-  // Is timer 2 counting PB6 negative transisions?
-  if( ( v->acr & ACRF_T2CON ) == 0 ) return;
-
-  // Was there a negative transision?
-  if( ( !lastpb6 ) || ( v->irb&0x40 ) ) return;
-
-  // Count it
-  v->t2c--;
-  if( v->t2run )
-  {
-    if( v->t2c == 0 )
-    {
-      via_set_irq( v, VIRQF_T2 );
-      v->t2run = SDL_FALSE;
-    }
-  }
 }
