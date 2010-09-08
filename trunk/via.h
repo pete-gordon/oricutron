@@ -159,3 +159,5 @@ void via_mon_write_ifr( struct via *v, unsigned char data );
 
 // Read without side-effects for monitor
 unsigned char via_mon_read( struct via *v, int offset );
+
+unsigned char via_read_porta( struct via *v );
