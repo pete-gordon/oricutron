@@ -228,17 +228,17 @@ filereq_beos.o: filereq_beos.cpp
 	@$(CC) -MM $(CFLAGS) filereq_beos.cpp > filereq_beos.d
 
 -include msgbox_beos.d
-msgbox_beos.o: msxbox_beos.cpp
+msgbox_beos.o: msgbox_beos.cpp
 	$(CC) -c $(CFLAGS) msgbox_beos.cpp -o msgbox_beos.o
 	@$(CC) -MM $(CFLAGS) msgbox_beos.cpp > msgbox_beos.d
 
 -include filereq_osx.d
-filereq_osx.o: filereq_beos.m
+filereq_osx.o: filereq_osx.m
 	$(CC) -c $(CFLAGS) filereq_osx.m -o filereq_osx.o
 	@$(CC) -MM $(CFLAGS) filereq_osx.m > filereq_osx.d
 
--include msgbox_beos.d
-msgbox_osx.o: msxbox_osx.m
+-include msgbox_osx.d
+msgbox_osx.o: msgbox_osx.m
 	$(CC) -c $(CFLAGS) msgbox_osx.m -o msgbox_osx.o
 	@$(CC) -MM $(CFLAGS) msgbox_osx.m > msgbox_osx.d
 
