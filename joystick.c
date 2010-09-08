@@ -316,9 +316,10 @@ SDL_bool joy_filter_event( SDL_Event *ev, struct machine *oric )
 
   if( swallow_event )
   {
+    char testytesttest[64];
+
     joy_buildmask( oric );
 
-    char testytesttest[64];
     sprintf( testytesttest, "A: %d%d%d%d-%d%d B: %d%d%d%d-%d%d",
       joystate_a[0], joystate_a[1], joystate_a[2], joystate_a[3],
       joystate_a[4], joystate_a[5],
