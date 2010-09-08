@@ -212,35 +212,18 @@ endif
 
 # Rules based build for standard *.c to *.o compilation
 $(OBJECTS): %.o: %.c
-	$(CC) -c $(CFLAGS) $*.c -o $*.o
-	@$(CC) -MM $(CFLAGS) $*.c > $*.d
+	$(CC) -c $(CFLAGS) $< -o $@
+	@$(CC) -MM $(CFLAGS) $< > $*.d
 
+# Overide the default C rule for C++
+%.o: %.cpp
+	$(CXX) -c $(CFLAGS) $< -o $@
+	@$(CXX) -MM $(CFLAGS) $< > $*.d
 
-# Custom object building (for *.cpp, or *.m, or whatever)
--include clipboard_beos.d
-clipboard_beos.o: clipboard_beos.cpp 
-	$(CC) -c $(CFLAGS) clipboard_beos.cpp -o clipboard_beos.o
-	@$(CC) -MM $(CFLAGS) clipboard_beos.cpp > clipboard_beos.d
-
--include filereq_beos.d
-filereq_beos.o: filereq_beos.cpp
-	$(CC) -c $(CFLAGS) filereq_beos.cpp -o filereq_beos.o
-	@$(CC) -MM $(CFLAGS) filereq_beos.cpp > filereq_beos.d
-
--include msgbox_beos.d
-msgbox_beos.o: msgbox_beos.cpp
-	$(CC) -c $(CFLAGS) msgbox_beos.cpp -o msgbox_beos.o
-	@$(CC) -MM $(CFLAGS) msgbox_beos.cpp > msgbox_beos.d
-
--include filereq_osx.d
-filereq_osx.o: filereq_osx.m
-	$(CC) -c $(CFLAGS) filereq_osx.m -o filereq_osx.o
-	@$(CC) -MM $(CFLAGS) filereq_osx.m > filereq_osx.d
-
--include msgbox_osx.d
-msgbox_osx.o: msgbox_osx.m
-	$(CC) -c $(CFLAGS) msgbox_osx.m -o msgbox_osx.o
-	@$(CC) -MM $(CFLAGS) msgbox_osx.m > msgbox_osx.d
+# Overide the default C rule for ObjC
+%.o: %.m
+	$(CC) -c $(CFLAGS) $< -o $@
+	@$(CC) -MM $(CFLAGS) $< > $*.d
 
 winicon.o: winicon.ico oricutron.rc
 	windres -i oricutron.rc -o winicon.o
