@@ -184,7 +184,9 @@ struct machine
   Sint32 joymode_a, joymode_b;
   Sint32 telejoymode_a, telejoymode_b;
   Sint16 kbjoy1[6], kbjoy2[6];
-  Uint8  joymask;
+
+  Uint8  porta_joy, porta_ay;
+  SDL_bool porta_is_ay;
 
   SDL_Joystick *sdljoy_a, *sdljoy_b;
 };
