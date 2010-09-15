@@ -581,11 +581,15 @@ void preinit_machine( struct machine *oric )
   oric->rampattern = 0;
 
   oric->joy_iface = JOYIFACE_NONE;
-  oric->joymask   = 0xff;
   oric->joymode_a = JOYMODE_KB1;
   oric->joymode_b = JOYMODE_NONE;
   oric->telejoymode_a = JOYMODE_KB1;
   oric->telejoymode_b = JOYMODE_NONE;
+
+  oric->porta_joy = 0xff;
+  oric->porta_ay  = 0;
+  oric->porta_is_ay = SDL_TRUE;
+
   oric->kbjoy1[0] = SDLK_KP8;
   oric->kbjoy1[1] = SDLK_KP2;
   oric->kbjoy1[2] = SDLK_KP4;

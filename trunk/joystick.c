@@ -252,6 +252,7 @@ void joy_buildmask( struct machine *oric )
 {
   Uint8 mkmask = 0xff;
   Uint8 joysel = oric->via.read_port_a( &oric->via );
+  SDL_bool gimme_port_a = SDL_FALSE;
 
   switch( oric->joy_iface )
   {
@@ -263,6 +264,7 @@ void joy_buildmask( struct machine *oric )
         if( joystate_a[2] ) mkmask &= 0xfe;
         if( joystate_a[3] ) mkmask &= 0xfd;
         if( joystate_a[4] ) mkmask &= 0xdf;
+        gimme_port_a = SDL_TRUE;
       }
 
       if( joysel & 0x40 )
@@ -272,15 +274,18 @@ void joy_buildmask( struct machine *oric )
         if( joystate_b[2] ) mkmask &= 0xfe;
         if( joystate_b[3] ) mkmask &= 0xfd;
         if( joystate_b[4] ) mkmask &= 0xdf;
+        gimme_port_a = SDL_TRUE;
       }
       break;
     
     case JOYIFACE_IJK:
+      mkmask &= 0xdf;
+
       if( ((oric->via.ddrb & 0x10)==0) ||
           ((oric->via.read_port_b( &oric->via )&0x10)!=0) )
         break;
-
-      mkmask &= 0xdf;
+      
+      gimme_port_a = SDL_TRUE;
 
       if( ( joysel & 0xc0 ) == 0xc0 ) break;
 
@@ -304,7 +309,18 @@ void joy_buildmask( struct machine *oric )
       break;
   }
 
-  oric->joymask = mkmask;
+  oric->porta_joy = mkmask;
+  if( gimme_port_a )
+  {
+    oric->via.write_port_a( &oric->via, 0xff, mkmask );
+    oric->porta_is_ay = SDL_FALSE;
+  } else {
+    if( !oric->porta_is_ay )
+    {
+      oric->via.write_port_a( &oric->via, 0xff, oric->porta_ay );
+      oric->porta_is_ay = SDL_TRUE;
+    }
+  }
 }
 
 SDL_bool joy_filter_event( SDL_Event *ev, struct machine *oric )

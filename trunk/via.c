@@ -552,13 +552,14 @@ void via_main_w_iora( struct via *v )
   if( (v->pcr&PCRF_CA2CON) == 0x08 )
     ay_set_bc1( &v->oric->ay, 0 );
 
-
   ay_modeset( &v->oric->ay );
+  joy_buildmask( v->oric );
 }
 
 void via_main_w_iora2( struct via *v )
 {
   ay_modeset( &v->oric->ay );
+  joy_buildmask( v->oric );
 }
 
 void via_main_w_ddra( struct via *v )
@@ -692,7 +693,6 @@ unsigned char via_read_portb( struct via *v )
 void via_main_write_porta( struct via *v, unsigned char mask, unsigned char data )
 {
   v->ira = (v->ira&~mask)|(data&mask);
-  v->ira &= v->oric->joymask;
 
   if( (!(v->acr&ACRF_PALATCH)) ||
       (!(v->ifr&VIRQF_CA1)) )

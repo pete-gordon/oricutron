@@ -630,7 +630,9 @@ void ay_modeset( struct ay8912 *ay )
   switch( ay->bmode )
   {
     case AYBMF_BC1: // Read AY register
-      ay->oric->via.write_port_a( &ay->oric->via, 0xff, (ay->creg>=NUM_AY_REGS) ? 0 : ay->eregs[ay->creg] );
+      ay->oric->porta_ay = (ay->creg>=NUM_AY_REGS) ? 0 : ay->eregs[ay->creg];
+      ay->oric->via.write_port_a( &ay->oric->via, 0xff, ay->oric->porta_ay );
+      ay->oric->porta_is_ay = SDL_TRUE;
       break;
     
     case AYBMF_BDIR: // Write AY register
