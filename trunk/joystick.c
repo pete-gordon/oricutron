@@ -200,6 +200,7 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
       {
         case SDL_JOYAXISMOTION:
           if( ev->jaxis.which != (mode-JOYMODE_SDL0) ) return SDL_FALSE;
+          swallowit = SDL_TRUE;
           switch( ev->jaxis.axis )
           {
             case 0: // left/right
@@ -235,11 +236,13 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
         case SDL_JOYBUTTONDOWN:
           if( ev->jbutton.which != (mode-JOYMODE_SDL0) ) return SDL_FALSE;
           joystate[4+(ev->jbutton.button&1)] = 1;
+          swallowit = SDL_TRUE;
           break;
 
         case SDL_JOYBUTTONUP:
           if( ev->jbutton.which != (mode-JOYMODE_SDL0) ) return SDL_FALSE;
           joystate[4+(ev->jbutton.button&1)] = 0;
+          swallowit = SDL_TRUE;
           break;
       }
       break;
@@ -332,16 +335,17 @@ SDL_bool joy_filter_event( SDL_Event *ev, struct machine *oric )
 
   if( swallow_event )
   {
-    char testytesttest[64];
+//    char testytesttest[64];
 
     joy_buildmask( oric );
-
+/*
     sprintf( testytesttest, "A: %d%d%d%d-%d%d B: %d%d%d%d-%d%d",
       joystate_a[0], joystate_a[1], joystate_a[2], joystate_a[3],
       joystate_a[4], joystate_a[5],
       joystate_b[0], joystate_b[1], joystate_b[2], joystate_b[3],
       joystate_b[4], joystate_b[5] );
     SDL_WM_SetCaption( testytesttest, testytesttest );
+*/
   }
 
   return swallow_event;
@@ -364,16 +368,18 @@ static void dojoysetup( struct machine *oric, Sint16 mode_a, Sint16 mode_b )
 
   if( !joysubinited )
   {
+    //dbg_printf( "Initialising joysubsystem" );
     if( SDL_InitSubSystem( SDL_INIT_JOYSTICK ) != 0 )
       return;
 
+    //dbg_printf( "Success!" );
     joysubinited = SDL_TRUE;
-
   }
 
   if( is_real_joystick( mode_a ) )
   {
     oric->sdljoy_a = SDL_JoystickOpen( mode_a - JOYMODE_SDL0 );
+    //dbg_printf( "Joy0 = %p", oric->sdljoy_a );
     SDL_JoystickEventState( SDL_TRUE );
   }
 
