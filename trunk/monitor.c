@@ -3683,7 +3683,7 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
 
 static unsigned int steppy_step( struct machine *oric )
 {
-  m6502_set_icycles( &oric->cpu );
+  m6502_set_icycles( &oric->cpu, SDL_FALSE, mon_bpmsg );
   via_clock( &oric->via, oric->cpu.icycles );
   ay_ticktock( &oric->ay, oric->cpu.icycles );
   if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
@@ -3692,7 +3692,8 @@ static unsigned int steppy_step( struct machine *oric )
     via_clock( &oric->tele_via, oric->cpu.icycles );
     acia_clock( &oric->tele_acia, oric->cpu.icycles );
   }
-  m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
+  m6502_inst( &oric->cpu );
+
   if( oric->cpu.rastercycles <= 0 )
   {
     ula_doraster( oric );
@@ -3743,7 +3744,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
         case SDLK_F2:
           // In case we're on a breakpoint
-          m6502_set_icycles( &oric->cpu );
+          m6502_set_icycles( &oric->cpu, SDL_FALSE, mon_bpmsg );
           via_clock( &oric->via, oric->cpu.icycles );
           ay_ticktock( &oric->ay, oric->cpu.icycles );
           if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
@@ -3752,7 +3753,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             via_clock( &oric->tele_via, oric->cpu.icycles );
             acia_clock( &oric->tele_acia, oric->cpu.icycles );
           }
-          m6502_inst( &oric->cpu, SDL_FALSE, mon_bpmsg );
+          m6502_inst( &oric->cpu );
           if( oric->cpu.rastercycles <= 0 )
           {
             ula_doraster( oric );

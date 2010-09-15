@@ -797,8 +797,6 @@ int main( int argc, char *argv[] )
       {
         if( !framedone )
         {
-          SDL_bool breaky;
-
           if( framestart != 0 )
           {
             frametimeave = 0;
@@ -817,7 +815,13 @@ int main( int argc, char *argv[] )
           {
             while( oric.cpu.rastercycles > 0 )
             {
-              m6502_set_icycles( &oric.cpu );
+              if( m6502_set_icycles( &oric.cpu, SDL_TRUE, mon_bpmsg ) )
+              {
+                setemumode( &oric, NULL, EM_DEBUG );
+                needrender = SDL_TRUE;
+                break;
+              }
+
               via_clock( &oric.via, oric.cpu.icycles );
               ay_ticktock( &oric.ay, oric.cpu.icycles );
               if( oric.drivetype ) wd17xx_ticktock( &oric.wddisk, oric.cpu.icycles );
@@ -826,16 +830,9 @@ int main( int argc, char *argv[] )
                 via_clock( &oric.tele_via, oric.cpu.icycles );
                 acia_clock( &oric.tele_acia, oric.cpu.icycles );
               }
-              breaky = m6502_inst( &oric.cpu, SDL_TRUE, mon_bpmsg );
+              m6502_inst( &oric.cpu );
               if( oric.emu_mode != EM_RUNNING )
               {
-                needrender = SDL_TRUE;
-                break;
-              }
-
-              if( breaky )
-              {
-                setemumode( &oric, NULL, EM_DEBUG );
                 needrender = SDL_TRUE;
                 break;
               }
