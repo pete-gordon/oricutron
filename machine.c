@@ -891,8 +891,8 @@ void load_patches( struct machine *oric, char *fname )
     if( read_config_int(    &filetmp[i], "tt_readbyte_end_pc",         &oric->pch_tt_readbyte_end_pc, 0, 65535 ) )         continue;
     if( read_config_int(    &filetmp[i], "tt_readbyte_storebyte_addr", &oric->pch_tt_readbyte_storebyte_addr, 0, 65535 ) ) continue;
     if( read_config_int(    &filetmp[i], "tt_readbyte_storezero_addr", &oric->pch_tt_readbyte_storezero_addr, 0, 65535 ) ) continue;
-    if( read_config_bool(   &filetmp[i], "tt_readbyte_setcarry",       &oric->pch_tt_readbyte_setcarry ) )       continue;
-    if( read_config_option( &filetmp[i], "keymap",                   &oric->keymap, keymapnames ) )              continue; 
+    if( read_config_bool(   &filetmp[i], "tt_readbyte_setcarry",       &oric->pch_tt_readbyte_setcarry ) )                 continue;
+    if( read_config_option( &filetmp[i], "keymap",                     &oric->keymap, keymapnames ) )                      continue; 
   }
 
   fclose( f );

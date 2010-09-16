@@ -1,5 +1,71 @@
 Oricutron ChangeLog
 
+0.7 (xx-xxx-xxxx)
+-----------------
+
+General:
+
+* Added Telestrat support, although it doesn't work
+  enough to be useful yet.
+* Added Pravetz-8D support, although the Pravetz/
+  Apple disk system is not supported yet.
+* Added some error checking to the command-line
+  argument parsing.
+* Standard return codes on exit.
+* IJK and PASE/Altai joystick emulation (thanks to
+  Twilighte and Stefan Haubenthal for info)
+* For all ROM image files, Oricutron now looks for
+  a corresponding ".pch" file with information about
+  the ROM, such as patch addresses for turbotape,
+  or the keyboard layout expected by the ROM.
+* ROM filenames are now specified in the config
+  file.
+* Now uses SDL_RWops to load images and ROMs for
+  better cross-platform compatibility (thanks
+  to revolf).
+* The disk emulation now updates sector CRCs when
+  writing to disk (oops!)
+* OpenGL rendering mode with optional display
+  aspect stretching.
+* Optional scanline simulation.
+* You can toggle fullscreen mode from the menus.
+
+Debugger/Monitor:
+
+* For all ROM image files, Oricutron now looks for
+  a corresponding ".sym" file with symbols for the
+  debugger when that ROM is active.
+* Disassembling to file now uses full symbol names.
+* Supports CC65/VICE style label files (thanks to
+  Stefan Haubenthal).
+* You can now create or move symbols while using
+  the assembler.
+* You can create, delete and export symbols from
+  the monitor commandline.
+* Added a memory modify command.
+* Fixed breakpoint behaviour. Before, when the CPU
+  hit a breakpoint, the rest of the emulation
+  would execute for the cycles of that command,
+  even though the command wasn't executed.
+
+Amiga/MorphOS:
+
+* Pressing help brings up the AmigaGuide readme.
+  (thanks to Stefan Haubenthal)
+
+BeOS:
+
+* You can paste from the clipboard with F9. (thanks
+  to revolf)
+* Native messagebox and file requester. (thanks to
+  revolf)
+
+OSX:
+
+* Native messagebox and file requester. (thanks to
+  revolf)
+
+
 0.6 (15-Jun-2010)
 -----------------
 
