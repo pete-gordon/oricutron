@@ -315,7 +315,7 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
   oric->wddisk.disk[drive]->geometry  = diskimage_rawint( oric->wddisk.disk[drive], 16 );
 
   // Is the disk sane!?
-  if( ( oric->wddisk.disk[drive]->numsides < 1 ) &&
+  if( ( oric->wddisk.disk[drive]->numsides < 1 ) ||
       ( oric->wddisk.disk[drive]->numsides > 2 ) )
   {
     disk_eject( oric, drive );
