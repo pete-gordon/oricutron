@@ -44,7 +44,7 @@
 #define LOG_DEBUG 1
 
 #if LOG_DEBUG
-#ifdef __amigaos4__ 
+#if defined(__amigaos4__) || defined(__MORPHOS__)
 static char *debug_logname = "RAM:debug.log";
 #else
 static char *debug_logname = "debug_log.txt";
