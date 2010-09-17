@@ -1,7 +1,7 @@
 /* $VER: ReadMe2Guide 0.2 $
  * Convert simple ReadMe file to AmigaGuide
  * © Stefan Haubenthal 2010
- * rx ReadMe2Guide <ReadMe.txt >Oricutron.guide
+ * rx ReadMe2Guide <foo.txt >foo.guide
  */
 
 say '@database ""'
@@ -21,6 +21,7 @@ do until eof(stdin)
 		end
 		prevnode=last
 	end
+	/* escape at-sign */
 	if pos("@", last)>0 then
 		say insert("\", last, pos("@", last)-1)
 	else
