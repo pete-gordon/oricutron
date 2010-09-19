@@ -19,7 +19,12 @@
 **  System specific stuff
 */
 
-// Output audio frequency
+#ifndef ORICUTRON_SYSTEM_H
+#define ORICUTRON_SYSTEM_H
+
+
+
+/* Output audio frequency */
 #define AUDIO_FREQ   44100
 
 
@@ -72,3 +77,12 @@
 #define _BE32(X) (X)
 #define _BE16(X) (X)
 #endif
+
+
+/* Either 16 bpp or 32 bpp video */
+typedef Uint32 Pixel;
+//typedef Uint16 Pixel;
+
+
+
+#endif /* ORICUTRON_SYSTEM_H */

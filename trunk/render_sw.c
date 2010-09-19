@@ -33,13 +33,13 @@
 #include "render_sw.h"
 
 static struct SDL_Surface *screen;
-static Uint16 gpal[NUM_GUI_COLS];
+static Pixel gpal[NUM_GUI_COLS];
 // Cached screen->pitch
 static int pixpitch;
 
-static Uint16 pal[8*2]; // Palette
+static Pixel pal[8*2]; // Palette
 static Uint32 dpal[8*2];
-static Uint16 *mgimg[NUM_GIMG];
+static Pixel *mgimg[NUM_GIMG];
 
 extern SDL_bool fullscreen, hwsurface;
 static SDL_bool needclr;
@@ -58,7 +58,7 @@ extern unsigned char thefont[];
 //   fcol      = foreground colour
 //   bcol      = background colour
 //   solidfont = use background colour
-static void printchar( Uint16 *ptr, unsigned char ch, Uint16 fcol, Uint16 bcol, SDL_bool solidfont )
+static void printchar( Pixel *ptr, unsigned char ch, Pixel fcol, Pixel bcol, SDL_bool solidfont )
 {
   int px, py, c;
   unsigned char *fptr;
@@ -89,7 +89,7 @@ static void printchar( Uint16 *ptr, unsigned char ch, Uint16 fcol, Uint16 bcol, 
 
 void render_begin_sw( struct machine *oric )
 {
-  Uint16 *dptr;
+  Pixel *dptr;
 
   if( SDL_MUSTLOCK( screen ) )
     SDL_LockSurface( screen );
@@ -97,7 +97,7 @@ void render_begin_sw( struct machine *oric )
   if( oric->newpopupstr )
   {
     int x, y;
-    dptr = &((Uint16 *)screen->pixels)[320];
+    dptr = &((Pixel *)screen->pixels)[320];
     for( y=0; y<12; y++ )
     {
       for( x=320; x<640; x++ )
@@ -122,14 +122,14 @@ void render_end_sw( struct machine *oric )
   {
     if( oric->popupstr[0] )
     {
-      Uint16 *dptr = &((Uint16 *)screen->pixels)[320];
+      Pixel *dptr = &((Pixel *)screen->pixels)[320];
       for( i=0; oric->popupstr[i]; i++, dptr += 8 )
         printchar( dptr, oric->popupstr[i], gpal[1], gpal[4], SDL_TRUE );
     }
   
     if( oric->statusstr[0] )
     {
-      Uint16 *dptr = &((Uint16 *)screen->pixels)[pixpitch*466];
+      Pixel *dptr = &((Pixel *)screen->pixels)[pixpitch*466];
       for( i=0; oric->statusstr[i]; i++, dptr += 8 )
         printchar( dptr, oric->statusstr[i], gpal[1], 0, SDL_FALSE );
     }
@@ -153,9 +153,9 @@ void render_textzone_sw( struct machine *oric, int i )
 {
   int x, y, o;
   struct textzone *ptz = tz[i];
-  Uint16 *sp;
+  Pixel *sp;
 
-  sp = &((Uint16 *)screen->pixels)[pixpitch*ptz->y+ptz->x];
+  sp = &((Pixel *)screen->pixels)[pixpitch*ptz->y+ptz->x];
   o = 0;
   for( y=0; y<ptz->h; y++ )
   {
@@ -172,11 +172,11 @@ void render_textzone_sw( struct machine *oric, int i )
 void render_gimg_sw( int i, Sint32 xp, Sint32 yp )
 {
   struct guiimg *gi = &gimgs[i];
-  Uint16 *sptr, *dptr;
+  Pixel *sptr, *dptr;
   Sint32 x, y;
 
   sptr = mgimg[i];
-  dptr = &((Uint16 *)screen->pixels)[pixpitch*yp+xp];
+  dptr = &((Pixel *)screen->pixels)[pixpitch*yp+xp];
 
   for( y=0; y<gi->h; y++ )
   {
@@ -190,11 +190,11 @@ void render_gimg_sw( int i, Sint32 xp, Sint32 yp )
 void render_gimgpart_sw( int i, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 oy, Sint32 w, Sint32 h )
 {
   struct guiimg *gi = &gimgs[i];
-  Uint16 *sptr, *dptr;
+  Pixel *sptr, *dptr;
   Sint32 x, y;
 
   sptr = &mgimg[i][oy*gi->w+ox];
-  dptr = &((Uint16 *)screen->pixels)[pixpitch*yp+xp];
+  dptr = &((Pixel *)screen->pixels)[pixpitch*yp+xp];
 
   for( y=0; y<h; y++ )
   {
@@ -209,57 +209,61 @@ void render_gimgpart_sw( int i, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 oy, Sint
 void render_video_sw( struct machine *oric, SDL_bool doublesize )
 {
   int x, y;
-  Uint8 *sptr;
-  Uint16 *dptr;
-  Uint32 *dptr2, *dptr3, c, c2, pp2;
+	Uint8 *lSrcPixel;
+  Pixel c, c2;
+  Pixel *lDstScanLine, *lDstEvenScanLine, *lDstOddScanLine;
+  Pixel *lDstPixel, *lDstEvenPixel, *lDstOddPixel;
 
   if( !oric->scr )
     return;
-    
-  pp2 = pixpitch/2;
 
   if( doublesize )
   {
     if( needclr )
     {
-      dptr = (Uint16 *)screen->pixels;
-      for( y=0; y<480; y++ )
-      {
-        for( x=0; x<640; x++ )
-          *(dptr++) = gpal[4];
-        dptr += pixpitch-640;
-      }
+      SDL_FillRect(screen, NULL, gpal[4]);
       needclr = SDL_FALSE;
     }
 
-    sptr = oric->scr;
-    dptr2 = (Uint32 *)(&((Uint16 *)screen->pixels)[320-240+pixpitch*(240-226)]);
-    dptr3 = dptr2+pp2;
+    lSrcPixel = oric->scr;
+
+    lDstEvenScanLine = (Pixel*)screen->pixels;
+    lDstEvenScanLine += (240 - 226) * pixpitch;
+    lDstEvenScanLine += (pixpitch - 2 * 240) / 2;
+
+    lDstOddScanLine = lDstEvenScanLine;
+    lDstOddScanLine += pixpitch;
+
     if( oric->scanlines )
     {
-      for( y=0; y<224; y++ )
+      for( y=224; y!=0; --y, lDstEvenScanLine+=2*pixpitch, lDstOddScanLine+=2*pixpitch )
       {
-        for( x=0; x<240; x++ )
+        lDstEvenPixel = lDstEvenScanLine;
+        lDstOddPixel  = lDstOddScanLine;
+        for( x=240; x!=0; --x )
         {
-          c2 = dpal[(*sptr)+8];
-          c = dpal[*(sptr++)];
-          *(dptr2++) = c;
-          *(dptr3++) = c2;
+          c2 = pal[(*lSrcPixel)+8];
+          c = pal[*(lSrcPixel++)];
+          *(lDstEvenPixel++) = c;
+          *(lDstEvenPixel++) = c;
+          *(lDstOddPixel++)  = c2;
+          *(lDstOddPixel++)  = c2;
         }
-        dptr2 += pixpitch-240;
-        dptr3 += pixpitch-240;
+
       }
     } else {
-      for( y=0; y<224; y++ )
+      for( y=224; y!=0; --y, lDstEvenScanLine+=2*pixpitch, lDstOddScanLine+=2*pixpitch )
       {
-        for( x=0; x<240; x++ )
-        {
-          c = dpal[*(sptr++)];
-          *(dptr2++) = c;
-          *(dptr3++) = c;
-        }
-        dptr2 += pixpitch-240;
-        dptr3 += pixpitch-240;
+        lDstEvenPixel = lDstEvenScanLine;
+        lDstOddPixel  = lDstOddScanLine;
+        for( x=240; x!=0; --x ) 
+          {
+            c = pal[*(lSrcPixel++)];
+            *(lDstEvenPixel++) = c;
+            *(lDstEvenPixel++) = c;
+            *(lDstOddPixel++)  = c;
+            *(lDstOddPixel++)  = c;
+         }
       }
     }
     return;
@@ -267,19 +271,19 @@ void render_video_sw( struct machine *oric, SDL_bool doublesize )
 
   needclr = SDL_TRUE;
 
-  sptr = oric->scr;
-  dptr = (Uint16 *)screen->pixels;
+  lSrcPixel = oric->scr;
+  lDstScanLine = (Pixel*)screen->pixels;
 
   for( y=0; y<4; y++ )
   {
-    memset( dptr, 0, 480 );
-    dptr += pixpitch;
+    memset( lDstScanLine, 0, 480 );
+    lDstScanLine += pixpitch;
   }
-  for( ; y<228; y++ )
+  for( ; y<228; y++, lDstScanLine += pixpitch)
   {
-    for( x=0; x<240; x++ )
-      *(dptr++) = pal[*(sptr++)];
-    dptr += pixpitch-240;
+    lDstPixel = lDstScanLine;
+    for(x = 240; x != 0; --x)
+      *(lDstPixel++) = pal[*(lSrcPixel++)];
   }
 }
 
@@ -322,7 +326,7 @@ SDL_bool init_render_sw( struct machine *oric )
   surfacemode = fullscreen ? SDL_FULLSCREEN : SDL_SWSURFACE;
   if( hwsurface ) { surfacemode &= ~SDL_SWSURFACE; surfacemode |= SDL_HWSURFACE; }
 
-  screen = SDL_SetVideoMode( 640, 480, 16, surfacemode );
+  screen = SDL_SetVideoMode( 640, 480, sizeof(Pixel) * 8, surfacemode );
   if( !screen )
   {
     printf( "SDL video failed\n" );
@@ -343,7 +347,7 @@ SDL_bool init_render_sw( struct machine *oric )
 
   for( i=0; i<NUM_GIMG; i++ )
   {
-    mgimg[i] = (Uint16 *)malloc( gimgs[i].w * gimgs[i].h * 2 );
+    mgimg[i] = (Pixel *)malloc( gimgs[i].w * gimgs[i].h * sizeof(Pixel) );
     if( !mgimg[i] ) return SDL_FALSE;
 
     for( y=0; y<gimgs[i].h; y++ )
@@ -356,7 +360,7 @@ SDL_bool init_render_sw( struct machine *oric )
   for( i=0; i<8*2; i++ )
     dpal[i] = (pal[i]<<16)|pal[i];
 
-  pixpitch = screen->pitch / 2;
+  pixpitch = screen->pitch / sizeof(Pixel);
 
   needclr = SDL_TRUE;
   refreshstatus = SDL_TRUE;

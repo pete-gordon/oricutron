@@ -5,7 +5,7 @@
 # PLATFORM = beos
 # PLATFORM = haiku
 # PLATFORM = osx
-# PLATFORM = linux
+PLATFORM = linux
 # PLATFORM = gphwiz
 # PLATFORM = aitouchbook
 
@@ -20,6 +20,7 @@ VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) (c)2010 Peter Gordon (pete@pet
 ####### DEFAULT SETTINGS HERE #######
 
 CFLAGS = -Wall -O3
+CFLAGS += -g
 CFLAGS += -DAPP_NAME_FULL='"$(APP_NAME) WIP"'
 #CFLAGS += -DAPP_NAME_FULL='"$(APP_NAME) $(VERSION_MAJ).$(VERSION_MIN)"'
 CFLAGS += -DVERSION_COPYRIGHTS='$(VERSION_COPYRIGHTS)'
