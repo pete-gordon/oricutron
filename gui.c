@@ -1155,7 +1155,19 @@ void set_render_mode( struct machine *oric, int whichrendermode )
       oric->render_textzone       = render_textzone_sw;
       oric->render_gimg           = render_gimg_sw;
       oric->render_gimgpart       = render_gimgpart_sw;
-      oric->render_video          = render_video_sw;
+      switch(oric->sw_depth)
+      {
+        case 16:
+          oric->render_video      = render_video_sw_16bpp;
+          break;
+        case 32:
+          oric->render_video      = render_video_sw_32bpp;
+          break;
+        default:
+          // If we get there, it would be safe to give up
+          oric->render_video      = render_video_sw_16bpp;
+          break;
+      }
       oric->render_togglefullscreen = render_togglefullscreen_sw;
       oric->init_render           = init_render_sw;
       oric->shut_render           = shut_render_sw;

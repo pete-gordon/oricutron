@@ -377,6 +377,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_string( &sto->lctmp[i], "jasminrom",    jasmnromfile, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "pravetzrom",   pravzromfile, 1024 ) ) continue;
     if( read_config_int(    &sto->lctmp[i], "rampattern",   &oric->rampattern, 0, 1 ) ) continue;
+    if( read_config_int(    &sto->lctmp[i], "swdepth",      &oric->sw_depth, 16, 32 ) ) continue;
     if( read_config_option( &sto->lctmp[i], "rendermode",   &sto->start_rendermode, rendermodes ) )
     {
 #ifndef __OPENGL_AVAILABLE__
