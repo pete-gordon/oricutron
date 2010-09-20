@@ -856,7 +856,7 @@ void togglecasesyms( struct machine *oric, struct osdmenuitem *mitem, int dummy 
   }
 
   oric->symbolscase = SDL_TRUE;
-  mitem->name = "\x0e"" Case-sensitive symbols";
+  mitem->name = "\x0e""Case-sensitive symbols";
 }
 
 // Toggle autorewind on/off
