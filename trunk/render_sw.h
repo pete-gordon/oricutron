@@ -32,3 +32,5 @@ SDL_bool render_togglefullscreen_sw( struct machine *oric );
 void preinit_render_sw( struct machine *oric );
 SDL_bool init_render_sw( struct machine *oric );
 void shut_render_sw( struct machine *oric );
+
+void render_sw_detectvideo( struct machine *oric );
