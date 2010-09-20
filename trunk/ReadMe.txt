@@ -1,4 +1,4 @@
-Oricutron 0.6
+Oricutron 0.7
 -------------
 
 (c)2010 Peter Gordon (pete@petergordon.org.uk)
@@ -20,6 +20,58 @@ Telestrat emulation is included, but is far from finished and doesn't currently
 work well enough to be useful.
 
 
+Credits
+=======
+
+  Programming
+  -----------
+
+  Peter Gordon
+
+
+  Additional Programming
+  ----------------------
+
+  Revolf
+  Alexandre Devert
+  Stefan Haubenthal
+  Ibisum
+  Kamel Biskri
+
+
+  Amiga & Windows ports
+  ---------------------
+
+  Peter Gordon
+
+
+  MacOS X port
+  ------------
+
+  Revolf
+  Kamel Biskri
+
+  
+  MorphOS port
+  ------------
+
+  Stefan Haubenthal
+
+
+  Linux port
+  ----------
+
+  Revolf
+  Ibisum
+  Alexandre Devert
+
+
+  Pandora port
+  ------------
+
+  Ibisum
+  
+
 Thanks
 ======
 
@@ -27,9 +79,8 @@ Thanks to DBug and Twilighte for letting me distribute their demos and
 games with Oricutron.
 
 Thanks to DBug, Twilighte, Chema, kamelito, Yicker, JamesD, Algarbi, ibisum,
-jede, thrust26, mmu_man and everyone else for their help and feedback!
+jede, thrust26 and everyone else for their help and feedback!
 
-Thanks to Stefan Haubenthal for the MorphOS port!
 
 
 AVI export notes
@@ -163,25 +214,33 @@ pass an address, you can also use a symbol.
 
 Commands:
 
-  bs <address>               - Set breakpoint
-  bsm <address> [rwc]        - Set mem breakpoint
-  bc <bp id>                 - Clear breakpoint
-  bcm <bp id>                - Clear mem breakpoint
-  bz                         - Zap breakpoints
-  bzm                        - Zap mem breakpoint
-  bl                         - List breakpoints
-  blm                        - List mem breakpoints
-  m <address>                - Dump memory
-  mw <address>               - Memory watch at <address>
-  sc                         - Symbols are not case sensitive
-  sC                         - Symbols are case sensitive
-  sl <file>                  - Load symbols
-  sz                         - Zap symbols
-  d <address>                - Disassemble
-  r <reg> <value>            - Set register <reg> to <value>
-  q, x or qm                 - Quit monitor (back to emulator)
-  qe                         - Quit emulator
-  wm <addr> <len> <filename> - Write Oric memory to disk (as seen from the 6502).
+  ?                     - Help
+  a <addr>              - Assemble
+  bc <bp id>            - Clear breakpoint
+  bcm <bp id>           - Clear mem breakpoint
+  bl                    - List breakpoints
+  blm                   - List mem breakpoints
+  bs <addr>             - Set breakpoint
+  bsm <addr> [rwc]      - Set mem breakpoint
+  bz                    - Zap breakpoints
+  bzm                   - Zap mem breakpoints
+  d <addr>              - Disassemble
+  df <addr> <end> <file>- Disassemble to file
+  m <addr>              - Dump memory
+  mm <addr> <value>     - Modify memory
+  mw <addr>             - Memory watch at addr
+  r <reg> <val>         - Set <reg> to <val>
+  q, x or qm            - Quit monitor
+  qe                    - Quit emulator
+  sa <name> <addr>      - Add or move user symbol
+  sk <name>             - Kill user symbol
+  sc                    - Symbols not case-sensitive
+  sC                    - Symbols case-sensitive
+  sl <file>             - Load user symbols
+  sx <file>             - Export user symbols
+  sz                    - Zap user symbols
+  wm <addr> <len> <file>- Write mem to disk
+
 
 
 Breakpoints
