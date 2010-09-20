@@ -87,9 +87,9 @@ static void printchar_ ## BIT_DEPTH ## bpp \
     for( mask=0x80, x=8; x!=0; --x, ++dst_pixel, mask>>=1 )       \
     {                                                             \
       if( (*src_byte)&mask )                                      \
-        *dst_pixel = (Uint16)fcol;                                \
+        *dst_pixel = (Uint ## BIT_DEPTH)fcol;                     \
       else if( solidfont )                                        \
-        *dst_pixel = (Uint16)bcol;                                \
+        *dst_pixel = (Uint ## BIT_DEPTH)bcol;                     \
     }                                                             \
   }                                                               \
 }
