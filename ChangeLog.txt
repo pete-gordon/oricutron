@@ -1,6 +1,6 @@
 Oricutron ChangeLog
 
-0.7 (xx-xxx-xxxx)
+0.7 (20-Sep-2010)
 -----------------
 
 General:
@@ -32,7 +32,7 @@ General:
 * Software rendering mode now has a 32bit mode
   as well as 16bit. Oricutron attempts to select
   the optimal mode, but it can be overridden in
-  the config file (thanks to Alexadre Devert)
+  the config file (thanks to Alexandre Devert)
 
 Debugger/Monitor:
 
