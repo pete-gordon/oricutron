@@ -16,8 +16,8 @@ Current status
   Tape:  ".TAP" file support (no WAV yet)
   Disk:  Reading/Writing sectors works. No track read/write.
 
-The Telestrat is not emulated at all yet. Also, "Turbo Tape" only works in
-Atmos mode.
+Telestrat emulation is included, but is far from finished and doesn't currently
+work well enough to be useful.
 
 
 Thanks
@@ -67,6 +67,8 @@ Here are all the options:
                       "atmos" or "a" for Oric atmos
                       "oric1" or "1" for Oric 1
                       "o16k" for Oric 1 16k
+		      "telestrat" or "t" for Telestrat
+		      "pravetz", "pravetz8d" or "p" for Pravetz 8D
 
   -d / --disk       = Specify a disk image to use in drive 0
   -t / --tape       = Specify a tape image to use
