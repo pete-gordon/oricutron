@@ -41,7 +41,7 @@
 #include "machine.h"
 #include "ula.h"
 
-#define LOG_DEBUG 1
+#define LOG_DEBUG 0
 
 #if LOG_DEBUG
 #if defined(__amigaos4__) || defined(__MORPHOS__)
