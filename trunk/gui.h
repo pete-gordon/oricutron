@@ -19,10 +19,7 @@
 **  GUI
 */
 
-#include "system.h"
-
-
-
+// Render modes available
 enum
 {
   RENDERMODE_NULL = 0,
@@ -114,7 +111,7 @@ void tzsetcol( struct textzone *ptz, int fc, int bc );
 void tzprintf( struct textzone *ptz, char *fmt, ... );
 void tzprintfpos( struct textzone *ptz, int x, int y, char *fmt, ... );
 void draw_textzone( struct textzone *ptz );
-void printstr( int x, int y, Pixel fc, Pixel bc, char *str );
+void printstr( int x, int y, Uint32 fc, Uint32 bc, char *str );
 void gotomenu( struct machine *oric, struct osdmenuitem *mitem, int menunum );
 SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender );
 void setmenutoggles( struct machine *oric );
@@ -129,6 +126,6 @@ void draw_statusbar( struct machine *oric );
 void draw_disks( struct machine *oric );
 void draw_avirec( struct machine *oric, SDL_bool recording );
 void draw_tape( struct machine *oric );
-void statusprintstr( int x, Pixel fc, char *str );
+void statusprintstr( int x, Uint32 fc, char *str );
 void joinpath( char *path, char *file );
 

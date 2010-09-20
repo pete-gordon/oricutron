@@ -79,10 +79,5 @@
 #endif
 
 
-/* Either 16 bpp or 32 bpp video */
-typedef Uint32 Pixel;
-//typedef Uint16 Pixel;
-
-
 
 #endif /* ORICUTRON_SYSTEM_H */

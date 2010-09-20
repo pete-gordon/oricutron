@@ -153,6 +153,7 @@ struct machine
   Sint32 keymap;
 
   SDL_bool hstretch, scanlines;
+  Sint32 sw_depth; // Bit depth of the emulator video mode
 
   int rendermode;
   void (*render_begin)(struct machine *);
