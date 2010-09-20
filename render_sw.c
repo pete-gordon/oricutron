@@ -102,7 +102,7 @@ DEFINE_printchar_X_bpp(32)
 void render_begin_sw( struct machine *oric )
 {
   int x, y;
-  Uint8 *dst_scanline, *dst_pixel;
+  Uint8 *dst_scanline;
 
   if( SDL_MUSTLOCK( screen ) )
     SDL_LockSurface( screen );
@@ -112,11 +112,23 @@ void render_begin_sw( struct machine *oric )
     dst_scanline = (Uint8*)screen->pixels;
     dst_scanline += 320 * pixel_size;
 
-    for( y=12; y!=0; --y, dst_scanline += screen->pitch)
+    if( oric->sw_depth == 16 )
     {
-      dst_pixel = dst_scanline;
-      for( x=320; x<640; x++, dst_pixel += pixel_size )
-        *dst_pixel = gpal[4];
+      Uint16 *dst_pixel;
+      for( y=12; y!=0; --y, dst_scanline += screen->pitch)
+      {
+        dst_pixel = (Uint16 *)dst_scanline;
+        for( x=320; x<640; x++, dst_pixel++ )
+          *dst_pixel = gpal[4];
+      }
+    } else {
+      Uint32 *dst_pixel;
+      for( y=12; y!=0; --y, dst_scanline += screen->pitch)
+      {
+        dst_pixel = (Uint32 *)dst_scanline;
+        for( x=320; x<640; x++, dst_pixel++ )
+          *dst_pixel = gpal[4];
+      }
     }
     oric->newpopupstr = SDL_FALSE;
   }
@@ -234,7 +246,7 @@ void render_video_sw_16bpp( struct machine *oric, SDL_bool doublesize )
   int x, y;
   Uint8 *src_pixel;
   Sint32 dst_pitch_x2;
-  Uint32 c, c2;
+  Uint32 c;
   Uint8 *dst_scanline, *dst_even_scanline, *dst_odd_scanline;
   Uint16 *dst_pixel;
   Uint32 *dst_even_pixel, *dst_odd_pixel;
@@ -270,10 +282,8 @@ void render_video_sw_16bpp( struct machine *oric, SDL_bool doublesize )
 
         for( x=240; x!=0; --x )
         {
-          c2 = dpal[(*src_pixel)+8];
-          c = dpal[*(src_pixel++)];
-          *(dst_even_pixel++) = c;
-          *(dst_odd_pixel++)  = c2;
+          *(dst_even_pixel++) = dpal[*(src_pixel++)];
+          *(dst_odd_pixel++)  = dpal[(*src_pixel)+8];
         }
 
       }
@@ -404,9 +414,8 @@ void render_video_sw_32bpp( struct machine *oric, SDL_bool doublesize )
   }
 }
 
-void preinit_render_sw( struct machine *oric )
+void render_sw_detectvideo( struct machine *oric )
 {
-  Sint32 i;
   const SDL_VideoInfo *info = NULL;
 
   // Guess the suitable video mode, either 16bpp or 32bpp
@@ -426,6 +435,11 @@ void preinit_render_sw( struct machine *oric )
         break;
     }
   }
+}
+
+void preinit_render_sw( struct machine *oric )
+{
+  Sint32 i;
 
   // Screen surface is not set yet
   screen = NULL;
@@ -513,10 +527,12 @@ SDL_bool init_render_sw( struct machine *oric )
   if (oric->sw_depth == 16) {
     printchar = printchar_16bpp;
     guiimg_to_img = guiimg_to_img_16bpp;
+//    SDL_WM_SetCaption( "16bit video", "16bit video" );
   }
   else if (oric->sw_depth == 32) {
     printchar = printchar_32bpp;
     guiimg_to_img = guiimg_to_img_32bpp;
+//    SDL_WM_SetCaption( "32bit video", "32bit video" );
   }
 
   // Convert the GUI palette to the screen format bti depth

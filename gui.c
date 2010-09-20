@@ -91,7 +91,6 @@ struct guiimg gimgs[NUM_GIMG]  = { { IMAGEPREFIX"statusbar.bmp",              64
                                    { IMAGEPREFIX"tape_stop.bmp",      GIMG_W_TAPE, 16, NULL },
                                    { IMAGEPREFIX"avirec.bmp",         GIMG_W_AVIR, 16, NULL } };
 
-SDL_bool need_sdl_quit = SDL_FALSE;
 SDL_bool soundavailable, soundon;
 extern SDL_bool microdiscrom_valid, jasminrom_valid;
 
@@ -1345,16 +1344,6 @@ SDL_bool init_gui( struct machine *oric, Sint32 rendermode )
   int i;
   SDL_AudioSpec wanted;
 
-  // Go SDL!
-  if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO ) < 0 )
-  {
-    printf( "SDL init failed\n" );
-    return SDL_FALSE;
-  }
-  need_sdl_quit = SDL_TRUE;
-
-  SDL_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
-
   for( i=0; i<NUM_GIMG; i++ )
   {
     if( !gimg_load( &gimgs[i] ) ) return SDL_FALSE;
@@ -1403,6 +1392,4 @@ void shut_gui( struct machine *oric )
 
   for( i=0; i<NUM_TZ; i++ )
     free_textzone( oric, i );
-
-  if( need_sdl_quit ) SDL_Quit();
 }

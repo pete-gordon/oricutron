@@ -47,6 +47,7 @@
 
 #define FRAMES_TO_AVERAGE 15
 
+SDL_bool need_sdl_quit = SDL_FALSE;
 SDL_bool fullscreen, hwsurface;
 extern SDL_bool warpspeed, soundon;
 Uint32 lastframetimes[FRAMES_TO_AVERAGE], frametimeave;
@@ -483,6 +484,18 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 #endif
   preinit_gui( oric );
 
+  // Go SDL!
+  if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO ) < 0 )
+  {
+    printf( "SDL init failed\n" );
+    return SDL_FALSE;
+  }
+  need_sdl_quit = SDL_TRUE;
+
+  SDL_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
+
+  render_sw_detectvideo( oric );
+
   load_config( sto, oric );
 
   for( i=1; i<argc; i++ )
@@ -728,6 +741,7 @@ void shut( struct machine *oric )
   shut_filerequester( oric );
   shut_msgbox( oric );
   shut_gui( oric );
+  if( need_sdl_quit ) SDL_Quit();
 #ifdef __amigaos4__
   IExec->FreeSignal( timersigbit );
 #endif

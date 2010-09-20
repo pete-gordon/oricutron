@@ -29,6 +29,10 @@ General:
   aspect stretching.
 * Optional scanline simulation.
 * You can toggle fullscreen mode from the menus.
+* Software rendering mode now has a 32bit mode
+  as well as 16bit. Oricutron attempts to select
+  the optimal mode, but it can be overridden in
+  the config file (thanks to Alexadre Devert)
 
 Debugger/Monitor:
 
