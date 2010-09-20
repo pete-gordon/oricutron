@@ -56,6 +56,12 @@ struct textzone
 // "on screen display" menus
 #define OSDMENUBAR ((char *)-1)
 
+// Menu item flags
+#define OMIB_CENTRED 0
+#define OMIF_CENTRED (1<<OMIB_CENTRED)
+#define OMIB_BRIGHT 1
+#define OMIF_BRIGHT (1<<OMIB_BRIGHT)
+
 struct osdmenuitem
 {
   char *name;
@@ -63,6 +69,7 @@ struct osdmenuitem
   int  sdlkey;
   void (*func)(struct machine *,struct osdmenuitem *,int);
   int arg;
+  Uint16 flags;
 };
 
 struct osdmenu

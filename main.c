@@ -434,7 +434,7 @@ static void usage( int ret )
           "  \n"
           "                      \"microdisc\" or \"m\" for Microdisc\n"
           "                      \"jasmin\" or \"j\" for Jasmin\n"
-          "                      \"pravetz\" or \"p\" for Pravetz\n"
+//          "                      \"pravetz\" or \"p\" for Pravetz\n"
           "\n"
           "  -s / --symbols    = Load symbols from a file\n"
           "  -f / --fullscreen = Run oricutron fullscreen\n"
