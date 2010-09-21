@@ -228,8 +228,8 @@ $(OBJECTS): %.o: %.c
 winicon.o: winicon.ico oricutron.rc
 	windres -i oricutron.rc -o winicon.o
 
-Oricutron.guide: ReadMe.txt
-	rx ReadMe2Guide <ReadMe.txt >$@
+%.guide: ReadMe.txt
+	rx ReadMe2Guide <$? >$(APP_NAME).guide
 	-GuideCheck $@ NoNodes
 
 $(RSRC_BEOS): oricutron.rdef
