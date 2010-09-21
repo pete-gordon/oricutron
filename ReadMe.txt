@@ -51,7 +51,7 @@ Credits
   Revolf
   Kamel Biskri
 
-  
+
   MorphOS port
   ------------
 
