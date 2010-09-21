@@ -115,9 +115,9 @@ Here are all the options:
 
   -m / --machine    = Specify machine type. Valid types are:
 
-                      "atmos" or "a" for Oric atmos
-                      "oric1" or "1" for Oric 1
-                      "o16k" for Oric 1 16k
+                      "atmos" or "a" for Oric Atmos
+                      "oric1" or "1" for Oric-1
+                      "o16k" for Oric-1 16k
 		      "telestrat" or "t" for Telestrat
 		      "pravetz", "pravetz8d" or "p" for Pravetz 8D
 
@@ -181,8 +181,7 @@ In Debugger/Monitor
   F4      - Toggle VIA/AY information
   F9      - Reset cycle count
   F10     - Step over code
-  F11     - Step over code without tracing into
-            subroutines.
+  F11     - Step over code without tracing into subroutines
   F12     - Skip instruction
 
 
@@ -209,7 +208,7 @@ In the monitor, number arguments are decimal by default, or prefixed with $ for
 hex or % for binary. Pretty much everything is output in hex.
 
 In most places where you can enter a number or address, you can pass a CPU or
-VIA register. (VIA registers are prefixed with V, e.g. VDDRA). Anywhere you can
+VIA register (VIA registers are prefixed with V, e.g. VDDRA). Anywhere you can
 pass an address, you can also use a symbol.
 
 Commands:
