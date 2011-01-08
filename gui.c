@@ -147,7 +147,7 @@ void togglefullscreen( struct machine *oric, struct osdmenuitem *mitem, int dumm
 // Menu definitions. Name, key name, SDL key code, function, parameter
 // Keys that are also available while emulating should be marked with
 // square brackets
-struct osdmenuitem mainitems[] = { { "Insert tape...",         NULL,   0,        inserttape,      0, 0 },
+struct osdmenuitem mainitems[] = { { "Insert tape...",         "T",   0,        inserttape,      0, 0 },
                                    { "Insert disk 0...",       "0",    SDLK_0,   insertdisk,      0, 0 },
                                    { "Insert disk 1...",       "1",    SDLK_1,   insertdisk,      1, 0 },
                                    { "Insert disk 2...",       "2",    SDLK_2,   insertdisk,      2, 0 },
