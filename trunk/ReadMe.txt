@@ -32,7 +32,7 @@ Credits
   Additional Programming
   ----------------------
 
-  Revolf
+  François Revolf
   Alexandre Devert
   Stefan Haubenthal
   Ibisum
@@ -48,7 +48,7 @@ Credits
   MacOS X port
   ------------
 
-  Revolf
+  François Revolf
   Kamel Biskri
 
 
@@ -61,7 +61,7 @@ Credits
   Linux port
   ----------
 
-  Revolf
+  François Revolf
   Ibisum
   Alexandre Devert
 
