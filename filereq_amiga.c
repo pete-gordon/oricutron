@@ -1,6 +1,6 @@
 /*
 **  Oricutron
-**  Copyright (C) 2009-2010 Peter Gordon
+**  Copyright (C) 2009-2011 Peter Gordon
 **
 **  This program is free software; you can redistribute it and/or
 **  modify it under the terms of the GNU General Public License
@@ -21,7 +21,6 @@
 
 #define __USE_INLINE__
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -49,7 +48,7 @@ struct AslIFace *IAsl = NULL;
 
 SDL_bool init_filerequester( struct machine *oric )
 {
-  AslBase = OpenLibrary( "asl.library", 39 );
+  AslBase = OpenLibrary( AslName, 39 );
   if( !AslBase ) return SDL_FALSE;
 
 #ifdef __amigaos4__
@@ -122,5 +121,3 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   
   return SDL_TRUE;
 }
-
-
