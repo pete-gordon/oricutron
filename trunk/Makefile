@@ -40,22 +40,21 @@ DOCFILES = ReadMe.txt oricutron.cfg ChangeLog.txt
 
 ####### PLATFORM DETECTION HERE #######
 
-ifeq ($(OSTYPE),beos)
-PLATFORM ?= beos
-else
 UNAME_S = $(shell uname -s)
-  ifeq ($(UNAME_S),Darwin)
-  PLATFORM ?= osx
-  endif
-  ifeq ($(UNAME_S),Haiku)
-  PLATFORM ?= haiku
-  endif
-  ifeq ($(UNAME_S),Linux)
-  PLATFORM ?= linux
-  endif
-  ifeq ($(UNAME_S),MorphOS)
-  PLATFORM ?= MorphOS
-  endif
+ifeq ($(UNAME_S),BeOS)
+PLATFORM ?= beos
+endif
+ifeq ($(UNAME_S),Darwin)
+PLATFORM ?= osx
+endif
+ifeq ($(UNAME_S),Haiku)
+PLATFORM ?= haiku
+endif
+ifeq ($(UNAME_S),Linux)
+PLATFORM ?= linux
+endif
+ifeq ($(UNAME_S),MorphOS)
+PLATFORM ?= MorphOS
 endif
 # default
 PLATFORM ?= os4
