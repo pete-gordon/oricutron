@@ -26,8 +26,11 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <Clipboard.h>
+#include <Font.h>
 #include <InterfaceDefs.h>
+#include <List.h>
 #include <String.h>
+#include <TextView.h>
 
 extern "C" {
 #include "system.h"
@@ -41,6 +44,17 @@ extern "C" {
 #include "machine.h"
 }
 
+static rgb_color oric_colors[] = {
+	{   0,   0,   0, 255 },
+	{ 255,   0,   0, 255 },
+	{   0, 255,   0, 255 },
+	{ 255, 255,   0, 255 },
+	{   0,   0, 255, 255 },
+	{ 255,   0, 255, 255 },
+	{   0, 255, 255, 255 },
+	{ 255, 255, 255, 255 }
+};
+
 SDL_bool init_clipboard( struct machine *oric )
 {
   return SDL_TRUE;
@@ -53,6 +67,16 @@ void shut_clipboard( struct machine *oric )
 extern "C" SDL_bool clipboard_copy( struct machine *oric );
 extern "C" SDL_bool clipboard_paste( struct machine *oric );
 
+text_run *new_run(int32 offset, int color)
+{
+	BFont font(be_fixed_font);
+	text_run *run = new text_run;
+	run->offset = offset;
+	run->font = font;
+	run->color = oric_colors[color];
+	return run;
+}
+
 
 SDL_bool clipboard_copy_text( struct machine *oric )
 {
@@ -60,6 +84,10 @@ SDL_bool clipboard_copy_text( struct machine *oric )
 	int line, col;
 	// TEXT
 	BString text;
+	BList textruns;
+	int lastColor = 0;
+
+	textruns.AddItem(new_run(0, 0));
 
 	for (line = 0; line < 28; line++) {
 		for (col = 0; col < 40; col++) {
@@ -71,7 +99,10 @@ SDL_bool clipboard_copy_text( struct machine *oric )
 				c -= 128;
 			}
 
-			if (c < ' ' || c == 127) {
+			if (c < 8) {
+				textruns.AddItem(new_run(text.Length(), c));
+				text << ' ';
+			} else if (c < ' ' || c == 127) {
 				text << ' ';
 			} else if (c == 0x60) {
 				text << B_UTF8_COPYRIGHT;
@@ -89,11 +120,28 @@ SDL_bool clipboard_copy_text( struct machine *oric )
 		clip = be_clipboard->Data();
 		if (clip) {
 			clip->AddData("text/plain", B_MIME_TYPE, text.String(), text.Length());
+
+			int arraySize = sizeof(text_run_array)
+				+ textruns.CountItems() * sizeof(text_run);
+			text_run_array *array = (text_run_array *)malloc(arraySize);
+			array->count = textruns.CountItems();
+			for (int i = 0; i < array->count; i++) {
+				memcpy(&array->runs[i], textruns.ItemAt(i), sizeof(text_run));
+			}
+			clip->AddData("application/x-vnd.Be-text_run_array", B_MIME_TYPE, 
+				array, arraySize);
+			free(array);
+
 			be_clipboard->Commit();
 		}
 		be_clipboard->Unlock();
 	}
 	
+	for (int i = 0; i < textruns.CountItems(); i++) {
+		delete textruns.ItemAt(i);
+	}
+	textruns.MakeEmpty();
+
 	return SDL_TRUE;
 }
 
@@ -120,7 +168,11 @@ SDL_bool clipboard_paste( struct machine *oric )
 	if (be_clipboard->Lock()) {
 		clip = be_clipboard->Data();
 		if (clip && clip->FindData("text/plain", B_MIME_TYPE, (const void **)&text, &textLen) == B_OK) {
-			queuekeys( (char *)text );
+			printf("clip: tlen %d\n", textLen);
+			BString t(text, textLen);
+			t.ReplaceAll('\n', '\r');
+			t.ReplaceAll('\t', ' ');
+			queuekeys( (char *)t.String() );
 		}
 		be_clipboard->Unlock();
 	}
