@@ -26,6 +26,8 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <Clipboard.h>
+#include <InterfaceDefs.h>
+#include <String.h>
 
 extern "C" {
 #include "system.h"
@@ -52,10 +54,61 @@ extern "C" SDL_bool clipboard_copy( struct machine *oric );
 extern "C" SDL_bool clipboard_paste( struct machine *oric );
 
 
+SDL_bool clipboard_copy_text( struct machine *oric )
+{
+	unsigned char *vidmem = (&oric->mem[oric->vid_addr]);
+	int line, col;
+	// TEXT
+	BString text;
+
+	for (line = 0; line < 28; line++) {
+		for (col = 0; col < 40; col++) {
+			bool inverted = false;
+			unsigned char c = vidmem[line * 40 + col];
+
+			if (c > 127) {
+				inverted = true;
+				c -= 128;
+			}
+
+			if (c < ' ' || c == 127) {
+				text << ' ';
+			} else if (c == 0x60) {
+				text << B_UTF8_COPYRIGHT;
+			} else
+				text << (char)c;
+		}
+		text << '\n';
+	}
+	//printf("%s\n", text.String());
+	
+
+	BMessage *clip = NULL;
+	if (be_clipboard->Lock()) {
+		be_clipboard->Clear();
+		clip = be_clipboard->Data();
+		if (clip) {
+			clip->AddData("text/plain", B_MIME_TYPE, text.String(), text.Length());
+			be_clipboard->Commit();
+		}
+		be_clipboard->Unlock();
+	}
+	
+	return SDL_TRUE;
+}
+
+
 SDL_bool clipboard_copy( struct machine *oric )
 {
-  
-  return SDL_TRUE;
+	unsigned char *vidmem = (&oric->mem[oric->vid_addr]);
+	if (oric->vid_addr == oric->vidbases[0]) {
+		// HIRES
+	} else if (oric->vid_addr == oric->vidbases[2]) {
+		// TEXT
+		return clipboard_copy_text( oric );
+	}
+
+	return SDL_TRUE;
 }
 
 SDL_bool clipboard_paste( struct machine *oric )
