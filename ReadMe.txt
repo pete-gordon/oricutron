@@ -158,6 +158,8 @@ In emulator
   F5       - Toggle FPS
   F6       - Toggle warp speed
   F7       - Save all modified disks
+  F8       - Copy text
+  F9       - Paste text
   Shift+F7 - Save all modified disks to new disk images
   F10      - Start/Stop AVI capture
   Help     - Show guide
