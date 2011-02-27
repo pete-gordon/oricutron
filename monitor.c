@@ -1406,7 +1406,7 @@ void mon_update_disk( struct machine *oric )
       break;
     
     case DRV_JASMIN:
-      tzprintfpos( tz[TZ_DISK], 2, 8, "OVRAM=%s", oric->jasmin.olay ? "ON" : "OFF" );
+      tzprintfpos( tz[TZ_DISK], 2, 8, "OVRAM=%s", oric->jasmin.olay ? "ON " : "OFF" );
       break;
   }
 }
