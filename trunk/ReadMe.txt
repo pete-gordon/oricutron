@@ -15,6 +15,7 @@ Current status
   Video: 100% done
   Tape:  ".TAP" file support (no WAV yet)
   Disk:  Reading/Writing sectors works. No track read/write.
+  Input: Joystick interfaces (IJK and PASE/Altai), Mageco light pen.
 
 Telestrat emulation is included, but is far from finished and doesn't currently
 work well enough to be useful.
