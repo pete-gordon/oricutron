@@ -109,7 +109,7 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
   if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
-  if( ( addr & 0xff00 ) == 0x0300 )
+  if( ( addr & 0xff00 ) == 0x0300 && ( addr != 0x03e0 ) && ( addr != 0x03e1 ) )
   {
     via_write( &oric->via, addr, data );
     return;
@@ -319,7 +319,7 @@ unsigned char atmosread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
 
-  if( ( addr & 0xff00 ) == 0x0300 )
+  if( ( addr & 0xff00 ) == 0x0300 && ( addr != 0x03e0 ) && ( addr != 0x03e1 ) )
     return via_read( &oric->via, addr );
 
   if( ( !oric->romdis ) && ( addr >= 0xc000 ) )
@@ -634,10 +634,22 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
       break;
 */
     case SDL_MOUSEBUTTONDOWN:
-      if( ( ev->button.button == SDL_BUTTON_LEFT ) ||
-          ( ev->button.button == SDL_BUTTON_RIGHT ) )
+      if( ev->button.button == SDL_BUTTON_LEFT )
+      {
+        oric->cpu.write( &oric->cpu, 0x3e0, ev->button.x/2.5 );   // set light pen x
+        oric->cpu.write( &oric->cpu, 0x3e1, ev->button.y/1.875 ); // set light pen y
+      }
+      if( ev->button.button == SDL_BUTTON_RIGHT )
         setemumode( oric, NULL, EM_MENU );
       *needrender = SDL_TRUE;
+      break;
+
+    case SDL_MOUSEBUTTONUP:
+      if( ev->button.button == SDL_BUTTON_LEFT )
+      {
+        oric->cpu.write( &oric->cpu, 0x3e0, 255 ); // reset light pen x
+        oric->cpu.write( &oric->cpu, 0x3e1, 255 ); // reset light pen y
+      }
       break;
 
     case SDL_KEYUP:

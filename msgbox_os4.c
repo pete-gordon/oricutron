@@ -68,7 +68,7 @@ SDL_bool init_msgbox( struct machine *oric )
   RequesterBase = IExec->OpenLibrary( "requester.class", 51 );
   if( !RequesterBase )
   {
-    printf( "Unable to open requester.library v51+\n" );
+    printf( "Unable to open requester.class v51+\n" );
     return SDL_FALSE;
   }
 
