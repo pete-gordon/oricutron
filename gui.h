@@ -119,6 +119,7 @@ void tzprintf( struct textzone *ptz, char *fmt, ... );
 void tzprintfpos( struct textzone *ptz, int x, int y, char *fmt, ... );
 void draw_textzone( struct textzone *ptz );
 void printstr( int x, int y, Uint32 fc, Uint32 bc, char *str );
+void gotosite( struct machine *oric, struct osdmenuitem *mitem, int item );
 void gotomenu( struct machine *oric, struct osdmenuitem *mitem, int menunum );
 SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender );
 void setmenutoggles( struct machine *oric );
