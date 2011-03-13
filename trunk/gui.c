@@ -36,6 +36,10 @@
 #include <proto/dos.h>
 #endif
 
+#ifdef __MORPHOS__
+#include <proto/openurl.h>
+#endif
+
 #ifdef WIN32
 #include <windows.h>
 #define WANT_WMINFO
@@ -225,10 +229,10 @@ struct osdmenuitem glopitems[] = { { " OpenGL rendering",      "O",    'o',     
 
 struct osdmenuitem aboutitems[] = { { "",                                  NULL,   0, NULL, 0, 0 },
                                     { APP_NAME_FULL,                       NULL,   0, NULL, 0, OMIF_BRIGHT|OMIF_CENTRED },
-                                    { "http://code.google.com/p/oriculator",NULL,  0, NULL, 0, OMIF_CENTRED },
+                                    { "http://code.google.com/p/oriculator/",NULL,  0, gotosite, 2, OMIF_CENTRED },
                                     { "",                                  NULL,   0, NULL, 0, 0 },
                                     { "(C)2010 Peter Gordon",              NULL,   0, NULL, 0, OMIF_BRIGHT|OMIF_CENTRED },
-                                    { "http://www.petergordon.org.uk/",    NULL,   0, NULL, 0, OMIF_CENTRED },
+                                    { "http://www.petergordon.org.uk",     NULL,   0, gotosite, 5, OMIF_CENTRED },
                                     { "",                                  NULL,   0, NULL, 0, 0 },
                                     { "Additional programming",            NULL,   0, NULL, 0, OMIF_BRIGHT|OMIF_CENTRED },
                                     { "Francois Revol",                    NULL,   0, NULL, 0, OMIF_CENTRED },
@@ -955,6 +959,16 @@ void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy
   oric->scanlines = SDL_TRUE;
   vdopitems[4].name = "\x0e""Scanlines";
   glopitems[5].name = "\x0e""Scanlines";
+}
+
+// Go to intetnet site
+void gotosite( struct machine *oric, struct osdmenuitem *mitem, int item )
+{
+#ifdef __MORPHOS__
+  static const struct TagItem URLTags[1] = {{TAG_DONE, (ULONG) NULL}};
+
+  URL_OpenA(aboutitems[item].name, (struct TagItem*) URLTags);
+#endif
 }
 
 // Go to a different menu
