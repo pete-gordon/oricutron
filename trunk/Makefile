@@ -230,7 +230,7 @@ winicon.o: winicon.ico oricutron.rc
 
 %.guide: ReadMe.txt
 	rx ReadMe2Guide <$? >$(APP_NAME).guide
-	-GuideCheck $@ NoNodes
+	-GuideCheck $@
 
 $(RSRC_BEOS): oricutron.rdef
 	$(BEOS_RC) -o $@ $<
