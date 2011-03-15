@@ -109,7 +109,7 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
   if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
-  if( ( addr & 0xff00 ) == 0x0300 && ( addr != 0x03e0 ) && ( addr != 0x03e1 ) )
+  if( ( addr & 0xff00 ) == 0x0300 )
   {
     via_write( &oric->via, addr, data );
     return;
@@ -319,7 +319,13 @@ unsigned char atmosread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
 
-  if( ( addr & 0xff00 ) == 0x0300 && ( addr != 0x03e0 ) && ( addr != 0x03e1 ) )
+  if( oric->lightpen )
+  {
+    if( addr == 0x3e0 ) return oric->lightpenx;
+    if( addr == 0x3e1 ) return oric->lightpeny;
+  }
+
+  if( ( addr & 0xff00 ) == 0x0300 )
     return via_read( &oric->via, addr );
 
   if( ( !oric->romdis ) && ( addr >= 0xc000 ) )
@@ -332,6 +338,12 @@ unsigned char atmosread( struct m6502 *cpu, unsigned short addr )
 unsigned char o16kread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
+
+  if( oric->lightpen )
+  {
+    if( addr == 0x3e0 ) return oric->lightpenx;
+    if( addr == 0x3e1 ) return oric->lightpeny;
+  }
 
   if( ( addr & 0xff00 ) == 0x0300 )
     return via_read( &oric->via, addr );
@@ -346,6 +358,12 @@ unsigned char o16kread( struct m6502 *cpu, unsigned short addr )
 unsigned char telestratread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
+
+  if( oric->lightpen )
+  {
+    if( addr == 0x3e0 ) return oric->lightpenx;
+    if( addr == 0x3e1 ) return oric->lightpeny;
+  }
 
   if( ( addr & 0xff00 ) == 0x0300 )
   {
@@ -385,6 +403,12 @@ unsigned char jasmin_atmosread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
 
+  if( oric->lightpen )
+  {
+    if( addr == 0x3e0 ) return oric->lightpenx;
+    if( addr == 0x3e1 ) return oric->lightpeny;
+  }
+
   if( oric->jasmin.olay == 0 )
   {
     if( oric->romdis )
@@ -410,6 +434,12 @@ unsigned char jasmin_atmosread( struct m6502 *cpu, unsigned short addr )
 unsigned char jasmin_o16kread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
+
+  if( oric->lightpen )
+  {
+    if( addr == 0x3e0 ) return oric->lightpenx;
+    if( addr == 0x3e1 ) return oric->lightpeny;
+  }
 
   if( oric->jasmin.olay == 0 )
   {
@@ -437,6 +467,12 @@ unsigned char microdisc_atmosread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
 
+  if( oric->lightpen )
+  {
+    if( addr == 0x3e0 ) return oric->lightpenx;
+    if( addr == 0x3e1 ) return oric->lightpeny;
+  }
+
   if( oric->romdis )
   {
     if( ( oric->md.diskrom ) && ( addr >= 0xe000 ) )
@@ -461,6 +497,12 @@ unsigned char microdisc_atmosread( struct m6502 *cpu, unsigned short addr )
 unsigned char microdisc_o16kread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
+
+  if( oric->lightpen )
+  {
+    if( addr == 0x3e0 ) return oric->lightpenx;
+    if( addr == 0x3e1 ) return oric->lightpeny;
+  }
 
   if( oric->romdis )
   {
@@ -609,12 +651,35 @@ void preinit_machine( struct machine *oric )
     oric->wddisk.disk[i] = NULL;
     oric->diskname[i][0] = 0;
   }
+  
+  oric->lightpen  = SDL_FALSE;
+  oric->lightpenx = 255;
+  oric->lightpeny = 255;
 }
 
 void load_diskroms( struct machine *oric )
 {
   microdiscrom_valid = load_rom( oric, mdiscromfile, 8192, rom_microdisc, &sym_microdisc, SYMF_ROMDIS1|SYMF_MICRODISC );
   jasminrom_valid    = load_rom( oric, jasmnromfile, 2048, rom_jasmin,    &sym_jasmin,    SYMF_ROMDIS1|SYMF_JASMIN );
+}
+
+// This is currently used to workaround a change in the behaviour of SDL
+// on OS4, but in future it would be a handy place to fix keyboard layout
+// issues, such as the problems with a non-uk keymap on linux.
+int mapkey( int key )
+{
+#ifdef __amigaos4__
+  switch( key )
+  {
+    case '@': return '#';
+    case ':': return ';';
+    case '<': return ',';
+    case '>': return '.';
+    case '?': return '/';
+    case '~': return '\'';
+  }
+#endif
+  return key;
 }
 
 static SDL_bool shifted = SDL_FALSE;
@@ -636,8 +701,8 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
     case SDL_MOUSEBUTTONDOWN:
       if( ev->button.button == SDL_BUTTON_LEFT )
       {
-        oric->cpu.write( &oric->cpu, 0x3e0, ev->button.x/2.5 );   // set light pen x
-        oric->cpu.write( &oric->cpu, 0x3e1, ev->button.y/1.875 ); // set light pen y
+        oric->lightpenx = ev->button.x/2.5;
+        oric->lightpeny = ev->button.y/1.875;
       }
       if( ev->button.button == SDL_BUTTON_RIGHT )
         setemumode( oric, NULL, EM_MENU );
@@ -647,8 +712,8 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
     case SDL_MOUSEBUTTONUP:
       if( ev->button.button == SDL_BUTTON_LEFT )
       {
-        oric->cpu.write( &oric->cpu, 0x3e0, 255 ); // reset light pen x
-        oric->cpu.write( &oric->cpu, 0x3e1, 255 ); // reset light pen y
+        oric->lightpenx = 255;
+        oric->lightpeny = 255;
       }
       break;
 
@@ -800,7 +865,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           shifted = SDL_FALSE;
 
         default:
-          ay_keypress( &oric->ay, ev->key.keysym.sym, SDL_FALSE );
+          ay_keypress( &oric->ay, mapkey( ev->key.keysym.sym ), SDL_FALSE );
           break;
       }
       break;
@@ -813,7 +878,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           shifted = SDL_TRUE;
         
         default:
-          ay_keypress( &oric->ay, ev->key.keysym.sym, SDL_TRUE );
+          ay_keypress( &oric->ay, mapkey( ev->key.keysym.sym ), SDL_TRUE );
           break;
       }
       break;

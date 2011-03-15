@@ -394,6 +394,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
       sprintf( tbtmp, "telebank%c", j+'0' );
       if( read_config_string( &sto->lctmp[i], tbtmp, telebankfiles[j], 1024 ) ) break;
     }
+    if( read_config_bool(   &sto->lctmp[i], "lightpen",     &oric->lightpen ) ) continue;
     if( read_config_option( &sto->lctmp[i], "joyinterface", &oric->joy_iface, joyifacetypes ) ) continue;
     if( read_config_option( &sto->lctmp[i], "joystick_a",   &oric->joymode_a,     joymodes ) ) continue;
     if( read_config_option( &sto->lctmp[i], "joystick_b",   &oric->joymode_b,     joymodes ) ) continue;

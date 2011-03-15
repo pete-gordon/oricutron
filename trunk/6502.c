@@ -245,18 +245,18 @@ void m6502_reset( struct m6502 *cpu )
 #define PAGECHECK(n) ( ((baddr+n)&0xff00) != (baddr&0xff00) )
 
 // Page check to see if a branch takes you out of the current page
-#define BPAGECHECK ( (baddr&0xff00) != (cpu->pc&0xff00) )
+#define BPAGECHECK ( (baddr&0xff00) != (nextpc&0xff00) )
 
 // Macro to perform branch logic
 #define BRANCH(condition) if( condition ) cpu->pc += ((signed char)cpu->read( cpu, cpu->pc )); cpu->pc++;
 
 // Macro to calculate cycles of a branch instruction
 #define IBRANCH(condition) cpu->icycles = 2;\
-                           offs = (signed char)cpu->read( cpu, cpu->pc+1 );\
+                           offs = (signed char)cpu->read( cpu, nextpc+1 );\
                            if( condition )\
                            {\
                              cpu->icycles++;\
-                             baddr = cpu->pc+2+offs;\
+                             baddr = nextpc+2+offs;\
                              if( BPAGECHECK ) cpu->icycles++;\
                            }\
 
@@ -287,7 +287,7 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
     nextpc = (cpu->read( cpu, 0xfffb )<<8)|cpu->read( cpu, 0xfffa );
   }
 
-  nextop = cpu->read( cpu, nextpc++ );
+  nextop = cpu->read( cpu, nextpc );
 
   if( dobp )
   {
@@ -466,7 +466,7 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
           break;
 
         case 0x6C: // { "JMP", AM_IND },  // 6C
-          raddr = (cpu->read( cpu, nextpc+1 )<<8)|cpu->read( cpu, nextpc );
+          raddr = (cpu->read( cpu, nextpc+2 )<<8)|cpu->read( cpu, nextpc+1 );
           rlen = 2;
           break;
           
@@ -785,7 +785,7 @@ void m6502_inst( struct m6502 *cpu )
       ( ( cpu->irq ) && ( cpu->f_i == 0 ) ) )
   {
     PUSHW( cpu->pc );
-    PUSHB( MAKEFLAGS );
+    PUSHB( MAKEFLAGSBC );
     cpu->f_d = 0;
     if( cpu->nmi )
     {

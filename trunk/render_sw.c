@@ -282,8 +282,9 @@ void render_video_sw_16bpp( struct machine *oric, SDL_bool doublesize )
 
         for( x=240; x!=0; --x )
         {
-          *(dst_even_pixel++) = dpal[*(src_pixel++)];
-          *(dst_odd_pixel++)  = dpal[(*src_pixel)+8];
+          c = *(src_pixel++);
+          *(dst_even_pixel++) = dpal[c];
+          *(dst_odd_pixel++)  = dpal[c+8];
         }
 
       }

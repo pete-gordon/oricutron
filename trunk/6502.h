@@ -55,6 +55,7 @@
 
 // Merge the seperate flag stores into a 6502 status register form
 #define MAKEFLAGS ((cpu->f_n<<7)|(cpu->f_v<<6)|(1<<5)|(cpu->f_b<<4)|(cpu->f_d<<3)|(cpu->f_i<<2)|(cpu->f_z<<1)|cpu->f_c)
+#define MAKEFLAGSBC ((cpu->f_n<<7)|(cpu->f_v<<6)|(1<<5)|(cpu->f_d<<3)|(cpu->f_i<<2)|(cpu->f_z<<1)|cpu->f_c)
 
 // Set the seperate flag stores from a 6502-format mask
 #define SETFLAGS(n) cpu->f_n=(n&0x80)>>7;\
