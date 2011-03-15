@@ -146,6 +146,7 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
 void togglehstretch( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglefullscreen( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void togglelightpen( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 //void savesnap( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 
 // Menu definitions. Name, key name, SDL key code, function, parameter
@@ -192,6 +193,7 @@ struct osdmenuitem hwopitems[] = { { " Oric-1",                "1",    SDLK_1,  
                                    { " Autorewind tape",       NULL,   0,        toggleautowind,  0, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { " VSync hack",            NULL,   0,        togglevsynchack, 0, 0 },
+                                   { " Lightpen",              NULL,   0,        togglelightpen,  0, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },
                                    { NULL, } };
@@ -229,10 +231,10 @@ struct osdmenuitem glopitems[] = { { " OpenGL rendering",      "O",    'o',     
 
 struct osdmenuitem aboutitems[] = { { "",                                  NULL,   0, NULL, 0, 0 },
                                     { APP_NAME_FULL,                       NULL,   0, NULL, 0, OMIF_BRIGHT|OMIF_CENTRED },
-                                    { "http://code.google.com/p/oriculator/",NULL,  0, gotosite, 2, OMIF_CENTRED },
+                                    { "http://code.google.com/p/oriculator/",NULL,  0, gotosite, 0, OMIF_CENTRED },
                                     { "",                                  NULL,   0, NULL, 0, 0 },
                                     { "(C)2010 Peter Gordon",              NULL,   0, NULL, 0, OMIF_BRIGHT|OMIF_CENTRED },
-                                    { "http://www.petergordon.org.uk",     NULL,   0, gotosite, 5, OMIF_CENTRED },
+                                    { "http://www.petergordon.org.uk",     NULL,   0, gotosite, 0, OMIF_CENTRED },
                                     { "",                                  NULL,   0, NULL, 0, 0 },
                                     { "Additional programming",            NULL,   0, NULL, 0, OMIF_BRIGHT|OMIF_CENTRED },
                                     { "Francois Revol",                    NULL,   0, NULL, 0, OMIF_CENTRED },
@@ -859,6 +861,20 @@ void togglevsynchack( struct machine *oric, struct osdmenuitem *mitem, int dummy
   mitem->name = "\x0e""VSync hack";
 }
 
+// Toggle lightpen
+void togglelightpen( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+  if( oric->lightpen )
+  {
+    oric->lightpen = SDL_FALSE;
+    mitem->name = " Lightpen";
+    return;
+  }
+
+  oric->lightpen = SDL_TRUE;
+  mitem->name = "\x0e""Lightpen";
+}
+
 // Toggle symbols autoload
 void togglesymbolsauto( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
@@ -962,12 +978,19 @@ void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy
 }
 
 // Go to intetnet site
-void gotosite( struct machine *oric, struct osdmenuitem *mitem, int item )
+void gotosite( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
 #ifdef __MORPHOS__
   static const struct TagItem URLTags[1] = {{TAG_DONE, (ULONG) NULL}};
 
-  URL_OpenA(aboutitems[item].name, (struct TagItem*) URLTags);
+  URL_OpenA(mitem->name, (struct TagItem*) URLTags);
+#endif
+
+#ifdef __amigaos4__
+  char tmp[256];
+  BPTR h;
+  sprintf( tmp, "URL:%s", mitem->name );
+  if( ( h = IDOS->Open( tmp, MODE_OLDFILE ) ) ) IDOS->Close( h );
 #endif
 }
 
@@ -1334,6 +1357,11 @@ void setmenutoggles( struct machine *oric )
     hwopitems[15].name = "\x0e""VSync hack";
   else
     hwopitems[15].name = " VSync hack";
+
+  if( oric->lightpen )
+    hwopitems[16].name = "\x0e""Lightpen";
+  else
+    hwopitems[16].name = " Lightpen";
 
   if( oric->symbolsautoload )
     dbopitems[0].name = "\x0e""Autoload symbols file";

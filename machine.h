@@ -186,6 +186,9 @@ struct machine
   Sint32 telejoymode_a, telejoymode_b;
   Sint16 kbjoy1[6], kbjoy2[6];
 
+  SDL_bool lightpen;
+  Uint8  lightpenx, lightpeny;
+
   Uint8  porta_joy, porta_ay;
   SDL_bool porta_is_ay;
 
