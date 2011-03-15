@@ -992,6 +992,11 @@ void gotosite( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   sprintf( tmp, "URL:%s", mitem->name );
   if( ( h = IDOS->Open( tmp, MODE_OLDFILE ) ) ) IDOS->Close( h );
 #endif
+
+#ifdef WIN32
+   ShellExecute(NULL, "open", mitem->name,
+                NULL, NULL, SW_SHOWNORMAL);
+#endif
 }
 
 // Go to a different menu

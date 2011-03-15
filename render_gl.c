@@ -29,7 +29,7 @@
 #include <OpenGL/gl.h>
 #endif
 
-#ifndef __WIN32__
+#ifndef WIN32
 #include <SDL_endian.h>
 #endif
 
