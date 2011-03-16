@@ -2937,7 +2937,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
         case REG_X:        mon_set_modified( oric ); oric->cpu.x  = v;                              break;
         case REG_Y:        mon_set_modified( oric ); oric->cpu.y  = v;                              break;
 
-		case REG_VIA_PCR:  mon_set_modified( oric ); via_write( &oric->via, VIA_PCR, v );           break;
+        case REG_VIA_PCR:  mon_set_modified( oric ); via_write( &oric->via, VIA_PCR, v );           break;
         case REG_VIA_ACR:  mon_set_modified( oric ); via_write( &oric->via, VIA_ACR, v );           break;
         case REG_VIA_SR:   mon_set_modified( oric ); via_write( &oric->via, VIA_SR, v );            break;
         case REG_VIA_IFR:  mon_set_modified( oric ); via_mon_write_ifr( &oric->via, v );            break;
@@ -2955,14 +2955,14 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
         case REG_VIA_CB2:  mon_set_modified( oric ); via_write_CB2( &oric->via, v );                break;
         case REG_VIA_T2C:  mon_set_modified( oric ); oric->via.t2c = v;                             break;
 
-		case REG_VIA_T1L:
-		  mon_set_modified( oric );
+        case REG_VIA_T1L:
+          mon_set_modified( oric );
           via_write( &oric->via, VIA_T1L_L, v&0xff );
           via_write( &oric->via, VIA_T1L_H, (v>>8)&0xff );
           break;
 
         case REG_VIA_T2L:
-		  mon_set_modified( oric );
+          mon_set_modified( oric );
           via_write( &oric->via, VIA_T2C_L, v&0xff );
           via_write( &oric->via, VIA_T2C_H, (v>>8)&0xff );
           break;
