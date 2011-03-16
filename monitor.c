@@ -64,11 +64,18 @@ struct asminf
   short imp, imm, zp, zpx, zpy, abs, abx, aby, zix, ziy, rel, ind;
 };
 
+struct click
+{
+  int x, y, time;
+};
+
+static struct click leftclick[2];
 
 extern struct textzone *tz[];
 extern char vsptmp[];
 
 static char distmp[128];
+static unsigned short disaddrs[10];
 static char ibuf[128], lastcmd;
 static char history[10][128];
 static int ilen, iloff=0, cursx, histu=0, histp=-1;
@@ -97,7 +104,6 @@ static struct via via_old;
 static SDL_bool via_oldvalid = SDL_FALSE;
 static struct via via2_old;
 static SDL_bool via2_oldvalid = SDL_FALSE;
-
 
 //                                                             12345678901       12345678 
 static struct msym defsym_tele[]  = { { 0x0300, 0,            "VIA_IORB"      , "VIA_IORB"   , "VIA_IORB" },
@@ -612,6 +618,42 @@ int hexit( char c )
   return -1;
 }
 
+static int bp_at( struct machine *oric, unsigned short addr, int *xbp, int *mbp )
+{
+  int bpmask = 0, i;
+  
+  if( xbp ) *xbp = -1;
+  if( mbp ) *mbp = -1;
+
+  oric->cpu.anybp = SDL_FALSE;
+  for( i=0; i<16; i++ )
+  {
+    if( oric->cpu.breakpoints[i] != -1 )
+    {
+      oric->cpu.anybp = SDL_TRUE;
+      if( addr == oric->cpu.breakpoints[i] )
+      {
+        bpmask |= 8;
+        if( xbp ) *xbp = i;
+        break;
+      }
+    }
+  }
+
+  oric->cpu.anymbp = SDL_FALSE;
+  for( i=0; i<16; i++ )
+  {
+    if( oric->cpu.membreakpoints[i].addr == addr )
+    {
+      bpmask |= oric->cpu.membreakpoints[i].flags;
+      if( mbp ) *mbp = i;
+      break;
+    }
+  }
+  
+  return bpmask;
+}
+
 void dbg_scroll( void )
 {
   int x, y, s, d;
@@ -913,6 +955,8 @@ void mon_freesyms( struct symboltable *stab )
   stab->symspace = 0;
 }
 
+
+
 char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *looped, SDL_bool filemode )
 {
   unsigned short iaddr, addr;
@@ -1038,15 +1082,23 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *lo
     disptr[i] = 32;
   disptr[i] = 0;
 
-  oric->cpu.anybp = SDL_FALSE;
-  for( i=0; i<16; i++ )
+  switch( bp_at( oric, iaddr, NULL, NULL ) )
   {
-    if( oric->cpu.breakpoints[i] != -1 )
-    {
-      oric->cpu.anybp = SDL_TRUE;
-      if( iaddr == oric->cpu.breakpoints[i] )
-        disptr[SNAME_LEN+1] = '*';
-    }
+    case (                         MBPF_READ): disptr[SNAME_LEN+1] = 'r'; break;
+    case (              MBPF_WRITE          ): disptr[SNAME_LEN+1] = 'w'; break;
+    case (              MBPF_WRITE|MBPF_READ): disptr[SNAME_LEN+1] = 'a'; break;
+    case (  MBPF_CHANGE                     ): disptr[SNAME_LEN+1] = 'c'; break;
+    case (  MBPF_CHANGE           |MBPF_READ): disptr[SNAME_LEN+1] = 'g'; break;
+    case (  MBPF_CHANGE|MBPF_WRITE          ): disptr[SNAME_LEN+1] = 'm'; break;
+    case (  MBPF_CHANGE|MBPF_WRITE|MBPF_READ): disptr[SNAME_LEN+1] = '+'; break;
+    case (8                                 ): disptr[SNAME_LEN+1] = 'X'; break;
+    case (8|                       MBPF_READ): disptr[SNAME_LEN+1] = 'R'; break;
+    case (8|            MBPF_WRITE          ): disptr[SNAME_LEN+1] = 'W'; break;
+    case (8|            MBPF_WRITE|MBPF_READ): disptr[SNAME_LEN+1] = 'A'; break;
+    case (8|MBPF_CHANGE                     ): disptr[SNAME_LEN+1] = 'C'; break;
+    case (8|MBPF_CHANGE           |MBPF_READ): disptr[SNAME_LEN+1] = 'G'; break;
+    case (8|MBPF_CHANGE|MBPF_WRITE          ): disptr[SNAME_LEN+1] = 'M'; break;
+    case (8|MBPF_CHANGE|MBPF_WRITE|MBPF_READ): disptr[SNAME_LEN+1] = '*'; break;
   }
 
   if( iaddr == oric->cpu.pc )
@@ -1125,7 +1177,8 @@ void mon_update_regs( struct machine *oric )
   addr = pc;
   for( i=0; i<10; i++ )
   {
-    tzsetcol( tz[TZ_REGS], (addr==oric->cpu.pc) ? 1 : 2, 3 );
+    disaddrs[i] = addr;
+    tzsetcol( tz[TZ_REGS], (addr==pc) ? 1 : 2, 3 );
     tzstrpos( tz[TZ_REGS], 23, 7+i, "        " );
     tzstrpos( tz[TZ_REGS],  2, 7+i, mon_disassemble( oric, &addr, NULL, SDL_FALSE ) );
   }
@@ -1150,6 +1203,43 @@ void mon_update_regs( struct machine *oric )
 
     if( (cpu_old.irq&IRQF_VIA)  != (oric->cpu.irq&IRQF_VIA) )  mon_regmod( 35, 4, 3 );
     if( (cpu_old.irq&IRQF_DISK) != (oric->cpu.irq&IRQF_DISK) ) mon_regmod( 35, 5, 4 );
+  }
+}
+
+static void mon_click_regs( struct machine *oric, SDL_bool *needrender, int x, int y, SDL_bool dblclk )
+{
+  char cmdtmp[32];
+
+  if( ( dblclk ) && ( y == 5 ) )
+  {
+    switch( x )
+    {
+      case 25: oric->cpu.f_n ^= 1; *needrender = SDL_TRUE; return;
+      case 26: oric->cpu.f_v ^= 1; *needrender = SDL_TRUE; return;
+      case 28: oric->cpu.f_b ^= 1; *needrender = SDL_TRUE; return;
+      case 29: oric->cpu.f_d ^= 1; *needrender = SDL_TRUE; return;
+      case 30: oric->cpu.f_i ^= 1; *needrender = SDL_TRUE; return;
+      case 31: oric->cpu.f_z ^= 1; *needrender = SDL_TRUE; return;
+      case 32: oric->cpu.f_c ^= 1; *needrender = SDL_TRUE; return;
+    }
+  }
+
+  if( ( dblclk ) && ( y >= 7 ) && ( y < 17 ) )
+  {
+    int i;
+    
+    if( bp_at( oric, disaddrs[y-7], &i, NULL ) & 8 )
+    {
+      sprintf( cmdtmp, "bc %d", i );
+      mon_do_cmd( cmdtmp, oric, needrender );
+      *needrender = SDL_TRUE;
+    } else {
+      sprintf( cmdtmp, "bs $%04x", disaddrs[y-7] );
+      mon_do_cmd( cmdtmp, oric, needrender );
+      *needrender = SDL_TRUE;
+    }
+    
+    return;
   }
 }
 
@@ -1787,6 +1877,9 @@ void mon_enter( struct machine *oric )
     mon_printf_above( mon_bpmsg );
     mon_bpmsg[0] = 0;
   }
+  
+  if( !cpu_oldvalid )
+    mon_store_state( oric );
 }
 
 void mon_init( struct machine *oric )
@@ -3070,6 +3163,21 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
   return done;
 }
 
+SDL_bool mon_do_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
+{
+  int i;
+  SDL_bool ret;
+
+  mon_hide_curs();
+  for(i=2; i<49; i++) tz[TZ_MONITOR]->tx[50*19+i] = 32;
+  tzstrpos( tz[TZ_MONITOR], 2, 19, cmd );
+  tzsetcol( tz[TZ_MONITOR], 2, 3 ); 
+  ret = mon_cmd( cmd, oric, needrender );
+  mon_start_input();
+  mon_show_curs();
+  return ret;
+}
+
 static void mon_write_ibuf( void )
 {
   char ibtmp[CONS_WIDTH+1];
@@ -3710,6 +3818,32 @@ static unsigned int steppy_step( struct machine *oric )
   return oric->cpu.icycles;
 }
 
+static SDL_bool clickzone( struct textzone *tz, int *tx, int *ty, SDL_bool *dblclk )
+{
+  int dx, dy;
+
+  if( !in_textzone( tz, leftclick[0].x, leftclick[0].y ) )
+    return SDL_FALSE;
+
+  *tx = (leftclick[0].x - tz->x) / 8;
+  *ty = (leftclick[0].y - tz->y) / 12;
+
+  dx = (leftclick[1].x - tz->x) / 8;
+  dy = (leftclick[1].y - tz->y) / 12;
+
+  if( ( (*tx) == dx ) && ( (*ty) == dy ) && ( (leftclick[0].time-leftclick[1].time) < 1000 ) )
+  {
+    *dblclk = SDL_TRUE;
+    
+    // Reset double click timing after a successful double click
+    leftclick[0].time = -1;
+  } else {
+    *dblclk = SDL_FALSE;
+  }
+
+  return SDL_TRUE;
+}
+
 SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 {
   SDL_bool done;
@@ -3726,6 +3860,23 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
         case SDL_APPACTIVE:
           *needrender = SDL_TRUE;
           break;
+      }
+      break;
+
+    case SDL_MOUSEBUTTONDOWN:
+      {
+        int tx, ty;
+        SDL_bool dblclk;
+
+        leftclick[1]      = leftclick[0];
+        leftclick[0].x    = ev->button.x;
+        leftclick[0].y    = ev->button.y;
+        leftclick[0].time = SDL_GetTicks();
+        
+        if( clickzone( tz[TZ_REGS], &tx, &ty, &dblclk ) )
+        {
+          mon_click_regs( oric, needrender, tx, ty, dblclk );
+        }
       }
       break;
 

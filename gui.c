@@ -603,6 +603,17 @@ void tzsettitle( struct textzone *ptz, char *title )
   ptz->py = oy;
 }
 
+SDL_bool in_textzone( struct textzone *tz, int x, int y )
+{
+  if( ( x >= tz->x ) && ( x < (tz->x+tz->w*8) ) &&
+      ( y >= tz->y ) && ( y < (tz->y+tz->h*12) ) )
+  {
+    return SDL_TRUE;
+  }
+  
+  return SDL_FALSE;
+}
+
 // Allocate a textzone structure
 SDL_bool alloc_textzone( struct machine *oric, int i, int x, int y, int w, int h, char *title )
 {
@@ -836,6 +847,8 @@ void togglesound( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 // Toggle turbotape on/off
 void toggletapeturbo( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
+  oric->tapeturbo_forceoff = SDL_FALSE;
+
   if( oric->tapeturbo )
   {
     oric->tapeturbo = SDL_FALSE;
