@@ -1,3 +1,6 @@
+020d FLGTEL
+02be IOVECTORS
+02ee FLGRST
 c000 tmEntryPoint
 c05b tmDiskReset
 c05d tmDiskResetLoop
