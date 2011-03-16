@@ -129,6 +129,7 @@ struct machine
   int tapelen, tapeoffs, tapecount, tapetime, tapedupbytes;
   unsigned char *tapebuf;
   SDL_bool tapemotor, tapenoise, tapeturbo, autorewind, autoinsert;
+  SDL_bool tapeturbo_forceoff;
   SDL_bool symbolsautoload, symbolscase;
   char lasttapefile[20];
   char tapename[32];

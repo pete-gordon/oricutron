@@ -163,7 +163,7 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
   oric->tapebuf[oric->tapelen++] = 0;
 
   fclose( f );
-
+  
   // Rewind the tape
   tape_rewind( oric );
 
@@ -247,10 +247,6 @@ void tape_ticktock( struct machine *oric, int cycles )
       via_write_CB1( &oric->via, j );
   }
 
-  // If the Machine type is Atmos, and the built-in
-  // ROM is enabled, maybe do turbotape patches.
-  // We probably should ensure the ROM isn't
-  // a modified one first...
   if( ( oric->pch_fd_available ) && ( romon ) )
   {
     // Patch CLOAD to insert a tape image specified.
@@ -300,8 +296,11 @@ void tape_ticktock( struct machine *oric, int cycles )
     return;
   }
 
+  if( ( oric->tapeturbo_forceoff ) && ( oric->pch_tt_available ) && ( romon ) && ( oric->cpu.pc == oric->pch_tt_getsync_end_pc ) )
+    oric->tapeturbo_forceoff = SDL_FALSE;
+
   // Maybe do turbotape
-  if( ( oric->pch_tt_available ) && ( oric->tapeturbo ) && ( romon ) )
+  if( ( oric->pch_tt_available ) && ( oric->tapeturbo ) && ( !oric->tapeturbo_forceoff ) && ( romon ) )
   {
     SDL_bool dosyncpatch;
 
@@ -319,8 +318,7 @@ void tape_ticktock( struct machine *oric, int cycles )
       if( oric->tapeturbo_syncstack == -1 )
       {
         // No. Give up.
-        oric->tapeturbo = SDL_FALSE;
-        setmenutoggles( oric );
+        oric->tapeturbo_forceoff = SDL_TRUE;
         return;
       }
 

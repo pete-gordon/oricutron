@@ -602,6 +602,7 @@ void preinit_machine( struct machine *oric )
   oric->tapemotor = SDL_FALSE;
   oric->vsynchack = SDL_FALSE;
   oric->tapeturbo = SDL_TRUE;
+  oric->tapeturbo_forceoff = SDL_FALSE;
   oric->autorewind = SDL_FALSE;
   oric->autoinsert = SDL_TRUE;
   oric->symbolsautoload = SDL_TRUE;
@@ -990,6 +991,8 @@ void load_patches( struct machine *oric, char *fname )
 SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints )
 {
   int i;
+
+  oric->tapeturbo_forceoff = SDL_FALSE;
 
   oric->type = type;
   m6502_init( &oric->cpu, (void*)oric, nukebreakpoints );

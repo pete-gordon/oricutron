@@ -108,6 +108,7 @@ enum
 
 SDL_bool alloc_textzone( struct machine *oric, int i, int x, int y, int w, int h, char *title );
 void free_textzone( struct machine *oric, int i );
+SDL_bool in_textzone( struct textzone *tz, int x, int y );
 
 void do_popup( struct machine *oric, char *str );
 void makebox( struct textzone *ptz, int x, int y, int w, int h, int fg, int bg );
