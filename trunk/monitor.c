@@ -104,6 +104,7 @@ static struct via via_old;
 static SDL_bool via_oldvalid = SDL_FALSE;
 static struct via via2_old;
 static SDL_bool via2_oldvalid = SDL_FALSE;
+static SDL_bool modified = SDL_FALSE;
 
 //                                                             12345678901       12345678 
 static struct msym defsym_tele[]  = { { 0x0300, 0,            "VIA_IORB"      , "VIA_IORB"   , "VIA_IORB" },
@@ -654,6 +655,74 @@ static int bp_at( struct machine *oric, unsigned short addr, int *xbp, int *mbp 
   return bpmask;
 }
 
+// Don't mess with registers that change because you read them!
+unsigned char mon_read( struct machine *oric, unsigned short addr )
+{
+  // microdisc registers could screw things up
+  if( oric->drivetype == DRV_MICRODISC )
+  {
+    switch( addr )
+    {
+      case 0x310:
+        return oric->wddisk.r_status;
+      
+      case 0x311:
+        return oric->wddisk.r_track;
+
+      case 0x312:
+        return oric->wddisk.r_sector;
+
+      case 0x313:
+        return oric->wddisk.r_data;
+      
+      case 0x314:
+        return oric->md.intrq|0x7f;
+
+      case 0x318:
+        return oric->md.drq|0x7f;    
+    }
+  }
+
+  if( ( addr & 0xff00 ) == 0x0300 )
+    return via_mon_read( &oric->via, addr );
+
+  return oric->cpu.read( &oric->cpu, addr );
+}
+
+void mon_store_state( struct machine *oric )
+{
+  int k;
+
+  for( k=0; k<65536; k++ )
+  {
+    if( isram( oric, k ) )
+      mwatch_old[k] = mon_read( oric, k );
+  }
+  mwatch_oldvalid = SDL_TRUE;
+
+  cpu_old = oric->cpu;
+  vidraster_old = oric->vid_raster;
+  frames_old = oric->frames;
+  cpu_oldvalid = SDL_TRUE;
+
+  ay_old = oric->ay;
+  ay_oldvalid = SDL_TRUE;
+
+  via_old = oric->via;
+  via_oldvalid = SDL_TRUE;
+
+  via2_old = oric->tele_via;
+  via2_oldvalid = SDL_TRUE;
+}
+
+void mon_set_modified( struct machine *oric )
+{
+  if( modified ) return;
+
+  modified = SDL_TRUE;
+  mon_store_state( oric );
+}
+
 void dbg_scroll( void )
 {
   int x, y, s, d;
@@ -702,40 +771,6 @@ void dbg_printf( char *fmt, ... )
     tzstrpos( tz[TZ_DEBUG], 1, 19, vsptmp );
   }
   va_end( ap );
-}
-
-// Don't mess with registers that change because you read them!
-unsigned char mon_read( struct machine *oric, unsigned short addr )
-{
-  // microdisc registers could screw things up
-  if( oric->drivetype == DRV_MICRODISC )
-  {
-    switch( addr )
-    {
-      case 0x310:
-        return oric->wddisk.r_status;
-      
-      case 0x311:
-        return oric->wddisk.r_track;
-
-      case 0x312:
-        return oric->wddisk.r_sector;
-
-      case 0x313:
-        return oric->wddisk.r_data;
-      
-      case 0x314:
-        return oric->md.intrq|0x7f;
-
-      case 0x318:
-        return oric->md.drq|0x7f;    
-    }
-  }
-
-  if( ( addr & 0xff00 ) == 0x0300 )
-    return via_mon_read( &oric->via, addr );
-
-  return oric->cpu.read( &oric->cpu, addr );
 }
 
 struct msym *mon_tab_find_sym_by_addr( struct symboltable *stab, struct machine *oric, unsigned short addr )
@@ -1214,13 +1249,13 @@ static void mon_click_regs( struct machine *oric, SDL_bool *needrender, int x, i
   {
     switch( x )
     {
-      case 25: oric->cpu.f_n ^= 1; *needrender = SDL_TRUE; return;
-      case 26: oric->cpu.f_v ^= 1; *needrender = SDL_TRUE; return;
-      case 28: oric->cpu.f_b ^= 1; *needrender = SDL_TRUE; return;
-      case 29: oric->cpu.f_d ^= 1; *needrender = SDL_TRUE; return;
-      case 30: oric->cpu.f_i ^= 1; *needrender = SDL_TRUE; return;
-      case 31: oric->cpu.f_z ^= 1; *needrender = SDL_TRUE; return;
-      case 32: oric->cpu.f_c ^= 1; *needrender = SDL_TRUE; return;
+      case 25: mon_set_modified( oric ); oric->cpu.f_n ^= 1; *needrender = SDL_TRUE; return;
+      case 26: mon_set_modified( oric ); oric->cpu.f_v ^= 1; *needrender = SDL_TRUE; return;
+      case 28: mon_set_modified( oric ); oric->cpu.f_b ^= 1; *needrender = SDL_TRUE; return;
+      case 29: mon_set_modified( oric ); oric->cpu.f_d ^= 1; *needrender = SDL_TRUE; return;
+      case 30: mon_set_modified( oric ); oric->cpu.f_i ^= 1; *needrender = SDL_TRUE; return;
+      case 31: mon_set_modified( oric ); oric->cpu.f_z ^= 1; *needrender = SDL_TRUE; return;
+      case 32: mon_set_modified( oric ); oric->cpu.f_c ^= 1; *needrender = SDL_TRUE; return;
     }
   }
 
@@ -1499,32 +1534,6 @@ void mon_update_disk( struct machine *oric )
       tzprintfpos( tz[TZ_DISK], 2, 8, "OVRAM=%s", oric->jasmin.olay ? "ON " : "OFF" );
       break;
   }
-}
-
-void mon_store_state( struct machine *oric )
-{
-  int k;
-
-  for( k=0; k<65536; k++ )
-  {
-    if( isram( oric, k ) )
-      mwatch_old[k] = mon_read( oric, k );
-  }
-  mwatch_oldvalid = SDL_TRUE;
-
-  cpu_old = oric->cpu;
-  vidraster_old = oric->vid_raster;
-  frames_old = oric->frames;
-  cpu_oldvalid = SDL_TRUE;
-
-  ay_old = oric->ay;
-  ay_oldvalid = SDL_TRUE;
-
-  via_old = oric->via;
-  via_oldvalid = SDL_TRUE;
-
-  via2_old = oric->tele_via;
-  via2_oldvalid = SDL_TRUE;
 }
 
 void mon_state_reset( struct machine *oric )
@@ -1878,8 +1887,7 @@ void mon_enter( struct machine *oric )
     mon_bpmsg[0] = 0;
   }
   
-  if( !cpu_oldvalid )
-    mon_store_state( oric );
+  modified = SDL_FALSE;
 }
 
 void mon_init( struct machine *oric )
@@ -2793,6 +2801,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
             break;
           }
 
+          mon_set_modified( oric );
           oric->cpu.write( &oric->cpu, v, w );
           break;
 
@@ -2922,104 +2931,42 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
       switch( j )
       {
-        case REG_PC:
-          oric->cpu.pc = v;
-          break;
+        case REG_PC:       mon_set_modified( oric ); oric->cpu.pc = v;                              break;
+        case REG_SP:       mon_set_modified( oric ); oric->cpu.sp = v;                              break;
+        case REG_A:        mon_set_modified( oric ); oric->cpu.a  = v;                              break;
+        case REG_X:        mon_set_modified( oric ); oric->cpu.x  = v;                              break;
+        case REG_Y:        mon_set_modified( oric ); oric->cpu.y  = v;                              break;
 
-        case REG_SP:
-          oric->cpu.sp = v;
-          break;
+		case REG_VIA_PCR:  mon_set_modified( oric ); via_write( &oric->via, VIA_PCR, v );           break;
+        case REG_VIA_ACR:  mon_set_modified( oric ); via_write( &oric->via, VIA_ACR, v );           break;
+        case REG_VIA_SR:   mon_set_modified( oric ); via_write( &oric->via, VIA_SR, v );            break;
+        case REG_VIA_IFR:  mon_set_modified( oric ); via_mon_write_ifr( &oric->via, v );            break;
+        case REG_VIA_IER:  mon_set_modified( oric ); oric->via.ier = v&0x7f;                        break;
+        case REG_VIA_IRA:  mon_set_modified( oric ); oric->via.write_port_a( &oric->via, 0xff, v ); break;
+        case REG_VIA_ORA:  mon_set_modified( oric ); via_write( &oric->via, VIA_IORA, v );          break;
+        case REG_VIA_DDRA: mon_set_modified( oric ); via_write( &oric->via, VIA_DDRA, v );          break;
+        case REG_VIA_IRB:  mon_set_modified( oric ); oric->via.write_port_b( &oric->via, 0xff, v ); break;
+        case REG_VIA_ORB:  mon_set_modified( oric ); via_write( &oric->via, VIA_IORB, v );          break;
+        case REG_VIA_DDRB: mon_set_modified( oric ); via_write( &oric->via, VIA_DDRB, v );          break;
+        case REG_VIA_T1C:  mon_set_modified( oric ); oric->via.t1c = v;                             break;
+        case REG_VIA_CA1:  mon_set_modified( oric ); via_write_CA1( &oric->via, v );                break;
+        case REG_VIA_CA2:  mon_set_modified( oric ); via_write_CA2( &oric->via, v );                break;
+        case REG_VIA_CB1:  mon_set_modified( oric ); via_write_CB1( &oric->via, v );                break;
+        case REG_VIA_CB2:  mon_set_modified( oric ); via_write_CB2( &oric->via, v );                break;
+        case REG_VIA_T2C:  mon_set_modified( oric ); oric->via.t2c = v;                             break;
 
-        case REG_A:
-          oric->cpu.a = v;
-          break;
-
-        case REG_X:
-          oric->cpu.x = v;
-          break;
-
-        case REG_Y:
-          oric->cpu.y = v;
-          break;
-
-        case REG_VIA_PCR:
-          via_write( &oric->via, VIA_PCR, v );
-          break;
-
-        case REG_VIA_ACR:
-          via_write( &oric->via, VIA_ACR, v );
-          break;
-
-        case REG_VIA_SR:
-          via_write( &oric->via, VIA_SR, v );
-          break;
-
-        case REG_VIA_IFR:
-          via_mon_write_ifr( &oric->via, v );
-          break;
-
-        case REG_VIA_IER:
-          oric->via.ier = v&0x7f;
-//          via_write( &oric->via, VIA_IER, v );
-          break;
-
-        case REG_VIA_IRA:
-          oric->via.write_port_a( &oric->via, 0xff, v );
-          break;
-
-        case REG_VIA_ORA:
-          via_write( &oric->via, VIA_IORA, v );
-          break;
-
-        case REG_VIA_DDRA:
-          via_write( &oric->via, VIA_DDRA, v );
-          break;
-
-        case REG_VIA_IRB:
-          oric->via.write_port_b( &oric->via, 0xff, v );
-          break;
-
-        case REG_VIA_ORB:
-          via_write( &oric->via, VIA_IORB, v );
-          break;
-
-        case REG_VIA_DDRB:
-          via_write( &oric->via, VIA_DDRB, v );
-          break;
-
-        case REG_VIA_T1L:
+		case REG_VIA_T1L:
+		  mon_set_modified( oric );
           via_write( &oric->via, VIA_T1L_L, v&0xff );
           via_write( &oric->via, VIA_T1L_H, (v>>8)&0xff );
           break;
 
-        case REG_VIA_T1C:
-          oric->via.t1c = v;
-          break;
-
         case REG_VIA_T2L:
+		  mon_set_modified( oric );
           via_write( &oric->via, VIA_T2C_L, v&0xff );
           via_write( &oric->via, VIA_T2C_H, (v>>8)&0xff );
           break;
 
-        case REG_VIA_T2C:
-          oric->via.t2c = v;
-          break;
-
-        case REG_VIA_CA1:
-          via_write_CA1( &oric->via, v );
-          break;
-
-        case REG_VIA_CA2:
-          via_write_CA2( &oric->via, v );
-          break;
-
-        case REG_VIA_CB1:
-          via_write_CB1( &oric->via, v );
-          break;
-
-        case REG_VIA_CB2:
-          via_write_CB2( &oric->via, v );
-          break;
       }
       *needrender = SDL_TRUE;
       break;
@@ -3361,11 +3308,13 @@ static SDL_bool mon_assemble_line( struct machine *oric )
   {
     case AM_IMP:
       if( asmtab[j].imp == -1 ) { mon_str( "Operand expected" ); return SDL_FALSE; }
+      mon_set_modified( oric );
       oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].imp );
       break;
     
     case AM_IMM:
       if( asmtab[j].imm == -1 ) { mon_str( "Illegal operand" ); return SDL_FALSE; }
+      mon_set_modified( oric );
       oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].imm );
       oric->cpu.write( &oric->cpu, mon_addr+1, val );
       break;
@@ -3379,6 +3328,7 @@ static SDL_bool mon_assemble_line( struct machine *oric )
           mon_str( "Branch out of range" );
           return SDL_FALSE;
         }
+        mon_set_modified( oric );
         oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].rel );
         oric->cpu.write( &oric->cpu, mon_addr+1, i&0xff );        
         break;
@@ -3386,12 +3336,14 @@ static SDL_bool mon_assemble_line( struct machine *oric )
 
       if( ( asmtab[j].zp != -1 ) && ( (val&0xff00)==0 ) )
       {
+        mon_set_modified( oric );
         oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].zp );
         oric->cpu.write( &oric->cpu, mon_addr+1, val );
         break;
       }
 
       if( asmtab[j].abs == -1 ) { mon_str( "Illegal operand" ); return SDL_FALSE; }
+      mon_set_modified( oric );
       oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].abs );
       oric->cpu.write( &oric->cpu, mon_addr+1, val&0xff );
       oric->cpu.write( &oric->cpu, mon_addr+2, (val>>8)&0xff );
@@ -3399,6 +3351,7 @@ static SDL_bool mon_assemble_line( struct machine *oric )
 
     case AM_IND:
       if( asmtab[j].ind == -1 ) { mon_str( "Illegal operand" ); return SDL_FALSE; }
+      mon_set_modified( oric );
       oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].ind );
       oric->cpu.write( &oric->cpu, mon_addr+1, val&0xff );
       oric->cpu.write( &oric->cpu, mon_addr+2, (val>>8)&0xff );
@@ -3406,24 +3359,28 @@ static SDL_bool mon_assemble_line( struct machine *oric )
 
     case AM_ZPX:
       if( asmtab[j].zpx == -1 ) { mon_str( "Illegal operand" ); return SDL_FALSE; }
+      mon_set_modified( oric );
       oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].zpx );
       oric->cpu.write( &oric->cpu, mon_addr+1, val );
       break;
 
     case AM_ZPY:
       if( asmtab[j].zpy == -1 ) { mon_str( "Illegal operand" ); return SDL_FALSE; }
+      mon_set_modified( oric );
       oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].zpy );
       oric->cpu.write( &oric->cpu, mon_addr+1, val );
       break;
 
     case AM_ZIX:
       if( asmtab[j].zix == -1 ) { mon_str( "Illegal operand" ); return SDL_FALSE; }
+      mon_set_modified( oric );
       oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].zix );
       oric->cpu.write( &oric->cpu, mon_addr+1, val );
       break;
 
     case AM_ZIY:
       if( asmtab[j].ziy == -1 ) { mon_str( "Illegal operand" ); return SDL_FALSE; }
+      mon_set_modified( oric );
       oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].ziy );
       oric->cpu.write( &oric->cpu, mon_addr+1, val );
       break;
@@ -3431,12 +3388,14 @@ static SDL_bool mon_assemble_line( struct machine *oric )
     case AM_ABX:
       if( ( asmtab[j].zpx != -1 ) && ( (val&0xff00)==0 ) )
       {
+        mon_set_modified( oric );
         oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].zpx );
         oric->cpu.write( &oric->cpu, mon_addr+1, val );
         break;
       }
 
       if( asmtab[j].abx == -1 ) { mon_str( "Illegal operand" ); return SDL_FALSE; }
+      mon_set_modified( oric );
       oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].abx );
       oric->cpu.write( &oric->cpu, mon_addr+1, val&0xff );
       oric->cpu.write( &oric->cpu, mon_addr+2, (val>>8)&0xff );
@@ -3445,12 +3404,14 @@ static SDL_bool mon_assemble_line( struct machine *oric )
     case AM_ABY:
       if( ( asmtab[j].zpy != -1 ) && ( (val&0xff00)==0 ) )
       {
+        mon_set_modified( oric );
         oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].zpy );
         oric->cpu.write( &oric->cpu, mon_addr+1, val );
         break;
       }
 
       if( asmtab[j].aby == -1 ) { mon_str( "Illegal operand" ); return SDL_FALSE; }
+      mon_set_modified( oric );
       oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].aby );
       oric->cpu.write( &oric->cpu, mon_addr+1, val&0xff );
       oric->cpu.write( &oric->cpu, mon_addr+2, (val>>8)&0xff );
