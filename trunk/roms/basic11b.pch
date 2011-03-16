@@ -52,5 +52,3 @@ tt_readbyte_setcarry = yes
 ; zero to.
 tt_readbyte_storebyte_addr = $002f
 tt_readbyte_storezero_addr = $02b1
-
-
