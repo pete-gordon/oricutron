@@ -1,6 +1,6 @@
 # valid platforms:
 # PLATFORM = os4
-# PLATFORM = MorphOS
+# PLATFORM = morphos
 # PLATFORM = win32
 # PLATFORM = beos
 # PLATFORM = haiku
@@ -54,7 +54,7 @@ ifeq ($(UNAME_S),Linux)
 PLATFORM ?= linux
 endif
 ifeq ($(UNAME_S),MorphOS)
-PLATFORM ?= MorphOS
+PLATFORM ?= morphos
 endif
 # default
 PLATFORM ?= os4
@@ -71,7 +71,7 @@ MSGBOX_OBJ = msgbox_os4.o
 endif
 
 # MorphOS
-ifeq ($(PLATFORM),MorphOS)
+ifeq ($(PLATFORM),morphos)
 CFLAGS += `sdl-config --cflags` -D__OPENGL_AVAILABLE__
 LFLAGS += `sdl-config --libs` -s
 FILEREQ_OBJ = filereq_amiga.o
@@ -250,7 +250,7 @@ install-linux:
 	install -m 755 $(TARGET) $(INSTALLDIR)/bin
 
 
-package-MorphOS: Oricutron.guide
+package-os4 package-morphos: Oricutron.guide
 	lha -r u RAM:$(PKGDIR) // $(TARGET) $(TARGET).info
 
 package-beos package-haiku:
