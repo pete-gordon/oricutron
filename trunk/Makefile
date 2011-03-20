@@ -124,7 +124,7 @@ LFLAGS += -lm -Wl,-framework,OpenGL
 TARGET = oricutron
 FILEREQ_OBJ =
 MSGBOX_OBJ =
-CUSTOMOBJS = filereq_osx.o msgbox_osx.o
+CUSTOMOBJS = gui_osx.o filereq_osx.o msgbox_osx.o
 endif
 
 # Linux

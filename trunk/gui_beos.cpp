@@ -16,7 +16,7 @@
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 **
-**  BeOS clipboard
+**  BeOS GUI miscellaneous helpers, clipboard
 */
 
 #include <stdlib.h>
@@ -55,12 +55,12 @@ static rgb_color oric_colors[] = {
 	{ 255, 255, 255, 255 }
 };
 
-SDL_bool init_clipboard( struct machine *oric )
+SDL_bool init_gui_native( struct machine *oric )
 {
   return SDL_TRUE;
 }
 
-void shut_clipboard( struct machine *oric )
+void shut_gui_native( struct machine *oric )
 {
 }
 
@@ -210,3 +210,13 @@ SDL_bool clipboard_paste_sdl( struct machine *oric )
 	}
   return SDL_TRUE;
 }
+
+void gui_open_url( const char *url )
+{
+	// BUrl is not really public yet, and I'm lazy.
+	// It's a bit dangerous but we trust the caller.
+	BString command("/bin/open '");
+	command << url << "'";
+	system(command.String());
+}
+

@@ -993,6 +993,7 @@ void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy
 // Go to internet site
 void gotosite( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
+/* TODO: mode those to their own gui_*.c */
 #ifdef __MORPHOS__
   static const struct TagItem URLTags[1] = {{TAG_DONE, (ULONG) NULL}};
 
@@ -1009,6 +1010,10 @@ void gotosite( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 #ifdef WIN32
    ShellExecute(NULL, "open", mitem->name,
                 NULL, NULL, SW_SHOWNORMAL);
+#endif
+
+#if defined(__APPLE__) || defined(__BEOS__) || defined(__HAIKU__)
+  gui_open_url( mitem->name );
 #endif
 }
 
