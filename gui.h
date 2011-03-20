@@ -138,3 +138,8 @@ void draw_tape( struct machine *oric );
 void statusprintstr( int x, Uint32 fc, char *str );
 void joinpath( char *path, char *file );
 
+/* implemented by OS-specific backends */
+
+SDL_bool init_gui_native( struct machine *oric );
+void shut_gui_native( struct machine *oric );
+void gui_open_url( const char *url );
