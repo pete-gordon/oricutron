@@ -990,7 +990,7 @@ void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy
   glopitems[5].name = "\x0e""Scanlines";
 }
 
-// Go to intetnet site
+// Go to internet site
 void gotosite( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
 #ifdef __MORPHOS__
