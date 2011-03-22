@@ -735,13 +735,16 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 void shut( struct machine *oric )
 {
   if( vidcap ) avi_close( &vidcap );
-  shut_machine( oric );
-  shut_joy( oric );
-  shut_ula( oric );
-  mon_shut();
-  shut_filerequester( oric );
-  shut_msgbox( oric );
-  shut_gui( oric );
+  if( oric )
+  {
+    shut_machine( oric );
+    shut_joy( oric );
+    shut_ula( oric );
+    mon_shut();
+    shut_filerequester( oric );
+    shut_msgbox( oric );
+    shut_gui( oric );
+  }
   if( need_sdl_quit ) SDL_Quit();
 #ifdef __amigaos4__
   IExec->FreeSignal( timersigbit );
