@@ -194,6 +194,7 @@ struct osdmenuitem hwopitems[] = { { " Oric-1",                "1",    SDLK_1,  
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { " VSync hack",            NULL,   0,        togglevsynchack, 0, 0 },
                                    { " Lightpen",              NULL,   0,        togglelightpen,  0, 0 },
+                                   { " Mouse",                 NULL,   0,        NULL,            0, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },
                                    { NULL, } };
