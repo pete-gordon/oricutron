@@ -186,6 +186,7 @@ struct osdmenuitem hwopitems[] = { { " Oric-1",                "1",    SDLK_1,  
                                    { " No disk",               "X",    'x',      setdrivetype,    DRV_NONE, 0 },
                                    { " Microdisc",             "M",    'm',      setdrivetype,    DRV_MICRODISC, 0 },
                                    { " Jasmin",                "J",    'j',      setdrivetype,    DRV_JASMIN, 0 },
+                                   { " Cumana",                "C",    'c',      NULL,            0, 0 },
                                    { " Pravetz",               "P",    'p',      NULL,            0, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { " Turbo tape",            NULL,   0,        toggletapeturbo, 0, 0 },
@@ -1363,29 +1364,29 @@ void setmenutoggles( struct machine *oric )
     auopitems[1].name = " Tape noise";
 
   if( oric->tapeturbo )
-    hwopitems[11].name = "\x0e""Turbo tape";
+    hwopitems[12].name = "\x0e""Turbo tape";
   else
-    hwopitems[11].name = " Turbo tape";
+    hwopitems[12].name = " Turbo tape";
 
   if( oric->autoinsert )
-    hwopitems[12].name = "\x0e""Autoinsert tape";
+    hwopitems[13].name = "\x0e""Autoinsert tape";
   else
-    hwopitems[12].name = " Autoinsert tape";
+    hwopitems[13].name = " Autoinsert tape";
 
   if( oric->autorewind )
-    hwopitems[13].name = "\x0e""Autorewind tape";
+    hwopitems[14].name = "\x0e""Autorewind tape";
   else
-    hwopitems[13].name = " Autorewind tape";
+    hwopitems[14].name = " Autorewind tape";
 
   if( oric->vsynchack )
-    hwopitems[15].name = "\x0e""VSync hack";
+    hwopitems[16].name = "\x0e""VSync hack";
   else
-    hwopitems[15].name = " VSync hack";
+    hwopitems[16].name = " VSync hack";
 
   if( oric->lightpen )
-    hwopitems[16].name = "\x0e""Lightpen";
+    hwopitems[17].name = "\x0e""Lightpen";
   else
-    hwopitems[16].name = " Lightpen";
+    hwopitems[17].name = " Lightpen";
 
   if( oric->symbolsautoload )
     dbopitems[0].name = "\x0e""Autoload symbols file";

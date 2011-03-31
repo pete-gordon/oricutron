@@ -1,0 +1,3 @@
+f800 cmRomStart
+f800 cmReset
+fd68 cmIrq
