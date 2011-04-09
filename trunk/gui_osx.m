@@ -38,11 +38,38 @@
 #include "6551.h"
 #include "machine.h"
 
+extern struct osdmenu menus[];
+
 //XXX: I have no idea how allocation & gc is performed in ObjC, is this correct ?
+
+//static NSMenu *appMenu;
+
+static void build_native_menus( struct osdmenu *menu )
+{
+	struct osdmenuitem *item = menu->items;
+	printf("menu '%s': {\n", menu->title);
+	for (; item->name; item++) {
+		const char *name = item->name;
+		if (name == OSDMENUBAR)
+			name = "------------";
+		printf("item '%s' key '%s'\n", name, item->key);
+		if (item->func == gotomenu && item->arg) {
+			build_native_menus( &menus[item->arg] );
+		}
+	}
+	printf("}\n");
+}
 
 SDL_bool init_gui_native( struct machine *oric )
 {
-  return SDL_TRUE;
+	/*
+	appMenu = [[NSApplication sharedApplication] mainMenu];
+	printf("menu: %s\n", [[[appMenu itemAtIndex:0] title] UTF8String]);
+	printf("menu: %s\n", [[[appMenu itemAtIndex:1] title] UTF8String]);
+	printf("menu: %s\n", [[[appMenu itemAtIndex:2] title] UTF8String]);
+	build_native_menus( menus );
+	*/
+	return SDL_TRUE;
 }
 
 void shut_gui_native( struct machine *oric )
