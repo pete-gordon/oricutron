@@ -441,7 +441,7 @@ static void usage( int ret )
           "  -f / --fullscreen = Run oricutron fullscreen\n"
           "  -w / --window     = Run oricutron in a window\n"
 #ifdef __OPENGL_AVAILABLE__
-          "  -R / --rendermode = Render mode. Valid modes:\n"
+          "  -R / --rendermode = Render mode. Valid modes are:\n"
           "\n"
           "                      \"soft\" for software rendering\n"
           "                      \"opengl\" for OpenGL\n"
