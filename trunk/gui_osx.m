@@ -60,7 +60,7 @@ SDL_bool clipboard_copy_text( struct machine *oric )
 	unsigned char *vidmem = (&oric->mem[oric->vid_addr]);
 	int line, col;
 	// TEXT
-	NSString *text = [NSString string];
+	NSMutableString *text = [NSMutableString stringWithCapacity:(40*28)];
 	for (line = 0; line < 28; line++) {
 		for (col = 0; col < 40; col++) {
 			bool inverted = false;
@@ -73,15 +73,15 @@ SDL_bool clipboard_copy_text( struct machine *oric )
 
 			if (c < 8) {
 				//
-				text = [text stringByAppendingString: @" "];
+				[text appendString: @" "];
 			} else if (c < ' ' || c == 127) {
-				text = [text stringByAppendingString: @" "];
+				[text appendString: @" "];
 			} else if (c == 0x60) {
-				text = [text stringByAppendingString: @"©"];
+				[text appendString: @"©"];
 			} else
-				text = [text stringByAppendingFormat: @"%c", c];
+				[text appendFormat: @"%c", c];
 		}
-		text = [text stringByAppendingString: @"\n"];
+		[text appendString: @"\n"];
 	}
 
 	NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
