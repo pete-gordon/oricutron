@@ -1471,6 +1471,9 @@ SDL_bool init_gui( struct machine *oric, Sint32 rendermode )
   }
 
   setmenutoggles( oric );
+#if defined(__APPLE__) || defined(__BEOS__) || defined(__HAIKU__)
+  init_gui_native( oric );
+#endif
   return SDL_TRUE;
 }
 
