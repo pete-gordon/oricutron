@@ -235,7 +235,7 @@ $(RSRC_BEOS): oricutron.rdef
 	$(BEOS_RC) -o $@ $<
 
 clean:
-	rm -f $(TARGET) *.bak *.o $(RESOURCES) printer_out.txt
+	rm -f $(TARGET) *.bak *.o *.d $(RESOURCES) printer_out.txt
 	rm -rf "$(PKGDIR)"
 
 
