@@ -119,20 +119,26 @@ Here are all the options:
                       "atmos" or "a" for Oric Atmos
                       "oric1" or "1" for Oric-1
                       "o16k" for Oric-1 16k
-		      "telestrat" or "t" for Telestrat
-		      "pravetz", "pravetz8d" or "p" for Pravetz 8D
+                      "telestrat" or "t" for Telestrat
+                      "pravetz", "pravetz8d" or "p" for Pravetz 8D
 
   -d / --disk       = Specify a disk image to use in drive 0
   -t / --tape       = Specify a tape image to use
   -k / --drive      = Specify a disk drive controller. Valid types are:
-  
+
                       "microdisc" or "m" for Microdisc
                       "jasmin" or "j" for Jasmin
 
   -s / --symbols    = Load symbols from a file
   -f / --fullscreen = Run oricutron fullscreen
   -w / --window     = Run oricutron in a window
+  -R / --rendermode = Render mode. Valid modes are:
+
+                      "soft" for software rendering
+                      "opengl" for OpenGL
+
   -b / --debug      = Start oricutron in the debugger
+  -r / --breakpoint = Set a breakpoint
   -h / --help       = Print command line help and quit
 
 
@@ -164,6 +170,7 @@ In emulator
   Shift+F7 - Save all modified disks to new disk images
   F10      - Start/Stop AVI capture
   Help     - Show guide
+  Left Alt - FUNCT key
 
 
 In menus
