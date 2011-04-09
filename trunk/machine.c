@@ -818,7 +818,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
            refreshavi = SDL_TRUE;
            break;
 
-#if defined( __BEOS__ ) || defined( __HAIKU__ )
+#if defined(__BEOS__) || defined(__HAIKU__) || defined(__APPLE__)
         case SDLK_F8:
           clipboard_copy( oric );
           break;

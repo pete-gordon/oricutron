@@ -38,6 +38,8 @@
 #include "6551.h"
 #include "machine.h"
 
+//XXX: I have no idea how allocation & gc is performed in ObjC, is this correct ?
+
 SDL_bool init_gui_native( struct machine *oric )
 {
   return SDL_TRUE;
@@ -50,4 +52,71 @@ void shut_gui_native( struct machine *oric )
 void gui_open_url( const char *url )
 {
   [[NSWorkspace sharedWorkspace] openURL: [NSURL URLWithString: [NSString stringWithUTF8String: url]]];
+}
+
+
+SDL_bool clipboard_copy_text( struct machine *oric )
+{
+	unsigned char *vidmem = (&oric->mem[oric->vid_addr]);
+	int line, col;
+	// TEXT
+	NSString *text = [NSString string];
+	for (line = 0; line < 28; line++) {
+		for (col = 0; col < 40; col++) {
+			bool inverted = false;
+			unsigned char c = vidmem[line * 40 + col];
+
+			if (c > 127) {
+				inverted = true;
+				c -= 128;
+			}
+
+			if (c < 8) {
+				//
+				text = [text stringByAppendingString: @" "];
+			} else if (c < ' ' || c == 127) {
+				text = [text stringByAppendingString: @" "];
+			} else if (c == 0x60) {
+				text = [text stringByAppendingString: @"©"];
+			} else
+				text = [text stringByAppendingFormat: @"%c", c];
+		}
+		text = [text stringByAppendingString: @"\n"];
+	}
+
+	NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
+	[pasteboard clearContents];
+	NSArray *copiedObjects = [NSArray arrayWithObject:text];
+	[pasteboard writeObjects:copiedObjects];
+
+	return SDL_TRUE;
+}
+
+SDL_bool clipboard_copy( struct machine *oric )
+{
+	unsigned char *vidmem = (&oric->mem[oric->vid_addr]);
+	if (oric->vid_addr == oric->vidbases[0]) {
+		// HIRES
+	} else if (oric->vid_addr == oric->vidbases[2]) {
+		// TEXT
+		return clipboard_copy_text( oric );
+	}
+
+	return SDL_TRUE;
+}
+
+SDL_bool clipboard_paste( struct machine *oric )
+{
+	NSPasteboard *pasteboard = [NSPasteboard generalPasteboard]; 
+	NSArray *classes = [[NSArray alloc] initWithObjects:[NSString class], nil];
+	NSDictionary *options = [NSDictionary dictionary];
+	NSArray *copiedItems = [pasteboard readObjectsForClasses:classes options:options];
+
+	for (NSString *t in copiedItems) {
+		t = [t stringByReplacingOccurrencesOfString: @"\n" withString: @"\r"];
+		t = [t stringByReplacingOccurrencesOfString: @"\t" withString: @" "];
+		queuekeys( (char *)[t UTF8String] );
+	}
+
+	return SDL_FALSE;
 }
