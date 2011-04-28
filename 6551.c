@@ -43,8 +43,8 @@ static char *bit_nums[]       = { "8", "7", "6", "5" };
 void acia_init( struct acia *acia, struct machine *oric )
 {
   acia->oric = oric;
-  acia->regs[ACIA_RXDATA]    = 0;
-  acia->regs[ACIA_TXDATA]    = 0;
+  acia->regs[ACIA_RXDATA]  = 0;
+  acia->regs[ACIA_TXDATA]  = 0;
   acia->regs[ACIA_STATUS]  = ASTF_TXEMPTY;
   acia->regs[ACIA_COMMAND] = ACOMF_IRQDIS;
   acia->regs[ACIA_CONTROL] = 0;
@@ -67,7 +67,7 @@ void acia_write( struct acia *acia, Uint16 addr, Uint8 data )
       break;
     
     case ACIA_STATUS:      // Reset
-     acia->regs[ACIA_COMMAND] &= ACOMF_PARITY;
+      acia->regs[ACIA_COMMAND] &= ACOMF_PARITY;
       acia->regs[ACIA_COMMAND] |= ACOMF_IRQDIS;
       acia->regs[ACIA_STATUS]  &= ~(ASTF_OVRUNERR);
       break;
@@ -83,7 +83,7 @@ void acia_write( struct acia *acia, Uint16 addr, Uint8 data )
 #endif
       break;
     
-case ACIA_CONTROL:
+    case ACIA_CONTROL:
       acia->regs[ACIA_CONTROL] = data;
 #if DEBUG_ACIA
       dbg_printf( "  Baud     = %s", baud_rates[data&ACONF_BAUD] );

@@ -522,7 +522,7 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
   {
     case KMAP_AZERTY: keytab = azktab; break;
     case KMAP_QWERTZ: keytab = qzktab; break;
-    default:            keytab = qwktab; break;
+    default:          keytab = qwktab; break;
   }
 
   // No oric keys pressed
