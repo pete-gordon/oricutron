@@ -1168,6 +1168,7 @@ void m6502_inst( struct m6502 *cpu )
     case 0x7E: // { "ROR", AM_ABX },  // 7E
       READ_ABX;
       DO_ROR(v);
+      cpu->write( cpu, baddr, v );
       break;
 
     case 0x81: // { "STA", AM_ZIX },  // 81
