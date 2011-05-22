@@ -80,7 +80,7 @@ static char ibuf[128], lastcmd;
 static char history[10][128];
 static int ilen, iloff=0, cursx, histu=0, histp=-1;
 static unsigned short mon_addr, mon_asmmode = SDL_FALSE;
-static SDL_bool kshifted = SDL_FALSE;
+static SDL_bool kshifted = SDL_FALSE, updatepreview = SDL_FALSE;
 static int helpcount=0;
 
 static struct symboltable defaultsyms;
@@ -1654,6 +1654,8 @@ void mon_update( struct machine *oric )
 
 void mon_render( struct machine *oric )
 {
+  if (updatepreview)
+    ula_renderscreen( oric );
   oric->render_video( oric, SDL_FALSE );
   
   switch( mshow )
@@ -1888,6 +1890,7 @@ void mon_enter( struct machine *oric )
   }
   
   modified = SDL_FALSE;
+  updatepreview = SDL_TRUE;
 }
 
 void mon_init( struct machine *oric )
@@ -2803,6 +2806,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
           mon_set_modified( oric );
           oric->cpu.write( &oric->cpu, v, w );
+		  updatepreview = SDL_TRUE;
           break;
 
         case 'w':
@@ -2969,6 +2973,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
       }
       *needrender = SDL_TRUE;
+	  updatepreview = SDL_TRUE;
       break;
     
     case 0:
@@ -3483,12 +3488,14 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
           mon_start_input();
           mon_show_curs();
           *needrender = SDL_TRUE;
+		  updatepreview = SDL_TRUE;
           break;
         }
 
         mon_start_input();
         mon_show_curs();
         *needrender = SDL_TRUE;
+		updatepreview = SDL_TRUE;
         break;
 
       default:

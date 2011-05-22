@@ -101,6 +101,90 @@ void ula_render_block( struct machine *oric, int fg, int bg, SDL_bool inverted, 
   }
 }
 
+// Render current screen (used by the monitor)
+void ula_renderscreen( struct machine *oric )
+{
+  Uint8 *scrpt, *rptr;
+  int b, y, c, cy, bitmask;
+  SDL_bool hires;
+
+  scrpt = oric->scrpt;
+  oric->scrpt = oric->scr;
+  for( y=0; y<224; y++)
+  {
+    cy = (y>>3) * 40;
+
+    // Always start each scanline with white on black
+    ula_decode_attr( oric, 0x07 );
+    ula_decode_attr( oric, 0x08 );
+    ula_decode_attr( oric, 0x10 );
+
+    if( y < 200 )
+    {
+      if( oric->vid_mode & 0x04 ) // HIRES?
+      {
+        hires = SDL_TRUE;
+        rptr = &oric->mem[oric->vid_addr + y*40 -1];
+      } else {
+        hires = SDL_FALSE;
+        rptr = &oric->mem[oric->vid_addr + cy -1];
+      }
+    } else {
+      hires = SDL_FALSE;
+
+      rptr = &oric->mem[oric->vidbases[2] + cy -1];  // bb80 = bf68 - (200/8*40)
+    }
+    bitmask = (oric->frames&0x10)?0x3f:oric->vid_blinkmask;
+    
+    for( b=0; b<40; b++ )
+    {
+      c = *(++rptr);
+
+      /* if bits 6 and 5 are zero, the byte contains a serial attribute */
+      if( ( c & 0x60 ) == 0 )
+      {
+        ula_decode_attr( oric, c );
+        ula_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, 0 );
+        if( oric->vid_raster < oric->vid_special )
+        {
+          if( oric->vid_mode & 0x04 ) // HIRES?
+          {
+            hires = SDL_TRUE;
+            rptr = &oric->mem[oric->vid_addr + b + y*40];
+          } else {
+            hires = SDL_FALSE;
+            rptr = &oric->mem[oric->vid_addr + b + cy];
+          }
+        } else {
+          hires = SDL_FALSE;
+
+          rptr = &oric->mem[oric->vidbases[2] + b + cy];   // bb80 = bf68 - (200/8*40)
+        }
+        bitmask = (oric->frames&0x10)?0x3f:oric->vid_blinkmask;
+    
+      } else {
+        if( hires )
+        {
+          ula_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, c & bitmask );
+        } else {
+          int ch_ix, ch_dat, ch_line;
+          
+          ch_ix   = c & 0x7f;
+          if( oric->vid_textattrs & 0x02 )
+            ch_line = (y>>1) & 0x07;
+          else
+            ch_line = y & 0x07;
+          
+          ch_dat = oric->vid_ch_data[ (ch_ix<<3) | ch_line ] & bitmask;
+        
+          ula_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, ch_dat  );
+        }
+      }
+    }
+  }
+  oric->scrpt = scrpt;
+}
+
 // Draw one rasterline
 SDL_bool ula_doraster( struct machine *oric )
 {
@@ -164,16 +248,13 @@ SDL_bool ula_doraster( struct machine *oric )
 
   oric->scrpt = &oric->scr[y*240];
   
-  cy = ((oric->vid_raster - oric->vid_start)>>3) * 40;
+  cy = (y>>3) * 40;
 
   // Always start each scanline with white on black
   ula_decode_attr( oric, 0x07 );
   ula_decode_attr( oric, 0x08 );
   ula_decode_attr( oric, 0x10 );
 
-//  if( oric->vid_raster == oric->vid_special )
-//    oric->vid_addr = 0xbf68;
-  
   if( oric->vid_raster < oric->vid_special )
   {
     if( oric->vid_mode & 0x04 ) // HIRES?
@@ -187,7 +268,6 @@ SDL_bool ula_doraster( struct machine *oric )
   } else {
     hires = SDL_FALSE;
 
-//      read_addr = oric->vid_addr + b + ((y-200)>>3);
     rptr = &oric->mem[oric->vidbases[2] + cy -1];  // bb80 = bf68 - (200/8*40)
   }
   bitmask = (oric->frames&0x10)?0x3f:oric->vid_blinkmask;
@@ -214,7 +294,6 @@ SDL_bool ula_doraster( struct machine *oric )
       } else {
         hires = SDL_FALSE;
 
-//        read_addr = oric->vid_addr + b + ((y-200)>>3);
         rptr = &oric->mem[oric->vidbases[2] + b + cy];   // bb80 = bf68 - (200/8*40)
       }
       bitmask = (oric->frames&0x10)?0x3f:oric->vid_blinkmask;
