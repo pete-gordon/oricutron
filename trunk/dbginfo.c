@@ -57,7 +57,7 @@
 
 /* Version numbers of the debug format we understand */
 #define VER_MAJOR       1U
-#define VER_MINOR       1U
+#define VER_MINOR       2U
 
 /* Dynamic strings */
 typedef struct StrBuf StrBuf;
@@ -127,7 +127,8 @@ typedef enum {
     TOK_PLUS,                           /* + */
     TOK_EOL,                            /* \n */
 
-    TOK_ABSOLUTE,                       /* ABSOLUTE keyword */
+    TOK_FIRST_KEYWORD,
+    TOK_ABSOLUTE = TOK_FIRST_KEYWORD,   /* ABSOLUTE keyword */
     TOK_ADDRSIZE,                       /* ADDRSIZE keyword */
     TOK_COUNT,                          /* COUNT keyword */
     TOK_EQUATE,                         /* EQUATE keyword */
@@ -153,6 +154,7 @@ typedef enum {
     TOK_VALUE,                          /* VALUE keyword */
     TOK_VERSION,                        /* VERSION keyword */
     TOK_ZEROPAGE,                       /* ZEROPAGE keyword */
+    TOK_LAST_KEYWORD = TOK_ZEROPAGE,
 
     TOK_IDENT,                          /* To catch unknown keywords */
 } Token;
@@ -221,6 +223,8 @@ typedef struct SymInfo SymInfo;
 struct SymInfo {
     cc65_symbol_type    Type;           /* Type of symbol */
     long                Value;          /* Value of symbol */
+    cc65_size           Size;           /* Size of symbol */
+    unsigned            Segment;        /* Id of segment if any */
     char                SymName[1];     /* Name of symbol */
 };
 
@@ -283,6 +287,58 @@ static void xfree (void* Block)
 /* Free the block, do some debugging */
 {
     free (Block);
+}
+
+
+
+static cc65_lineinfo* new_cc65_lineinfo (unsigned Count)
+/* Allocate and return a cc65_lineinfo struct that is able to hold Count
+ * entries. Initialize the count field of the returned struct.
+ */
+{
+    cc65_lineinfo* L = xmalloc (sizeof (*L) - sizeof (L->data[0]) +
+                                Count * sizeof (L->data[0]));
+    L->count = Count;
+    return L;
+}
+
+
+
+static cc65_sourceinfo* new_cc65_sourceinfo (unsigned Count)
+/* Allocate and return a cc65_sourceinfo struct that is able to hold Count
+ * entries. Initialize the count field of the returned struct.
+ */
+{
+    cc65_sourceinfo* S = xmalloc (sizeof (*S) - sizeof (S->data[0]) +
+                                  Count * sizeof (S->data[0]));
+    S->count = Count;
+    return S;
+}
+
+
+
+static cc65_segmentinfo* new_cc65_segmentinfo (unsigned Count)
+/* Allocate and return a cc65_segmentinfo struct that is able to hold Count
+ * entries. Initialize the count field of the returned struct.
+ */
+{
+    cc65_segmentinfo* S = xmalloc (sizeof (*S) - sizeof (S->data[0]) +
+                                   Count * sizeof (S->data[0]));
+    S->count = Count;
+    return S;
+}
+
+
+
+static cc65_symbolinfo* new_cc65_symbolinfo (unsigned Count)
+/* Allocate and return a cc65_symbolinfo struct that is able to hold Count
+ * entries. Initialize the count field of the returned struct.
+ */
+{
+    cc65_symbolinfo* S = xmalloc (sizeof (*S) - sizeof (S->data[0]) +
+                                  Count * sizeof (S->data[0]));
+    S->count = Count;
+    return S;
 }
 
 
@@ -623,7 +679,7 @@ static void CollQuickSort (Collection* C, int Lo, int Hi,
    	    }
    	    if (I <= J) {
 		/* Swap I and J */
-		void* Tmp = Items[I];
+	    	void* Tmp = Items[I];
 		Items[I]  = Items[J];
 		Items[J]  = Tmp;
    	     	++I;
@@ -938,9 +994,27 @@ static void FreeFileInfo (FileInfo* F)
 static int CompareFileInfoByName (const void* L, const void* R)
 /* Helper function to sort file infos in a collection by name */
 {
-    /* Sort by file name */
-    return strcmp (((const FileInfo*) L)->FileName,
-                   ((const FileInfo*) R)->FileName);
+    /* Sort by file name. If names are equal, sort by timestamp,
+     * then sort by size. Which means, identical files will go
+     * together.
+     */
+    int Res = strcmp (((const FileInfo*) L)->FileName,
+                      ((const FileInfo*) R)->FileName);
+    if (Res != 0) {
+        return Res;
+    }
+    if (((const FileInfo*) L)->MTime > ((const FileInfo*) R)->MTime) {
+        return 1;
+    } else if (((const FileInfo*) L)->MTime < ((const FileInfo*) R)->MTime) {
+        return -1;
+    }
+    if (((const FileInfo*) L)->Size > ((const FileInfo*) R)->Size) {
+        return 1;
+    } else if (((const FileInfo*) L)->Size < ((const FileInfo*) R)->Size) {
+        return -1;
+    } else {
+        return 0;
+    }
 }
 
 
@@ -965,15 +1039,19 @@ static int CompareFileInfoById (const void* L, const void* R)
 
 
 
-static SymInfo* NewSymInfo (const StrBuf* Name, long Val, cc65_symbol_type Type)
+static SymInfo* NewSymInfo (const StrBuf* Name, long Val, 
+                            cc65_symbol_type Type, cc65_size Size,
+                            unsigned Segment)
 /* Create a new SymInfo struct, intialize and return it */
 {
     /* Allocate memory */
     SymInfo* S = xmalloc (sizeof (SymInfo) + SB_GetLen (Name));
 
     /* Initialize it */
-    S->Value = Val;
-    S->Type  = Type;
+    S->Type    = Type;
+    S->Value   = Val;
+    S->Size    = Size;
+    S->Segment = Segment;
     memcpy (S->SymName, SB_GetConstBuf (Name), SB_GetLen (Name) + 1);
 
     /* Return it */
@@ -1282,9 +1360,7 @@ static void FreeDbgInfo (DbgInfo* Info)
 
 
 static void CopyLineInfo (cc65_linedata* D, const LineInfo* L)
-/* Copy data from a LineInfo struct to the cc65_linedata struct returned to
- * the caller.
- */
+/* Copy data from a LineInfo struct to a cc65_linedata struct */
 {
     D->source_name  = L->File.Info->FileName;
     D->source_size  = L->File.Info->Size;
@@ -1305,14 +1381,38 @@ static void CopyLineInfo (cc65_linedata* D, const LineInfo* L)
 
 
 
-static void CopySymInfo (cc65_symboldata* D, const SymInfo* S)
-/* Copy data from a SymInfo struct to the cc65_symboldata struct returned to
- * the caller.
- */
+static void CopyFileInfo (cc65_sourcedata* D, const FileInfo* F)
+/* Copy data from a FileInfo struct to a cc65_sourcedata struct */
 {
-    D->symbol_name  = S->SymName;
-    D->symbol_type  = S->Type;
-    D->symbol_value = S->Value;
+    D->id           = F->Id;
+    D->source_name  = F->FileName;
+    D->source_size  = F->Size;
+    D->source_mtime = F->MTime;
+}
+
+
+
+static void CopySegInfo (cc65_segmentdata* D, const SegInfo* S)
+/* Copy data from a SegInfo struct to a cc65_segmentdata struct */
+{
+    D->id            = S->Id;
+    D->segment_name  = S->SegName;
+    D->segment_start = S->Start;
+    D->segment_size  = S->Size;
+    D->output_name   = S->OutputName;
+    D->output_offs   = S->OutputOffs;
+}
+
+
+
+static void CopySymInfo (cc65_symboldata* D, const SymInfo* S)
+/* Copy data from a SymInfo struct to a cc65_symboldata struct */
+{
+    D->symbol_name    = S->SymName;
+    D->symbol_type    = S->Type;
+    D->symbol_size    = S->Size;
+    D->symbol_value   = S->Value;
+    D->symbol_segment = S->Segment;
 }
 
 
@@ -1383,7 +1483,7 @@ static void UnknownKeyword (InputData* D)
     /* Output a warning */
     ParseError (D, CC65_WARNING, "Unknown keyword \"%s\" - skipping",
                 SB_GetConstBuf (&D->SVal));
-
+                            
     /* Skip the identifier */
     NextToken (D);
 
@@ -1465,6 +1565,7 @@ static void NextToken (InputData* D)
         { "range",      TOK_RANGE       },
         { "ro",         TOK_RO          },
         { "rw",         TOK_RW          },
+        { "seg",        TOK_SEGMENT     },
         { "segment",    TOK_SEGMENT     },
         { "size",       TOK_SIZE        },
         { "start",      TOK_START       },
@@ -1477,7 +1578,7 @@ static void NextToken (InputData* D)
 
 
     /* Skip whitespace */
-    while (D->C == ' ' || D->C == '\t') {
+    while (D->C == ' ' || D->C == '\t' || D->C == '\r') {
      	NextChar (D);
     }
 
@@ -1595,8 +1696,16 @@ static void NextToken (InputData* D)
 
 
 
+static int TokenIsKeyword (Token Tok)
+/* Return true if the given token is a keyword */
+{
+    return (Tok >= TOK_FIRST_KEYWORD && Tok <= TOK_LAST_KEYWORD);
+}
+
+
+
 static int TokenFollows (InputData* D, Token Tok, const char* Name)
-/* Check for a comma */
+/* Check for a specific token that follows. */
 {
     if (D->Tok != Tok) {
         ParseError (D, CC65_ERROR, "%s expected", Name);
@@ -1648,14 +1757,6 @@ static int ConsumeEqual (InputData* D)
 
 
 
-static int ConsumeMinus (InputData* D)
-/* Consume a minus sign */
-{
-    return Consume (D, TOK_MINUS, "'-'");
-}
-
-
-
 static void ConsumeEOL (InputData* D)
 /* Consume an end-of-line token, if we aren't at end-of-file */
 {
@@ -1673,7 +1774,7 @@ static void ConsumeEOL (InputData* D)
 static void ParseFile (InputData* D)
 /* Parse a FILE line */
 {
-    unsigned      Id = 0;  
+    unsigned      Id = 0;
     unsigned long Size = 0;
     unsigned long MTime = 0;
     StrBuf        FileName = STRBUF_INITIALIZER;
@@ -1695,15 +1796,16 @@ static void ParseFile (InputData* D)
 
         Token Tok;
 
-        /* Check for an unknown keyword */
-        if (D->Tok == TOK_IDENT) {
-            UnknownKeyword (D);
-            continue;
-        }
-
         /* Something we know? */
         if (D->Tok != TOK_ID   && D->Tok != TOK_MTIME &&
             D->Tok != TOK_NAME && D->Tok != TOK_SIZE) {
+
+            /* Try smart error recovery */
+            if (D->Tok == TOK_IDENT || TokenIsKeyword (D->Tok)) {
+                UnknownKeyword (D);
+                continue;
+            }
+
             /* Done */
             break;
         }
@@ -1824,16 +1926,17 @@ static void ParseLine (InputData* D)
 
         Token Tok;
 
-        /* Check for an unknown keyword */
-        if (D->Tok == TOK_IDENT) {
-            UnknownKeyword (D);
-            continue;
-        }
-
         /* Something we know? */
         if (D->Tok != TOK_COUNT   && D->Tok != TOK_FILE  &&
             D->Tok != TOK_LINE    && D->Tok != TOK_RANGE &&
             D->Tok != TOK_SEGMENT && D->Tok != TOK_TYPE) {
+
+            /* Try smart error recovery */
+            if (D->Tok == TOK_IDENT || TokenIsKeyword (D->Tok)) {
+                UnknownKeyword (D);
+                continue;
+            }
+
             /* Done */
             break;
         }
@@ -1872,14 +1975,18 @@ static void ParseLine (InputData* D)
                 }
                 Start = (cc65_addr) D->IVal;
                 NextToken (D);
-                if (!ConsumeMinus (D)) {
-                    goto ErrorExit;
+                if (D->Tok == TOK_MINUS) {
+                    /* End of range follows */
+                    NextToken (D);
+                    if (!IntConstFollows (D)) {
+                        goto ErrorExit;
+                    }
+                    End = (cc65_addr) D->IVal;
+                    NextToken (D);
+                } else {
+                    /* Start and end are identical */
+                    End = Start;
                 }
-                if (!IntConstFollows (D)) {
-                    goto ErrorExit;
-                }
-                End = (cc65_addr) D->IVal;
-                NextToken (D);
                 InfoBits |= ibRange;
                 break;
 
@@ -1979,17 +2086,17 @@ static void ParseSegment (InputData* D)
 
         Token Tok;
 
-        /* Check for an unknown keyword */
-        if (D->Tok == TOK_IDENT) {
-            UnknownKeyword (D);
-            continue;
-        }
-
         /* Something we know? */
         if (D->Tok != TOK_ADDRSIZE      && D->Tok != TOK_ID         &&
             D->Tok != TOK_NAME          && D->Tok != TOK_OUTPUTNAME &&
             D->Tok != TOK_OUTPUTOFFS    && D->Tok != TOK_SIZE       &&
             D->Tok != TOK_START         && D->Tok != TOK_TYPE) {
+
+            /* Try smart error recovery */
+            if (D->Tok == TOK_IDENT || TokenIsKeyword (D->Tok)) {
+                UnknownKeyword (D);
+                continue;
+            }
             /* Done */
             break;
         }
@@ -2126,7 +2233,9 @@ static void ParseSym (InputData* D)
 {
     cc65_symbol_type    Type;
     long                Value;
+    cc65_size           Size = 0;
     StrBuf              SymName = STRBUF_INITIALIZER;
+    unsigned            Segment = CC65_INV_ID;
     SymInfo*            S;
     enum {
         ibNone          = 0x00,
@@ -2134,6 +2243,9 @@ static void ParseSym (InputData* D)
         ibValue         = 0x02,
         ibAddrSize      = 0x04,
         ibType          = 0x08,
+        ibSize          = 0x10,
+        ibSegment       = 0x20,
+        ibFile          = 0x40,
         ibRequired      = ibSymName | ibValue | ibAddrSize | ibType,
     } InfoBits = ibNone;
 
@@ -2145,15 +2257,18 @@ static void ParseSym (InputData* D)
 
         Token Tok;
 
-        /* Check for an unknown keyword */
-        if (D->Tok == TOK_IDENT) {
-            UnknownKeyword (D);
-            continue;
-        }
-
         /* Something we know? */
-        if (D->Tok != TOK_ADDRSIZE      && D->Tok != TOK_NAME   &&
-            D->Tok != TOK_TYPE          && D->Tok != TOK_VALUE) {
+        if (D->Tok != TOK_ADDRSIZE      && D->Tok != TOK_FILE   &&
+            D->Tok != TOK_NAME          && D->Tok != TOK_SEGMENT&&
+            D->Tok != TOK_SIZE          && D->Tok != TOK_TYPE   &&
+            D->Tok != TOK_VALUE) {
+
+            /* Try smart error recovery */
+            if (D->Tok == TOK_IDENT || TokenIsKeyword (D->Tok)) {
+                UnknownKeyword (D);
+                continue;
+            }
+
             /* Done */
             break;
         }
@@ -2173,6 +2288,15 @@ static void ParseSym (InputData* D)
                 InfoBits |= ibAddrSize;
                 break;
 
+            case TOK_FILE:
+                if (!IntConstFollows (D)) {
+                    goto ErrorExit;
+                }
+                /* ### Drop value for now */
+                InfoBits |= ibFile;
+                NextToken (D);
+                break;
+
             case TOK_NAME:
                 if (!StrConstFollows (D)) {
                     goto ErrorExit;
@@ -2180,6 +2304,24 @@ static void ParseSym (InputData* D)
                 SB_Copy (&SymName, &D->SVal);
                 SB_Terminate (&SymName);
                 InfoBits |= ibSymName;
+                NextToken (D);
+                break;
+
+            case TOK_SEGMENT:
+                if (!IntConstFollows (D)) {
+                    goto ErrorExit;
+                }
+                Segment = (unsigned) D->IVal;
+                InfoBits |= ibSegment;
+                NextToken (D);
+                break;
+
+            case TOK_SIZE:
+                if (!IntConstFollows (D)) {
+                    goto ErrorExit;
+                }
+                Size = (cc65_size) D->IVal;
+                InfoBits |= ibSize;
                 NextToken (D);
                 break;
 
@@ -2238,7 +2380,7 @@ static void ParseSym (InputData* D)
     }
 
     /* Create the symbol info and remember it */
-    S = NewSymInfo (&SymName, Value, Type);
+    S = NewSymInfo (&SymName, Value, Type, Size, Segment);
     CollAppend (&D->Info->SymInfoByName, S);
     CollAppend (&D->Info->SymInfoByVal, S);
 
@@ -2337,11 +2479,11 @@ ErrorExit:
 
 
 
-static SegInfo* FindSegInfoById (InputData* D, unsigned Id)
+static SegInfo* FindSegInfoById (DbgInfo* D, unsigned Id)
 /* Find the SegInfo with a given Id */
 {
     /* Get a pointer to the segment info collection */
-    Collection* SegInfos = &D->Info->SegInfoById;
+    Collection* SegInfos = &D->SegInfoById;
 
     /* Do a binary search */
     int Lo = 0;
@@ -2371,12 +2513,18 @@ static SegInfo* FindSegInfoById (InputData* D, unsigned Id)
 
 
 
-static FileInfo* FindFileInfoByName (Collection* FileInfos, const char* FileName)
-/* Find the FileInfo for a given file name */
+static int FindFileInfoByName (Collection* FileInfos, const char* FileName,
+                               unsigned* Index)
+/* Find the FileInfo for a given file name. The function returns true if the
+ * name was found. In this case, Index contains the index of the first item
+ * that matches. If the item wasn't found, the function returns false and
+ * Index contains the insert position for FileName.
+ */
 {
     /* Do a binary search */
     int Lo = 0;
     int Hi = (int) CollCount (FileInfos) - 1;
+    int Found = 0;
     while (Lo <= Hi) {
 
         /* Mid of range */
@@ -2391,23 +2539,30 @@ static FileInfo* FindFileInfoByName (Collection* FileInfos, const char* FileName
         /* Found? */
         if (Res < 0) {
             Lo = Cur + 1;
-        } else if (Res > 0) {
-            Hi = Cur - 1;
         } else {
-            /* Found! */
-            return CurItem;
+            Hi = Cur - 1;
+            /* Since we may have duplicates, repeat the search until we've
+             * the first item that has a match.
+             */
+            if (Res == 0) {
+                Found = 1;
+            }
         }
     }
 
-    /* Not found */
-    return 0;
+    /* Pass back the index. This is also the insert position */
+    *Index = Lo;
+    return Found;
 }
 
 
 
-static FileInfo* FindFileInfoById (Collection* FileInfos, unsigned Id)
+static FileInfo* FindFileInfoById (DbgInfo* D, unsigned Id)
 /* Find the FileInfo with a given Id */
 {
+    /* Get a pointer to the collection */
+    Collection* FileInfos = &D->FileInfoById;
+
     /* Do a binary search */
     int Lo = 0;
     int Hi = (int) CollCount (FileInfos) - 1;
@@ -2462,52 +2617,22 @@ static void ProcessSegInfo (InputData* D)
 static void ProcessFileInfo (InputData* D)
 /* Postprocess file infos */
 {
+    unsigned I;
+
     /* Get pointers to the file info collections */
     Collection* FileInfoByName = &D->Info->FileInfoByName;
     Collection* FileInfoById   = &D->Info->FileInfoById;
 
-    /* First, sort the file infos, so we can check for duplicates and do
-     * binary search.
-     */
+    /* First, sort the file infos, so we can do a binary search */
     CollSort (FileInfoByName, CompareFileInfoByName);
 
-    /* Cannot work on an empty collection */
-    if (CollCount (FileInfoByName) > 0) {
-
-        /* Walk through the file infos sorted by name and check for duplicates.
-         * If we find some, warn and remove them, so the file infos are unique
-         * after that step.
-         */
-        FileInfo* F = CollAt (FileInfoByName, 0);
-        unsigned I = 1;
-        while (I < CollCount (FileInfoByName)) {
-            FileInfo* Next = CollAt (FileInfoByName, I);
-            if (strcmp (F->FileName, Next->FileName) == 0) {
-                /* Warn only if time stamp and/or size is different */
-                if (F->Size != Next->Size || F->MTime != Next->MTime) {
-                    ParseError (D,
-                                CC65_WARNING,
-                                "Duplicate file entry for \"%s\"",
-                                F->FileName);
-                }
-                /* Remove the duplicate entry */
-                FreeFileInfo (Next);
-                CollDelete (FileInfoByName, I);
-            } else {
-                /* This one is ok, check the next entry */
-                F = Next;
-                ++I;
-            }
-        }
-
-        /* Copy the file infos to another collection that will be sorted by id */
-        for (I = 0; I < CollCount (FileInfoByName); ++I) {
-            CollAppend (FileInfoById, CollAt (FileInfoByName, I));
-        }
-
-        /* Sort this collection */
-        CollSort (FileInfoById, CompareFileInfoById);
+    /* Copy the file infos to another collection that will be sorted by id */
+    for (I = 0; I < CollCount (FileInfoByName); ++I) {
+        CollAppend (FileInfoById, CollAt (FileInfoByName, I));
     }
+
+    /* Sort this collection */
+    CollSort (FileInfoById, CompareFileInfoById);
 }
 
 
@@ -2540,7 +2665,7 @@ static void ProcessLineInfo (InputData* D)
         if (LastFileInfo && LastFileInfo->Id == L->File.Id) {
             F = LastFileInfo;
         } else {
-            F = FindFileInfoById (&D->Info->FileInfoById, L->File.Id);
+            F = FindFileInfoById (D->Info, L->File.Id);
 
             /* If we have no corresponding file info, print a warning and
              * remove the line info.
@@ -2568,7 +2693,7 @@ static void ProcessLineInfo (InputData* D)
         if (LastSegInfo && LastSegInfo->Id == L->Seg.Id) {
             S = LastSegInfo;
         } else {
-            S = FindSegInfoById (D, L->Seg.Id);
+            S = FindSegInfoById (D->Info, L->Seg.Id);
 
             /* If we have no corresponding segment info, print a warning and
              * remove the line info.
@@ -2703,7 +2828,7 @@ static void ProcessSymInfo (InputData* D)
 
 
 
-static int FindSymInfoByName (Collection* SymInfos, const char* SymName, int* Index)
+static int FindSymInfoByName (Collection* SymInfos, const char* SymName, unsigned* Index)
 /* Find the SymInfo for a given file name. The function returns true if the
  * name was found. In this case, Index contains the index of the first item
  * that matches. If the item wasn't found, the function returns false and
@@ -2746,7 +2871,7 @@ static int FindSymInfoByName (Collection* SymInfos, const char* SymName, int* In
 
 
 
-static int FindSymInfoByValue (Collection* SymInfos, long Value, int* Index)
+static int FindSymInfoByValue (Collection* SymInfos, long Value, unsigned* Index)
 /* Find the SymInfo for a given value. The function returns true if the
  * value was found. In this case, Index contains the index of the first item
  * that matches. If the item wasn't found, the function returns false and
@@ -2787,7 +2912,7 @@ static int FindSymInfoByValue (Collection* SymInfos, long Value, int* Index)
 
 
 /*****************************************************************************/
-/*     	      	       	      	     Code				     */
+/*                             Debug info files                              */
 /*****************************************************************************/
 
 
@@ -2822,7 +2947,7 @@ cc65_dbginfo cc65_read_dbginfo (const char* FileName, cc65_errorfunc ErrFunc)
     D.Error    = ErrFunc;
 
     /* Open the input file */
-    D.F = fopen (D.FileName, "r");
+    D.F = fopen (D.FileName, "rt");
     if (D.F == 0) {
         /* Cannot open */
         ParseError (&D, CC65_ERROR,
@@ -2842,61 +2967,83 @@ cc65_dbginfo cc65_read_dbginfo (const char* FileName, cc65_errorfunc ErrFunc)
         ParseError (&D, CC65_ERROR,
                     "\"version\" keyword missing in first line - this is not "
                     "a valid debug info file");
-    } else {
-
-        /* Parse the version directive and check the version */
-        ParseVersion (&D);
-        if (D.MajorVersion > VER_MAJOR) {
-            ParseError (&D, CC65_WARNING,
-                        "The format of this debug info file is newer than what we "
-                        "know. Will proceed but probably fail. Version found = %u, "
-                        "version supported = %u",
-                        D.MajorVersion, VER_MAJOR);
-        }
-        ConsumeEOL (&D);
-
-        /* Parse lines */
-        while (D.Tok != TOK_EOF) {
-
-            switch (D.Tok) {
-
-                case TOK_FILE:
-                    ParseFile (&D);
-                    break;
-
-                case TOK_LINE:
-                    ParseLine (&D);
-                    break;
-
-                case TOK_SEGMENT:
-                    ParseSegment (&D);
-                    break;
-
-                case TOK_SYM:
-                    ParseSym (&D);
-                    break;
-
-                case TOK_IDENT:
-                    /* Output a warning, then skip the line with the unknown
-                     * keyword that may have been added by a later version.
-                     */
-                    ParseError (&D, CC65_WARNING,
-                                "Unknown keyword \"%s\" - skipping",
-                                SB_GetConstBuf (&D.SVal));
-
-                    SkipLine (&D);
-                    break;
-
-                default:
-                    UnexpectedToken (&D);
-
-            }
-
-            /* EOL or EOF must follow */
-            ConsumeEOL (&D);
-        }
+        goto CloseAndExit;
     }
 
+    /* Parse the version directive */
+    ParseVersion (&D);
+
+    /* Do several checks on the version number */
+    if (D.MajorVersion < VER_MAJOR) {
+        ParseError (
+            &D, CC65_ERROR,
+            "This is an old version of the debug info format that is no "
+            "longer supported. Version found = %u.%u, version supported "
+            "= %u.%u",
+             D.MajorVersion, D.MinorVersion, VER_MAJOR, VER_MINOR
+        );
+        goto CloseAndExit;
+    } else if (D.MajorVersion == VER_MAJOR && D.MinorVersion > VER_MINOR) {
+        ParseError (
+            &D, CC65_ERROR,
+            "This is a slightly newer version of the debug info format. "
+            "It might work, but you may get errors about unknown keywords "
+            "and similar. Version found = %u.%u, version supported = %u.%u",
+             D.MajorVersion, D.MinorVersion, VER_MAJOR, VER_MINOR
+        );
+    } else if (D.MajorVersion > VER_MAJOR) {
+        ParseError (
+            &D, CC65_WARNING,
+            "The format of this debug info file is newer than what we "
+            "know. Will proceed but probably fail. Version found = %u.%u, "
+            "version supported = %u.%u",
+             D.MajorVersion, D.MinorVersion, VER_MAJOR, VER_MINOR
+        );
+    }
+    ConsumeEOL (&D);
+
+    /* Parse lines */
+    while (D.Tok != TOK_EOF) {
+
+        switch (D.Tok) {
+
+            case TOK_FILE:
+                ParseFile (&D);
+                break;
+
+            case TOK_LINE:
+                ParseLine (&D);
+                break;
+
+            case TOK_SEGMENT:
+                ParseSegment (&D);
+                break;
+
+            case TOK_SYM:
+                ParseSym (&D);
+                break;
+
+            case TOK_IDENT:
+                /* Output a warning, then skip the line with the unknown
+                 * keyword that may have been added by a later version.
+                 */
+                ParseError (&D, CC65_WARNING,
+                            "Unknown keyword \"%s\" - skipping",
+                            SB_GetConstBuf (&D.SVal));
+
+                SkipLine (&D);
+                break;
+
+            default:
+                UnexpectedToken (&D);
+
+        }
+
+        /* EOL or EOF must follow */
+        ConsumeEOL (&D);
+    }
+
+CloseAndExit:
     /* Close the file */
     fclose (D.F);
 
@@ -2946,6 +3093,12 @@ void cc65_free_dbginfo (cc65_dbginfo Handle)
 
 
 
+/*****************************************************************************/
+/*                                 Line info                                 */
+/*****************************************************************************/
+
+
+
 cc65_lineinfo* cc65_lineinfo_byaddr (cc65_dbginfo Handle, unsigned long Addr)
 /* Return line information for the given address. The function returns 0
  * if no line information was found.
@@ -2966,8 +3119,7 @@ cc65_lineinfo* cc65_lineinfo_byaddr (cc65_dbginfo Handle, unsigned long Addr)
         unsigned I;
 
         /* Prepare the struct we will return to the caller */
-        D = xmalloc (sizeof (*D) + (E->Count - 1) * sizeof (D->data[0]));
-        D->count = E->Count;
+        D = new_cc65_lineinfo (E->Count);
         if (E->Count == 1) {
             CopyLineInfo (D->data, E->Data);
         } else {
@@ -2992,8 +3144,10 @@ cc65_lineinfo* cc65_lineinfo_byname (cc65_dbginfo Handle, const char* FileName,
 {
     DbgInfo*        Info;
     FileInfo*       F;
-    LineInfo*       L;
     cc65_lineinfo*  D;
+    int             Found;
+    unsigned        Index;
+    Collection      LineInfoList = COLLECTION_INITIALIZER;
 
     /* Check the parameter */
     assert (Handle != 0);
@@ -3001,26 +3155,53 @@ cc65_lineinfo* cc65_lineinfo_byname (cc65_dbginfo Handle, const char* FileName,
     /* The handle is actually a pointer to a debug info struct */
     Info = (DbgInfo*) Handle;
 
-    /* Get the file info */
-    F = FindFileInfoByName (&Info->FileInfoByName, FileName);
-    if (F == 0) {
-        /* File not found */
+    /* Search for the first file with this name */
+    Found = FindFileInfoByName (&Info->FileInfoByName, FileName, &Index);
+    if (!Found) {
         return 0;
     }
 
-    /* Search in the file for the given line */
-    L = FindLineInfoByLine (F, Line);
-    if (L == 0) {
-        /* Line not found */
+    /* Loop over all files with this name */
+    F = CollAt (&Info->FileInfoByName, Index);
+    while (Found) {
+
+        /* Search in the file for the given line */
+        LineInfo* L = FindLineInfoByLine (F, Line);
+        if (L) {
+            /* Remember the line info */
+            CollAppend (&LineInfoList, L);
+        }
+
+        /* Next entry */
+        ++Index;
+
+        /* If the index is valid, check if the next entry is a file with the
+         * same name.
+         */
+        if (Index < CollCount (&Info->FileInfoByName)) {
+            F = CollAt (&Info->FileInfoByName, Index);
+            Found = (strcmp (F->FileName, FileName) == 0);
+        } else {
+            Found = 0;
+        }
+    }
+
+    /* Check if we have entries */
+    if (CollCount (&LineInfoList) == 0) {
+        /* Nope */
         return 0;
     }
 
     /* Prepare the struct we will return to the caller */
-    D = xmalloc (sizeof (*D));
-    D->count = 1;
+    D = new_cc65_lineinfo (CollCount (&LineInfoList));
 
-    /* Copy data */
-    CopyLineInfo (D->data, L);
+    /* Copy the data */
+    for (Index = 0; Index < CollCount (&LineInfoList); ++Index) {
+        CopyLineInfo (D->data + Index, CollAt (&LineInfoList, Index));
+    }
+
+    /* Delete the temporary data collection */
+    DoneCollection (&LineInfoList);
 
     /* Return the allocated struct */
     return D;
@@ -3037,6 +3218,12 @@ void cc65_free_lineinfo (cc65_dbginfo Handle, cc65_lineinfo* Info)
     /* Just free the memory */
     xfree (Info);
 }
+
+
+
+/*****************************************************************************/
+/*                               Source files                                */
+/*****************************************************************************/
 
 
 
@@ -3057,26 +3244,75 @@ cc65_sourceinfo* cc65_get_sourcelist (cc65_dbginfo Handle)
     /* Get a pointer to the file list */
     FileInfoByName = &Info->FileInfoByName;
 
-    /* Allocate memory for the data structure returned to the caller */
-    D = xmalloc (sizeof (*D) - sizeof (D->data[0]) +
-                 CollCount (FileInfoByName) * sizeof (D->data[0]));
+    /* Allocate memory for the data structure returned to the caller.
+     * Note: To simplify things, we will allocate the maximum amount of
+     * memory, we may need later. This saves us the overhead of walking
+     * the list twice.
+     */
+    D = new_cc65_sourceinfo (CollCount (FileInfoByName));
 
-    /* Fill in the data */
-    D->count = CollCount (FileInfoByName);
+    /* Fill in the data, skipping duplicate entries */
+    D->count = 0;
     for (I = 0; I < CollCount (FileInfoByName); ++I) {
 
         /* Get this item */
         const FileInfo* F = CollAt (FileInfoByName, I);
 
+        /* If this is not the first entry, compare it to the last one and
+         * don't add it if it is identical.
+         */
+        if (I > 0 && CompareFileInfoByName (F, CollAt (FileInfoByName, I-1)) == 0) {
+            continue;
+        }
+
         /* Copy the data */
-        D->data[I].source_name  = F->FileName;
-        D->data[I].source_size  = F->Size;
-        D->data[I].source_mtime = F->MTime;
+        CopyFileInfo (D->data + D->count, F);
+
+        /* One more valid entry */
+        ++D->count;
     }
 
     /* Return the result */
     return D;
 }
+
+
+
+cc65_sourceinfo* cc65_sourceinfo_byid (cc65_dbginfo Handle, unsigned Id)
+/* Return information about a source file with a specific id. The function
+ * returns NULL if the id is invalid (no such source file) and otherwise a
+ * cc65_sourceinfo structure with one entry that contains the requested
+ * source file information.
+ */
+{
+    DbgInfo*            Info;
+    const FileInfo*     F;
+    cc65_sourceinfo*    D;
+
+    /* Check the parameter */
+    assert (Handle != 0);
+
+    /* The handle is actually a pointer to a debug info struct */
+    Info = (DbgInfo*) Handle;
+
+    /* Search for the Id */
+    F = FindFileInfoById (Info, Id);
+
+    /* If not found return NULL */
+    if (F == 0) {
+        return 0;
+    }
+
+    /* Allocate memory for the data structure returned to the caller */
+    D = new_cc65_sourceinfo (1);
+
+    /* Fill in the data */
+    CopyFileInfo (D->data, F);
+
+    /* Return the result */
+    return D;
+}
+
 
 
 
@@ -3089,6 +3325,12 @@ void cc65_free_sourceinfo (cc65_dbginfo Handle, cc65_sourceinfo* Info)
     /* Free the memory */
     xfree (Info);
 }
+
+
+
+/*****************************************************************************/
+/*                                 Segments                                  */
+/*****************************************************************************/
 
 
 
@@ -3110,23 +3352,50 @@ cc65_segmentinfo* cc65_get_segmentlist (cc65_dbginfo Handle)
     SegInfoByName = &Info->SegInfoByName;
 
     /* Allocate memory for the data structure returned to the caller */
-    D = xmalloc (sizeof (*D) - sizeof (D->data[0]) +
-                 CollCount (SegInfoByName) * sizeof (D->data[0]));
+    D = new_cc65_segmentinfo (CollCount (SegInfoByName));
 
     /* Fill in the data */
     D->count = CollCount (SegInfoByName);
     for (I = 0; I < CollCount (SegInfoByName); ++I) {
-
-        /* Get this item */
-        const SegInfo* S = CollAt (SegInfoByName, I);
-
         /* Copy the data */
-        D->data[I].segment_name  = S->SegName;
-        D->data[I].segment_start = S->Start;
-        D->data[I].segment_size  = S->Size;
-        D->data[I].output_name   = S->OutputName;
-        D->data[I].output_offs   = S->OutputOffs;
+        CopySegInfo (D->data + I, CollAt (SegInfoByName, I));
     }
+
+    /* Return the result */
+    return D;
+}
+
+
+
+cc65_segmentinfo* cc65_segmentinfo_byid (cc65_dbginfo Handle, unsigned Id)
+/* Return information about a segment with a specific id. The function returns
+ * NULL if the id is invalid (no such segment) and otherwise a segmentinfo
+ * structure with one entry that contains the requested segment information.
+ */
+{
+    DbgInfo*            Info;
+    const SegInfo*      S;
+    cc65_segmentinfo*   D;
+
+    /* Check the parameter */
+    assert (Handle != 0);
+
+    /* The handle is actually a pointer to a debug info struct */
+    Info = (DbgInfo*) Handle;
+
+    /* Search for the Id */
+    S = FindSegInfoById (Info, Id);
+
+    /* If not found return NULL */
+    if (S == 0) {
+        return 0;
+    }
+
+    /* Allocate memory for the data structure returned to the caller */
+    D = new_cc65_segmentinfo (1);
+
+    /* Fill in the data */
+    CopySegInfo (D->data, S);
 
     /* Return the result */
     return D;
@@ -3146,6 +3415,12 @@ void cc65_free_segmentinfo (cc65_dbginfo Handle, cc65_segmentinfo* Info)
 
 
 
+/*****************************************************************************/
+/*                                  Symbols                                  */
+/*****************************************************************************/
+
+
+
 cc65_symbolinfo* cc65_symbol_byname (cc65_dbginfo Handle, const char* Name)
 /* Return a list of symbols with a given name. The function returns NULL if
  * no symbol with this name was found.
@@ -3155,7 +3430,7 @@ cc65_symbolinfo* cc65_symbol_byname (cc65_dbginfo Handle, const char* Name)
     Collection*         SymInfoByName;
     cc65_symbolinfo*    D;
     unsigned            I;
-    int                 Index;
+    unsigned            Index;
     unsigned            Count;
 
     /* Check the parameter */
@@ -3186,7 +3461,7 @@ cc65_symbolinfo* cc65_symbol_byname (cc65_dbginfo Handle, const char* Name)
     }
 
     /* Allocate memory for the data structure returned to the caller */
-    D = xmalloc (sizeof (*D) + (Count - 1) * sizeof (D->data[0]));
+    D = new_cc65_symbolinfo (Count);
 
     /* Fill in the data */
     D->count = Count;
@@ -3203,7 +3478,7 @@ cc65_symbolinfo* cc65_symbol_byname (cc65_dbginfo Handle, const char* Name)
 
 cc65_symbolinfo* cc65_symbol_inrange (cc65_dbginfo Handle, cc65_addr Start, cc65_addr End)
 /* Return a list of labels in the given range. End is inclusive. The function
- * return NULL if no symbols withing the given range are found. Non label
+ * return NULL if no symbols within the given range are found. Non label
  * symbols are ignored and not returned.
  */
 {
@@ -3212,7 +3487,7 @@ cc65_symbolinfo* cc65_symbol_inrange (cc65_dbginfo Handle, cc65_addr Start, cc65
     Collection          SymInfoList = COLLECTION_INITIALIZER;
     cc65_symbolinfo*    D;
     unsigned            I;
-    int                 Index;
+    unsigned            Index;
 
     /* Check the parameter */
     assert (Handle != 0);
@@ -3260,7 +3535,7 @@ cc65_symbolinfo* cc65_symbol_inrange (cc65_dbginfo Handle, cc65_addr Start, cc65
     }
 
     /* Allocate memory for the data structure returned to the caller */
-    D = xmalloc (sizeof (*D) + (CollCount (&SymInfoList)- 1) * sizeof (D->data[0]));
+    D = new_cc65_symbolinfo (CollCount (&SymInfoList));
 
     /* Fill in the data */
     D->count = CollCount (&SymInfoList);

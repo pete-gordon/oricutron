@@ -38,6 +38,7 @@ Credits
   Stefan Haubenthal
   Ibisum
   Kamel Biskri
+  Ullrich von Bassewitz
 
 
   Amiga & Windows ports
