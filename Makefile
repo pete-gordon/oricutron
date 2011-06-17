@@ -75,6 +75,7 @@ ifeq ($(PLATFORM),morphos)
 CFLAGS += `sdl-config --cflags` -D__OPENGL_AVAILABLE__
 LFLAGS += `sdl-config --libs` -s
 FILEREQ_OBJ = filereq_amiga.o
+EXTRAOBJS = dbginfo.o
 endif
 
 # Windows 32bit
