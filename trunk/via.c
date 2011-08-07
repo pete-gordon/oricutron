@@ -1295,18 +1295,18 @@ unsigned char via_read( struct via *v, int offset )
       return v->ddra;
     case VIA_T1C_L:
       via_clr_irq( v, VIRQF_T1 );
-      return v->t1c&0xff;
+      return (v->t1c+1)&0xff;
     case VIA_T1C_H:
-      return v->t1c>>8;
+      return (v->t1c+1)>>8;		// Timer read happens 1 cycle before the end of the instruction, so we add 1
     case VIA_T1L_L:
       return v->t1l_l;
     case VIA_T1L_H:
       return v->t1l_h;
     case VIA_T2C_L:
       via_clr_irq( v, VIRQF_T2 );
-      return v->t2c&0xff;
+      return (v->t2c+1)&0xff;
     case VIA_T2C_H:
-      return v->t2c>>8;
+      return (v->t2c+1)>>8;
     case VIA_SR:
       v->srcount = 0;
       v->srtime  = 0;
