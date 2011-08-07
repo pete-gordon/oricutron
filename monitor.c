@@ -40,7 +40,6 @@
 #include "6551.h"
 #include "machine.h"
 #include "ula.h"
-#include "dbginfo.h"
 
 #define LOG_DEBUG 0
 
