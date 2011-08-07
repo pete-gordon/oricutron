@@ -14,14 +14,14 @@ VERSION_MIN = 7
 VERSION_REV = 0
 VERSION_FULL = $(VERSION_MAJ).$(VERSION_MIN).$(VERSION_REV)
 APP_NAME = Oricutron
-VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) (c)2010 Peter Gordon (pete@petergordon.org.uk)"
-#COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) ©2010 Peter Gordon (pete@petergordon.org.uk)"
+VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) (c)2011 Peter Gordon (pete@petergordon.org.uk)"
+#COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) ©2011 Peter Gordon (pete@petergordon.org.uk)"
 
 ####### DEFAULT SETTINGS HERE #######
 
 CFLAGS = -Wall -O3
-#CFLAGS += -DAPP_NAME_FULL='"$(APP_NAME) WIP"'
-CFLAGS += -DAPP_NAME_FULL='"$(APP_NAME) $(VERSION_MAJ).$(VERSION_MIN)"'
+CFLAGS += -DAPP_NAME_FULL='"$(APP_NAME) WIP"'
+#CFLAGS += -DAPP_NAME_FULL='"$(APP_NAME) $(VERSION_MAJ).$(VERSION_MIN)"'
 CFLAGS += -DVERSION_COPYRIGHTS='$(VERSION_COPYRIGHTS)'
 LFLAGS = 
 
@@ -75,7 +75,6 @@ ifeq ($(PLATFORM),morphos)
 CFLAGS += `sdl-config --cflags` -D__OPENGL_AVAILABLE__
 LFLAGS += `sdl-config --libs` -s
 FILEREQ_OBJ = filereq_amiga.o
-EXTRAOBJS = dbginfo.o
 endif
 
 # Windows 32bit
