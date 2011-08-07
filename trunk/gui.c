@@ -1,6 +1,6 @@
 /*
 **  Oricutron
-**  Copyright (C) 2009-2010 Peter Gordon
+**  Copyright (C) 2009-2011 Peter Gordon
 **
 **  This program is free software; you can redistribute it and/or
 **  modify it under the terms of the GNU General Public License
@@ -235,7 +235,7 @@ struct osdmenuitem aboutitems[] = { { "",                                  NULL,
                                     { APP_NAME_FULL,                       NULL,   0, NULL, 0, OMIF_BRIGHT|OMIF_CENTRED },
                                     { "http://code.google.com/p/oriculator/",NULL,  0, gotosite, 0, OMIF_CENTRED },
                                     { "",                                  NULL,   0, NULL, 0, 0 },
-                                    { "(C)2010 Peter Gordon",              NULL,   0, NULL, 0, OMIF_BRIGHT|OMIF_CENTRED },
+                                    { "(C)2011 Peter Gordon",              NULL,   0, NULL, 0, OMIF_BRIGHT|OMIF_CENTRED },
                                     { "http://www.petergordon.org.uk",     NULL,   0, gotosite, 0, OMIF_CENTRED },
                                     { "",                                  NULL,   0, NULL, 0, 0 },
                                     { "Additional programming",            NULL,   0, NULL, 0, OMIF_BRIGHT|OMIF_CENTRED },
