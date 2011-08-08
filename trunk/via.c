@@ -916,8 +916,7 @@ void via_clock( struct via *v, unsigned int cycles )
         v->t1c = (v->t1l_h<<8)|v->t1l_l;       // Reload timer
       }
 
-      if( v->t1c >= crem )
-        v->t1c -= crem;
+      v->t1c -= crem;
       break;
   }
 

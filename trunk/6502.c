@@ -182,14 +182,14 @@ void m6502_reset( struct m6502 *cpu )
 #define BADDR_ZIX baddr = (unsigned char)(cpu->read( cpu, cpu->pc )+cpu->x); baddr = (cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr )
 #define BADDR_ZIY baddr = cpu->read( cpu, cpu->pc ); baddr = ((cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr ))+cpu->y
 
-#define NBADDR_ZP  baddr = cpu->read( cpu, nextpc+1 )
-#define NBADDR_ZPX baddr = (cpu->read( cpu, nextpc+1 ) + cpu->x)&0xff
-#define NBADDR_ZPY baddr = (cpu->read( cpu, nextpc+1 ) + cpu->y)&0xff
-#define NBADDR_ABS baddr = (cpu->read( cpu, nextpc+2 )<<8) | cpu->read( cpu, nextpc+1 )
-#define NBADDR_ABX baddr = ((cpu->read( cpu, nextpc+2 )<<8) | cpu->read( cpu, nextpc+1 ))+cpu->x
-#define NBADDR_ABY baddr = ((cpu->read( cpu, nextpc+2 )<<8) | cpu->read( cpu, nextpc+1 ))+cpu->y
-#define NBADDR_ZIX baddr = (unsigned char)(cpu->read( cpu, nextpc+1 )+cpu->x); baddr = (cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr )
-#define NBADDR_ZIY baddr = cpu->read( cpu, nextpc+1 ); baddr = ((cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr ))+cpu->y
+#define NBADDR_ZP  baddr = cpu->read( cpu, cpu->calcpc+1 )
+#define NBADDR_ZPX baddr = (cpu->read( cpu, cpu->calcpc+1 ) + cpu->x)&0xff
+#define NBADDR_ZPY baddr = (cpu->read( cpu, cpu->calcpc+1 ) + cpu->y)&0xff
+#define NBADDR_ABS baddr = (cpu->read( cpu, cpu->calcpc+2 )<<8) | cpu->read( cpu, cpu->calcpc+1 )
+#define NBADDR_ABX baddr = ((cpu->read( cpu, cpu->calcpc+2 )<<8) | cpu->read( cpu, cpu->calcpc+1 ))+cpu->x
+#define NBADDR_ABY baddr = ((cpu->read( cpu, cpu->calcpc+2 )<<8) | cpu->read( cpu, cpu->calcpc+1 ))+cpu->y
+#define NBADDR_ZIX baddr = (unsigned char)(cpu->read( cpu, cpu->calcpc+1 )+cpu->x); baddr = (cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr )
+#define NBADDR_ZIY baddr = cpu->read( cpu, cpu->calcpc+1 ); baddr = ((cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr ))+cpu->y
 
 #define R_BADDR_ZP   BADDR_ZP; raddr = baddr; rlen = 1
 #define W_BADDR_ZP   BADDR_ZP; waddr = baddr; wlen = 1
@@ -245,18 +245,18 @@ void m6502_reset( struct m6502 *cpu )
 #define PAGECHECK(n) ( ((baddr+n)&0xff00) != (baddr&0xff00) )
 
 // Page check to see if a branch takes you out of the current page
-#define BPAGECHECK ( (baddr&0xff00) != (nextpc&0xff00) )
+#define BPAGECHECK ( (baddr&0xff00) != (cpu->calcpc&0xff00) )
 
 // Macro to perform branch logic
 #define BRANCH(condition) if( condition ) cpu->pc += ((signed char)cpu->read( cpu, cpu->pc )); cpu->pc++;
 
 // Macro to calculate cycles of a branch instruction
 #define IBRANCH(condition) cpu->icycles = 2;\
-                           offs = (signed char)cpu->read( cpu, nextpc+1 );\
+                           offs = (signed char)cpu->read( cpu, cpu->calcpc+1 );\
                            if( condition )\
                            {\
                              cpu->icycles++;\
-                             baddr = nextpc+2+offs;\
+                             baddr = cpu->calcpc+2+offs;\
                              if( BPAGECHECK ) cpu->icycles++;\
                            }\
 
@@ -268,26 +268,30 @@ void m6502_reset( struct m6502 *cpu )
 
 
 // Get the number of cycles the NEXT cpu instruction will take
+// Returns TRUE if we've hit some kind of breakpoint
 SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
 {
   unsigned short baddr;
   unsigned char nextop;
-  unsigned short nextpc;
   signed char offs;
   unsigned int extra = 0;
   int i;
   
-  nextpc = cpu->pc;
   if( cpu->nmi )
   {
     extra = 7;
-    nextpc = (cpu->read( cpu, 0xfffb )<<8)|cpu->read( cpu, 0xfffa );
+    cpu->calcpc = (cpu->read( cpu, 0xfffb )<<8)|cpu->read( cpu, 0xfffa );
+	cpu->calcint = 2;
   } else if( ( cpu->irq ) && ( cpu->f_i == 0 ) ) {
     extra = 7;
-    nextpc = (cpu->read( cpu, 0xfffb )<<8)|cpu->read( cpu, 0xfffa );
+    cpu->calcpc = (cpu->read( cpu, 0xfffb )<<8)|cpu->read( cpu, 0xfffa );
+	cpu->calcint = 1;
+  } else {
+    cpu->calcpc = cpu->pc;
+	cpu->calcint = 0;
   }
 
-  nextop = cpu->read( cpu, nextpc );
+  nextop = cpu->read( cpu, cpu->calcpc );
 
   if( dobp )
   {
@@ -295,7 +299,7 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
     {
       for( i=0; i<16; i++ )
       {
-        if( ( cpu->breakpoints[i] != -1 ) && ( nextpc == cpu->breakpoints[i] ) )
+        if( ( cpu->breakpoints[i] != -1 ) && ( cpu->calcpc == cpu->breakpoints[i] ) )
           return SDL_TRUE;
       }
     }
@@ -466,7 +470,7 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
           break;
 
         case 0x6C: // { "JMP", AM_IND },  // 6C
-          raddr = (cpu->read( cpu, nextpc+2 )<<8)|cpu->read( cpu, nextpc+1 );
+          raddr = (cpu->read( cpu, cpu->calcpc+2 )<<8)|cpu->read( cpu, cpu->calcpc+1 );
           rlen = 2;
           break;
           
@@ -764,7 +768,6 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
 }
 
 // Execute one 6502 instruction
-// Returns TRUE if we've hit some kind of breakpoint
 void m6502_inst( struct m6502 *cpu )
 {
   unsigned char op, v;
@@ -781,13 +784,12 @@ void m6502_inst( struct m6502 *cpu )
       cpu->nmi = SDL_FALSE;
   }
 
-  if( ( cpu->nmi ) ||
-      ( ( cpu->irq ) && ( cpu->f_i == 0 ) ) )
+  if( cpu->calcint )
   {
     PUSHW( cpu->pc );
     PUSHB( MAKEFLAGSBC );
     cpu->f_d = 0;
-    if( cpu->nmi )
+    if( cpu->calcint == 2 )
     {
       cpu->pc = (cpu->read( cpu, 0xfffb )<<8)|cpu->read( cpu, 0xfffa );
       cpu->nmi = SDL_FALSE;
