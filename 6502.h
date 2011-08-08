@@ -80,7 +80,7 @@ struct m6502
   Uint32   cycles;
   Uint8    a, x, y, sp;
   Uint8    f_c, f_z, f_i, f_d, f_b, f_v, f_n;
-  Uint16   pc, lastpc;
+  Uint16   pc, lastpc, calcpc, calcint;
   SDL_bool nmi;
   Uint8    irq, nmicount;
   void (*write)(struct m6502 *,Uint16,Uint8);
