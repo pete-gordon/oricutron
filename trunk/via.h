@@ -50,7 +50,7 @@ struct via
   unsigned char ca1, ca2;
   unsigned char cb1, cb2;
   unsigned char srcount;
-  unsigned char t1reload;
+  unsigned char t1reload, t2reload;
   Sint16 srtime;
 
   // Internal state stuff
