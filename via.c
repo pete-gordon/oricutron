@@ -722,7 +722,7 @@ void via_write_portb( struct via *v, unsigned char mask, unsigned char data )
   // Is timer 2 counting PB6 negative transisions?
   if( ( v->acr & ACRF_T2CON ) == 0 ) return;
 
-  // Was there a negative transision?
+  // Was there a negative transition?
   if( ( !lastpb6 ) || ( v->irb&0x40 ) ) return;
 
   // Count it
@@ -754,6 +754,7 @@ void via_init( struct via *v, struct machine *oric, int viatype )
   v->t2l_l = 0;
   v->t2l_h = 0;
   v->t2c = 0;
+  v->t2reload = 0;
   v->sr = 0;
   v->acr = 0;
   v->pcr = 0;
@@ -918,24 +919,30 @@ void via_clock( struct via *v, unsigned int cycles )
         v->t1c = (v->t1l_h<<8)|v->t1l_l;       // Reload timer
       }
 
-      if( v->t1c >= crem )
-        v->t1c -= crem;
+      v->t1c -= crem;
       break;
   }
 
   // Timer 2 tick-tock
   if( ( v->acr & ACRF_T2CON ) == 0 )
   {
+	crem = cycles;
+	if( v->t2reload )
+	{
+	  crem--;
+	  v->t2reload = 0;
+	}
+
     // Timer 2 is one-shot
     if( v->t2run )
     {
-      if( cycles > v->t2c )
+      if( crem > v->t2c )
       {
         via_set_irq( v, VIRQF_T2 );
         v->t2run = SDL_FALSE;
       }
     }
-    v->t2c -= cycles;
+    v->t2c -= crem;
   }
 
   switch( v->acr & ACRF_SRCON )
@@ -1110,6 +1117,7 @@ void via_write( struct via *v, int offset, unsigned char data )
     case VIA_T2C_H:
       v->t2l_h = data;
       v->t2c = (v->t2l_h<<8)|v->t2l_l;
+	  v->t2reload = 1;
       via_clr_irq( v, VIRQF_T2 );
       v->t2run = SDL_TRUE;
       break;
@@ -1297,18 +1305,18 @@ unsigned char via_read( struct via *v, int offset )
       return v->ddra;
     case VIA_T1C_L:
       via_clr_irq( v, VIRQF_T1 );
-      return (v->t1c+1)&0xff;
+      return v->t1c&0xff;
     case VIA_T1C_H:
-      return (v->t1c+1)>>8;		// Timer read happens 1 cycle before the end of the instruction, so we add 1
+      return v->t1c>>8;
     case VIA_T1L_L:
       return v->t1l_l;
     case VIA_T1L_H:
       return v->t1l_h;
     case VIA_T2C_L:
       via_clr_irq( v, VIRQF_T2 );
-      return (v->t2c+1)&0xff;
+      return v->t2c&0xff;
     case VIA_T2C_H:
-      return (v->t2c+1)>>8;
+      return v->t2c>>8;
     case VIA_SR:
       v->srcount = 0;
       v->srtime  = 0;

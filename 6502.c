@@ -252,9 +252,9 @@ void m6502_reset( struct m6502 *cpu )
 
 // Macro to calculate cycles of a branch instruction
 #define IBRANCH(condition) cpu->icycles = 2;\
-                           offs = (signed char)cpu->read( cpu, cpu->calcpc+1 );\
                            if( condition )\
                            {\
+                             offs = (signed char)cpu->read( cpu, cpu->calcpc+1 );\
                              cpu->icycles++;\
                              baddr = cpu->calcpc+2+offs;\
                              if( BPAGECHECK ) cpu->icycles++;\
