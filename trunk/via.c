@@ -348,7 +348,8 @@ void tape_ticktock( struct machine *oric, int cycles )
       }
 
       // "Jump" to the end of the cassette sync routine
-      oric->cpu.pc = oric->pch_tt_getsync_end_pc;
+      oric->cpu.calcpc = oric->pch_tt_getsync_end_pc;
+	  oric->cpu.calcop = oric->cpu.read(&oric->cpu, oric->cpu.calcpc);
       return;
     }
 
@@ -366,7 +367,8 @@ void tape_ticktock( struct machine *oric, int cycles )
       if( oric->pch_tt_readbyte_storezero_addr != -1 ) oric->cpu.write( &oric->cpu, oric->pch_tt_readbyte_storezero_addr, 0x00 );
 
       // Jump to the end of the read byte routine
-      oric->cpu.pc = oric->pch_tt_readbyte_end_pc;
+      oric->cpu.calcpc = oric->pch_tt_readbyte_end_pc;
+	  oric->cpu.calcop = oric->cpu.read( &oric->cpu, oric->cpu.calcpc );
       if( oric->tapeoffs >= oric->tapelen ) refreshtape = SDL_TRUE;
     }
     return;
@@ -916,7 +918,8 @@ void via_clock( struct via *v, unsigned int cycles )
         v->t1c = (v->t1l_h<<8)|v->t1l_l;       // Reload timer
       }
 
-      v->t1c -= crem;
+      if( v->t1c >= crem )
+        v->t1c -= crem;
       break;
   }
 

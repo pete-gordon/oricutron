@@ -78,17 +78,18 @@ struct m6502
   Sint32   rastercycles;
   Uint32   icycles;
   Uint32   cycles;
-  Uint8    a, x, y, sp;
-  Uint8    f_c, f_z, f_i, f_d, f_b, f_v, f_n;
   Uint16   pc, lastpc, calcpc, calcint;
   SDL_bool nmi;
-  Uint8    irq, nmicount;
   void (*write)(struct m6502 *,Uint16,Uint8);
   unsigned char (*read)(struct m6502 *,Uint16);
   SDL_bool anybp, anymbp;
   Sint32   breakpoints[16];
   struct membreakpoint membreakpoints[16];
   void    *userdata;
+
+  Uint8    a, x, y, sp;
+  Uint8    f_c, f_z, f_i, f_d, f_b, f_v, f_n;
+  Uint8    irq, nmicount, calcop;
 };
 
 void m6502_init( struct m6502 *cpu, void *userdata, SDL_bool nukebreakpoints );

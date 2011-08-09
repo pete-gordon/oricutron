@@ -62,7 +62,7 @@ void m6502_init( struct m6502 *cpu, void *userdata, SDL_bool nukebreakpoints )
     {
       cpu->breakpoints[i] = -1;
       cpu->membreakpoints[i].flags = 0;
-	}
+    }
     cpu->anybp = SDL_FALSE;
     cpu->anymbp = SDL_FALSE;
   }
@@ -191,30 +191,30 @@ void m6502_reset( struct m6502 *cpu )
 #define NBADDR_ZIX baddr = (unsigned char)(cpu->read( cpu, cpu->calcpc+1 )+cpu->x); baddr = (cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr )
 #define NBADDR_ZIY baddr = cpu->read( cpu, cpu->calcpc+1 ); baddr = ((cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr ))+cpu->y
 
-#define R_BADDR_ZP   BADDR_ZP; raddr = baddr; rlen = 1
-#define W_BADDR_ZP   BADDR_ZP; waddr = baddr; wlen = 1
-#define RW_BADDR_ZP  BADDR_ZP; waddr = raddr = baddr; wlen = rlen = 1
-#define R_BADDR_ZPX  BADDR_ZPX; raddr = baddr; rlen = 1
-#define W_BADDR_ZPX  BADDR_ZPX; waddr = baddr; wlen = 1
-#define RW_BADDR_ZPX BADDR_ZPX; waddr = raddr = baddr; wlen = rlen = 1
-#define R_BADDR_ZPY  BADDR_ZPY; raddr = baddr; rlen = 1
-#define W_BADDR_ZPY  BADDR_ZPY; waddr = baddr; wlen = 1
-#define RW_BADDR_ZPY BADDR_ZPY; waddr = raddr = baddr; wlen = rlen = 1
-#define R_BADDR_ABS  BADDR_ABS; raddr = baddr; rlen = 1
-#define W_BADDR_ABS  BADDR_ABS; waddr = baddr; wlen = 1
-#define RW_BADDR_ABS BADDR_ABS; waddr = raddr = baddr; wlen = rlen = 1
-#define R_BADDR_ABX  BADDR_ABX; raddr = baddr; rlen = 1
-#define W_BADDR_ABX  BADDR_ABX; waddr = baddr; wlen = 1
-#define RW_BADDR_ABX BADDR_ABX; waddr = raddr = baddr; wlen = rlen = 1
-#define R_BADDR_ABY  BADDR_ABY; raddr = baddr; rlen = 1
-#define W_BADDR_ABY  BADDR_ABY; waddr = baddr; wlen = 1
-#define RW_BADDR_ABY BADDR_ABY; waddr = raddr = baddr; wlen = rlen = 1
-#define R_BADDR_ZIX  BADDR_ZIX; raddr = baddr; rlen = 1
-#define W_BADDR_ZIX  BADDR_ZIX; waddr = baddr; wlen = 1
-#define RW_BADDR_ZIX BADDR_ZIX; waddr = raddr = baddr; wlen = rlen = 1
-#define R_BADDR_ZIY  BADDR_ZIY; raddr = baddr; rlen = 1
-#define W_BADDR_ZIY  BADDR_ZIY; waddr = baddr; wlen = 1
-#define RW_BADDR_ZIY BADDR_ZIY; waddr = raddr = baddr; wlen = rlen = 1
+#define R_BADDR_ZP   NBADDR_ZP; raddr = baddr; rlen = 1
+#define W_BADDR_ZP   NBADDR_ZP; waddr = baddr; wlen = 1
+#define RW_BADDR_ZP  NBADDR_ZP; waddr = raddr = baddr; wlen = rlen = 1
+#define R_BADDR_ZPX  NBADDR_ZPX; raddr = baddr; rlen = 1
+#define W_BADDR_ZPX  NBADDR_ZPX; waddr = baddr; wlen = 1
+#define RW_BADDR_ZPX NBADDR_ZPX; waddr = raddr = baddr; wlen = rlen = 1
+#define R_BADDR_ZPY  NBADDR_ZPY; raddr = baddr; rlen = 1
+#define W_BADDR_ZPY  NBADDR_ZPY; waddr = baddr; wlen = 1
+#define RW_BADDR_ZPY NBADDR_ZPY; waddr = raddr = baddr; wlen = rlen = 1
+#define R_BADDR_ABS  NBADDR_ABS; raddr = baddr; rlen = 1
+#define W_BADDR_ABS  NBADDR_ABS; waddr = baddr; wlen = 1
+#define RW_BADDR_ABS NBADDR_ABS; waddr = raddr = baddr; wlen = rlen = 1
+#define R_BADDR_ABX  NBADDR_ABX; raddr = baddr; rlen = 1
+#define W_BADDR_ABX  NBADDR_ABX; waddr = baddr; wlen = 1
+#define RW_BADDR_ABX NBADDR_ABX; waddr = raddr = baddr; wlen = rlen = 1
+#define R_BADDR_ABY  NBADDR_ABY; raddr = baddr; rlen = 1
+#define W_BADDR_ABY  NBADDR_ABY; waddr = baddr; wlen = 1
+#define RW_BADDR_ABY NBADDR_ABY; waddr = raddr = baddr; wlen = rlen = 1
+#define R_BADDR_ZIX  NBADDR_ZIX; raddr = baddr; rlen = 1
+#define W_BADDR_ZIX  NBADDR_ZIX; waddr = baddr; wlen = 1
+#define RW_BADDR_ZIX NBADDR_ZIX; waddr = raddr = baddr; wlen = rlen = 1
+#define R_BADDR_ZIY  NBADDR_ZIY; raddr = baddr; rlen = 1
+#define W_BADDR_ZIY  NBADDR_ZIY; waddr = baddr; wlen = 1
+#define RW_BADDR_ZIY NBADDR_ZIY; waddr = raddr = baddr; wlen = rlen = 1
 
 // Macros for each addressing mode of the 6502
 #define READ_IMM v=cpu->read( cpu, cpu->pc++ )
@@ -272,26 +272,34 @@ void m6502_reset( struct m6502 *cpu )
 SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
 {
   unsigned short baddr;
-  unsigned char nextop;
   signed char offs;
   unsigned int extra = 0;
   int i;
-  
+
+  if( cpu->nmicount > 0 )
+  {
+    cpu->nmicount--;
+    if( !cpu->nmicount )
+      cpu->nmi = SDL_FALSE;
+  }
+
   if( cpu->nmi )
   {
     extra = 7;
     cpu->calcpc = (cpu->read( cpu, 0xfffb )<<8)|cpu->read( cpu, 0xfffa );
-	cpu->calcint = 2;
+    cpu->calcint = 2;
   } else if( ( cpu->irq ) && ( cpu->f_i == 0 ) ) {
     extra = 7;
-    cpu->calcpc = (cpu->read( cpu, 0xfffb )<<8)|cpu->read( cpu, 0xfffa );
-	cpu->calcint = 1;
-  } else {
+    cpu->calcpc = (cpu->read( cpu, 0xffff )<<8)|cpu->read( cpu, 0xfffe );
+    cpu->calcint = 1;
+  }
+  else
+  {
     cpu->calcpc = cpu->pc;
-	cpu->calcint = 0;
+    cpu->calcint = 0;
   }
 
-  nextop = cpu->read( cpu, cpu->calcpc );
+  cpu->calcop = cpu->read( cpu, cpu->calcpc );
 
   if( dobp )
   {
@@ -312,7 +320,7 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
       wlen = rlen = 0;
     
       // Going to read or write?
-      switch( nextop )
+      switch( cpu->calcop )
       {
         case 0x00: // { "BRK", AM_IMP },  // 00
           waddr = (cpu->sp+0x100)-3;
@@ -548,7 +556,7 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
   }
 
 
-  switch( nextop )
+  switch( cpu->calcop )
   {
     case 0x00: // { "BRK", AM_IMP },  // 00
     case 0x1E: // { "ASL", AM_ABX },  // 1E
@@ -770,38 +778,29 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
 // Execute one 6502 instruction
 void m6502_inst( struct m6502 *cpu )
 {
-  unsigned char op, v;
+  unsigned char v;
   unsigned short r, t, baddr;
 
   // Make sure you call set_icycles before this routine!
   cpu->rastercycles -= cpu->icycles;
   cpu->cycles += cpu->icycles;
 
-  if( cpu->nmicount > 0 )
-  {
-    cpu->nmicount--;
-    if( !cpu->nmicount )
-      cpu->nmi = SDL_FALSE;
-  }
-
-  if( cpu->calcint )
+  if( cpu->calcint > 0 )
   {
     PUSHW( cpu->pc );
     PUSHB( MAKEFLAGSBC );
     cpu->f_d = 0;
     if( cpu->calcint == 2 )
     {
-      cpu->pc = (cpu->read( cpu, 0xfffb )<<8)|cpu->read( cpu, 0xfffa );
       cpu->nmi = SDL_FALSE;
     } else {
-      cpu->pc = (cpu->read( cpu, 0xffff )<<8)|cpu->read( cpu, 0xfffe );
       cpu->f_i = 1;
     }
   }
 
-  cpu->lastpc = cpu->pc;
-  op = cpu->read( cpu, cpu->pc++ );
-  switch( op )
+  cpu->lastpc = cpu->pc = cpu->calcpc;
+  cpu->pc++;
+  switch( cpu->calcop )
   {
     case 0x00: // { "BRK", AM_IMP },  // 00
       PUSHW( (cpu->pc+1) );
@@ -1572,7 +1571,7 @@ void m6502_inst( struct m6502 *cpu )
       break;
     
     default:
-      dbg_printf( "Opcode %02X executed at %04X", op, cpu->pc-1 );
+      dbg_printf( "Opcode %02X executed at %04X", cpu->calcop, cpu->lastpc );
       break;
   }
 }

@@ -41,7 +41,7 @@
 #include "machine.h"
 #include "ula.h"
 
-#define LOG_DEBUG 0
+#define LOG_DEBUG 1
 
 #if LOG_DEBUG
 #if defined(__amigaos4__) || defined(__MORPHOS__)
@@ -3964,7 +3964,6 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             case AM_IND:
               oric->cpu.pc += 3;
               break;
-            
 
             case AM_IMP:
             default:

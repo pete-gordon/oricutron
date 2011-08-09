@@ -458,7 +458,8 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
             ay->oric->cpu.a = keyqueue[kqoffs++];
             ay->oric->cpu.write( &ay->oric->cpu, 0x2df, 0 );
             ay->oric->cpu.f_n = 1;
-            ay->oric->cpu.pc = 0xeb88;
+            ay->oric->cpu.calcpc = 0xeb88;
+			ay->oric->cpu.calcop = ay->oric->cpu.read( &ay->oric->cpu, ay->oric->cpu.calcpc );
           }
           break;
         
@@ -469,7 +470,8 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
             ay->oric->cpu.a = keyqueue[kqoffs++];
             ay->oric->cpu.write( &ay->oric->cpu, 0x2df, 0 );
             ay->oric->cpu.f_n = 1;
-            ay->oric->cpu.pc = 0xe915;
+            ay->oric->cpu.calcpc = 0xe915;
+			ay->oric->cpu.calcop = ay->oric->cpu.read( &ay->oric->cpu, ay->oric->cpu.calcpc );
           }
           break;
       }
