@@ -589,6 +589,7 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
     case 0xE1: // { "SBC", AM_ZIX },  // E1
     case 0xEE: // { "INC", AM_ABS },  // EE
     case 0xF6: // { "INC", AM_ZPX },  // F6
+    case 0xCE: // { "DEC", AM_ABS },  // CE
       cpu->icycles = 6;
       break;
 
@@ -608,7 +609,6 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
     case 0xA6: // { "LDX", AM_ZP  },  // A6
     case 0xC4: // { "CPY", AM_ZP  },  // C4
     case 0xC5: // { "CMP", AM_ZP  },  // C5
-    case 0xCE: // { "DEC", AM_ABS },  // CE
     case 0xE4: // { "CPX", AM_ZP  },  // E4
     case 0xE5: // { "SBC", AM_ZP  },  // E5
       cpu->icycles = 3;
