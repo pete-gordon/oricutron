@@ -254,9 +254,8 @@ void m6502_reset( struct m6502 *cpu )
 #define IBRANCH(condition) cpu->icycles = 2;\
                            if( condition )\
                            {\
-                             offs = (signed char)cpu->read( cpu, cpu->calcpc+1 );\
+                             baddr = cpu->calcpc+2+((signed char)cpu->read( cpu, cpu->calcpc+1 ));\
                              cpu->icycles++;\
-                             baddr = cpu->calcpc+2+offs;\
                              if( BPAGECHECK ) cpu->icycles++;\
                            }\
 
@@ -272,7 +271,6 @@ void m6502_reset( struct m6502 *cpu )
 SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
 {
   unsigned short baddr;
-  signed char offs;
   unsigned int extra = 0;
   int i;
 
@@ -624,6 +622,7 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
     case 0x99: // { "STA", AM_ABY },  // 99
     case 0x9D: // { "STA", AM_ABX },  // 9D
     case 0xC6: // { "DEC", AM_ZP  },  // C6
+    case 0xE6: // { "INC", AM_ZP  },  // E6
       cpu->icycles = 5;
       break;
 
@@ -705,9 +704,9 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
     case 0x71: // { "ADC", AM_ZIY },  // 71
     case 0xB1: // { "LDA", AM_ZIY },  // B1
     case 0xD1: // { "CMP", AM_ZIY },  // D1
-    case 0xE6: // { "INC", AM_ZP  },  // E6
     case 0xF1: // { "SBC", AM_ZIY },  // F1
-      NBADDR_ZIY;
+	  baddr = cpu->read( cpu, cpu->calcpc+1 );
+	  baddr = ((cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr ));
       cpu->icycles = 5;
       if( PAGECHECK( cpu->y ) ) cpu->icycles++;
       break;
@@ -720,7 +719,7 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
     case 0xBE: // { "LDX", AM_ABY },  // BE
     case 0xD9: // { "CMP", AM_ABY },  // D9
     case 0xF9: // { "SBC", AM_ABY },  // F9
-      NBADDR_ABY;
+      NBADDR_ABS;
       cpu->icycles = 4;
       if( PAGECHECK( cpu->y ) ) cpu->icycles++;
       break;    
@@ -733,7 +732,7 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
     case 0xBD: // { "LDA", AM_ABX },  // BD
     case 0xDD: // { "CMP", AM_ABX },  // DD
     case 0xFD: // { "SBC", AM_ABX },  // FD
-      NBADDR_ABX;
+      NBADDR_ABS;
       cpu->icycles = 4;
       if( PAGECHECK( cpu->x ) ) cpu->icycles++;
       break;    
