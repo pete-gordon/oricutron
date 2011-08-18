@@ -766,7 +766,7 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
       break;
 
     default:
-      cpu->icycles = 1;
+      cpu->icycles = 6;
       break;
   }
   

@@ -41,7 +41,6 @@ DOCFILES = ReadMe.txt oricutron.cfg ChangeLog.txt
 ####### PLATFORM DETECTION HERE #######
 
 UNAME_S = $(shell uname -s)
-UNAME_O = $(shell uname -o)
 ifeq ($(UNAME_S),BeOS)
 PLATFORM ?= beos
 endif
@@ -57,8 +56,11 @@ endif
 ifeq ($(UNAME_S),MorphOS)
 PLATFORM ?= morphos
 endif
+ifeq ($(PLATFORM),)
+UNAME_O = $(shell uname -o)
 ifeq ($(UNAME_O),Msys)
 PLATFORM ?= win32
+endif
 endif
 # default
 PLATFORM ?= os4
