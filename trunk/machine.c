@@ -739,6 +739,11 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
         case SDLK_F4:
           if( ( shifted ) && ( oric->drivetype == DRV_JASMIN ) )
             oric->cpu.write( &oric->cpu, 0x3fb, 1 ); // ROMDIS
+		  if( oric->drivetype == DRV_MICRODISC )
+		  {
+            oric->romdis = SDL_TRUE;
+            microdisc_init( &oric->md, &oric->wddisk, oric );
+	      }
           m6502_reset( &oric->cpu );
           via_init( &oric->via, oric, VIA_MAIN );
           via_init( &oric->tele_via, oric, VIA_TELESTRAT );

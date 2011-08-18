@@ -751,6 +751,7 @@ void via_init( struct via *v, struct machine *oric, int viatype )
   v->t1l_l = 0;
   v->t1l_h = 0;
   v->t1c = 0;
+  v->t1reload = 0;
   v->t2l_l = 0;
   v->t2l_h = 0;
   v->t2c = 0;
@@ -1099,6 +1100,7 @@ void via_write( struct via *v, int offset, unsigned char data )
     case VIA_T1C_H:
       v->t1l_h = data;
       v->t1c = (v->t1l_h<<8)|v->t1l_l;
+	  v->t1reload = 1;
       via_clr_irq( v, VIRQF_T1 );
       v->t1run = SDL_TRUE;
       if( (v->acr&ACRF_T1CON) == 0x80 ) v->orb &= 0x7f;
