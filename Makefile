@@ -178,6 +178,7 @@ OBJECTS = \
 	gui.o \
 	font.o \
 	monitor.o \
+	dbginfo.o \
 	via.o \
 	8912.o \
 	6551.o \
