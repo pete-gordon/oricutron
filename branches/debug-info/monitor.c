@@ -40,6 +40,7 @@
 #include "6551.h"
 #include "machine.h"
 #include "ula.h"
+#include "dbginfo.h"
 
 #define LOG_DEBUG 1
 
@@ -563,6 +564,8 @@ static struct disinf distab[] = { { "BRK", AM_IMM },  // 00
                                   { "SBC", AM_ABX },  // FD
                                   { "INC", AM_ABX },  // FE
                                   { "???", AM_IMP } };// FF
+
+static cc65_dbginfo Info;
 
 SDL_bool isws( char c )
 {
@@ -1893,6 +1896,20 @@ void mon_enter( struct machine *oric )
   updatepreview = SDL_TRUE;
 }
 
+void file_error( const cc65_parseerror* Info )
+/* Callback function - is called in case of errors */
+{
+  char str[48];
+
+  sprintf (str, "%s:%s(%lu):",
+           Info->type? "Error" : "Warning",
+           Info->name,
+           (unsigned long) Info->line);
+  /* Output a message */
+  mon_str( str );
+  mon_str( Info->errormsg );
+}
+
 void mon_init( struct machine *oric )
 {
   defaultsyms.numsyms = 0;
@@ -1919,10 +1936,12 @@ void mon_init( struct machine *oric )
 #if LOG_DEBUG
   debug_logfile = fopen( debug_logname, "w" );
 #endif
+  Info = cc65_read_dbginfo( "", file_error );
 }
 
 void mon_shut( void )
 {
+  cc65_free_dbginfo( Info );
   mon_freesyms( &usersyms );
 #if LOG_DEBUG
   if( debug_logfile ) fclose( debug_logfile );
