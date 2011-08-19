@@ -1,0 +1,12 @@
+020d FLGTEL
+02be IOVECTORS
+02ee FLGRST
+c000 tmEntryPoint
+c05b tmDiskReset
+c05d tmDiskResetLoop
+c2a6 tmHWReset
+c4d1 tmDiskCmd
+c8bf tmSerialIO
+d903 tmSetKeyColumn7f
+da1a tmAYWrite
+da4f tmAYSilent

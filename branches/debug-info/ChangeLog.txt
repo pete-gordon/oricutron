@@ -1,0 +1,230 @@
+Oricutron ChangeLog
+
+0.7 (20-Sep-2010)
+-----------------
+
+General:
+
+* Added Telestrat support, although it doesn't work
+  enough to be useful yet.
+* Added Pravetz-8D support, although the Pravetz/
+  Apple disk system is not supported yet.
+* Added some error checking to the command-line
+  argument parsing.
+* Standard return codes on exit.
+* IJK and PASE/Altai joystick emulation (thanks to
+  Twilighte and Stefan Haubenthal for info)
+* For all ROM image files, Oricutron now looks for
+  a corresponding ".pch" file with information about
+  the ROM, such as patch addresses for turbotape,
+  or the keyboard layout expected by the ROM.
+* ROM filenames are now specified in the config
+  file.
+* Now uses SDL_RWops to load images and ROMs for
+  better cross-platform compatibility (thanks
+  to revolf).
+* The disk emulation now updates sector CRCs when
+  writing to disk (oops!)
+* OpenGL rendering mode with optional display
+  aspect stretching.
+* Optional scanline simulation.
+* You can toggle fullscreen mode from the menus.
+* Software rendering mode now has a 32bit mode
+  as well as 16bit. Oricutron attempts to select
+  the optimal mode, but it can be overridden in
+  the config file (thanks to Alexandre Devert)
+
+Debugger/Monitor:
+
+* For all ROM image files, Oricutron now looks for
+  a corresponding ".sym" file with symbols for the
+  debugger when that ROM is active.
+* Disassembling to file now uses full symbol names.
+* Supports CC65/VICE style label files (thanks to
+  Stefan Haubenthal).
+* You can now create or move symbols while using
+  the assembler.
+* You can create, delete and export symbols from
+  the monitor commandline.
+* Added a memory modify command.
+* Fixed breakpoint behaviour. Before, when the CPU
+  hit a breakpoint, the rest of the emulation
+  would execute for the cycles of that command,
+  even though the command wasn't executed.
+
+Amiga/MorphOS:
+
+* Pressing help brings up the AmigaGuide readme.
+  (thanks to Stefan Haubenthal)
+
+BeOS:
+
+* You can paste from the clipboard with F9. (thanks
+  to revolf)
+* Native messagebox and file requester. (thanks to
+  revolf)
+
+OSX:
+
+* Native messagebox and file requester. (thanks to
+  revolf)
+
+
+0.6 (15-Jun-2010)
+-----------------
+
+* If you type CLOAD"", THEN insert a tape, it will
+  now load properly even with turbotape enabled.
+* Now outputs the mono audio as two identical stereo
+  channels again. It seems some targets don't like
+  mono audio.
+* Fixed some compilation warnings
+* The files/dirs in the SDL filerequesters are
+  now sorted (thanks ibisum!)
+* AY Envolope Per H now shown correctly in debugger
+* Included AmigaGuide version of readme (thanks
+  to Stefan Haubenthal)
+* Better argument parsing (thanks Revolf)
+* Navigating in menus with cursor keys now cycles
+  round at the top/bottom.
+* Menus have keyboard shortcuts
+* Auto-insertion of tapes should work better
+* Various minor fixes
+
+
+0.5 (24-Feb-2010)
+-----------------
+
+* Preliminary VSync hack support (based on guess work).
+* The windows port has an Oric icon.
+* If saving a disk image fails, you are now notified
+  via the info popup.
+* Amiga & MorphOS ports now have a version string.
+* Fixed the broken symbols in the debugger.
+* You can now override default settings with a config
+  file. An example one is provided.
+* Warp speed is properly warpy again ;-)
+* Added tape and AVI capture status icons.
+* Shift register is a little bit better.
+* Oric printer output works again.
+* Long disk image filenames are truncated nicely now
+  (like the tape filenames).
+* Attempted to reduce calls to SDL_LockAudio()/
+  SDL_UnlockAudio() in the emulation loop.
+
+
+0.4 (16-Feb-2010)
+-----------------
+
+* AY sound is (again) a lot better
+* Fixed keyboard issues introduced with 0.3
+* Improved menu navigation
+* Tape noise is available again, although it doesn't
+  work properly
+* VIA shift register is partially implemented
+* Disk writing is supported. The disk image won't
+  be changed until you hit F7 (or shift-F7) to save
+  changes back to the image file.
+* New status bar with disk status icons
+
+
+0.3 (12-Feb-2010)
+-----------------
+
+* CPU/VIA timing should now be balls-on, unless I made
+  a mistake somewhere ;-)
+* AY sound should be a lot more accurate. Also, sample
+  playback is now working. Still not perfect, but its
+  getting there!
+* Added (experimental) AVI export. Press F10 to record
+  and again to stop. Don't be surprised if it doesn't
+  work for some reason.
+* OS4 and Windows now use their respective standard
+  operating system file requesters. Other ports will use
+  the crappy built in one, unless someone adds platform
+  specific support.
+* The oric printer is emulated. All printer output
+  is appended to "printer_out.txt".
+
+
+0.2 (08-Feb-2010)
+-----------------
+
+* Fullscreen now works properly on OS4
+* A LOT more disk based software will work that just
+  froze up before.
+* Much, much better audio
+* New layout for the AY info in the debugger
+
+
+0.1 (06-Feb-2010)
+-----------------
+
+General:
+
+ * Now called "Oricutron". Apparently Oriculator is
+   rude in some languages :-)
+ * Works well enough to deserve "0.1" instead of "0.0.x"
+ * You can now auto-insert a tape by passing its name to
+   CLOAD. If you need to "CLOAD" a specific file within
+   a tape image, you can disable this feature.
+ * Fixed broken FPS display
+ * Fixed a condition where a filehandle wouldn't get closed.
+ * Added a 16k Oric-1 mode
+ * Added commandline options
+ * Fixed ADC/SBC overflow flag bug
+ * Mouse click now opens the main menu
+ * Fixed hard lockup when executing BRKs constantly
+ * Fixed B flag bug
+ * Fixed carry flag in BCD mode SBC
+ * Fixed behaviour or N and Z flags in decimal mode
+ * Fixed flag issue in TXS
+ * Emulation speed is no longer tied to the audio callback,
+   enabling more reasonably sized audio buffers.
+ * 60Hz attribute emulated
+ * Fullscreen mode (only available via commandline for now)
+
+Disk:
+
+ * Massive improvements to disk support. Reading works
+   for most things (only Read Track is not implemented
+   yet). Writing is not implemented at all.
+ * Added support for the Jasmin disk controller. Press
+   F4 to reboot in disk mode when jasmin is enabled.
+
+Debugger/Monitor:
+
+ * Added memwatch window
+ * Added symbols support
+ * Implemented help command (?)
+ * F11 traces code without going into subroutines
+   (or Shift+F10 on Amiga keyboards)
+ * F12 now skips instructions 
+ * Breakpoints now survive any reset unless the machine type
+   is changes.
+ * You can now set breakpoints on memory accesses as well
+   as program execution
+ * Memory reads from monitor no longer cause side effects
+   for VIA and disk
+
+
+0.0.2 (06-Apr-2009)
+-------------------
+
+ * Blink attribute emulated
+ * Removed the need for a mutex in the sound framework, which
+   gives a good speed up.
+ * AY sound works, more or less (needs much more work :)
+ * FPS display is now averaged over 8 frames
+ * Sends an extra zero-byte at the end of .tap files. This seems
+   to make more tapes load (e.g. MazezaM), but I don't know why.
+   Needs further investigation.
+
+
+0.0.1 (31-Mar-2009)
+-------------------
+
+ * Just an early preview. Please do not report bugs or
+   judge it too harshly. The emulator is not really
+   ready for a release yet :-)
+
