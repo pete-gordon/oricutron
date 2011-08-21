@@ -996,26 +996,30 @@ void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy
 void gotosite( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
 /* TODO: mode those to their own gui_*.c */
-#ifdef __MORPHOS__
+#if defined(__MORPHOS__)
   static const struct TagItem URLTags[1] = {{TAG_DONE, (ULONG) NULL}};
 
   URL_OpenA(mitem->name, (struct TagItem*) URLTags);
-#endif
 
-#ifdef __amigaos4__
+#elif defined(__amigaos4__)
   char tmp[256];
   BPTR h;
   sprintf( tmp, "URL:%s", mitem->name );
   if( ( h = IDOS->Open( tmp, MODE_OLDFILE ) ) ) IDOS->Close( h );
-#endif
 
-#ifdef WIN32
+#elif defined(WIN32)
    ShellExecute(NULL, "open", mitem->name,
                 NULL, NULL, SW_SHOWNORMAL);
-#endif
 
-#if defined(__APPLE__) || defined(__BEOS__) || defined(__HAIKU__)
+#elif defined(__APPLE__) || defined(__BEOS__) || defined(__HAIKU__)
   gui_open_url( mitem->name );
+
+#else
+/* default: assume XDG-compliant desktop */
+  char tmp[256];
+  sprintf( tmp, "xdg-open '%s'", mitem->name );
+  system( tmp );
+
 #endif
 }
 
