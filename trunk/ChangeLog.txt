@@ -1,5 +1,38 @@
 Oricutron ChangeLog
 
+0.8 (19-Nov-2011)
+-----------------
+
+* Proper credits for Francois Revol
+* Uses "T" as a shortcut for insert tape <revolf>
+* Clipboard support on BeOS & OS X <revolf>
+* Fixed OVRAM update glitch <stefan h>
+* Link to the google code page from the about window
+* Set/clear breakpoints by double clicking addresses
+  in the registers window.
+* Toggle CPU flags by double clicking on them
+* Chain loading multiple tape images no longer
+  disables turbo tape.
+* Modifications made in the monitor are now
+  highlighted. Changes since the last monitor entry
+  are still shown, but are replaced by modifications
+  highlighting as soon as you change anything.
+* No longer crashes if a ROM file is missing <stefan h>
+* Various updates to included ROM symbol files
+  <revolf/stefan h>
+* Fixed broken ROR ABS,X
+* Video preview in the monitor now shows the current
+  state of video-ram rather than the raster based
+  emulation.
+* CPU/VIA interaction is now pretty much cycle
+  exact (thanks to DBug for his extensive debugging!).
+* Fixed cycle counting during IRQ
+* Fixed broken cycle counts for zero page index
+  addressing modes across page boundaries.
+* Fixed DEC ABS cycle count
+* Disk sector writes now start with 0xfb instead of 0xf8
+
+
 0.7 (20-Sep-2010)
 -----------------
 
