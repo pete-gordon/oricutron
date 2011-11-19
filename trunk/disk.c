@@ -991,7 +991,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
             refreshdisks = SDL_TRUE;
             break;
           }
-          if( wd->curroffs == 0 ) wd->currsector->data_ptr[wd->curroffs++]=0xf8;
+          if( wd->curroffs == 0 ) wd->currsector->data_ptr[wd->curroffs++]=0xfb;
           wd->currsector->data_ptr[wd->curroffs++] = wd->r_data;
           wd->crc = calc_crc( wd->crc, wd->r_data );
           if( !wd->disk[wd->c_drive]->modified ) refreshdisks = SDL_TRUE;
