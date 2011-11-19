@@ -1,10 +1,10 @@
 @database ""
 @author "ReadMe2Guide"
 @node Main "Main"
-Oricutron 0.7
+Oricutron 0.8
 -------------
 
-(c)2010 Peter Gordon (pete\@petergordon.org.uk)
+(c)2009-2011 Peter Gordon (pete@petergordon.org.uk)
 
 This is a work in progress.
 
@@ -18,7 +18,7 @@ Current status
   VIA:   95% done.
   AY:    99% done.
   Video: 100% done
-  Tape:  ".TAP" file support (no WAV yet)
+  Tape:  ".TAP" file support (no WAV yet, reading only)
   Disk:  Reading/Writing sectors works. No track read/write.
 
 Telestrat emulation is included, but is far from finished and doesn't currently
@@ -39,7 +39,7 @@ Credits
   Additional Programming
   ----------------------
 
-  Revolf
+  Francois Revol
   Alexandre Devert
   Stefan Haubenthal
   Ibisum
@@ -55,7 +55,7 @@ Credits
   MacOS X port
   ------------
 
-  Revolf
+  Francois Revol
   Kamel Biskri
 
 
@@ -68,7 +68,7 @@ Credits
   Linux port
   ----------
 
-  Revolf
+  Francois Revol
   Ibisum
   Alexandre Devert
 

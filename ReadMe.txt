@@ -1,7 +1,7 @@
-Oricutron 0.7
+Oricutron 0.8
 -------------
 
-(c)2010 Peter Gordon (pete@petergordon.org.uk)
+(c)2009-2011 Peter Gordon (pete@petergordon.org.uk)
 
 This is a work in progress.
 
@@ -13,9 +13,8 @@ Current status
   VIA:   95% done.
   AY:    99% done.
   Video: 100% done
-  Tape:  ".TAP" file support (no WAV yet)
+  Tape:  ".TAP" file support (no WAV yet, reading only)
   Disk:  Reading/Writing sectors works. No track read/write.
-  Input: Joystick interfaces (IJK and PASE/Altai), Mageco light pen.
 
 Telestrat emulation is included, but is far from finished and doesn't currently
 work well enough to be useful.
@@ -33,12 +32,11 @@ Credits
   Additional Programming
   ----------------------
 
-  François Revolf
+  Francois Revol
   Alexandre Devert
   Stefan Haubenthal
   Ibisum
   Kamel Biskri
-  Ullrich von Bassewitz
 
 
   Amiga & Windows ports
@@ -50,10 +48,10 @@ Credits
   MacOS X port
   ------------
 
-  François Revolf
+  Francois Revol
   Kamel Biskri
 
-
+  
   MorphOS port
   ------------
 
@@ -63,7 +61,7 @@ Credits
   Linux port
   ----------
 
-  François Revolf
+  Francois Revol
   Ibisum
   Alexandre Devert
 
@@ -117,29 +115,23 @@ Here are all the options:
 
   -m / --machine    = Specify machine type. Valid types are:
 
-                      "atmos" or "a" for Oric Atmos
-                      "oric1" or "1" for Oric-1
-                      "o16k" for Oric-1 16k
-                      "telestrat" or "t" for Telestrat
-                      "pravetz", "pravetz8d" or "p" for Pravetz 8D
+                      "atmos" or "a" for Oric atmos
+                      "oric1" or "1" for Oric 1
+                      "o16k" for Oric 1 16k
+		      "telestrat" or "t" for Telestrat
+		      "pravetz", "pravetz8d" or "p" for Pravetz 8D
 
   -d / --disk       = Specify a disk image to use in drive 0
   -t / --tape       = Specify a tape image to use
   -k / --drive      = Specify a disk drive controller. Valid types are:
-
+  
                       "microdisc" or "m" for Microdisc
                       "jasmin" or "j" for Jasmin
 
   -s / --symbols    = Load symbols from a file
   -f / --fullscreen = Run oricutron fullscreen
   -w / --window     = Run oricutron in a window
-  -R / --rendermode = Render mode. Valid modes are:
-
-                      "soft" for software rendering
-                      "opengl" for OpenGL
-
   -b / --debug      = Start oricutron in the debugger
-  -r / --breakpoint = Set a breakpoint
   -h / --help       = Print command line help and quit
 
 
@@ -166,12 +158,9 @@ In emulator
   F5       - Toggle FPS
   F6       - Toggle warp speed
   F7       - Save all modified disks
-  F8       - Copy text
-  F9       - Paste text
   Shift+F7 - Save all modified disks to new disk images
   F10      - Start/Stop AVI capture
   Help     - Show guide
-  Left Alt - FUNCT key
 
 
 In menus
@@ -192,7 +181,8 @@ In Debugger/Monitor
   F4      - Toggle VIA/AY information
   F9      - Reset cycle count
   F10     - Step over code
-  F11     - Step over code without tracing into subroutines
+  F11     - Step over code without tracing into
+            subroutines.
   F12     - Skip instruction
 
 
@@ -219,7 +209,7 @@ In the monitor, number arguments are decimal by default, or prefixed with $ for
 hex or % for binary. Pretty much everything is output in hex.
 
 In most places where you can enter a number or address, you can pass a CPU or
-VIA register (VIA registers are prefixed with V, e.g. VDDRA). Anywhere you can
+VIA register. (VIA registers are prefixed with V, e.g. VDDRA). Anywhere you can
 pass an address, you can also use a symbol.
 
 Commands:
