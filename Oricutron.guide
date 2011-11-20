@@ -1,16 +1,18 @@
 @database ""
 @author "ReadMe2Guide"
 @node Main "Main"
+@toc Contents
 Oricutron 0.8
 -------------
 
-(c)2009-2011 Peter Gordon (pete@petergordon.org.uk)
+(c)2009-2011 Peter Gordon (pete\@petergordon.org.uk)
 
 This is a work in progress.
 
 
 @endnode
 @node Currentstatus "Current status"
+@toc Contents
 Current status
 ==============
 
@@ -27,6 +29,7 @@ work well enough to be useful.
 
 @endnode
 @node Credits "Credits"
+@toc Contents
 Credits
 =======
 
@@ -58,7 +61,7 @@ Credits
   Francois Revol
   Kamel Biskri
 
-
+  
   MorphOS port
   ------------
 
@@ -81,6 +84,7 @@ Credits
 
 @endnode
 @node Thanks "Thanks"
+@toc Contents
 Thanks
 ======
 
@@ -94,6 +98,7 @@ jede, thrust26 and everyone else for their help and feedback!
 
 @endnode
 @node AVIexportnotes "AVI export notes"
+@toc Contents
 AVI export notes
 ================
 
@@ -108,6 +113,7 @@ are fixed :-(
 
 @endnode
 @node Commandline "Command line"
+@toc Contents
 Command line
 ============
 
@@ -128,9 +134,9 @@ Here are all the options:
 
   -m / --machine    = Specify machine type. Valid types are:
 
-                      "atmos" or "a" for Oric Atmos
-                      "oric1" or "1" for Oric-1
-                      "o16k" for Oric-1 16k
+                      "atmos" or "a" for Oric atmos
+                      "oric1" or "1" for Oric 1
+                      "o16k" for Oric 1 16k
 		      "telestrat" or "t" for Telestrat
 		      "pravetz", "pravetz8d" or "p" for Pravetz 8D
 
@@ -159,11 +165,10 @@ oricutron -ddemos/barbitoric.dsk -f
 
 @endnode
 @node Keys "Keys"
+@toc Contents
 Keys
 ====
 
-@endnode
-@node Inemulator "In emulator"
 In emulator
 -----------
 
@@ -180,8 +185,6 @@ In emulator
   Help     - Show guide
 
 
-@endnode
-@node Inmenus "In menus"
 In menus
 --------
 
@@ -192,8 +195,6 @@ In menus
   (or use the mouse)
 
 
-@endnode
-@node InDebuggerMonitor "In Debugger/Monitor"
 In Debugger/Monitor
 -------------------
 
@@ -202,7 +203,8 @@ In Debugger/Monitor
   F4      - Toggle VIA/AY information
   F9      - Reset cycle count
   F10     - Step over code
-  F11     - Step over code without tracing into subroutines
+  F11     - Step over code without tracing into
+            subroutines.
   F12     - Skip instruction
 
 
@@ -224,6 +226,7 @@ In Debugger/Monitor
 
 @endnode
 @node Monitorinstructions "Monitor instructions"
+@toc Contents
 Monitor instructions
 ====================
 
@@ -231,7 +234,7 @@ In the monitor, number arguments are decimal by default, or prefixed with $ for
 hex or % for binary. Pretty much everything is output in hex.
 
 In most places where you can enter a number or address, you can pass a CPU or
-VIA register (VIA registers are prefixed with V, e.g. VDDRA). Anywhere you can
+VIA register. (VIA registers are prefixed with V, e.g. VDDRA). Anywhere you can
 pass an address, you can also use a symbol.
 
 Commands:
@@ -267,6 +270,7 @@ Commands:
 
 @endnode
 @node Breakpoints "Breakpoints"
+@toc Contents
 Breakpoints
 ===========
 
@@ -286,4 +290,14 @@ bsm rw $0c00       <-- Break when the CPU is about to access $0c00
 bsm c $0c00        <-- Break after then contents of $0c00 change
 bsm rwc $0c00      <-- Break just before the CPU accesses $0c00, or just after it
                        changes for any reason.
+@endnode
+@node Contents
+@{"Current status" link Currentstatus}
+@{"Credits" link Credits}
+@{"Thanks" link Thanks}
+@{"AVI export notes" link AVIexportnotes}
+@{"Command line" link Commandline}
+@{"Keys" link Keys}
+@{"Monitor instructions" link Monitorinstructions}
+@{"Breakpoints" link Breakpoints}
 @endnode
