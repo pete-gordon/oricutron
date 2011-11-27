@@ -85,7 +85,7 @@ static SDL_bool writebyt( SDL_bool stillok, struct avi_handle *ah, Uint8 val )
 }
 
 #define AVIFLAGS (AVIF_ISINTERLEAVED|AVIF_WASCAPTUREFILE)
-struct avi_handle *avi_open( char *filename, Uint8 *pal, SDL_bool dosound )
+struct avi_handle *avi_open( char *filename, Uint8 *pal, SDL_bool dosound, int is50hz )
 {
   struct avi_handle *ah;
   SDL_bool ok;
@@ -105,6 +105,7 @@ struct avi_handle *avi_open( char *filename, Uint8 *pal, SDL_bool dosound )
 
   ah->dosnd = dosound;
   ah->csize = 0;
+  ah->is50hz = is50hz;
 
   ok = SDL_TRUE;
   ok &= writestr( ok, ah, "RIFF"        , NULL               );   // RIFF header
@@ -116,7 +117,7 @@ struct avi_handle *avi_open( char *filename, Uint8 *pal, SDL_bool dosound )
 
   ok &= writestr( ok, ah, "avih"        , NULL               );   // MainAVIHeader chunk
   ok &= write32l( ok, ah,             56, NULL               );   // Chunk size
-  ok &= write32l( ok, ah,          20000, NULL               );   // Microseconds per frame
+  ok &= write32l( ok, ah,is50hz?20000:16667,NULL             );   // Microseconds per frame
   ok &= write32l( ok, ah,              0, NULL               );   // Max bytes per second
   ok &= write32l( ok, ah,              0, NULL               );   // Padding granularity
   ok &= write32l( ok, ah,       AVIFLAGS, NULL               );   // Flags
@@ -143,7 +144,7 @@ struct avi_handle *avi_open( char *filename, Uint8 *pal, SDL_bool dosound )
   ok &= write32l( ok, ah,              0, NULL               );   // Reserved
   ok &= write32l( ok, ah,              0, NULL               );   // Initial frames
   ok &= write32l( ok, ah,        1000000, NULL               );   // Scale
-  ok &= write32l( ok, ah,       50000000, NULL               );   // Rate
+  ok &= write32l( ok, ah,is50hz?50000000:60000000,NULL       );   // Rate
   ok &= write32l( ok, ah,              0, NULL               );   // Start
   ok &= write32l( ok, ah,              0, &ah->offs_frames2  );   // Length
   ok &= write32l( ok, ah,              0, NULL               );   // Suggested buffer size
@@ -220,6 +221,7 @@ struct avi_handle *avi_open( char *filename, Uint8 *pal, SDL_bool dosound )
   }
 
   ah->frames         = 0;
+  ah->frameadjust    = 0;
   ah->audiolen       = 0;
   ah->movisize       = 0;
   ah->lastframevalid = SDL_FALSE;
