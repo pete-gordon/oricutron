@@ -29,7 +29,7 @@ struct avi_handle
 {
   FILE     *f;
   Uint32   csize;
-  Uint32   frames;
+  Uint32   frames, frameadjust;
   Uint32   hdrlsize;
   Uint32   movisize;
   Uint32   audiolen;
@@ -44,9 +44,13 @@ struct avi_handle
   SDL_bool lastframevalid;
   Uint8    rledata[240*224*4];
   Uint8    lastframe[240*224];
+
+  // This is an int instead of SDL_bool because we use bit 1 for optimisation purposes
+  // (matches the oric 50hz bit)
+  int is50hz;
 };
 
-struct avi_handle *avi_open( char *filename, Uint8 *pal, SDL_bool dosound );
+struct avi_handle *avi_open( char *filename, Uint8 *pal, SDL_bool dosound, int is50hz );
 SDL_bool avi_addframe( struct avi_handle **ah, Uint8 *srcdata );
 SDL_bool avi_addaudio( struct avi_handle **ah, Sint16 *audiodata, Uint32 audiosize );
 void avi_close( struct avi_handle **ah );

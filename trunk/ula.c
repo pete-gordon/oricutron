@@ -34,6 +34,7 @@
 #include "avi.h"
 
 extern struct avi_handle *vidcap;
+extern SDL_bool warpspeed;
 
 // Refresh the video base pointer
 static inline void ula_refresh_charset( struct machine *oric )
@@ -200,8 +201,41 @@ SDL_bool ula_doraster( struct machine *oric )
   {
     if( vidcap )
     {
-      ay_lockaudio( &oric->ay ); // Gets unlocked at the end of each frame
-      avi_addframe( &vidcap, oric->scr );
+      // If we're recording with sound, and they do warp speed,
+      // stop writing frames to the AVI, since it'll just get out of sync.
+      if ( ( !vidcap->dosnd ) || ( !warpspeed ) )
+      {
+        // If the oric refresh rate and AVI refresh rate match, just output every frame
+        if( vidcap->is50hz == oric->vid_freq )
+        {
+          ay_lockaudio( &oric->ay ); // Gets unlocked at the end of each frame
+          avi_addframe( &vidcap, oric->scr );
+        }
+        // Check for 60hz oric & 50 hz AVI
+        else if( vidcap->is50hz )
+        {
+          // In this case we need to throw away every sixth frame
+          if( (vidcap->frameadjust%6) != 5 )
+          {
+            ay_lockaudio( &oric->ay ); // Gets unlocked at the end of each frame
+            avi_addframe( &vidcap, oric->scr );
+          }
+
+          vidcap->frameadjust++;
+        }
+        // Must be 50hz oric & 60 hz AVI
+        else
+        {
+          // In this case we need to duplicate every fifth frame
+          ay_lockaudio( &oric->ay ); // Gets unlocked at the end of each frame
+          avi_addframe( &vidcap, oric->scr );
+
+          if( (vidcap->frameadjust%5) == 4 )
+            avi_addframe( &vidcap, oric->scr );
+
+          vidcap->frameadjust++;
+        }
+      }
     }
 
     oric->vid_raster = 0;
