@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "system.h"
 #include "avi.h"
@@ -117,7 +118,7 @@ struct avi_handle *avi_open( char *filename, Uint8 *pal, SDL_bool dosound, int i
 
   ok &= writestr( ok, ah, "avih"        , NULL               );   // MainAVIHeader chunk
   ok &= write32l( ok, ah,             56, NULL               );   // Chunk size
-  ok &= write32l( ok, ah,is50hz?20000:16667,NULL             );   // Microseconds per frame
+  ok &= write32l( ok, ah,is50hz?20000:16667,&ah->offs_usperfrm);  // Microseconds per frame
   ok &= write32l( ok, ah,              0, NULL               );   // Max bytes per second
   ok &= write32l( ok, ah,              0, NULL               );   // Padding granularity
   ok &= write32l( ok, ah,       AVIFLAGS, NULL               );   // Flags
@@ -144,7 +145,7 @@ struct avi_handle *avi_open( char *filename, Uint8 *pal, SDL_bool dosound, int i
   ok &= write32l( ok, ah,              0, NULL               );   // Reserved
   ok &= write32l( ok, ah,              0, NULL               );   // Initial frames
   ok &= write32l( ok, ah,        1000000, NULL               );   // Scale
-  ok &= write32l( ok, ah,is50hz?50000000:60000000,NULL       );   // Rate
+  ok &= write32l( ok, ah,is50hz?50000000:60000000,&ah->offs_frmrate);   // Rate
   ok &= write32l( ok, ah,              0, NULL               );   // Start
   ok &= write32l( ok, ah,              0, &ah->offs_frames2  );   // Length
   ok &= write32l( ok, ah,              0, NULL               );   // Suggested buffer size
@@ -225,6 +226,7 @@ struct avi_handle *avi_open( char *filename, Uint8 *pal, SDL_bool dosound, int i
   ah->audiolen       = 0;
   ah->movisize       = 0;
   ah->lastframevalid = SDL_FALSE;
+  ah->time_start     = 0;
 
   return ah;
 }
@@ -417,6 +419,11 @@ SDL_bool avi_addframe( struct avi_handle **ah, Uint8 *srcdata )
     return SDL_FALSE;
   }
 
+  if( !(*ah)->time_start )
+  {
+    (*ah)->time_start = SDL_GetTicks();
+  }
+
   return SDL_TRUE;
 }
 
@@ -446,6 +453,9 @@ SDL_bool avi_addaudio( struct avi_handle **ah, Sint16 *audiodata, Uint32 audiosi
 void avi_close( struct avi_handle **ah )
 {
   SDL_bool ok;
+  Uint32 time_end = SDL_GetTicks();
+  double time_ms, rate, usperfrm;
+
   if( ( !ah ) || (!(*ah)) ) return;
 
   if( (*ah)->f )
@@ -457,6 +467,15 @@ void avi_close( struct avi_handle **ah )
     ok &= seek_write32l( ok, *ah, (*ah)->offs_frames2,  (*ah)->frames   );
     ok &= seek_write32l( ok, *ah, (*ah)->offs_movisize, (*ah)->movisize );
     ok &= seek_write32l( ok, *ah, (*ah)->offs_audiolen, (*ah)->audiolen );
+
+    time_ms = (double)(time_end - (*ah)->time_start);  // Time in milliseconds
+
+    rate     = ((double)((*ah)->frames) * 1000000000.0f) / time_ms;
+    usperfrm = (time_ms*1000.0f) / ((double)(*ah)->frames); 
+
+    ok &= seek_write32l( ok, *ah, (*ah)->offs_frmrate,  (Uint32)round(rate) );
+    ok &= seek_write32l( ok, *ah, (*ah)->offs_usperfrm, (Uint32)round(usperfrm) );
+
     fclose( (*ah)->f );
   }
   free( (*ah) );

@@ -758,7 +758,14 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           break;
 
         case SDLK_F6:
-          warpspeed = warpspeed ? SDL_FALSE : SDL_TRUE;
+          if( vidcap )
+          {
+            warpspeed = SDL_FALSE;
+          }
+          else
+          {
+            warpspeed = warpspeed ? SDL_FALSE : SDL_TRUE;
+          }
           if( soundavailable && soundon )
           {
             oric->ay.soundon = !warpspeed;
@@ -812,6 +819,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
            }
 
            sprintf( vidcapname, "Capturing to video%02d.avi", vidcapcount );
+           warpspeed = SDL_FALSE;
            ay_lockaudio( &oric->ay );
            vidcap = avi_open( &vidcapname[13], oricpalette, soundavailable&&soundon, oric->vid_freq );
            ay_unlockaudio( &oric->ay );
