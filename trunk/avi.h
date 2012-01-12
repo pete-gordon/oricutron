@@ -39,6 +39,9 @@ struct avi_handle
   Uint32   offs_frames2;
   Uint32   offs_movisize;
   Uint32   offs_audiolen;
+  Uint32   offs_usperfrm;
+  Uint32   offs_frmrate;
+  Uint32   time_start;
 
   SDL_bool dosnd;
   SDL_bool lastframevalid;
