@@ -51,7 +51,7 @@ Credits
   Francois Revol
   Kamel Biskri
 
-  
+
   MorphOS port
   ------------
 
