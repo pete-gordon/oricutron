@@ -473,8 +473,8 @@ void avi_close( struct avi_handle **ah )
     rate     = ((double)((*ah)->frames) * 1000000000.0f) / time_ms;
     usperfrm = (time_ms*1000.0f) / ((double)(*ah)->frames); 
 
-    ok &= seek_write32l( ok, *ah, (*ah)->offs_frmrate,  (Uint32)round(rate) );
-    ok &= seek_write32l( ok, *ah, (*ah)->offs_usperfrm, (Uint32)round(usperfrm) );
+    ok &= seek_write32l( ok, *ah, (*ah)->offs_frmrate,  (Uint32)(rate + .5) );
+    ok &= seek_write32l( ok, *ah, (*ah)->offs_usperfrm, (Uint32)(usperfrm + .5) );
 
     fclose( (*ah)->f );
   }
