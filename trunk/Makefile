@@ -257,6 +257,7 @@ install-linux:
 
 
 package-os4 package-morphos: Oricutron.guide
+	copy ChangeLog.txt.info Oricutron.guide.info
 	lha -r u RAM:$(PKGDIR) // $(TARGET) $(TARGET).info
 
 package-beos package-haiku:
