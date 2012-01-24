@@ -48,7 +48,7 @@ static inline void ula_refresh_charset( struct machine *oric )
 }
 
 // Decode an oric video attribute
-void ula_decode_attr( struct machine *oric, int attr )
+static inline void ula_decode_attr( struct machine *oric, int attr, int y )
 {
   switch( attr & 0x18 )
   {
@@ -60,6 +60,10 @@ void ula_decode_attr( struct machine *oric, int attr )
       oric->vid_textattrs = attr & 0x07;
       oric->vid_blinkmask = attr & 0x04 ? 0x00 : 0x3f;
       ula_refresh_charset( oric );
+      if( oric->vid_textattrs & 0x02 )
+        oric->vid_chline = (y>>1) & 0x07;
+      else
+        oric->vid_chline = y & 0x07;
       break;
 
     case 0x10: // Background colour
@@ -84,8 +88,22 @@ void ula_decode_attr( struct machine *oric, int attr )
   }   
 }
 
+static inline void ula_raster_default( struct machine *oric )
+{
+  oric->vid_fg_col = 7;
+  oric->vid_textattrs = 0;
+  oric->vid_blinkmask = 0x3f;
+  oric->vid_bg_col = 0;
+  ula_refresh_charset( oric );
+}
+
+void ula_powerup_default( struct machine *oric )
+{
+  ula_decode_attr( oric, 0x1a, 0 );
+}
+
 // Render a 6x1 block
-void ula_render_block( struct machine *oric, int fg, int bg, SDL_bool inverted, int data )
+static void ula_render_block( struct machine *oric, int fg, int bg, SDL_bool inverted, int data, int y )
 {
   int i;
 
@@ -97,7 +115,31 @@ void ula_render_block( struct machine *oric, int fg, int bg, SDL_bool inverted, 
   
   for( i=0; i<6; i++ )
   {
-    *(oric->scrpt++) = /*oric->pal[*/ (data & 0x20) ? fg : bg /*]*/;
+    *(oric->scrpt++) = (data & 0x20) ? fg : bg;
+    data <<= 1;
+  }
+}
+
+static void ula_render_block_checkdirty( struct machine *oric, int fg, int bg, SDL_bool inverted, int data, int y )
+{
+  int i, c;
+
+  if( inverted )
+  {
+    fg ^= 0x07;
+    bg ^= 0x07;
+  }
+  
+  for( i=0; i<6; i++ )
+  {
+    c = (data & 0x20) ? fg : bg;
+    if ((*(oric->scrpt)) != c)
+    {
+      *(oric->scrpt) = c;
+      oric->vid_dirty[y] = SDL_TRUE;
+      oric->vid_block_func = ula_render_block;
+    }
+    oric->scrpt++;
     data <<= 1;
   }
 }
@@ -116,9 +158,11 @@ void ula_renderscreen( struct machine *oric )
     cy = (y>>3) * 40;
 
     // Always start each scanline with white on black
-    ula_decode_attr( oric, 0x07 );
-    ula_decode_attr( oric, 0x08 );
-    ula_decode_attr( oric, 0x10 );
+    ula_raster_default( oric );
+    if( oric->vid_textattrs & 0x02 )
+      oric->vid_chline = (y>>1) & 0x07;
+    else
+      oric->vid_chline = y & 0x07;
 
     if( y < 200 )
     {
@@ -144,8 +188,8 @@ void ula_renderscreen( struct machine *oric )
       /* if bits 6 and 5 are zero, the byte contains a serial attribute */
       if( ( c & 0x60 ) == 0 )
       {
-        ula_decode_attr( oric, c );
-        ula_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, 0 );
+        ula_decode_attr( oric, c, y );
+        ula_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, 0, y );
         if( oric->vid_raster < oric->vid_special )
         {
           if( oric->vid_mode & 0x04 ) // HIRES?
@@ -166,19 +210,14 @@ void ula_renderscreen( struct machine *oric )
       } else {
         if( hires )
         {
-          ula_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, c & bitmask );
+          ula_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, c & bitmask, y );
         } else {
-          int ch_ix, ch_dat, ch_line;
+          int ch_ix, ch_dat;
           
-          ch_ix   = c & 0x7f;
-          if( oric->vid_textattrs & 0x02 )
-            ch_line = (y>>1) & 0x07;
-          else
-            ch_line = y & 0x07;
-          
-          ch_dat = oric->vid_ch_data[ (ch_ix<<3) | ch_line ] & bitmask;
+          ch_ix   = c & 0x7f;          
+          ch_dat = oric->vid_ch_data[ (ch_ix<<3) | oric->vid_chline ] & bitmask;
         
-          ula_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, ch_dat  );
+          ula_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, ch_dat, y );
         }
       }
     }
@@ -279,15 +318,19 @@ SDL_bool ula_doraster( struct machine *oric )
       ( oric->vid_raster >= oric->vid_end ) ) return needrender;
 
   y = oric->vid_raster - oric->vid_start;
+  if( oric->vid_textattrs & 0x02 )
+    oric->vid_chline = (y>>1) & 0x07;
+  else
+    oric->vid_chline = y & 0x07;
 
   oric->scrpt = &oric->scr[y*240];
   
   cy = (y>>3) * 40;
 
   // Always start each scanline with white on black
-  ula_decode_attr( oric, 0x07 );
-  ula_decode_attr( oric, 0x08 );
-  ula_decode_attr( oric, 0x10 );
+  ula_raster_default( oric );
+
+  oric->vid_block_func = ula_render_block_checkdirty;
 
   if( oric->vid_raster < oric->vid_special )
   {
@@ -313,8 +356,8 @@ SDL_bool ula_doraster( struct machine *oric )
     /* if bits 6 and 5 are zero, the byte contains a serial attribute */
     if( ( c & 0x60 ) == 0 )
     {
-      ula_decode_attr( oric, c );
-      ula_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, 0 );
+      ula_decode_attr( oric, c, y );
+      oric->vid_block_func( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, 0, y );
       if( oric->vid_raster < oric->vid_special )
       {
         if( oric->vid_mode & 0x04 ) // HIRES?
@@ -326,33 +369,39 @@ SDL_bool ula_doraster( struct machine *oric )
           rptr = &oric->mem[oric->vid_addr + b + cy];
         }
       } else {
-        hires = SDL_FALSE;
-
-        rptr = &oric->mem[oric->vidbases[2] + b + cy];   // bb80 = bf68 - (200/8*40)
+        if (hires)
+        {
+          hires = SDL_FALSE;
+          rptr = &oric->mem[oric->vidbases[2] + b + cy];   // bb80 = bf68 - (200/8*40)
+        }
       }
       bitmask = (oric->frames&0x10)?0x3f:oric->vid_blinkmask;
-    
     } else {
       if( hires )
       {
-        ula_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, c & bitmask );
+        oric->vid_block_func( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, c & bitmask, y );
       } else {
-        int ch_ix, ch_dat, ch_line;
+        int ch_ix, ch_dat;
           
-        ch_ix   = c & 0x7f;
-        if( oric->vid_textattrs & 0x02 )
-          ch_line = (y>>1) & 0x07;
-        else
-          ch_line = y & 0x07;
-          
-        ch_dat = oric->vid_ch_data[ (ch_ix<<3) | ch_line ] & bitmask;
+        ch_ix   = c & 0x7f;          
+        ch_dat = oric->vid_ch_data[ (ch_ix<<3) | oric->vid_chline ] & bitmask;
         
-        ula_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, ch_dat  );
+        oric->vid_block_func( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, ch_dat, y );
       }
     }
   }
 
   return needrender;
+}
+
+void ula_set_dirty( struct machine *oric )
+{
+  int i;
+
+  for( i=0; i<224; i++ )
+  {
+    oric->vid_dirty[i] = SDL_TRUE;
+  }
 }
 
 void preinit_ula( struct machine *oric )
@@ -366,6 +415,8 @@ SDL_bool init_ula( struct machine *oric )
 {
   oric->scr = (Uint8 *)malloc( 240*224 );
   if( !oric->scr ) return SDL_FALSE;
+
+  ula_set_dirty( oric );
 
   return SDL_TRUE;
 }

@@ -42,6 +42,7 @@
 #include "6551.h"
 #include "machine.h"
 #include "render_gl.h"
+#include "ula.h"
 
 #define TEX_VIDEO     (0)
 #define TEX_SCANLINES (1)
@@ -153,8 +154,15 @@ static void update_video_texture( struct machine *oric )
   o = 0;
   sptr = oric->scr;
 
-  for( y=0; y<225; y++ )
+  for( y=0; y<224; y++ )
   {
+    if (!oric->vid_dirty[y])
+    {
+      sptr += 240;
+      o += tx[TEX_VIDEO].w*4;
+      continue;
+    }
+
     for( x=0; x<240; x++ )
     {
       c = *(sptr++) * 3;
@@ -172,8 +180,25 @@ static void update_video_texture( struct machine *oric )
     tx[TEX_VIDEO].buf[o++] = 0xff;
 
     o += (tx[TEX_VIDEO].w-241) * 4;
-    if( y == 223 ) { sptr -= 240; }
+    oric->vid_dirty[y] = SDL_FALSE;
   }
+
+  sptr -= 240;
+  for( x=0; x<240; x++ )
+  {
+    c = *(sptr++) * 3;
+    tx[TEX_VIDEO].buf[o++] = oricpalette[c++];
+    tx[TEX_VIDEO].buf[o++] = oricpalette[c++];
+    tx[TEX_VIDEO].buf[o++] = oricpalette[c++];
+    tx[TEX_VIDEO].buf[o++] = 0xff;
+  }
+    
+  // Repeat the right and bottom borders to prevent linear interpolation to
+  // garbage at the edges (GL_CLAMP takes care of the left and top)
+  tx[TEX_VIDEO].buf[o++] = oricpalette[c-3];
+  tx[TEX_VIDEO].buf[o++] = oricpalette[c-2];
+  tx[TEX_VIDEO].buf[o++] = oricpalette[c-1];
+  tx[TEX_VIDEO].buf[o++] = 0xff;
 
   glBindTexture( GL_TEXTURE_2D, tex[TEX_VIDEO] );
   glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[TEX_VIDEO].w, tx[TEX_VIDEO].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[TEX_VIDEO].buf );
@@ -534,6 +559,8 @@ SDL_bool init_render_gl( struct machine *oric )
   clrcol[0] = ((float)sgpal[4*3+0])/255.0f;
   clrcol[1] = ((float)sgpal[4*3+1])/255.0f;
   clrcol[2] = ((float)sgpal[4*3+2])/255.0f;
+
+  ula_set_dirty( oric );
 
   return SDL_TRUE;
 }

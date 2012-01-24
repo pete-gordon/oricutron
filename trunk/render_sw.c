@@ -31,11 +31,12 @@
 #include "6551.h"
 #include "machine.h"
 #include "render_sw.h"
+#include "ula.h"
 
 static struct SDL_Surface *screen;
 static Uint32 gpal[NUM_GUI_COLS];
 
-static Uint32 pixel_size;
+static Uint32 pixel_size, offset_top;
 static Uint32 pal[8*2]; // Palette
 static Uint32 dpal[8*2];
 static Uint8 *mgimg[NUM_GIMG];
@@ -266,17 +267,20 @@ void render_video_sw_16bpp( struct machine *oric, SDL_bool doublesize )
 
     dst_pitch_x2 = 2 * screen->pitch;
 
-    dst_even_scanline = (Uint8*)screen->pixels;
-    dst_even_scanline += (240 - 226) * screen->pitch;
-    dst_even_scanline += (screen->pitch - 2 * 240 * pixel_size) / 2;
+    dst_even_scanline = ((Uint8*)screen->pixels) + offset_top;
 
     dst_odd_scanline = dst_even_scanline;
     dst_odd_scanline += screen->pitch;
 
     if( oric->scanlines )
     {
-      for( y=224; y!=0; --y, dst_even_scanline+=dst_pitch_x2, dst_odd_scanline+=dst_pitch_x2 )
+      for( y=0; y<224; y++, dst_even_scanline+=dst_pitch_x2, dst_odd_scanline+=dst_pitch_x2 )
       {
+        if (!oric->vid_dirty[y])
+        {
+          src_pixel += 240;
+          continue;
+        }
         dst_even_pixel = (Uint32*)dst_even_scanline;
         dst_odd_pixel  = (Uint32*)dst_odd_scanline;
 
@@ -286,11 +290,17 @@ void render_video_sw_16bpp( struct machine *oric, SDL_bool doublesize )
           *(dst_even_pixel++) = dpal[c];
           *(dst_odd_pixel++)  = dpal[c+8];
         }
+        oric->vid_dirty[y] = SDL_FALSE;
 
       }
     } else {
-      for( y=224; y!=0; --y, dst_even_scanline+=dst_pitch_x2, dst_odd_scanline+=dst_pitch_x2 )
+      for( y=0; y<224; y++, dst_even_scanline+=dst_pitch_x2, dst_odd_scanline+=dst_pitch_x2 )
       {
+        if (!oric->vid_dirty[y])
+        {
+          src_pixel += 240;
+          continue;
+        }
         dst_even_pixel = (Uint32*)dst_even_scanline;
         dst_odd_pixel  = (Uint32*)dst_odd_scanline;
 
@@ -300,6 +310,7 @@ void render_video_sw_16bpp( struct machine *oric, SDL_bool doublesize )
             *(dst_even_pixel++) = c;
             *(dst_odd_pixel++)  = c;
         }
+        oric->vid_dirty[y] = SDL_FALSE;
       }
     }
     return;
@@ -349,17 +360,20 @@ void render_video_sw_32bpp( struct machine *oric, SDL_bool doublesize )
 
     dst_pitch_x2 = 2 * screen->pitch;
 
-    dst_even_scanline = (Uint8*)screen->pixels;
-    dst_even_scanline += (240 - 226) * screen->pitch;
-    dst_even_scanline += (screen->pitch - 2 * 240 * pixel_size) / 2;
+    dst_even_scanline = ((Uint8*)screen->pixels) + offset_top;
 
     dst_odd_scanline = dst_even_scanline;
     dst_odd_scanline += screen->pitch;
 
     if( oric->scanlines )
     {
-      for( y=224; y!=0; --y, dst_even_scanline+=dst_pitch_x2, dst_odd_scanline+=dst_pitch_x2 )
+      for( y=0; y<224; y++, dst_even_scanline+=dst_pitch_x2, dst_odd_scanline+=dst_pitch_x2 )
       {
+        if (!oric->vid_dirty[y])
+        {
+          src_pixel += 240;
+          continue;
+        }
         dst_even_pixel = (Uint32*)dst_even_scanline;
         dst_odd_pixel  = (Uint32*)dst_odd_scanline;
 
@@ -374,10 +388,17 @@ void render_video_sw_32bpp( struct machine *oric, SDL_bool doublesize )
           *(dst_odd_pixel++)  = c2;
         }
 
+        oric->vid_dirty[y] = SDL_FALSE;
+
       }
     } else {
-      for( y=224; y!=0; --y, dst_even_scanline+=dst_pitch_x2, dst_odd_scanline+=dst_pitch_x2 )
+      for( y=0; y<224; y++, dst_even_scanline+=dst_pitch_x2, dst_odd_scanline+=dst_pitch_x2 )
       {
+        if (!oric->vid_dirty[y])
+        {
+          src_pixel += 240;
+          continue;
+        }
         dst_even_pixel = (Uint32*)dst_even_scanline;
         dst_odd_pixel  = (Uint32*)dst_odd_scanline;
 
@@ -390,6 +411,7 @@ void render_video_sw_32bpp( struct machine *oric, SDL_bool doublesize )
             *(dst_odd_pixel++)  = c;
             *(dst_odd_pixel++)  = c;
          }
+        oric->vid_dirty[y] = SDL_FALSE;
       }
     }
     return;
@@ -561,6 +583,12 @@ SDL_bool init_render_sw( struct machine *oric )
   // For the first frame rendered, we need to clean the screen
   needclr = SDL_TRUE;
   refreshstatus = SDL_TRUE;
+
+  // Calculate the offset to render the screen
+  offset_top = (240 - 226) * screen->pitch;
+  offset_top += (screen->pitch - 2 * 240 * pixel_size) / 2;
+
+  ula_set_dirty( oric );
 
   // Job done
   return SDL_TRUE;
