@@ -91,9 +91,17 @@ void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode )
       break;
 
     case EM_MENU:
+      if( vidcap ) avi_close( &vidcap );
       gotomenu( oric, NULL, 0 );
+      SDL_EnableKeyRepeat( SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL );
+      SDL_EnableUNICODE( SDL_TRUE );
+      oric->ay.soundon = SDL_FALSE;
+      if( soundavailable )
+        SDL_PauseAudio( 1 );
+      break;
 
     case EM_DEBUG:
+      if( vidcap ) avi_close( &vidcap );
       mon_enter( oric );
       SDL_EnableKeyRepeat( SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL );
       SDL_EnableUNICODE( SDL_TRUE );
