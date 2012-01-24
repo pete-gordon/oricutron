@@ -88,6 +88,7 @@ void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode )
       oric->ay.soundon = soundavailable && soundon && (!warpspeed);
       if( oric->ay.soundon )
         SDL_PauseAudio( 0 );
+      ula_set_dirty( oric );
       break;
 
     case EM_MENU:
@@ -1095,7 +1096,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->vid_special = oric->vid_start + 200;
       oric->vid_end     = oric->vid_start + 224;
       oric->vid_raster  = 0;
-      ula_decode_attr( oric, 0x1a );
+      ula_powerup_default( oric );
       break;
     
     case MACH_ORIC1:
@@ -1152,7 +1153,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->vid_special = oric->vid_start + 200;
       oric->vid_end     = oric->vid_start + 224;
       oric->vid_raster  = 0;
-      ula_decode_attr( oric, 0x1a );
+      ula_powerup_default( oric );
       break;
     
     case MACH_ATMOS:
@@ -1209,7 +1210,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->vid_special = oric->vid_start + 200;
       oric->vid_end     = oric->vid_start + 224;
       oric->vid_raster  = 0;
-      ula_decode_attr( oric, 0x1a );
+      ula_powerup_default( oric );
       break;
 
     case MACH_TELESTRAT:
@@ -1259,7 +1260,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->vid_special = oric->vid_start + 200;
       oric->vid_end     = oric->vid_start + 224;
       oric->vid_raster  = 0;
-      ula_decode_attr( oric, 0x1a );
+      ula_powerup_default( oric );
       break;
 
     case MACH_PRAVETZ:
@@ -1316,7 +1317,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->vid_special = oric->vid_start + 200;
       oric->vid_end     = oric->vid_start + 224;
       oric->vid_raster  = 0;
-      ula_decode_attr( oric, 0x1a );
+      ula_powerup_default( oric );
       break;
   }
 

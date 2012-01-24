@@ -23,5 +23,6 @@ void preinit_ula( struct machine *oric );
 SDL_bool init_ula( struct machine *oric );
 void shut_ula( struct machine *oric );
 SDL_bool ula_doraster( struct machine *oric );
-void ula_decode_attr( struct machine *oric, int attr );
+void ula_powerup_default( struct machine *oric );
 void ula_renderscreen( struct machine *oric );
+void ula_set_dirty( struct machine *oric );

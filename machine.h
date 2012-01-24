@@ -98,7 +98,10 @@ struct machine
   int vid_freq;
   int vid_textattrs;
   int vid_blinkmask;
+  int vid_chline;
   int frames;
+  SDL_bool vid_dirty[224];
+  void (*vid_block_func)( struct machine *, int, int, SDL_bool, int, int );
 
   int cyclesperraster;
   int vsync;
