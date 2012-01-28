@@ -340,7 +340,8 @@ SDL_bool ula_doraster( struct machine *oric )
   // Always start each scanline with white on black
   ula_raster_default( oric );
 
-  oric->vid_block_func = ula_render_block_checkdirty;
+  // warpspeed does frameskipping, so lines may still be dirty
+  oric->vid_block_func = oric->vid_dirty[y] ? ula_render_block : ula_render_block_checkdirty;
 
   if( y < 200 )
   {
@@ -428,6 +429,7 @@ SDL_bool init_ula( struct machine *oric )
   oric->scr = (Uint8 *)malloc( 240*224 );
   if( !oric->scr ) return SDL_FALSE;
 
+  memset(oric->scr, 0, 240*224);
   ula_set_dirty( oric );
 
   /* Precalc all 6 bit combinations for all colour combinations */

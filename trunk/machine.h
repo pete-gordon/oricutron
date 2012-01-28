@@ -108,7 +108,7 @@ struct machine
   int vsync;
 
   SDL_bool vid_double;
-  SDL_bool romdis;
+  SDL_bool romdis, romon;
   SDL_bool vsynchack;
 
   unsigned short vid_addr;
@@ -200,6 +200,7 @@ struct machine
   SDL_Joystick *sdljoy_a, *sdljoy_b;
 };
 
+void setromon( struct machine *oric );
 void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode );
 void video_show( struct machine *oric );
 SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender );

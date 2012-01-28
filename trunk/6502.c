@@ -1570,7 +1570,7 @@ void m6502_inst( struct m6502 *cpu )
       break;
     
     default:
-      dbg_printf( "Opcode %02X executed at %04X", cpu->calcop, cpu->lastpc );
+      //dbg_printf( "Opcode %02X executed at %04X", cpu->calcop, cpu->lastpc );
       break;
   }
 }

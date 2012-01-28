@@ -852,11 +852,6 @@ int main( int argc, char *argv[] )
                 acia_clock( &oric.tele_acia, oric.cpu.icycles );
               }
               m6502_inst( &oric.cpu );
-              if( oric.emu_mode != EM_RUNNING )
-              {
-                needrender = SDL_TRUE;
-                break;
-              }
             }
 
             if( oric.cpu.rastercycles <= 0 )
@@ -873,7 +868,7 @@ int main( int argc, char *argv[] )
         {
           if( framedone )
           {
-            if( (oric.emu_mode == EM_RUNNING) && ((oric.frames&3)==0) )
+            if( (oric.emu_mode == EM_RUNNING) && ((oric.frames&3)!=0) )
             {
               framedone = SDL_FALSE;
               continue;
