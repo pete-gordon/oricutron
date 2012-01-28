@@ -36,7 +36,7 @@
 extern struct avi_handle *vidcap;
 extern SDL_bool warpspeed;
 
-static unsigned char bittab[8*8*64*8*2];
+static unsigned char bittab[8*8*64*8];
 
 // Refresh the video base pointer
 static inline void ula_refresh_charset( struct machine *oric )
@@ -55,9 +55,9 @@ static inline void ula_decode_attr( struct machine *oric, int attr, int y )
   switch( attr & 0x18 )
   {
     case 0x00: // Foreground colour
-      oric->vid_fg_col       = attr & 0x07;
-      oric->vid_col_offs     = (oric->vid_fg_col<<12) | (oric->vid_bg_col<<9);
-      oric->vid_inv_col_offs = ((oric->vid_fg_col^7)<<12) | ((oric->vid_bg_col^7)<<9);
+      oric->vid_fg_col     = attr & 0x07;
+      oric->vid_bitptr     = (Uint16 *)(&bittab[(oric->vid_fg_col<<12) | (oric->vid_bg_col<<9)]);
+      oric->vid_inv_bitptr = (Uint16 *)(&bittab[((oric->vid_fg_col^7)<<12) | ((oric->vid_bg_col^7)<<9)]);
       break;
 
     case 0x08: // Text attribute
@@ -72,8 +72,8 @@ static inline void ula_decode_attr( struct machine *oric, int attr, int y )
 
     case 0x10: // Background colour
       oric->vid_bg_col = attr & 0x07;
-      oric->vid_col_offs     = (oric->vid_fg_col<<12) | (oric->vid_bg_col<<9);
-      oric->vid_inv_col_offs = ((oric->vid_fg_col^7)<<12) | ((oric->vid_bg_col^7)<<9);
+      oric->vid_bitptr     = (Uint16 *)(&bittab[(oric->vid_fg_col<<12) | (oric->vid_bg_col<<9)]);
+      oric->vid_inv_bitptr = (Uint16 *)(&bittab[((oric->vid_fg_col^7)<<12) | ((oric->vid_bg_col^7)<<9)]);
       break;
 
     case 0x18: // Video mode
@@ -96,12 +96,12 @@ static inline void ula_decode_attr( struct machine *oric, int attr, int y )
 
 static inline void ula_raster_default( struct machine *oric )
 {
-  oric->vid_fg_col = 7;
-  oric->vid_textattrs = 0;
-  oric->vid_blinkmask = 0x3f;
-  oric->vid_bg_col = 0;
-  oric->vid_col_offs     = (oric->vid_fg_col<<12) | (oric->vid_bg_col<<9);
-  oric->vid_inv_col_offs = ((oric->vid_fg_col^7)<<12) | ((oric->vid_bg_col^7)<<9);
+  oric->vid_fg_col     = 7;
+  oric->vid_textattrs  = 0;
+  oric->vid_blinkmask  = 0x3f;
+  oric->vid_bg_col     = 0;
+  oric->vid_bitptr     = (Uint16 *)(&bittab[(oric->vid_fg_col<<12) | (oric->vid_bg_col<<9)]);
+  oric->vid_inv_bitptr = (Uint16 *)(&bittab[((oric->vid_fg_col^7)<<12) | ((oric->vid_bg_col^7)<<9)]);
   ula_refresh_charset( oric );
 }
 
@@ -117,11 +117,11 @@ static void ula_render_block( struct machine *oric, SDL_bool inverted, int data,
 
   if( inverted )
   {
-    ptr = (Uint16 *)(&bittab[oric->vid_inv_col_offs | (data<<3)]);
+    ptr = oric->vid_inv_bitptr + (data<<2);
   }
   else
   {
-    ptr = (Uint16 *)(&bittab[oric->vid_col_offs | (data<<3)]);
+    ptr = oric->vid_bitptr + (data<<2);
   }
 
   *((Uint16 *)oric->scrpt) = *(ptr++); oric->scrpt+=2;
@@ -136,11 +136,11 @@ static void ula_render_block_checkdirty( struct machine *oric, SDL_bool inverted
 
   if( inverted )
   {
-    ptr = (Uint16 *)(&bittab[oric->vid_inv_col_offs | (data<<3)]);
+    ptr = oric->vid_inv_bitptr + (data<<2);
   }
   else
   {
-    ptr = (Uint16 *)(&bittab[oric->vid_col_offs | (data<<3)]);
+    ptr = oric->vid_bitptr + (data<<2);
   }
 
   for( i=0; i<3; i++)
@@ -426,9 +426,6 @@ void preinit_ula( struct machine *oric )
 SDL_bool init_ula( struct machine *oric )
 {
   int fg, bg, bits, offs, mask;
-#if 0 //SDL_BYTEORDER == SDL_LIL_ENDIAN
-  Uint8 t;
-#endif
 
   oric->scr = (Uint8 *)malloc( 240*224 );
   if( !oric->scr ) return SDL_FALSE;
@@ -448,21 +445,6 @@ SDL_bool init_ula( struct machine *oric )
         {
           bittab[offs++] = (bits&mask) ? fg : bg;
         }
-
-#if 0 //SDL_BYTEORDER == SDL_LIL_ENDIAN
-        offs = (fg<<12)|(bg<<9)|(bits<<3);
-        t = bittab[offs];
-        bittab[offs] = bittab[offs+1];
-        bittab[offs+1] = t;
-        offs += 2;
-        t = bittab[offs];
-        bittab[offs] = bittab[offs+1];
-        bittab[offs+1] = t;
-        offs += 2;
-        t = bittab[offs];
-        bittab[offs] = bittab[offs+1];
-        bittab[offs+1] = t;
-#endif        
       }
     }
   }
