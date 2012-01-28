@@ -90,7 +90,6 @@ struct machine
   int vid_end;             // Stop drawing video
   int vid_maxrast;         // Number of raster lines
   int vid_raster;          // Current rasterline
-  int vid_special;         // After line 200, only process in text mode
 
   int vid_fg_col;
   int vid_bg_col;

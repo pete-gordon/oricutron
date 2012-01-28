@@ -1093,7 +1093,6 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->cyclesperraster = 64;
       oric->vid_start = 65;
       oric->vid_maxrast = 312;
-      oric->vid_special = oric->vid_start + 200;
       oric->vid_end     = oric->vid_start + 224;
       oric->vid_raster  = 0;
       ula_powerup_default( oric );
@@ -1150,7 +1149,6 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->cyclesperraster = 64;
       oric->vid_start = 65;
       oric->vid_maxrast = 312;
-      oric->vid_special = oric->vid_start + 200;
       oric->vid_end     = oric->vid_start + 224;
       oric->vid_raster  = 0;
       ula_powerup_default( oric );
@@ -1207,7 +1205,6 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->cyclesperraster = 64;
       oric->vid_start = 65;
       oric->vid_maxrast = 312;
-      oric->vid_special = oric->vid_start + 200;
       oric->vid_end     = oric->vid_start + 224;
       oric->vid_raster  = 0;
       ula_powerup_default( oric );
@@ -1257,7 +1254,6 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->cyclesperraster = 64;
       oric->vid_start = 65;
       oric->vid_maxrast = 312;
-      oric->vid_special = oric->vid_start + 200;
       oric->vid_end     = oric->vid_start + 224;
       oric->vid_raster  = 0;
       ula_powerup_default( oric );
@@ -1314,7 +1310,6 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->cyclesperraster = 64;
       oric->vid_start = 65;
       oric->vid_maxrast = 312;
-      oric->vid_special = oric->vid_start + 200;
       oric->vid_end     = oric->vid_start + 224;
       oric->vid_raster  = 0;
       ula_powerup_default( oric );

@@ -202,7 +202,7 @@ void ula_renderscreen( struct machine *oric )
       {
         ula_decode_attr( oric, c, y );
         ula_render_block( oric, (c & 0x80)!=0, 0, y );
-        if( oric->vid_raster < oric->vid_special )
+        if( y < 200 )
         {
           if( oric->vid_mode & 0x04 ) // HIRES?
           {
@@ -312,14 +312,12 @@ SDL_bool ula_doraster( struct machine *oric )
         oric->cyclesperraster = 64;
         oric->vid_start       = 65;
         oric->vid_maxrast     = 312;
-        oric->vid_special     = oric->vid_start + 200;
         oric->vid_end         = oric->vid_start + 224;
       } else {
         // NTSC
         oric->cyclesperraster = 64;
         oric->vid_start       = 32;
         oric->vid_maxrast     = 262;
-        oric->vid_special     = oric->vid_start + 200;
         oric->vid_end         = oric->vid_start + 224;
       }
     }
@@ -344,7 +342,7 @@ SDL_bool ula_doraster( struct machine *oric )
 
   oric->vid_block_func = ula_render_block_checkdirty;
 
-  if( oric->vid_raster < oric->vid_special )
+  if( y < 200 )
   {
     if( oric->vid_mode & 0x04 ) // HIRES?
     {
@@ -370,7 +368,7 @@ SDL_bool ula_doraster( struct machine *oric )
     {
       ula_decode_attr( oric, c, y );
       oric->vid_block_func( oric, (c & 0x80)!=0, 0, y );
-      if( oric->vid_raster < oric->vid_special )
+      if( y < 200 )
       {
         if( oric->vid_mode & 0x04 ) // HIRES?
         {
