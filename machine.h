@@ -94,8 +94,8 @@ struct machine
 
   int vid_fg_col;
   int vid_bg_col;
-  int vid_col_offs;
-  int vid_inv_col_offs;
+  Uint16 *vid_bitptr;
+  Uint16 *vid_inv_bitptr;
   int vid_mode;
   int vid_freq;
   int vid_textattrs;
