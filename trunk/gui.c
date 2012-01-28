@@ -58,6 +58,7 @@
 #include "render_sw.h"
 #include "render_gl.h"
 #include "render_null.h"
+#include "ula.h"
 
 extern struct symboltable usersyms;
 extern SDL_bool fullscreen;
@@ -1228,6 +1229,8 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
       }
       break;
   }
+
+  if (*needrender) ula_set_dirty(oric);
   return done;
 }
 
