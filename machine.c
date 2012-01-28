@@ -113,6 +113,23 @@ void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode )
   }
 }
 
+void setromon( struct machine *oric )
+{
+  // Determine if the ROM is currently active
+  oric->romon = SDL_TRUE;
+  if( oric->drivetype == DRV_JASMIN )
+  {
+    if( oric->jasmin.olay == 0 )
+    {
+      oric->romon = !oric->romdis;
+    } else {
+      oric->romon = SDL_FALSE;
+    }
+  } else {
+    oric->romon = !oric->romdis;
+  }
+}
+
 // Oric Atmos CPU write
 void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
@@ -748,11 +765,12 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
         case SDLK_F4:
           if( ( shifted ) && ( oric->drivetype == DRV_JASMIN ) )
             oric->cpu.write( &oric->cpu, 0x3fb, 1 ); // ROMDIS
-		  if( oric->drivetype == DRV_MICRODISC )
-		  {
+          if( oric->drivetype == DRV_MICRODISC )
+          {
             oric->romdis = SDL_TRUE;
             microdisc_init( &oric->md, &oric->wddisk, oric );
-	      }
+          }
+          setromon( oric );
           m6502_reset( &oric->cpu );
           via_init( &oric->via, oric, VIA_MAIN );
           via_init( &oric->tele_via, oric, VIA_TELESTRAT );
@@ -1316,6 +1334,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       break;
   }
 
+  setromon( oric );
   oric->tapename[0] = 0;
   tape_rewind( oric );
   m6502_reset( &oric->cpu );

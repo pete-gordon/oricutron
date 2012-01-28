@@ -804,6 +804,7 @@ void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy )
       oric->romdis = SDL_FALSE;
       break;
   }
+  setromon( oric );
   m6502_reset( &oric->cpu );
   via_init( &oric->via, oric, VIA_MAIN );
   via_init( &oric->tele_via, oric, VIA_TELESTRAT );

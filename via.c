@@ -209,22 +209,6 @@ void tape_autoinsert( struct machine *oric )
 void tape_ticktock( struct machine *oric, int cycles )
 {
   Sint32 i, j;
-  SDL_bool romon;
-
-  // Determine if the ROM is currently active
-  // (for turbotape purposes)
-  romon = SDL_TRUE;
-  if( oric->drivetype == DRV_JASMIN )
-  {
-    if( oric->jasmin.olay == 0 )
-    {
-      romon = !oric->romdis;
-    } else {
-      romon = SDL_FALSE;
-    }
-  } else {
-    romon = !oric->romdis;
-  }
 
   // The VSync hack is triggered in the video emulation
   // but actually handled here, since the VSync signal
@@ -247,7 +231,7 @@ void tape_ticktock( struct machine *oric, int cycles )
       via_write_CB1( &oric->via, j );
   }
 
-  if( ( oric->pch_fd_available ) && ( romon ) )
+  if( ( oric->pch_fd_available ) && ( oric->romon ) )
   {
     // Patch CLOAD to insert a tape image specified.
     // Unfortunately the way the ROM works means we
@@ -279,7 +263,7 @@ void tape_ticktock( struct machine *oric, int cycles )
   // No tape? Motor off?
   if( ( !oric->tapebuf ) || ( !oric->tapemotor ) )
   {
-    if( ( oric->pch_tt_available ) && ( oric->tapeturbo ) && ( romon ) && ( oric->cpu.pc == oric->pch_tt_getsync_pc ) )
+    if( ( oric->pch_tt_available ) && ( oric->tapeturbo ) && ( oric->romon ) && ( oric->cpu.pc == oric->pch_tt_getsync_pc ) )
       oric->tapeturbo_syncstack = oric->cpu.sp;
     return;
   }
@@ -296,11 +280,11 @@ void tape_ticktock( struct machine *oric, int cycles )
     return;
   }
 
-  if( ( oric->tapeturbo_forceoff ) && ( oric->pch_tt_available ) && ( romon ) && ( oric->cpu.pc == oric->pch_tt_getsync_end_pc ) )
+  if( ( oric->tapeturbo_forceoff ) && ( oric->pch_tt_available ) && ( oric->romon ) && ( oric->cpu.pc == oric->pch_tt_getsync_end_pc ) )
     oric->tapeturbo_forceoff = SDL_FALSE;
 
   // Maybe do turbotape
-  if( ( oric->pch_tt_available ) && ( oric->tapeturbo ) && ( !oric->tapeturbo_forceoff ) && ( romon ) )
+  if( ( oric->pch_tt_available ) && ( oric->tapeturbo ) && ( !oric->tapeturbo_forceoff ) && ( oric->romon ) )
   {
     SDL_bool dosyncpatch;
 

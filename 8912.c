@@ -425,22 +425,6 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
 */
 void ay_ticktock( struct ay8912 *ay, int cycles )
 {
-  SDL_bool romon;
-
-  // Determine if the ROM is currently active
-  romon = SDL_TRUE;
-  if( ay->oric->drivetype == DRV_JASMIN )
-  {
-    if( ay->oric->jasmin.olay == 0 )
-    {
-      romon = !ay->oric->romdis;
-    } else {
-      romon = SDL_FALSE;
-    }
-  } else {
-    romon = !ay->oric->romdis;
-  }
-
   // Need to do queued keys?
   if( ( keyqueue ) && ( keysqueued ) )
   {
@@ -453,7 +437,7 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
       switch( ay->oric->type )
       {
         case MACH_ATMOS:
-          if( ( ay->oric->cpu.pc == 0xeb78 ) && ( romon ) )
+          if( ( ay->oric->cpu.pc == 0xeb78 ) && ( ay->oric->romon ) )
           {
             ay->oric->cpu.a = keyqueue[kqoffs++];
             ay->oric->cpu.write( &ay->oric->cpu, 0x2df, 0 );
@@ -465,7 +449,7 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
         
         case MACH_ORIC1:
         case MACH_ORIC1_16K:
-          if( ( ay->oric->cpu.pc == 0xe905 ) && ( romon ) )
+          if( ( ay->oric->cpu.pc == 0xe905 ) && ( ay->oric->romon ) )
           {
             ay->oric->cpu.a = keyqueue[kqoffs++];
             ay->oric->cpu.write( &ay->oric->cpu, 0x2df, 0 );
