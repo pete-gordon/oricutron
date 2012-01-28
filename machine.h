@@ -94,6 +94,8 @@ struct machine
 
   int vid_fg_col;
   int vid_bg_col;
+  int vid_col_offs;
+  int vid_inv_col_offs;
   int vid_mode;
   int vid_freq;
   int vid_textattrs;
@@ -101,7 +103,7 @@ struct machine
   int vid_chline;
   int frames;
   SDL_bool vid_dirty[224];
-  void (*vid_block_func)( struct machine *, int, int, SDL_bool, int, int );
+  void (*vid_block_func)( struct machine *, SDL_bool, int, int );
 
   int cyclesperraster;
   int vsync;

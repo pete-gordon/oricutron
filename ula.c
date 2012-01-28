@@ -36,6 +36,8 @@
 extern struct avi_handle *vidcap;
 extern SDL_bool warpspeed;
 
+static unsigned char bittab[8*8*64*8*2];
+
 // Refresh the video base pointer
 static inline void ula_refresh_charset( struct machine *oric )
 {
@@ -53,7 +55,9 @@ static inline void ula_decode_attr( struct machine *oric, int attr, int y )
   switch( attr & 0x18 )
   {
     case 0x00: // Foreground colour
-      oric->vid_fg_col = attr & 0x07;
+      oric->vid_fg_col       = attr & 0x07;
+      oric->vid_col_offs     = (oric->vid_fg_col<<12) | (oric->vid_bg_col<<9);
+      oric->vid_inv_col_offs = ((oric->vid_fg_col^7)<<12) | ((oric->vid_bg_col^7)<<9);
       break;
 
     case 0x08: // Text attribute
@@ -68,6 +72,8 @@ static inline void ula_decode_attr( struct machine *oric, int attr, int y )
 
     case 0x10: // Background colour
       oric->vid_bg_col = attr & 0x07;
+      oric->vid_col_offs     = (oric->vid_fg_col<<12) | (oric->vid_bg_col<<9);
+      oric->vid_inv_col_offs = ((oric->vid_fg_col^7)<<12) | ((oric->vid_bg_col^7)<<9);
       break;
 
     case 0x18: // Video mode
@@ -94,6 +100,8 @@ static inline void ula_raster_default( struct machine *oric )
   oric->vid_textattrs = 0;
   oric->vid_blinkmask = 0x3f;
   oric->vid_bg_col = 0;
+  oric->vid_col_offs     = (oric->vid_fg_col<<12) | (oric->vid_bg_col<<9);
+  oric->vid_inv_col_offs = ((oric->vid_fg_col^7)<<12) | ((oric->vid_bg_col^7)<<9);
   ula_refresh_charset( oric );
 }
 
@@ -103,44 +111,48 @@ void ula_powerup_default( struct machine *oric )
 }
 
 // Render a 6x1 block
-static void ula_render_block( struct machine *oric, int fg, int bg, SDL_bool inverted, int data, int y )
+static void ula_render_block( struct machine *oric, SDL_bool inverted, int data, int y )
 {
+  Uint16 *ptr;
+
+  if( inverted )
+  {
+    ptr = (Uint16 *)(&bittab[oric->vid_inv_col_offs | (data<<3)]);
+  }
+  else
+  {
+    ptr = (Uint16 *)(&bittab[oric->vid_col_offs | (data<<3)]);
+  }
+
+  *((Uint16 *)oric->scrpt) = *(ptr++); oric->scrpt+=2;
+  *((Uint16 *)oric->scrpt) = *(ptr++); oric->scrpt+=2;
+  *((Uint16 *)oric->scrpt) = *(ptr++); oric->scrpt+=2;
+}
+
+static void ula_render_block_checkdirty( struct machine *oric, SDL_bool inverted, int data, int y )
+{
+  Uint16 *ptr;
   int i;
 
   if( inverted )
   {
-    fg ^= 0x07;
-    bg ^= 0x07;
+    ptr = (Uint16 *)(&bittab[oric->vid_inv_col_offs | (data<<3)]);
   }
-  
-  for( i=0; i<6; i++ )
+  else
   {
-    *(oric->scrpt++) = (data & 0x20) ? fg : bg;
-    data <<= 1;
+    ptr = (Uint16 *)(&bittab[oric->vid_col_offs | (data<<3)]);
   }
-}
 
-static void ula_render_block_checkdirty( struct machine *oric, int fg, int bg, SDL_bool inverted, int data, int y )
-{
-  int i, c;
-
-  if( inverted )
+  for( i=0; i<3; i++)
   {
-    fg ^= 0x07;
-    bg ^= 0x07;
-  }
-  
-  for( i=0; i<6; i++ )
-  {
-    c = (data & 0x20) ? fg : bg;
-    if ((*(oric->scrpt)) != c)
+    if (*((Uint16 *)oric->scrpt) != *ptr)
     {
-      *(oric->scrpt) = c;
+      *((Uint16 *)oric->scrpt) = *ptr;
       oric->vid_dirty[y] = SDL_TRUE;
       oric->vid_block_func = ula_render_block;
     }
-    oric->scrpt++;
-    data <<= 1;
+    oric->scrpt+=2;
+    ptr++;
   }
 }
 
@@ -189,7 +201,7 @@ void ula_renderscreen( struct machine *oric )
       if( ( c & 0x60 ) == 0 )
       {
         ula_decode_attr( oric, c, y );
-        ula_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, 0, y );
+        ula_render_block( oric, (c & 0x80)!=0, 0, y );
         if( oric->vid_raster < oric->vid_special )
         {
           if( oric->vid_mode & 0x04 ) // HIRES?
@@ -210,14 +222,14 @@ void ula_renderscreen( struct machine *oric )
       } else {
         if( hires )
         {
-          ula_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, c & bitmask, y );
+          ula_render_block( oric, (c & 0x80)!=0, c & bitmask, y );
         } else {
           int ch_ix, ch_dat;
           
           ch_ix   = c & 0x7f;          
           ch_dat = oric->vid_ch_data[ (ch_ix<<3) | oric->vid_chline ] & bitmask;
         
-          ula_render_block( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, ch_dat, y );
+          ula_render_block( oric, (c & 0x80)!=0, ch_dat, y );
         }
       }
     }
@@ -357,7 +369,7 @@ SDL_bool ula_doraster( struct machine *oric )
     if( ( c & 0x60 ) == 0 )
     {
       ula_decode_attr( oric, c, y );
-      oric->vid_block_func( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, 0, y );
+      oric->vid_block_func( oric, (c & 0x80)!=0, 0, y );
       if( oric->vid_raster < oric->vid_special )
       {
         if( oric->vid_mode & 0x04 ) // HIRES?
@@ -379,14 +391,14 @@ SDL_bool ula_doraster( struct machine *oric )
     } else {
       if( hires )
       {
-        oric->vid_block_func( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, c & bitmask, y );
+        oric->vid_block_func( oric, (c & 0x80)!=0, c & bitmask, y );
       } else {
         int ch_ix, ch_dat;
           
         ch_ix   = c & 0x7f;          
         ch_dat = oric->vid_ch_data[ (ch_ix<<3) | oric->vid_chline ] & bitmask;
         
-        oric->vid_block_func( oric, oric->vid_fg_col, oric->vid_bg_col, (c & 0x80)!=0, ch_dat, y );
+        oric->vid_block_func( oric, (c & 0x80)!=0, ch_dat, y );
       }
     }
   }
@@ -413,10 +425,47 @@ void preinit_ula( struct machine *oric )
 
 SDL_bool init_ula( struct machine *oric )
 {
+  int fg, bg, bits, offs, mask;
+#if 0 //SDL_BYTEORDER == SDL_LIL_ENDIAN
+  Uint8 t;
+#endif
+
   oric->scr = (Uint8 *)malloc( 240*224 );
   if( !oric->scr ) return SDL_FALSE;
 
   ula_set_dirty( oric );
+
+  /* Precalc all 6 bit combinations for all colour combinations */
+  for( fg=0; fg<8; fg++ )
+  {
+    for( bg=0; bg<8; bg++ )
+    {
+      for( bits=0; bits<64; bits++)
+      {
+        // FFFBBBbbbbbb000
+        offs = (fg<<12)|(bg<<9)|(bits<<3);
+        for( mask=0x20; mask; mask>>=1 )
+        {
+          bittab[offs++] = (bits&mask) ? fg : bg;
+        }
+
+#if 0 //SDL_BYTEORDER == SDL_LIL_ENDIAN
+        offs = (fg<<12)|(bg<<9)|(bits<<3);
+        t = bittab[offs];
+        bittab[offs] = bittab[offs+1];
+        bittab[offs+1] = t;
+        offs += 2;
+        t = bittab[offs];
+        bittab[offs] = bittab[offs+1];
+        bittab[offs+1] = t;
+        offs += 2;
+        t = bittab[offs];
+        bittab[offs] = bittab[offs+1];
+        bittab[offs+1] = t;
+#endif        
+      }
+    }
+  }
 
   return SDL_TRUE;
 }
