@@ -691,7 +691,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   maintask = IExec->FindTask( NULL );
 #endif
 
-  setoverclock( oric, NULL, 1 );
+  setoverclock( oric, NULL, 0 );
   if( !init_gui( oric, sto->start_rendermode ) ) { free( sto ); return SDL_FALSE; }
   if( !init_filerequester( oric ) ) { free( sto ); return SDL_FALSE; }
   if( !init_msgbox( oric ) ) { free( sto ); return SDL_FALSE; }
@@ -808,15 +808,12 @@ void frameloop_overclock( struct machine *oric, SDL_bool *framedone, SDL_bool *n
         if( instloop < (oric->overclockmult-1) )
         {
           if (m6502_inst( &oric->cpu ))
-          {
-            instloop++;
             break;
-          }
         }
       }
 
       /* Scale down the number of cycles executed */
-      instcycles /= oric->overclockmult;
+      instcycles >>= oric->overclockshift;
 
       /* Move the emulation on */
       via_clock( &oric->via, instcycles );
@@ -987,33 +984,35 @@ int main( int argc, char *argv[] )
         if( !SDL_WaitEvent( &event ) ) break;
       }
 
-      switch( event.type )
-      {
-        case SDL_USEREVENT:
-          needrender = SDL_TRUE;
-          framedone  = SDL_FALSE;
-          break;
+      do {
+        switch( event.type )
+        {
+          case SDL_USEREVENT:
+            needrender = SDL_TRUE;
+            framedone  = SDL_FALSE;
+            break;
 
-        case SDL_QUIT:
-          done = SDL_TRUE;
-          break;
-        
-        default:
-          switch( oric.emu_mode )
-          {
-            case EM_MENU:
-              done |= menu_event( &event, &oric, &needrender );
-              break;
- 
-            case EM_RUNNING:
-              done |= emu_event( &event, &oric, &needrender );
-              break;
+          case SDL_QUIT:
+            done = SDL_TRUE;
+            break;
+          
+          default:
+            switch( oric.emu_mode )
+            {
+              case EM_MENU:
+                done |= menu_event( &event, &oric, &needrender );
+                break;
+   
+              case EM_RUNNING:
+                done |= emu_event( &event, &oric, &needrender );
+                break;
 
-            case EM_DEBUG:
-              done |= mon_event( &event, &oric, &needrender );
-              break;
-          }
-      }
+              case EM_DEBUG:
+                done |= mon_event( &event, &oric, &needrender );
+                break;
+            }
+        }
+      } while( SDL_PollEvent( &event ) );
     }
     ay_unlockaudio( &oric.ay );
   }
