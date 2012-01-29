@@ -358,6 +358,12 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
         case 0x66: // { "ROR", AM_ZP  },  // 66
         case 0xC6: // { "DEC", AM_ZP  },  // C6
         case 0xE6: // { "INC", AM_ZP  },  // E6
+        case 0xC7: // { "DCP", AM_ZP  },  // C7 (illegal)
+        case 0xE7: // { "ISC", AM_ZP  },  // E7 (illegal)
+        case 0x27: // { "RLA", AM_ZP  },  // 27 (illegal)
+        case 0x67: // { "RRA", AM_ZP  },  // 67 (illegal)
+        case 0x07: // { "SLO", AM_ZP  },  // 07 (illegal)
+        case 0x47: // { "SRE", AM_ZP  },  // 47 (illegal)
           RW_BADDR_ZP;
           break;
 
@@ -367,6 +373,12 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
         case 0x6E: // { "ROR", AM_ABS },  // 6E
         case 0xCE: // { "DEC", AM_ABS },  // CE
         case 0xEE: // { "INC", AM_ABS },  // EE
+        case 0xCF: // { "DCP", AM_ABS },  // CF (illegal)
+        case 0xEF: // { "ISC", AM_ABS },  // EF (illegal)
+        case 0x2F: // { "RLA", AM_ABS },  // 2F (illegal)
+        case 0x6F: // { "RRA", AM_ABS },  // 6F (illegal)
+        case 0x0F: // { "SLO", AM_ABS },  // 0F (illegal)
+        case 0x4F: // { "SRE", AM_ABS },  // 4F (illegal)
           RW_BADDR_ABS;
           break;
 
@@ -376,6 +388,12 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
         case 0x7E: // { "ROR", AM_ABX },  // 7E
         case 0xDE: // { "DEC", AM_ABX },  // DE
         case 0xFE: // { "INC", AM_ABX },  // FE
+        case 0xDF: // { "DCP", AM_ABX },  // DF (illegal)
+        case 0xFF: // { "ISC", AM_ABX },  // FF (illegal)
+        case 0x3F: // { "RLA", AM_ABX },  // 3F (illegal)
+        case 0x7F: // { "RRA", AM_ABX },  // 7F (illegal)
+        case 0x1F: // { "SLO", AM_ABX },  // 1F (illegal)
+        case 0x5F: // { "SRE", AM_ABX },  // 5F (illegal)
           RW_BADDR_ABX;
           break;
 
@@ -385,7 +403,40 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
         case 0x76: // { "ROR", AM_ZPX },  // 76
         case 0xD6: // { "DEC", AM_ZPX },  // D6
         case 0xF6: // { "INC", AM_ZPX },  // F6
+        case 0xD7: // { "DCP", AM_ZPX },  // D7 (illegal)
+        case 0xF7: // { "ISC", AM_ZPX },  // F7 (illegal)
+        case 0x37: // { "RLA", AM_ZPX },  // 37 (illegal)
+        case 0x77: // { "RRA", AM_ZPX },  // 77 (illegal)
+        case 0x17: // { "SLO", AM_ZPX },  // 17 (illegal)
+        case 0x57: // { "SRE", AM_ZPX },  // 57 (illegal)
           RW_BADDR_ZPX;
+          break;
+        
+        case 0xDB: // { "DCP", AM_ABY },  // DB (illegal)
+        case 0xFB: // { "ISC", AM_ABY },  // FB (illegal)
+        case 0x3B: // { "RLA", AM_ABY },  // 3B (illegal)
+        case 0x7B: // { "RRA", AM_ABY },  // 7B (illegal)
+        case 0x1B: // { "SLO", AM_ABY },  // 1B (illegal)
+        case 0x5B: // { "SRE", AM_ABY },  // 5B (illegal)
+          RW_BADDR_ABY;
+          break;
+        
+        case 0xC3: // { "DCP", AM_ZIX },  // C3 (illegal)
+        case 0xE3: // { "ISC", AM_ZIX },  // E3 (illegal)
+        case 0x23: // { "RLA", AM_ZIX },  // 23 (illegal)
+        case 0x63: // { "RRA", AM_ZIX },  // 63 (illegal)
+        case 0x03: // { "SLO", AM_ZIX },  // 03 (illegal)
+        case 0x43: // { "SRE", AM_ZIX },  // 43 (illegal)
+          RW_BADDR_ZIX;
+          break;
+        
+        case 0xD3: // { "DCP", AM_ZIY },  // D3 (illegal)
+        case 0xF3: // { "ISC", AM_ZIY },  // F3 (illegal)
+        case 0x33: // { "RLA", AM_ZIY },  // 33 (illegal)
+        case 0x73: // { "RRA", AM_ZIY },  // 73 (illegal)
+        case 0x13: // { "SLO", AM_ZIY },  // 13 (illegal)
+        case 0x53: // { "SRE", AM_ZIY },  // 53 (illegal)
+          RW_BADDR_ZIY;
           break;
 
         case 0x01: // { "ORA", AM_ZIX },  // 01
@@ -395,6 +446,7 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
         case 0xA1: // { "LDA", AM_ZIX },  // A1
         case 0xC1: // { "CMP", AM_ZIX },  // C1
         case 0xE1: // { "SBC", AM_ZIX },  // E1
+        case 0xA3: // { "LAX", AM_ZIX },  // A3 (illegal)
           R_BADDR_ZIX;
           break;
 
@@ -405,6 +457,8 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
         case 0xB1: // { "LDA", AM_ZIY },  // B1
         case 0xD1: // { "CMP", AM_ZIY },  // D1
         case 0xF1: // { "SBC", AM_ZIY },  // F1
+        case 0xBB: // { "LAS", AM_ZIY },  // BB
+        case 0xB3: // { "LAX", AM_ZIY },  // B3 (illegal)
           R_BADDR_ZIY;
           break;
 
@@ -420,6 +474,7 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
         case 0xC5: // { "CMP", AM_ZP  },  // C5
         case 0xE4: // { "CPX", AM_ZP  },  // E4
         case 0xE5: // { "SBC", AM_ZP  },  // E5
+        case 0xA7: // { "LAX", AM_ZP  },  // A7 (illegal)
           R_BADDR_ZP;
           break;
 
@@ -435,6 +490,7 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
         case 0xCD: // { "CMP", AM_ABS },  // CD
         case 0xEC: // { "CPX", AM_ABS },  // EC
         case 0xED: // { "SBC", AM_ABS },  // ED
+        case 0xAF: // { "LAX", AM_ABS },  // AF (illegal)
           R_BADDR_ABS;
           break;
 
@@ -457,6 +513,7 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
         case 0xBE: // { "LDX", AM_ABY },  // BE
         case 0xD9: // { "CMP", AM_ABY },  // D9
         case 0xF9: // { "SBC", AM_ABY },  // F9
+        case 0xBF: // { "LAX", AM_ABY },  // BF (illegal)
           R_BADDR_ABY;
           break;    
 
@@ -472,6 +529,7 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
           break;    
 
         case 0xB6: // { "LDX", AM_ZPY },  // B6
+        case 0xB7: // { "LAX", AM_ZPY },  // B7 (illegal)
           R_BADDR_ZPY;
           break;
 
@@ -481,18 +539,21 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
           break;
           
         case 0x81: // { "STA", AM_ZIX },  // 81
+        case 0x83: // { "SAX", AM_ZIX },  // 83 (illegal)
           W_BADDR_ZIX;
           break;
 
         case 0x84: // { "STY", AM_ZP  },  // 84
         case 0x85: // { "STA", AM_ZP  },  // 85
         case 0x86: // { "STX", AM_ZP  },  // 86
+        case 0x87: // { "SAX", AM_ZP  },  // 87 (illegal)
           W_BADDR_ZP;
           break;
          
         case 0x8C: // { "STY", AM_ABS },  // 8C
         case 0x8D: // { "STA", AM_ABS },  // 8D
         case 0x8E: // { "STX", AM_ABS },  // 8E
+        case 0x8F: // { "SAX", AM_ABS },  // 8F (illegal)
           W_BADDR_ABS;
           break;
 
@@ -506,10 +567,13 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
           break;
 
         case 0x96: // { "STX", AM_ZPY },  // 96
+        case 0x97: // { "SAX", AM_ZPY },  // 97 (illegal)
           W_BADDR_ZPY;
           break;
 
         case 0x99: // { "STA", AM_ABY },  // 99
+        case 0x9F: // { "AHX", AM_ABY },  // 9F (illegal, unstable)
+        case 0x9B: // { "TAS", AM_ABY },  // 9B (illegal, unstable)
           W_BADDR_ABY;
           break;
 
@@ -563,6 +627,16 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
     case 0x7E: // { "ROR", AM_ABX },  // 7E
     case 0xDE: // { "DEC", AM_ABX },  // DE
     case 0xFE: // { "INC", AM_ABX },  // FE
+    case 0xDF: // { "DCP", AM_ABX },  // DF (illegal)
+    case 0xDB: // { "DCP", AM_ZPY },  // DB (illegal)
+    case 0xFF: // { "ISC", AM_ABX },  // FF (illegal)
+    case 0xFB: // { "ISC", AM_ABY },  // FB (illegal)
+    case 0x3F: // { "RLA", AM_ABX },  // 3F (illegal)
+    case 0x3B: // { "RLA", AM_ABY },  // 3B (illegal)
+    case 0x7F: // { "RRA", AM_ABX },  // 7F (illegal)
+    case 0x7B: // { "RRA", AM_ABY },  // 7B (illegal)
+    case 0x1F: // { "SLO", AM_ABX },  // 1F (illegal)
+    case 0x1B: // { "SLO", AM_ABY },  // 1B (illegal)
       cpu->icycles = 7;
       break;
 
@@ -590,6 +664,19 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
     case 0xEE: // { "INC", AM_ABS },  // EE
     case 0xF6: // { "INC", AM_ZPX },  // F6
     case 0xCE: // { "DEC", AM_ABS },  // CE
+    case 0x83: // { "SAX", AM_ZIX },  // 83 (illegal)
+    case 0x93: // { "AHX", AM_ZIY },  // 93 (illegal, unstable)
+    case 0xD7: // { "DCP", AM_ZPX },  // D7 (illegal)
+    case 0xCF: // { "DCP", AM_ABS },  // CF (illegal)
+    case 0xF7: // { "ISC", AM_ZPX },  // F7 (illegal)
+    case 0xEF: // { "ISC", AM_ABS },  // EF (illegal)
+    case 0xA3: // { "LAX", AM_ABY },  // A3 (illegal)
+    case 0x37: // { "RLA", AM_ZPX },  // 37 (illegal)
+    case 0x2F: // { "RLA", AM_ABS },  // 2F (illegal)
+    case 0x77: // { "RRA", AM_ZPX },  // 77 (illegal)
+    case 0x6F: // { "RRA", AM_ABS },  // 6F (illegal)
+    case 0x17: // { "SLO", AM_ZPX },  // 17 (illegal)
+    case 0x0F: // { "SLO", AM_ABS },  // 0F (illegal)
       cpu->icycles = 6;
       break;
 
@@ -611,6 +698,11 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
     case 0xC5: // { "CMP", AM_ZP  },  // C5
     case 0xE4: // { "CPX", AM_ZP  },  // E4
     case 0xE5: // { "SBC", AM_ZP  },  // E5
+    case 0x87: // { "SAX", AM_ZP  },  // 87 (illegal)
+    case 0x04: // { "DOP", AM_ZP  },  // 04 (illegal)
+    case 0x44: // { "DOP", AM_ZP  },  // 44 (illegal)
+    case 0x64: // { "DOP", AM_ZP  },  // 64 (illegal)
+    case 0xA7: // { "LAX", AM_ZP  },  // A7 (illegal)
       cpu->icycles = 3;
       break;
 
@@ -623,6 +715,15 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
     case 0x9D: // { "STA", AM_ABX },  // 9D
     case 0xC6: // { "DEC", AM_ZP  },  // C6
     case 0xE6: // { "INC", AM_ZP  },  // E6
+    case 0x9F: // { "AHX", AM_ABY },  // 9F (illegal, unstable)
+    case 0xC7: // { "DCP", AM_ZP  },  // C7 (illegal)
+    case 0xE7: // { "ISC", AM_ZP  },  // E7 (illegal)
+    case 0x27: // { "RLA", AM_ZP  },  // 27 (illegal)
+    case 0x67: // { "RRA", AM_ZP  },  // 67 (illegal)
+    case 0x07: // { "SLO", AM_ZP  },  // 07 (illegal)
+    case 0x9E: // { "SHX", AM_ABY },  // 9E (illegal, unstable)
+    case 0x9C: // { "SHY", AM_ABX },  // 9C (illegal, unstable)
+    case 0x9B: // { "TAS", AM_ABY },  // 9B (illegal, unstable)
       cpu->icycles = 5;
       break;
 
@@ -657,8 +758,27 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
     case 0xE0: // { "CPX", AM_IMM },  // E0
     case 0xE8: // { "INX", AM_IMP },  // E8
     case 0xE9: // { "SBC", AM_IMM },  // E9
+    case 0xEB: // { "SBC", AM_IMM },  // EB (illegal)
     case 0xEA: // { "NOP", AM_IMP },  // EA
     case 0xF8: // { "SED", AM_IMP },  // F8
+    case 0x0B: // { "ANC", AM_IMM },  // 0B (illegal)
+    case 0x2B: // { "ANC", AM_IMM },  // 2B (illegal)
+    case 0x6B: // { "ARR", AM_IMM },  // 6B (illegal)
+    case 0x4B: // { "ALR", AM_IMM },  // 4B (illegal)
+    case 0xAB: // { "LAX", AM_IMM },  // AB (illegal, unstable)
+    case 0xCB: // { "AXS", AM_IMM },  // CB (illegal)
+    case 0x80: // { "DOP", AM_IMM },  // 80 (illegal)
+    case 0x82: // { "DOP", AM_IMM },  // 82 (illegal)
+    case 0x89: // { "DOP", AM_IMM },  // 89 (illegal)
+    case 0xC2: // { "DOP", AM_IMM },  // C2 (illegal)
+    case 0xE2: // { "DOP", AM_IMM },  // E2 (illegal)
+    case 0x1A: // { "NOP", AM_IMP },  // 1A (illegal)
+    case 0x3A: // { "NOP", AM_IMP },  // 3A (illegal)
+    case 0x5A: // { "NOP", AM_IMP },  // 5A (illegal)
+    case 0x7A: // { "NOP", AM_IMP },  // 7A (illegal)
+    case 0xDA: // { "NOP", AM_IMP },  // DA (illegal)
+    case 0xFA: // { "NOP", AM_IMP },  // FA (illegal)
+    case 0x8B: // { "XAA", AM_IMM },  // 8B (illegal, unstable)
       cpu->icycles = 2;
       break;
 
@@ -691,7 +811,31 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
     case 0xEC: // { "CPX", AM_ABS },  // EC
     case 0xED: // { "SBC", AM_ABS },  // ED
     case 0xF5: // { "SBC", AM_ZPX },  // F5
+    case 0x97: // { "SAX", AM_ZPY },  // 97 (illegal)
+    case 0x8F: // { "SAX", AM_ABS },  // 8F (illegal)
+    case 0x14: // { "DOP", AM_ZPX },  // 14 (illegal)
+    case 0x34: // { "DOP", AM_ZPX },  // 34 (illegal)
+    case 0x54: // { "DOP", AM_ZPX },  // 54 (illegal)
+    case 0x74: // { "DOP", AM_ZPX },  // 74 (illegal)
+    case 0xD4: // { "DOP", AM_ZPX },  // D4 (illegal)
+    case 0xF4: // { "DOP", AM_ZPX },  // F4 (illegal)
+    case 0xB7: // { "LAX", AM_ZPY },  // B7 (illegal)
+    case 0xAF: // { "LAX", AM_ABS },  // AF (illegal)
+    case 0x0C: // { "TOP", AM_ABS },  // 0C (illegal)
       cpu->icycles = 4;
+      break;
+
+    case 0xC3: // { "DCP", AM_ZIX },  // C3 (illegal)
+    case 0xD3: // { "DCP", AM_ZIY },  // D3 (illegal)
+    case 0xE3: // { "ISC", AM_ZIY },  // E3 (illegal)
+    case 0xF3: // { "ISC", AM_ZIY },  // F3 (illegal)
+    case 0x23: // { "RLA", AM_ZIX },  // 23 (illegal)
+    case 0x33: // { "RLA", AM_ZIY },  // 33 (illegal)
+    case 0x63: // { "RRA", AM_ZIX },  // 63 (illegal)
+    case 0x73: // { "RRA", AM_ZIY },  // 73 (illegal)
+    case 0x03: // { "SLO", AM_ZIX },  // 03 (illegal)
+    case 0x13: // { "SLO", AM_ZIY },  // 13 (illegal)
+      cpu->icycles = 8;
       break;
 
     case 0x10: // { "BPL", AM_REL },  // 10
@@ -705,9 +849,17 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
     case 0xB1: // { "LDA", AM_ZIY },  // B1
     case 0xD1: // { "CMP", AM_ZIY },  // D1
     case 0xF1: // { "SBC", AM_ZIY },  // F1
-	  baddr = cpu->read( cpu, cpu->calcpc+1 );
-	  baddr = ((cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr ));
+    case 0xB3: // { "LAX", AM_ZIY },  // B3 (illegal)
+      baddr = cpu->read( cpu, cpu->calcpc+1 );
+      baddr = ((cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr ));
       cpu->icycles = 5;
+      if( PAGECHECK( cpu->y ) ) cpu->icycles++;
+      break;
+
+    case 0xBB: // { "LAS", AM_ZIY },  // BB
+      baddr = cpu->read( cpu, cpu->calcpc+1 );
+      baddr = ((cpu->read( cpu, baddr+1 )<<8) | cpu->read( cpu, baddr ));
+      cpu->icycles = 4;
       if( PAGECHECK( cpu->y ) ) cpu->icycles++;
       break;
 
@@ -719,6 +871,7 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
     case 0xBE: // { "LDX", AM_ABY },  // BE
     case 0xD9: // { "CMP", AM_ABY },  // D9
     case 0xF9: // { "SBC", AM_ABY },  // F9
+    case 0xBF: // { "LAX", AM_ABY },  // BF (illegal)
       NBADDR_ABS;
       cpu->icycles = 4;
       if( PAGECHECK( cpu->y ) ) cpu->icycles++;
@@ -732,6 +885,12 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
     case 0xBD: // { "LDA", AM_ABX },  // BD
     case 0xDD: // { "CMP", AM_ABX },  // DD
     case 0xFD: // { "SBC", AM_ABX },  // FD
+    case 0x1C: // { "TOP", AM_ABX },  // 1C (illegal)
+    case 0x3C: // { "TOP", AM_ABX },  // 3C (illegal)
+    case 0x5C: // { "TOP", AM_ABX },  // 5C (illegal)
+    case 0x7C: // { "TOP", AM_ABX },  // 7C (illegal)
+    case 0xDC: // { "TOP", AM_ABX },  // DC (illegal)
+    case 0xFC: // { "TOP", AM_ABX },  // FC (illegal)
       NBADDR_ABS;
       cpu->icycles = 4;
       if( PAGECHECK( cpu->x ) ) cpu->icycles++;
@@ -775,7 +934,7 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
 }
 
 // Execute one 6502 instruction
-void m6502_inst( struct m6502 *cpu )
+SDL_bool m6502_inst( struct m6502 *cpu )
 {
   unsigned char v;
   unsigned short r, t, baddr;
@@ -1506,6 +1665,7 @@ void m6502_inst( struct m6502 *cpu )
       break;
 
     case 0xE9: // { "SBC", AM_IMM },  // E9
+    case 0xEB: // { "SBC", AM_IMM },  // EB (illegal)
       READ_IMM;
       DO_SBC;
       break;
@@ -1568,9 +1728,668 @@ void m6502_inst( struct m6502 *cpu )
       cpu->write( cpu, baddr, ++v );
       FLAG_ZN(v);
       break;
-    
-    default:
-      //dbg_printf( "Opcode %02X executed at %04X", cpu->calcop, cpu->lastpc );
+
+    // Illegal opcodes
+    case 0x0B: // { "ANC", AM_IMM },  // 0B (illegal)
+    case 0x2B: // { "ANC", AM_IMM },  // 2B (illegal)
+      READ_IMM;
+      DO_AND;
+      cpu->f_c = cpu->f_n;
       break;
+    
+    case 0x87: // { "SAX", AM_ZP  },  // 87 (illegal)
+      v = cpu->a & cpu->x;
+      WRITE_ZP(v);
+      cpu->f_n = (v&0x80)!=0;
+      cpu->f_z = v!=0;
+      break;
+
+    case 0x97: // { "SAX", AM_ZPY },  // 97 (illegal)
+      v = cpu->a & cpu->x;
+      WRITE_ZPY(v);
+      cpu->f_n = (v&0x80)!=0;
+      cpu->f_z = v!=0;
+      break;
+
+    case 0x83: // { "SAX", AM_ZIX },  // 83 (illegal)
+      v = cpu->a & cpu->x;
+      WRITE_ZIX(v);
+      cpu->f_n = (v&0x80)!=0;
+      cpu->f_z = v!=0;
+      break;
+
+    case 0x8F: // { "SAX", AM_ABS },  // 8F (illegal)
+      v = cpu->a & cpu->x;
+      WRITE_ABS(v);
+      cpu->f_n = (v&0x80)!=0;
+      cpu->f_z = v!=0;
+      break;
+
+    case 0x6B: // { "ARR", AM_IMM },  // 6B (illegal)
+      READ_IMM;
+      cpu->a = (cpu->a&v)>>1;
+      cpu->f_n = (cpu->a&0x80) != 0;
+      cpu->f_z = cpu->a != 0;
+      switch (cpu->a&0x60)
+      {
+        case 0x00: cpu->f_c=0; cpu->f_v=0; break;
+        case 0x20: cpu->f_c=0; cpu->f_v=1; break;
+        case 0x60: cpu->f_c=1; cpu->f_v=0; break;
+        case 0x40: cpu->f_c=1; cpu->f_v=1; break;
+      }
+      break;
+
+    case 0x4B: // { "ALR", AM_IMM },  // 4B (illegal)
+      READ_IMM;
+      cpu->a = (cpu->a&v)>>1;
+      FLAG_ZCN(cpu->a);
+      break;
+
+    case 0xAB: // { "LAX", AM_IMM },  // AB (illegal, unstable)
+      READ_IMM;
+      DO_AND;
+      cpu->x = cpu->a;
+      break;
+
+    case 0x93: // { "AHX", AM_ZIY },  // 93 (illegal, unstable)
+    case 0x9F: // { "AHX", AM_ABY },  // 9F (illegal, unstable)
+      r = cpu->x;
+
+      // Instability 1 (sometimes, the &H drops off)
+      if ((cpu->cycles&7)>2) // pseudorandom 5 in 8 chance of &H
+        r &= (cpu->pc>>8)+1;
+      
+      v = cpu->a & r;
+      
+      // Instability 2 (A is input and output, which leads to "bit fight",
+      // but anywhere that X&H=1 will work)
+      if (((cpu->cycles>>8)&7)<2) // pseudorandom 2 in 8 chance of bit fight
+      {
+        r = (r^0xff)&cpu->a; // inverse R now has 1 for each bit that we can mess with
+        r &= cpu->cycles;    // Make some of them 0 (pseudorandomly)
+        v |= r;
+      }
+      if (cpu->calcop==0x9F)
+      {
+        WRITE_ABY(v);
+      }
+      else
+      {
+        WRITE_ZIY(v);
+      }
+      break;
+
+    case 0xCB: // { "AXS", AM_IMM },  // CB (illegal)
+      READ_IMM;
+      cpu->x = (cpu->a&cpu->x)-v;
+      FLAG_ZCN(cpu->x);
+      break;
+
+    case 0xC7: // { "DCP", AM_ZP  },  // C7 (illegal)
+      BADDR_ZP;
+      v = cpu->read(cpu, baddr);
+      cpu->write(cpu, baddr, --v);
+      WRITE_ZP(--v);
+      FLAG_ZN(v);
+      break;
+
+    case 0xD7: // { "DCP", AM_ZPX },  // D7 (illegal)
+      BADDR_ZPX;
+      v = cpu->read(cpu, baddr);
+      cpu->write(cpu, baddr, --v);
+      FLAG_ZN(v);
+      break;
+
+    case 0xCF: // { "DCP", AM_ABS },  // CF (illegal)
+      BADDR_ABS;
+      v = cpu->read(cpu, baddr);
+      cpu->write(cpu, baddr, --v);
+      FLAG_ZN(v);
+      break;
+
+    case 0xDF: // { "DCP", AM_ABX },  // DF (illegal)
+      BADDR_ABX;
+      v = cpu->read(cpu, baddr);
+      cpu->write(cpu, baddr, --v);
+      FLAG_ZN(v);
+      break;
+
+    case 0xDB: // { "DCP", AM_ABY },  // DB (illegal)
+      BADDR_ABY;
+      v = cpu->read(cpu, baddr);
+      cpu->write(cpu, baddr, --v);
+      FLAG_ZN(v);
+      break;
+
+    case 0xC3: // { "DCP", AM_ZIX },  // C3 (illegal)
+      BADDR_ZIX;
+      v = cpu->read(cpu, baddr);
+      cpu->write(cpu, baddr, --v);
+      FLAG_ZN(v);
+      break;
+
+    case 0xD3: // { "DCP", AM_ZIY },  // D3 (illegal)
+      BADDR_ZIY;
+      v = cpu->read(cpu, baddr);
+      cpu->write(cpu, baddr, --v);
+      FLAG_ZN(v);
+      break;
+
+    case 0x04: // { "DOP", AM_IMM },  // 04 (illegal)
+    case 0x14: // { "DOP", AM_IMM },  // 14 (illegal)
+    case 0x34: // { "DOP", AM_IMM },  // 34 (illegal)
+    case 0x44: // { "DOP", AM_IMM },  // 44 (illegal)
+    case 0x54: // { "DOP", AM_IMM },  // 54 (illegal)
+    case 0x64: // { "DOP", AM_IMM },  // 64 (illegal)
+    case 0x74: // { "DOP", AM_IMM },  // 74 (illegal)
+    case 0x80: // { "DOP", AM_IMM },  // 80 (illegal)
+    case 0x82: // { "DOP", AM_IMM },  // 82 (illegal)
+    case 0x89: // { "DOP", AM_IMM },  // 89 (illegal)
+    case 0xC2: // { "DOP", AM_IMM },  // C2 (illegal)
+    case 0xD4: // { "DOP", AM_IMM },  // D4 (illegal)
+    case 0xE2: // { "DOP", AM_IMM },  // E2 (illegal)
+    case 0xF4: // { "DOP", AM_IMM },  // F4 (illegal)
+    case 0x1A: // { "NOP", AM_IMP },  // 1A (illegal)
+    case 0x3A: // { "NOP", AM_IMP },  // 3A (illegal)
+    case 0x5A: // { "NOP", AM_IMP },  // 5A (illegal)
+    case 0x7A: // { "NOP", AM_IMP },  // 7A (illegal)
+    case 0xDA: // { "NOP", AM_IMP },  // DA (illegal)
+    case 0xFA: // { "NOP", AM_IMP },  // FA (illegal)
+    case 0x0C: // { "TOP", AM_ABS },  // 0C (illegal)
+    case 0x1C: // { "TOP", AM_ABX },  // 1C (illegal)
+    case 0x3C: // { "TOP", AM_ABX },  // 3C (illegal)
+    case 0x5C: // { "TOP", AM_ABX },  // 5C (illegal)
+    case 0x7C: // { "TOP", AM_ABX },  // 7C (illegal)
+    case 0xDC: // { "TOP", AM_ABX },  // DC (illegal)
+    case 0xFC: // { "TOP", AM_ABX },  // FC (illegal)
+      break;
+
+    case 0xE7: // { "ISC", AM_ZP  },  // E7 (illegal)
+      BADDR_ZP;
+      v = cpu->read(cpu, baddr);
+      cpu->write(cpu, baddr, ++v);
+      r = (cpu->a - v) - (cpu->f_c^1);
+      cpu->f_v = ((cpu->a^v)&(cpu->a^(r&0xff))&0x80) ? 1 : 0;
+      FLAG_SZCN(r);
+      cpu->a = r;
+      cpu->pc++;
+      break;
+
+    case 0xF7: // { "ISC", AM_ZPX },  // F7 (illegal)
+      BADDR_ZPX;
+      v = cpu->read(cpu, baddr);
+      cpu->write(cpu, baddr, ++v);
+      r = (cpu->a - v) - (cpu->f_c^1);
+      cpu->f_v = ((cpu->a^v)&(cpu->a^(r&0xff))&0x80) ? 1 : 0;
+      FLAG_SZCN(r);
+      cpu->a = r;
+      cpu->pc++;
+      break;
+
+    case 0xEF: // { "ISC", AM_ABS },  // EF (illegal)
+      BADDR_ABS;
+      v = cpu->read(cpu, baddr);
+      cpu->write(cpu, baddr, ++v);
+      r = (cpu->a - v) - (cpu->f_c^1);
+      cpu->f_v = ((cpu->a^v)&(cpu->a^(r&0xff))&0x80) ? 1 : 0;
+      FLAG_SZCN(r);
+      cpu->a = r;
+      cpu->pc+=2;
+      break;
+
+    case 0xFF: // { "ISC", AM_ABX },  // FF (illegal)
+      BADDR_ABX;
+      v = cpu->read(cpu, baddr);
+      cpu->write(cpu, baddr, ++v);
+      r = (cpu->a - v) - (cpu->f_c^1);
+      cpu->f_v = ((cpu->a^v)&(cpu->a^(r&0xff))&0x80) ? 1 : 0;
+      FLAG_SZCN(r);
+      cpu->a = r;
+      cpu->pc+=2;
+      break;
+
+    case 0xFB: // { "ISC", AM_ABY },  // FB (illegal)
+      BADDR_ABY;
+      v = cpu->read(cpu, baddr);
+      cpu->write(cpu, baddr, ++v);
+      r = (cpu->a - v) - (cpu->f_c^1);
+      cpu->f_v = ((cpu->a^v)&(cpu->a^(r&0xff))&0x80) ? 1 : 0;
+      FLAG_SZCN(r);
+      cpu->a = r;
+      cpu->pc+=2;
+      break;
+
+    case 0xE3: // { "ISC", AM_ZIX },  // E3 (illegal)
+      BADDR_ZIX;
+      v = cpu->read(cpu, baddr);
+      cpu->write(cpu, baddr, ++v);
+      r = (cpu->a - v) - (cpu->f_c^1);
+      cpu->f_v = ((cpu->a^v)&(cpu->a^(r&0xff))&0x80) ? 1 : 0;
+      FLAG_SZCN(r);
+      cpu->a = r;
+      cpu->pc++;
+      break;
+
+    case 0xF3: // { "ISC", AM_ZIY },  // F3 (illegal)
+      BADDR_ZIY;
+      v = cpu->read(cpu, baddr);
+      cpu->write(cpu, baddr, ++v);
+      r = (cpu->a - v) - (cpu->f_c^1);
+      cpu->f_v = ((cpu->a^v)&(cpu->a^(r&0xff))&0x80) ? 1 : 0;
+      FLAG_SZCN(r);
+      cpu->a = r;
+      cpu->pc++;
+      break;
+
+    case 0xBB: // { "LAS", AM_ZIY },  // BB (illegal)
+      READ_ZIY;
+      cpu->sp &= v;
+      cpu->a = cpu->sp;
+      cpu->x = cpu->sp;
+      FLAG_ZN(cpu->a);
+      break;
+
+    case 0xA7: // { "LAX", AM_ZP  },  // A7 (illegal)
+      READ_ZP;
+      cpu->a = v;
+      cpu->x = v;
+      FLAG_ZN(cpu->a);
+      break;
+
+    case 0xB7: // { "LAX", AM_ZPY },  // B7 (illegal)
+      READ_ZPY;
+      cpu->a = v;
+      cpu->x = v;
+      FLAG_ZN(cpu->a);
+      break;
+
+    case 0xAF: // { "LAX", AM_ABS },  // AF (illegal)
+      READ_ABS;
+      cpu->a = v;
+      cpu->x = v;
+      FLAG_ZN(cpu->a);
+      break;
+
+    case 0xBF: // { "LAX", AM_ABY },  // BF (illegal)
+      READ_ABY;
+      cpu->a = v;
+      cpu->x = v;
+      FLAG_ZN(cpu->a);
+      break;
+
+    case 0xA3: // { "LAX", AM_ZIX },  // A3 (illegal)
+      READ_ZIX;
+      cpu->a = v;
+      cpu->x = v;
+      FLAG_ZN(cpu->a);
+      break;
+
+    case 0xB3: // { "LAX", AM_ZIY },  // B3 (illegal)
+      READ_ZIY;
+      cpu->a = v;
+      cpu->x = v;
+      FLAG_ZN(cpu->a);
+      break;
+
+    case 0x27: // { "RLA", AM_ZP  },  // 27 (illegal)
+      BADDR_ZP;
+      r = (cpu->read(cpu, baddr)<<1)|cpu->f_c;
+      cpu->f_c = (r&0x100)!=0;
+      cpu->write(cpu, baddr, r);
+      cpu->a &= r;
+      FLAG_ZN(cpu->a);
+      cpu->pc++;
+      break;
+
+    case 0x37: // { "RLA", AM_ZPX },  // 37 (illegal)
+      BADDR_ZPX;
+      r = (cpu->read(cpu, baddr)<<1)|cpu->f_c;
+      cpu->f_c = (r&0x100)!=0;
+      cpu->write(cpu, baddr, r);
+      cpu->a &= r;
+      FLAG_ZN(cpu->a);
+      cpu->pc++;
+      break;
+
+    case 0x2F: // { "RLA", AM_ABS },  // 2F (illegal)
+      BADDR_ABS;
+      r = (cpu->read(cpu, baddr)<<1)|cpu->f_c;
+      cpu->f_c = (r&0x100)!=0;
+      cpu->write(cpu, baddr, r);
+      cpu->a &= r;
+      FLAG_ZN(cpu->a);
+      cpu->pc+=2;
+      break;
+
+    case 0x3F: // { "RLA", AM_ABX },  // 3F (illegal)
+      BADDR_ABX;
+      r = (cpu->read(cpu, baddr)<<1)|cpu->f_c;
+      cpu->f_c = (r&0x100)!=0;
+      cpu->write(cpu, baddr, r);
+      cpu->a &= r;
+      FLAG_ZN(cpu->a);
+      cpu->pc+=2;
+      break;
+
+    case 0x3B: // { "RLA", AM_ABY },  // 3B (illegal)
+      BADDR_ABY;
+      r = (cpu->read(cpu, baddr)<<1)|cpu->f_c;
+      cpu->f_c = (r&0x100)!=0;
+      cpu->write(cpu, baddr, r);
+      cpu->a &= r;
+      FLAG_ZN(cpu->a);
+      cpu->pc+=2;
+      break;
+
+    case 0x23: // { "RLA", AM_ZIX },  // 23 (illegal)
+      BADDR_ZIX;
+      r = (cpu->read(cpu, baddr)<<1)|cpu->f_c;
+      cpu->f_c = (r&0x100)!=0;
+      cpu->write(cpu, baddr, r);
+      cpu->a &= r;
+      FLAG_ZN(cpu->a);
+      cpu->pc++;
+      break;
+
+    case 0x33: // { "RLA", AM_ZIY },  // 33 (illegal)
+      BADDR_ZIY;
+      r = (cpu->read(cpu, baddr)<<1)|cpu->f_c;
+      cpu->f_c = (r&0x100)!=0;
+      cpu->write(cpu, baddr, r);
+      cpu->a &= r;
+      FLAG_ZN(cpu->a);
+      cpu->pc++;
+      break;
+
+    case 0x67: // { "RRA", AM_ZP  },  // 67 (illegal)
+      BADDR_ZP;
+      r = cpu->read(cpu, baddr);
+      v = (r>>1)|(cpu->f_c<<7);
+      cpu->f_c = r&1;
+      cpu->write(cpu, baddr, v);
+      r = cpu->a + v + cpu->f_c;
+      cpu->f_v = ((cpu->a^v)&(cpu->a^(r&0xff))&0x80) ? 1 : 0;
+      FLAG_ZCN(r);
+      cpu->a = r;
+      cpu->pc++;
+      break;
+
+    case 0x77: // { "RRA", AM_ZPX },  // 77 (illegal)
+      BADDR_ZPX;
+      r = cpu->read(cpu, baddr);
+      v = (r>>1)|(cpu->f_c<<7);
+      cpu->f_c = r&1;
+      cpu->write(cpu, baddr, v);
+      r = cpu->a + v + cpu->f_c;
+      cpu->f_v = ((cpu->a^v)&(cpu->a^(r&0xff))&0x80) ? 1 : 0;
+      FLAG_ZCN(r);
+      cpu->a = r;
+      cpu->pc++;
+      break;
+
+    case 0x6F: // { "RRA", AM_ABS },  // 6F (illegal)
+      BADDR_ABS;
+      r = cpu->read(cpu, baddr);
+      v = (r>>1)|(cpu->f_c<<7);
+      cpu->f_c = r&1;
+      cpu->write(cpu, baddr, v);
+      r = cpu->a + v + cpu->f_c;
+      cpu->f_v = ((cpu->a^v)&(cpu->a^(r&0xff))&0x80) ? 1 : 0;
+      FLAG_ZCN(r);
+      cpu->a = r;
+      cpu->pc+=2;
+      break;
+
+    case 0x7F: // { "RRA", AM_ABX },  // 7F (illegal)
+      BADDR_ABX;
+      r = cpu->read(cpu, baddr);
+      v = (r>>1)|(cpu->f_c<<7);
+      cpu->f_c = r&1;
+      cpu->write(cpu, baddr, v);
+      r = cpu->a + v + cpu->f_c;
+      cpu->f_v = ((cpu->a^v)&(cpu->a^(r&0xff))&0x80) ? 1 : 0;
+      FLAG_ZCN(r);
+      cpu->a = r;
+      cpu->pc+=2;
+      break;
+
+    case 0x7B: // { "RRA", AM_ABY },  // 7B (illegal)
+      BADDR_ABY;
+      r = cpu->read(cpu, baddr);
+      v = (r>>1)|(cpu->f_c<<7);
+      cpu->f_c = r&1;
+      cpu->write(cpu, baddr, v);
+      r = cpu->a + v + cpu->f_c;
+      cpu->f_v = ((cpu->a^v)&(cpu->a^(r&0xff))&0x80) ? 1 : 0;
+      FLAG_ZCN(r);
+      cpu->a = r;
+      cpu->pc+=2;
+      break;
+
+    case 0x63: // { "RRA", AM_ZIX },  // 63 (illegal)
+      BADDR_ZIX;
+      r = cpu->read(cpu, baddr);
+      v = (r>>1)|(cpu->f_c<<7);
+      cpu->f_c = r&1;
+      cpu->write(cpu, baddr, v);
+      r = cpu->a + v + cpu->f_c;
+      cpu->f_v = ((cpu->a^v)&(cpu->a^(r&0xff))&0x80) ? 1 : 0;
+      FLAG_ZCN(r);
+      cpu->a = r;
+      cpu->pc++;
+      break;
+
+    case 0x73: // { "RRA", AM_ZIY },  // 73 (illegal)
+      BADDR_ZIY;
+      r = cpu->read(cpu, baddr);
+      v = (r>>1)|(cpu->f_c<<7);
+      cpu->f_c = r&1;
+      cpu->write(cpu, baddr, v);
+      r = cpu->a + v + cpu->f_c;
+      cpu->f_v = ((cpu->a^v)&(cpu->a^(r&0xff))&0x80) ? 1 : 0;
+      FLAG_ZCN(r);
+      cpu->a = r;
+      cpu->pc++;
+      break;
+
+    case 0x07: // { "SLO", AM_ZP  },  // 07 (illegal)
+      BADDR_ZP;
+      r = cpu->read(cpu, baddr)<<1;
+      cpu->f_c = (r&0x100)!=0;
+      cpu->write(cpu, baddr, r);
+      cpu->a |= r;
+      FLAG_ZN(cpu->a);
+      cpu->pc++;
+      break;
+
+    case 0x17: // { "SLO", AM_ZPX },  // 17 (illegal)
+      BADDR_ZPX;
+      r = cpu->read(cpu, baddr)<<1;
+      cpu->f_c = (r&0x100)!=0;
+      cpu->write(cpu, baddr, r);
+      cpu->a |= r;
+      FLAG_ZN(cpu->a);
+      cpu->pc++;
+      break;
+
+    case 0x0F: // { "SLO", AM_ABS },  // 0F (illegal)
+      BADDR_ABS;
+      r = cpu->read(cpu, baddr)<<1;
+      cpu->f_c = (r&0x100)!=0;
+      cpu->write(cpu, baddr, r);
+      cpu->a |= r;
+      FLAG_ZN(cpu->a);
+      cpu->pc+=2;
+      break;
+
+    case 0x1F: // { "SLO", AM_ABX },  // 1F (illegal)
+      BADDR_ABX;
+      r = cpu->read(cpu, baddr)<<1;
+      cpu->f_c = (r&0x100)!=0;
+      cpu->write(cpu, baddr, r);
+      cpu->a |= r;
+      FLAG_ZN(cpu->a);
+      cpu->pc+=2;
+      break;
+
+    case 0x1B: // { "SLO", AM_ABY },  // 1B (illegal)
+      BADDR_ABY;
+      r = cpu->read(cpu, baddr)<<1;
+      cpu->f_c = (r&0x100)!=0;
+      cpu->write(cpu, baddr, r);
+      cpu->a |= r;
+      FLAG_ZN(cpu->a);
+      cpu->pc+=2;
+      break;
+
+    case 0x03: // { "SLO", AM_ZIX },  // 03 (illegal)
+      BADDR_ZIX;
+      r = cpu->read(cpu, baddr)<<1;
+      cpu->f_c = (r&0x100)!=0;
+      cpu->write(cpu, baddr, r);
+      cpu->a |= r;
+      FLAG_ZN(cpu->a);
+      cpu->pc++;
+      break;
+
+    case 0x13: // { "SLO", AM_ZIY },  // 13 (illegal)
+      BADDR_ZIY;
+      r = cpu->read(cpu, baddr)<<1;
+      cpu->f_c = (r&0x100)!=0;
+      cpu->write(cpu, baddr, r);
+      cpu->a |= r;
+      FLAG_ZN(cpu->a);
+      cpu->pc++;
+      break;
+
+    case 0x47: // { "SRE", AM_ZP  },  // 47 (illegal)
+      BADDR_ZP;
+      v = cpu->read(cpu, baddr);
+      cpu->f_c = v&1;
+      v >>= 1;
+      cpu->write(cpu, baddr, v);
+      cpu->a ^= v;
+      FLAG_ZN(cpu->a);
+      cpu->pc++;
+      break;
+
+    case 0x57: // { "SRE", AM_ZPX },  // 57 (illegal)
+      BADDR_ZPX;
+      v = cpu->read(cpu, baddr);
+      cpu->f_c = v&1;
+      v >>= 1;
+      cpu->write(cpu, baddr, v);
+      cpu->a ^= v;
+      FLAG_ZN(cpu->a);
+      cpu->pc++;
+      break;
+
+    case 0x4F: // { "SRE", AM_ABS },  // 4F (illegal)
+      BADDR_ABS;
+      v = cpu->read(cpu, baddr);
+      cpu->f_c = v&1;
+      v >>= 1;
+      cpu->write(cpu, baddr, v);
+      cpu->a ^= v;
+      FLAG_ZN(cpu->a);
+      cpu->pc+=2;
+      break;
+
+    case 0x5F: // { "SRE", AM_ABX },  // 5F (illegal)
+      BADDR_ABX;
+      v = cpu->read(cpu, baddr);
+      cpu->f_c = v&1;
+      v >>= 1;
+      cpu->write(cpu, baddr, v);
+      cpu->a ^= v;
+      FLAG_ZN(cpu->a);
+      cpu->pc+=2;
+      break;
+
+    case 0x5B: // { "SRE", AM_ABY },  // 5B (illegal)
+      BADDR_ABY;
+      v = cpu->read(cpu, baddr);
+      cpu->f_c = v&1;
+      v >>= 1;
+      cpu->write(cpu, baddr, v);
+      cpu->a ^= v;
+      FLAG_ZN(cpu->a);
+      cpu->pc+=2;
+      break;
+
+    case 0x43: // { "SRE", AM_ZIX },  // 43 (illegal)
+      BADDR_ZIX;
+      v = cpu->read(cpu, baddr);
+      cpu->f_c = v&1;
+      v >>= 1;
+      cpu->write(cpu, baddr, v);
+      cpu->a ^= v;
+      FLAG_ZN(cpu->a);
+      cpu->pc++;
+      break;
+
+    case 0x53: // { "SRE", AM_ZIY },  // 53 (illegal)
+      BADDR_ZIY;
+      v = cpu->read(cpu, baddr);
+      cpu->f_c = v&1;
+      v >>= 1;
+      cpu->write(cpu, baddr, v);
+      cpu->a ^= v;
+      FLAG_ZN(cpu->a);
+      cpu->pc++;
+      break;
+
+    case 0x9E: // { "SHX", AM_ABY },  // 9E (illegal, unstable)
+      BADDR_ABY;
+      v = cpu->x;
+
+      // Instability (sometimes, the &H drops off)
+      if ((cpu->cycles&7)>2) // pseudorandom 5 in 8 chance of &H
+        v &= (baddr>>8)+1;
+
+      cpu->write(cpu, baddr, v);
+      cpu->pc+=2;
+      break;
+
+    case 0x9C: // { "SHY", AM_ABX },  // 9C (illegal, unstable)
+      BADDR_ABX;
+      v = cpu->y;
+
+      // Instability (sometimes, the &H drops off)
+      if ((cpu->cycles&7)>2) // pseudorandom 5 in 8 chance of &H
+        v &= (baddr>>8)+1;
+
+      cpu->write(cpu, baddr, v);
+      cpu->pc+=2;
+      break;
+
+    case 0x8B: // { "XAA", AM_IMM },  // 8B (illegal, unstable)
+      READ_IMM;
+      
+      cpu->a = cpu->x & v;
+
+      // Instability
+      if ((cpu->cycles&7)>5) // pseudorandom 6 in 8 chance of instability
+      {
+        r = (cpu->x^0xff);
+        r &= cpu->cycles;
+        cpu->a |= r;
+      }
+      FLAG_ZN(cpu->a);
+      break;
+
+    case 0x9B: // { "TAS", AM_ABY },  // 9B (illegal)
+      BADDR_ABY;
+      cpu->sp = cpu->x & cpu->a;
+      cpu->write(cpu, baddr, cpu->sp&((baddr>>8)+1));
+      cpu->pc+=2;
+      break;
+
+    default: // JAM
+      cpu->pc = cpu->lastpc;
+      return SDL_TRUE; // jammed
   }
+  
+  return SDL_FALSE;
 }
+

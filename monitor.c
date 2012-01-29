@@ -305,264 +305,289 @@ static struct asminf asmtab[] = { { "BRK", 0x00,   -1,   -1,   -1,   -1,   -1,  
                                   { "NOP", 0xea,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
                                   { "BEQ",   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1, 0xf0,   -1 },
                                   { "SED", 0xf8,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  
+                                  // Illegal opcodes
+//                                          imp   imm    zp   zpx   zpy   abs   abx   aby   zix   ziy   rel   ind
+                                  { "ANC",   -1, 0x0b,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "SAX",   -1,   -1, 0x87,   -1, 0x97, 0x8f,   -1,   -1, 0x83,   -1,   -1,   -1 },
+                                  { "ARR",   -1, 0x6b,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "ALR",   -1, 0x4b,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "LAX",   -1, 0xab, 0xa7,   -1, 0xb7, 0xaf,   -1, 0xbf, 0xa3, 0xb3,   -1,   -1 },
+                                  { "AHX",   -1,   -1,   -1,   -1,   -1,   -1,   -1, 0x9f,   -1, 0x93,   -1,   -1 },
+                                  { "AXS",   -1, 0xcb,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "DCP",   -1,   -1, 0xc7, 0xd7,   -1, 0xcf, 0xdf, 0xdb, 0xc3, 0xd3,   -1,   -1 },
+                                  { "DOP",   -1, 0x80, 0x04, 0x14,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "ISC",   -1,   -1, 0xe7, 0xf7,   -1, 0xef, 0xff, 0xfb, 0xe3, 0xf3,   -1,   -1 },
+                                  { "JAM", 0x02,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "LAS",   -1,   -1,   -1,   -1,   -1,   -1,   -1, 0xbb,   -1,   -1,   -1,   -1 },
+                                  { "RLA",   -1,   -1, 0x27, 0x37,   -1, 0x2f, 0x3f, 0x3b, 0x23, 0x33,   -1,   -1 },
+                                  { "RRA",   -1,   -1, 0x67, 0x77,   -1, 0x6f, 0x7f, 0x7b, 0x63, 0x73,   -1,   -1 },
+                                  { "SLO",   -1,   -1, 0x07, 0x17,   -1, 0x0f, 0x1f, 0x1b, 0x03, 0x13,   -1,   -1 },
+                                  { "SRE",   -1,   -1, 0x47, 0x57,   -1, 0x4f, 0x5f, 0x5b, 0x43, 0x53,   -1,   -1 },
+                                  { "SHX",   -1,   -1,   -1,   -1,   -1,   -1,   -1, 0x9e,   -1,   -1,   -1,   -1 },
+                                  { "SHY",   -1,   -1,   -1,   -1,   -1,   -1, 0x9c,   -1,   -1,   -1,   -1,   -1 },
+                                  { "TOP",   -1,   -1,   -1,   -1,   -1, 0x0c, 0x1c,   -1,   -1,   -1,   -1,   -1 },
+                                  { "XAA",   -1, 0x8b,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+                                  { "TAS",   -1, 0x9b,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+
                                   { NULL, } };
 
 static struct disinf distab[] = { { "BRK", AM_IMM },  // 00
                                   { "ORA", AM_ZIX },  // 01
-                                  { "???", AM_IMP },  // 02
-                                  { "???", AM_IMP },  // 03
-                                  { "???", AM_IMP },  // 04
+                                  { "JAM", AM_IMP },  // 02 (illegal)
+                                  { "SLO", AM_ZIX },  // 03 (illegal)
+                                  { "DOP", AM_ZP  },  // 04 (illegal)
                                   { "ORA", AM_ZP  },  // 05
                                   { "ASL", AM_ZP  },  // 06
-                                  { "???", AM_IMP },  // 07
+                                  { "SLO", AM_ZP  },  // 07 (illegal)
                                   { "PHP", AM_IMP },  // 08
                                   { "ORA", AM_IMM },  // 09
                                   { "ASL", AM_IMP },  // 0A
-                                  { "???", AM_IMP },  // 0B
-                                  { "???", AM_IMP },  // 0C
+                                  { "ANC", AM_IMM },  // 0B (illegal)
+                                  { "TOP", AM_IMP },  // 0C (illegal)
                                   { "ORA", AM_ABS },  // 0D
                                   { "ASL", AM_ABS },  // 0E
-                                  { "???", AM_IMP },  // 0F
+                                  { "SLO", AM_ABS },  // 0F (illegal)
                                   { "BPL", AM_REL },  // 10
                                   { "ORA", AM_ZIY },  // 11
-                                  { "???", AM_IMP },  // 12
-                                  { "???", AM_IMP },  // 13
-                                  { "???", AM_IMP },  // 14
+                                  { "JAM", AM_IMP },  // 12 (illegal)
+                                  { "SLO", AM_ZIY },  // 13 (illegal)
+                                  { "DOP", AM_ZPX },  // 14 (illegal)
                                   { "ORA", AM_ZPX },  // 15
                                   { "ASL", AM_ZPX },  // 16
-                                  { "???", AM_IMP },  // 17
+                                  { "SLO", AM_ZPX },  // 17 (illegal)
                                   { "CLC", AM_IMP },  // 18
                                   { "ORA", AM_ABY },  // 19
-                                  { "???", AM_IMP },  // 1A
-                                  { "???", AM_IMP },  // 1B
-                                  { "???", AM_IMP },  // 1C
+                                  { "NOP", AM_IMP },  // 1A (illegal)
+                                  { "SLO", AM_ABY },  // 1B (illegal)
+                                  { "TOP", AM_ABX },  // 1C (illegal)
                                   { "ORA", AM_ABX },  // 1D
                                   { "ASL", AM_ABX },  // 1E
-                                  { "???", AM_IMP },  // 1F
+                                  { "SLO", AM_IMP },  // 1F (illegal)
                                   { "JSR", AM_ABS },  // 20
                                   { "AND", AM_ZIX },  // 21
-                                  { "???", AM_IMP },  // 22
-                                  { "???", AM_IMP },  // 23
+                                  { "JAM", AM_IMP },  // 22 (illegal)
+                                  { "RLA", AM_ZIX },  // 23 (illegal)
                                   { "BIT", AM_ZP  },  // 24
                                   { "AND", AM_ZP  },  // 25
                                   { "ROL", AM_ZP  },  // 26
-                                  { "???", AM_IMP },  // 27
+                                  { "RLA", AM_ZP  },  // 27 (illegal)
                                   { "PLP", AM_IMP },  // 28
                                   { "AND", AM_IMM },  // 29
                                   { "ROL", AM_IMP },  // 2A
-                                  { "???", AM_IMP },  // 2B
+                                  { "ANC", AM_IMP },  // 2B (illegal)
                                   { "BIT", AM_ABS },  // 2C
                                   { "AND", AM_ABS },  // 2D
                                   { "ROL", AM_ABS },  // 2E
-                                  { "???", AM_IMP },  // 2F
+                                  { "RLA", AM_ABS },  // 2F (illegal)
                                   { "BMI", AM_REL },  // 30
                                   { "AND", AM_ZIY },  // 31
-                                  { "???", AM_IMP },  // 32
-                                  { "???", AM_IMP },  // 33
-                                  { "???", AM_IMP },  // 34
+                                  { "JAM", AM_IMP },  // 32 (illegal)
+                                  { "RLA", AM_ZIY },  // 33 (illegal)
+                                  { "DOP", AM_ZPX },  // 34 (illegal)
                                   { "AND", AM_ZPX },  // 35
                                   { "ROL", AM_ZPX },  // 36
-                                  { "???", AM_IMP },  // 37
+                                  { "RLA", AM_ZPX },  // 37 (illegal)
                                   { "SEC", AM_IMP },  // 38
                                   { "AND", AM_ABY },  // 39
-                                  { "???", AM_IMP },  // 3A
-                                  { "???", AM_IMP },  // 3B
-                                  { "???", AM_IMP },  // 3C
+                                  { "NOP", AM_IMP },  // 3A (illegal)
+                                  { "RLA", AM_ABY },  // 3B (illegal)
+                                  { "TOP", AM_ABX },  // 3C (illegal)
                                   { "AND", AM_ABX },  // 3D
                                   { "ROL", AM_ABX },  // 3E
-                                  { "???", AM_IMP },  // 3F
+                                  { "RLA", AM_ABX },  // 3F (illegal)
                                   { "RTI", AM_IMP },  // 40
                                   { "EOR", AM_ZIX },  // 41
-                                  { "???", AM_IMP },  // 42
-                                  { "???", AM_IMP },  // 43
-                                  { "???", AM_IMP },  // 44
+                                  { "JAM", AM_IMP },  // 42 (illegal)
+                                  { "SRE", AM_ZIX },  // 43 (illegal)
+                                  { "DOP", AM_ZP  },  // 44 (illegal)
                                   { "EOR", AM_ZP  },  // 45
                                   { "LSR", AM_ZP  },  // 46
-                                  { "???", AM_IMP },  // 47
+                                  { "SRE", AM_ZP  },  // 47 (illegal)
                                   { "PHA", AM_IMP },  // 48
                                   { "EOR", AM_IMM },  // 49
                                   { "LSR", AM_IMP },  // 4A
-                                  { "???", AM_IMP },  // 4B
+                                  { "ALR", AM_IMM },  // 4B (illegal)
                                   { "JMP", AM_ABS },  // 4C
                                   { "EOR", AM_ABS },  // 4D
                                   { "LSR", AM_ABS },  // 4E
-                                  { "???", AM_IMP },  // 4F
+                                  { "SRE", AM_ABS },  // 4F (illegal)
                                   { "BVC", AM_REL },  // 50
                                   { "EOR", AM_ZIY },  // 51
-                                  { "???", AM_IMP },  // 52
-                                  { "???", AM_IMP },  // 53
-                                  { "???", AM_IMP },  // 54
+                                  { "JAM", AM_IMP },  // 52 (illegal)
+                                  { "SRE", AM_ZIY },  // 53 (illegal)
+                                  { "DOP", AM_ZPX },  // 54 (illegal)
                                   { "EOR", AM_ZPX },  // 55
                                   { "LSR", AM_ZPX },  // 56
-                                  { "???", AM_IMP },  // 57
+                                  { "SRE", AM_ZPX },  // 57 (illegal)
                                   { "CLI", AM_IMP },  // 58
                                   { "EOR", AM_ABY },  // 59
-                                  { "???", AM_IMP },  // 5A
-                                  { "???", AM_IMP },  // 5B
-                                  { "???", AM_IMP },  // 5C
+                                  { "NOP", AM_IMP },  // 5A (illegal)
+                                  { "SRE", AM_ABY },  // 5B (illegal)
+                                  { "TOP", AM_ABX },  // 5C (illegal)
                                   { "EOR", AM_ABX },  // 5D
                                   { "LSR", AM_ABX },  // 5E
-                                  { "???", AM_IMP },  // 5F
+                                  { "SRE", AM_ABX },  // 5F (illegal)
                                   { "RTS", AM_IMP },  // 60
                                   { "ADC", AM_ZIX },  // 61
-                                  { "???", AM_IMP },  // 62
-                                  { "???", AM_IMP },  // 63
-                                  { "???", AM_IMP },  // 64
+                                  { "JAM", AM_IMP },  // 62 (illegal)
+                                  { "RRA", AM_ZIX },  // 63 (illegal)
+                                  { "DOP", AM_IMP },  // 64 (illegal)
                                   { "ADC", AM_ZP  },  // 65
                                   { "ROR", AM_ZP  },  // 66
-                                  { "???", AM_IMP },  // 67
+                                  { "RRA", AM_ZP  },  // 67 (illegal)
                                   { "PLA", AM_IMP },  // 68
                                   { "ADC", AM_IMM },  // 69
                                   { "ROR", AM_IMP },  // 6A
-                                  { "???", AM_IMP },  // 6B
+                                  { "ARR", AM_IMM },  // 6B (illegal)
                                   { "JMP", AM_IND },  // 6C
                                   { "ADC", AM_ABS },  // 6D
                                   { "ROR", AM_ABS },  // 6E
-                                  { "???", AM_IMP },  // 6F
+                                  { "RRA", AM_ABS },  // 6F (illegal)
                                   { "BVS", AM_REL },  // 70
                                   { "ADC", AM_ZIY },  // 71
-                                  { "???", AM_IMP },  // 72
-                                  { "???", AM_IMP },  // 73
-                                  { "???", AM_IMP },  // 74
+                                  { "JAM", AM_IMP },  // 72 (illegal)
+                                  { "RRA", AM_ZIY },  // 73 (illegal)
+                                  { "DOP", AM_ZPX },  // 74 (illegal)
                                   { "ADC", AM_ZPX },  // 75
                                   { "ROR", AM_ZPX },  // 76
-                                  { "???", AM_IMP },  // 77
+                                  { "RRA", AM_ZPX },  // 77
                                   { "SEI", AM_IMP },  // 78
                                   { "ADC", AM_ABY },  // 79
-                                  { "???", AM_IMP },  // 7A
-                                  { "???", AM_IMP },  // 7B
-                                  { "???", AM_IMP },  // 7C
+                                  { "NOP", AM_IMP },  // 7A (illegal)
+                                  { "RRA", AM_ABY },  // 7B (illegal)
+                                  { "TOP", AM_ABX },  // 7C (illegal)
                                   { "ADC", AM_ABX },  // 7D
                                   { "ROR", AM_ABX },  // 7E
-                                  { "???", AM_IMP },  // 7F
-                                  { "???", AM_IMP },  // 80
+                                  { "RRA", AM_ABX },  // 7F (illegal)
+                                  { "DOP", AM_IMM },  // 80 (illegal)
                                   { "STA", AM_ZIX },  // 81
-                                  { "???", AM_IMP },  // 82
-                                  { "???", AM_IMP },  // 83
+                                  { "DOP", AM_IMM },  // 82 (illegal)
+                                  { "SAX", AM_ZIX },  // 83 (illegal)
                                   { "STY", AM_ZP  },  // 84
                                   { "STA", AM_ZP  },  // 85
                                   { "STX", AM_ZP  },  // 86
-                                  { "???", AM_IMP },  // 87
+                                  { "SAX", AM_ZP  },  // 87 (illegal)
                                   { "DEY", AM_IMP },  // 88
-                                  { "???", AM_IMP },  // 89
+                                  { "DOP", AM_IMM },  // 89 (illegal)
                                   { "TXA", AM_IMP },  // 8A
-                                  { "???", AM_IMP },  // 8B
+                                  { "XAA", AM_IMM },  // 8B (illegal, unstable)
                                   { "STY", AM_ABS },  // 8C
                                   { "STA", AM_ABS },  // 8D
                                   { "STX", AM_ABS },  // 8E
-                                  { "???", AM_IMP },  // 8F
+                                  { "SAX", AM_ABS },  // 8F (illegal)
                                   { "BCC", AM_REL },  // 90
                                   { "STA", AM_ZIY },  // 91
-                                  { "???", AM_IMP },  // 92
-                                  { "???", AM_IMP },  // 93
+                                  { "JAM", AM_IMP },  // 92 (illegal)
+                                  { "AHX", AM_ZIY },  // 93 (illegal, unstable)
                                   { "STY", AM_ZPX },  // 94
                                   { "STA", AM_ZPX },  // 95
                                   { "STX", AM_ZPY },  // 96
-                                  { "???", AM_IMP },  // 97
+                                  { "SAX", AM_ZPY },  // 97 (illegal)
                                   { "TYA", AM_IMP },  // 98
                                   { "STA", AM_ABY },  // 99
                                   { "TXS", AM_IMP },  // 9A
-                                  { "???", AM_IMP },  // 9B
-                                  { "???", AM_IMP },  // 9C
+                                  { "TAS", AM_IMM },  // 9B (illegal0
+                                  { "SHY", AM_ABY },  // 9C (illegal, unstable)
                                   { "STA", AM_ABX },  // 9D
-                                  { "???", AM_IMP },  // 9E
-                                  { "???", AM_IMP },  // 9F
+                                  { "SHX", AM_ABX },  // 9E (illegal, unstable)
+                                  { "AHX", AM_ABY },  // 9F (illegal, unstable)
                                   { "LDY", AM_IMM },  // A0
                                   { "LDA", AM_ZIX },  // A1
                                   { "LDX", AM_IMM },  // A2
-                                  { "???", AM_IMP },  // A3
+                                  { "LAX", AM_ZIX },  // A3 (illegal)
                                   { "LDY", AM_ZP  },  // A4
                                   { "LDA", AM_ZP  },  // A5
                                   { "LDX", AM_ZP  },  // A6
-                                  { "???", AM_IMP },  // A7
+                                  { "LAX", AM_ZP  },  // A7 (illegal)
                                   { "TAY", AM_IMP },  // A8
                                   { "LDA", AM_IMM },  // A9
                                   { "TAX", AM_IMP },  // AA
-                                  { "???", AM_IMP },  // AB
+                                  { "LAX", AM_IMM },  // AB (illegal, unstable)
                                   { "LDY", AM_ABS },  // AC
                                   { "LDA", AM_ABS },  // AD
                                   { "LDX", AM_ABS },  // AE
-                                  { "???", AM_IMP },  // AF
+                                  { "LAX", AM_ABS },  // AF (illegal)
                                   { "BCS", AM_REL },  // B0
                                   { "LDA", AM_ZIY },  // B1
-                                  { "???", AM_IMP },  // B2
-                                  { "???", AM_IMP },  // B3
+                                  { "JAM", AM_IMP },  // B2 (illegal)
+                                  { "LAX", AM_ZIY },  // B3 (illegal)
                                   { "LDY", AM_ZPX },  // B4
                                   { "LDA", AM_ZPX },  // B5
                                   { "LDX", AM_ZPY },  // B6
-                                  { "???", AM_IMP },  // B7
+                                  { "LAX", AM_ZPY },  // B7 (illegal)
                                   { "CLV", AM_IMP },  // B8
                                   { "LDA", AM_ABY },  // B9
                                   { "TSX", AM_IMP },  // BA
-                                  { "???", AM_IMP },  // BB
+                                  { "LAS", AM_IMP },  // BB (illegal)
                                   { "LDY", AM_ABX },  // BC
                                   { "LDA", AM_ABX },  // BD
                                   { "LDX", AM_ABY },  // BE
-                                  { "???", AM_IMP },  // BF
+                                  { "LAX", AM_ABY },  // BF (illegal)
                                   { "CPY", AM_IMM },  // C0
                                   { "CMP", AM_ZIX },  // C1
-                                  { "???", AM_IMP },  // C2
-                                  { "???", AM_IMP },  // C3
+                                  { "DOP", AM_IMP },  // C2 (illegal)
+                                  { "DCP", AM_ZIX },  // C3 (illegal)
                                   { "CPY", AM_ZP  },  // C4
                                   { "CMP", AM_ZP  },  // C5
                                   { "DEC", AM_ZP  },  // C6
-                                  { "???", AM_IMP },  // C7
+                                  { "DCP", AM_ZP  },  // C7 (illegal)
                                   { "INY", AM_IMP },  // C8
                                   { "CMP", AM_IMM },  // C9
                                   { "DEX", AM_IMP },  // CA
-                                  { "???", AM_IMP },  // CB
+                                  { "AXS", AM_IMM },  // CB (illegal)
                                   { "CPY", AM_ABS },  // CC
                                   { "CMP", AM_ABS },  // CD
                                   { "DEC", AM_ABS },  // CE
-                                  { "???", AM_IMP },  // CF
+                                  { "DCP", AM_ABS },  // CF (illegal)
                                   { "BNE", AM_REL },  // D0
                                   { "CMP", AM_ZIY },  // D1
-                                  { "???", AM_IMP },  // D2
-                                  { "???", AM_IMP },  // D3
-                                  { "???", AM_IMP },  // D4
+                                  { "JAM", AM_IMP },  // D2 (illegal)
+                                  { "DCP", AM_ZIY },  // D3 (illegal)
+                                  { "DOP", AM_ZPX },  // D4 (illegal)
                                   { "CMP", AM_ZPX },  // D5
                                   { "DEC", AM_ZPX },  // D6
-                                  { "???", AM_IMP },  // D7
+                                  { "DCP", AM_ZPX },  // D7 (illegal)
                                   { "CLD", AM_IMP },  // D8
                                   { "CMP", AM_ABY },  // D9
-                                  { "???", AM_IMP },  // DA
-                                  { "???", AM_IMP },  // DB
-                                  { "???", AM_IMP },  // DC
+                                  { "NOP", AM_IMP },  // DA (illegal)
+                                  { "DCP", AM_ABY },  // DB (illegal)
+                                  { "TOP", AM_ABX },  // DC (illegal)
                                   { "CMP", AM_ABX },  // DD
                                   { "DEC", AM_ABX },  // DE
-                                  { "???", AM_IMP },  // DF
+                                  { "DCP", AM_ABX },  // DF (illegal)
                                   { "CPX", AM_IMM },  // E0
                                   { "SBC", AM_ZIX },  // E1
-                                  { "???", AM_IMP },  // E2
-                                  { "???", AM_IMP },  // E3
+                                  { "DOP", AM_IMM },  // E2 (illegal)
+                                  { "ISC", AM_ZIX },  // E3 (illegal)
                                   { "CPX", AM_ZP  },  // E4
                                   { "SBC", AM_ZP  },  // E5
                                   { "INC", AM_ZP  },  // E6
-                                  { "???", AM_IMP },  // E7
+                                  { "ISC", AM_ZP  },  // E7 (illegal)
                                   { "INX", AM_IMP },  // E8
                                   { "SBC", AM_IMM },  // E9
                                   { "NOP", AM_IMP },  // EA
-                                  { "???", AM_IMP },  // EB
+                                  { "SBC", AM_IMM },  // EB (illegal)
                                   { "CPX", AM_ABS },  // EC
                                   { "SBC", AM_ABS },  // ED
                                   { "INC", AM_ABS },  // EE
-                                  { "???", AM_IMP },  // EF
+                                  { "ISC", AM_ABS },  // EF (illegal)
                                   { "BEQ", AM_REL },  // F0
                                   { "SBC", AM_ZIY },  // F1
-                                  { "???", AM_IMP },  // F2
-                                  { "???", AM_IMP },  // F3
-                                  { "???", AM_IMP },  // F4
+                                  { "JAM", AM_IMP },  // F2 (illegal)
+                                  { "ISC", AM_ZIY },  // F3 (illegal)
+                                  { "DOP", AM_ZPX },  // F4 (illegal)
                                   { "SBC", AM_ZPX },  // F5
                                   { "INC", AM_ZPX },  // F6
-                                  { "???", AM_IMP },  // F7
+                                  { "ISC", AM_ZPX },  // F7 (illegal)
                                   { "SED", AM_IMP },  // F8
                                   { "SBC", AM_ABY },  // F9
-                                  { "???", AM_IMP },  // FA
-                                  { "???", AM_IMP },  // FB
-                                  { "???", AM_IMP },  // FC
+                                  { "NOP", AM_IMP },  // FA (illegal)
+                                  { "ISC", AM_ABY },  // FB (illegal)
+                                  { "TOP", AM_ABX },  // FC (illegal)
                                   { "SBC", AM_ABX },  // FD
                                   { "INC", AM_ABX },  // FE
-                                  { "???", AM_IMP } };// FF
+                                  { "ISC", AM_ABX } };// FF (illegal)
 
 SDL_bool isws( char c )
 {

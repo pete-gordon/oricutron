@@ -838,6 +838,7 @@ int main( int argc, char *argv[] )
             {
               if( m6502_set_icycles( &oric.cpu, SDL_TRUE, mon_bpmsg ) )
               {
+                // Hit breakpoint
                 setemumode( &oric, NULL, EM_DEBUG );
                 needrender = SDL_TRUE;
                 break;
@@ -851,7 +852,14 @@ int main( int argc, char *argv[] )
                 via_clock( &oric.tele_via, oric.cpu.icycles );
                 acia_clock( &oric.tele_acia, oric.cpu.icycles );
               }
-              m6502_inst( &oric.cpu );
+              if( m6502_inst( &oric.cpu ) )
+              {
+                // Hit JAM instruction
+                mon_printf_above( "Opcode %02X executed at %04X", oric.cpu.calcop, oric.cpu.lastpc );
+                setemumode( &oric, NULL, EM_DEBUG );
+                needrender = SDL_TRUE;
+                break;
+              }
             }
 
             if( oric.cpu.rastercycles <= 0 )
