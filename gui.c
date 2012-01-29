@@ -148,6 +148,7 @@ void togglehstretch( struct machine *oric, struct osdmenuitem *mitem, int dummy 
 void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglefullscreen( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglelightpen( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void setoverclock( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 //void savesnap( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 
 // Menu definitions. Name, key name, SDL key code, function, parameter
@@ -168,6 +169,7 @@ struct osdmenuitem mainitems[] = { { "Insert tape...",         "T",    't',     
                                    { "Video options...",       "V",    'v',      gotomenu,        4, 0 },
 #endif
                                    { "Debug options...",       "D",    'd',      gotomenu,        3, 0 },
+                                   { "Overclock options...",   "C",    'c',      gotomenu,        6, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Reset",                  "[F4]", SDLK_F4,  resetoric,       0, 0 },
                                    { "Monitor",                "[F2]", SDLK_F2,  setemumode,      EM_DEBUG, 0 },
@@ -250,12 +252,27 @@ struct osdmenuitem aboutitems[] = { { "",                                  NULL,
                                     { "Back", "\x17", SDLK_BACKSPACE, gotomenu, 0, 0 },
                                     { NULL, } };
 
+struct osdmenuitem ovopitems[] = { { "  1mhz (None)", "1",    '1', setoverclock,  1, 0 },
+                                   { "  2mhz",        "2",    '2', setoverclock,  2, 0 },
+                                   { "  3mhz",        "3",    '3', setoverclock,  3, 0 },
+                                   { "  4mhz",        "4",    '4', setoverclock,  4, 0 },
+                                   { "  5mhz",        "5",    '5', setoverclock,  5, 0 },
+                                   { "  6mhz",        "6",    '6', setoverclock,  6, 0 },
+                                   { "  7mhz",        "7",    '7', setoverclock,  7, 0 },
+                                   { "  8mhz",        "8",    '8', setoverclock,  8, 0 },
+                                   { "  9mhz",        "9",    '9', setoverclock,  9, 0 },
+                                   { " 10mhz",       "10",      0, setoverclock, 10, 0 },
+                                   { OSDMENUBAR,     NULL,      0, NULL,          0, 0 },
+                                   { "Back",         "\x17", SDLK_BACKSPACE,gotomenu,0, 0 },
+                                   { NULL, } };
+
 struct osdmenu menus[] = { { "Main Menu",         0, mainitems },
                            { "Hardware options", 13, hwopitems },
                            { "Audio options",     3, auopitems },
                            { "Debug options",     3, dbopitems },
                            { "Video options",     3, vdopitems },
-                           { "About Oricutron",  15, aboutitems } };
+                           { "About Oricutron",  15, aboutitems },
+                           { "Overclock",        11, ovopitems } };
 
 // Load a 24bit BMP for the GUI
 SDL_bool gimg_load( struct guiimg *gi )
@@ -992,6 +1009,30 @@ void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy
   oric->scanlines = SDL_TRUE;
   vdopitems[4].name = "\x0e""Scanlines";
   glopitems[5].name = "\x0e""Scanlines";
+}
+
+void setoverclock( struct machine *oric, struct osdmenuitem *mitem, int value )
+{
+  int i;
+
+  /* Don't want to just modify name[0], since */
+  /* string constants are supposed to be constant.. */
+  char *setnames[] = { "\x0e"" 1mhz (None)", "\x0e"" 2mhz", "\x0e"" 3mhz", "\x0e"" 4mhz",
+                       "\x0e"" 5mhz", "\x0e"" 6mhz", "\x0e"" 7mhz", "\x0e"" 8mhz", 
+                       "\x0e"" 9mhz", "\x0e""10mhz" };
+  char *unsetnames[] = { "  1mhz (None)", "  2mhz", "  3mhz", "  4mhz",
+                         "  5mhz", "  6mhz", "  7mhz", "  8mhz", 
+                         "  9mhz", " 10mhz" };
+
+  oric->overclockmult = value;
+
+  for( i=0; i<10; i++ )
+  {
+    if(i == (value-1))
+      ovopitems[i].name = setnames[i];
+    else
+      ovopitems[i].name = unsetnames[i];
+  }
 }
 
 // Go to internet site

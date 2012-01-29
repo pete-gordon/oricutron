@@ -691,6 +691,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   maintask = IExec->FindTask( NULL );
 #endif
 
+  setoverclock( oric, NULL, 1 );
   if( !init_gui( oric, sto->start_rendermode ) ) { free( sto ); return SDL_FALSE; }
   if( !init_filerequester( oric ) ) { free( sto ); return SDL_FALSE; }
   if( !init_msgbox( oric ) ) { free( sto ); return SDL_FALSE; }
@@ -783,6 +784,114 @@ Uint32 systemtiming( Uint32 interval, void *userdata )
   return oric->vid_freq ? time50[tmoffs] : time60[tmoffs];
 }
 
+void frameloop_overclock( struct machine *oric, SDL_bool *framedone, SDL_bool *needrender )
+{
+  int instloop, instcycles;
+
+  while( ( !(*framedone) ) && ( !(*needrender) ) )
+  {
+    while( oric->cpu.rastercycles > 0 )
+    {
+      /* Do as many instructions as the overclock multiple */
+      for( instloop=0, instcycles=0; instloop < oric->overclockmult; instloop++ )
+      {
+        if( m6502_set_icycles( &oric->cpu, SDL_TRUE, mon_bpmsg ) )
+        {
+          // Hit breakpoint
+          setemumode( oric, NULL, EM_DEBUG );
+          *needrender = SDL_TRUE;
+          break;
+        }
+
+        instcycles += oric->cpu.icycles;
+
+        if( instloop < (oric->overclockmult-1) )
+        {
+          if (m6502_inst( &oric->cpu ))
+          {
+            instloop++;
+            break;
+          }
+        }
+      }
+
+      /* Scale down the number of cycles executed */
+      instcycles /= oric->overclockmult;
+
+      /* Move the emulation on */
+      via_clock( &oric->via, instcycles );
+      ay_ticktock( &oric->ay, instcycles );
+      if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, instcycles );
+      if( oric->type == MACH_TELESTRAT )
+      {
+        via_clock( &oric->tele_via, instcycles );
+        acia_clock( &oric->tele_acia, instcycles );
+      }
+
+      oric->cpu.rastercycles -= instcycles;
+
+      /* If we hit a breakpoint above, we do not want to execute the */
+      /* instruction that caused the breakpoint */
+      if( oric->emu_mode != EM_RUNNING ) break;
+      if( m6502_inst( &oric->cpu ) )
+      {
+        // Hit JAM instruction
+        mon_printf_above( "Opcode %02X executed at %04X", oric->cpu.calcop, oric->cpu.lastpc );
+        setemumode( oric, NULL, EM_DEBUG );
+        *needrender = SDL_TRUE;
+        break;
+      }
+    }
+
+    if( oric->cpu.rastercycles <= 0 )
+    {
+      *framedone = ula_doraster( oric );
+      oric->cpu.rastercycles += oric->cyclesperraster;
+    }
+  }
+}
+
+void frameloop_normal( struct machine *oric, SDL_bool *framedone, SDL_bool *needrender )
+{
+  while( ( !(*framedone) ) && ( !(*needrender) ) )
+  {
+    while( oric->cpu.rastercycles > 0 )
+    {
+      if( m6502_set_icycles( &oric->cpu, SDL_TRUE, mon_bpmsg ) )
+      {
+        // Hit breakpoint
+        setemumode( oric, NULL, EM_DEBUG );
+        *needrender = SDL_TRUE;
+        break;
+      }
+
+      via_clock( &oric->via, oric->cpu.icycles );
+      ay_ticktock( &oric->ay, oric->cpu.icycles );
+      if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
+      if( oric->type == MACH_TELESTRAT )
+      {
+        via_clock( &oric->tele_via, oric->cpu.icycles );
+        acia_clock( &oric->tele_acia, oric->cpu.icycles );
+      }
+      oric->cpu.rastercycles -= oric->cpu.icycles;
+      if( m6502_inst( &oric->cpu ) )
+      {
+        // Hit JAM instruction
+        mon_printf_above( "Opcode %02X executed at %04X", oric->cpu.calcop, oric->cpu.lastpc );
+        setemumode( oric, NULL, EM_DEBUG );
+        *needrender = SDL_TRUE;
+        break;
+      }
+    }
+
+    if( oric->cpu.rastercycles <= 0 )
+    {
+      *framedone = ula_doraster( oric );
+      oric->cpu.rastercycles += oric->cyclesperraster;
+    }
+  }
+}
+
 int main( int argc, char *argv[] )
 {
   SDL_bool isinit;
@@ -831,43 +940,10 @@ int main( int argc, char *argv[] )
           }
 
           framestart = SDL_GetTicks();
-
-          while( ( !framedone ) && ( !needrender ) )
-          {
-            while( oric.cpu.rastercycles > 0 )
-            {
-              if( m6502_set_icycles( &oric.cpu, SDL_TRUE, mon_bpmsg ) )
-              {
-                // Hit breakpoint
-                setemumode( &oric, NULL, EM_DEBUG );
-                needrender = SDL_TRUE;
-                break;
-              }
-
-              via_clock( &oric.via, oric.cpu.icycles );
-              ay_ticktock( &oric.ay, oric.cpu.icycles );
-              if( oric.drivetype ) wd17xx_ticktock( &oric.wddisk, oric.cpu.icycles );
-              if( oric.type == MACH_TELESTRAT )
-              {
-                via_clock( &oric.tele_via, oric.cpu.icycles );
-                acia_clock( &oric.tele_acia, oric.cpu.icycles );
-              }
-              if( m6502_inst( &oric.cpu ) )
-              {
-                // Hit JAM instruction
-                mon_printf_above( "Opcode %02X executed at %04X", oric.cpu.calcop, oric.cpu.lastpc );
-                setemumode( &oric, NULL, EM_DEBUG );
-                needrender = SDL_TRUE;
-                break;
-              }
-            }
-
-            if( oric.cpu.rastercycles <= 0 )
-            {
-              framedone = ula_doraster( &oric );
-              oric.cpu.rastercycles += oric.cyclesperraster;
-            }
-          }
+          if( oric.overclockmult==1 )
+            frameloop_normal( &oric, &framedone, &needrender );
+          else
+            frameloop_overclock( &oric, &framedone, &needrender );
         }
 
         ay_unlockaudio( &oric.ay );

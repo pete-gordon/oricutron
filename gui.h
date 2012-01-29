@@ -145,3 +145,5 @@ void shut_gui_native( struct machine *oric );
 void gui_open_url( const char *url );
 SDL_bool clipboard_copy( struct machine *oric );
 SDL_bool clipboard_paste( struct machine *oric );
+
+void setoverclock( struct machine *oric, struct osdmenuitem *mitem, int value );
