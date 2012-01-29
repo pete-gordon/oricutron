@@ -252,16 +252,13 @@ struct osdmenuitem aboutitems[] = { { "",                                  NULL,
                                     { "Back", "\x17", SDLK_BACKSPACE, gotomenu, 0, 0 },
                                     { NULL, } };
 
-struct osdmenuitem ovopitems[] = { { "  1mhz (None)", "1",    '1', setoverclock,  1, 0 },
-                                   { "  2mhz",        "2",    '2', setoverclock,  2, 0 },
-                                   { "  3mhz",        "3",    '3', setoverclock,  3, 0 },
-                                   { "  4mhz",        "4",    '4', setoverclock,  4, 0 },
-                                   { "  5mhz",        "5",    '5', setoverclock,  5, 0 },
-                                   { "  6mhz",        "6",    '6', setoverclock,  6, 0 },
-                                   { "  7mhz",        "7",    '7', setoverclock,  7, 0 },
-                                   { "  8mhz",        "8",    '8', setoverclock,  8, 0 },
-                                   { "  9mhz",        "9",    '9', setoverclock,  9, 0 },
-                                   { " 10mhz",       "10",      0, setoverclock, 10, 0 },
+struct osdmenuitem ovopitems[] = { { "  1mhz (None)", "1",    '1', setoverclock,  0, 0 },
+                                   { "  2mhz",        "2",    '2', setoverclock,  1, 0 },
+                                   { "  4mhz",        "3",    '3', setoverclock,  2, 0 },
+                                   { "  8mhz",        "4",    '4', setoverclock,  3, 0 },
+                                   { " 16mhz",        "5",    '5', setoverclock,  4, 0 },
+                                   { " 32mhz",        "6",    '6', setoverclock,  5, 0 },
+                                   { " 64mhz",        "7",    '7', setoverclock,  6, 0 },
                                    { OSDMENUBAR,     NULL,      0, NULL,          0, 0 },
                                    { "Back",         "\x17", SDLK_BACKSPACE,gotomenu,0, 0 },
                                    { NULL, } };
@@ -1017,18 +1014,17 @@ void setoverclock( struct machine *oric, struct osdmenuitem *mitem, int value )
 
   /* Don't want to just modify name[0], since */
   /* string constants are supposed to be constant.. */
-  char *setnames[] = { "\x0e"" 1mhz (None)", "\x0e"" 2mhz", "\x0e"" 3mhz", "\x0e"" 4mhz",
-                       "\x0e"" 5mhz", "\x0e"" 6mhz", "\x0e"" 7mhz", "\x0e"" 8mhz", 
-                       "\x0e"" 9mhz", "\x0e""10mhz" };
-  char *unsetnames[] = { "  1mhz (None)", "  2mhz", "  3mhz", "  4mhz",
-                         "  5mhz", "  6mhz", "  7mhz", "  8mhz", 
-                         "  9mhz", " 10mhz" };
+  char *setnames[] = { "\x0e"" 1mhz (None)", "\x0e"" 2mhz", "\x0e"" 4mhz", "\x0e"" 8mhz",
+                       "\x0e""16mhz", "\x0e""32mhz", "\x0e""64mhz" };
+  char *unsetnames[] = { "  1mhz (None)", "  2mhz", "  4mhz", "  8mhz",
+                         " 16mhz", " 32mhz", " 64mhz" };
 
-  oric->overclockmult = value;
+  oric->overclockmult  = 1<<value;
+  oric->overclockshift = value;
 
-  for( i=0; i<10; i++ )
+  for( i=0; i<7; i++ )
   {
-    if(i == (value-1))
+    if(i == value)
       ovopitems[i].name = setnames[i];
     else
       ovopitems[i].name = unsetnames[i];
