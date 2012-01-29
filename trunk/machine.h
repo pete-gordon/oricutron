@@ -104,6 +104,8 @@ struct machine
   SDL_bool vid_dirty[224];
   void (*vid_block_func)( struct machine *, SDL_bool, int, int );
 
+  int overclockmult;
+
   int cyclesperraster;
   int vsync;
 

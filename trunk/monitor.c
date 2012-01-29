@@ -3793,6 +3793,7 @@ static unsigned int steppy_step( struct machine *oric )
     via_clock( &oric->tele_via, oric->cpu.icycles );
     acia_clock( &oric->tele_acia, oric->cpu.icycles );
   }
+  oric->cpu.rastercycles -= oric->cpu.icycles;
   m6502_inst( &oric->cpu );
 
   if( oric->cpu.rastercycles <= 0 )
@@ -3897,6 +3898,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             via_clock( &oric->tele_via, oric->cpu.icycles );
             acia_clock( &oric->tele_acia, oric->cpu.icycles );
           }
+          oric->cpu.rastercycles -= oric->cpu.icycles;
           m6502_inst( &oric->cpu );
           if( oric->cpu.rastercycles <= 0 )
           {

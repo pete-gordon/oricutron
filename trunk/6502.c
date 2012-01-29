@@ -940,7 +940,6 @@ SDL_bool m6502_inst( struct m6502 *cpu )
   unsigned short r, t, baddr;
 
   // Make sure you call set_icycles before this routine!
-  cpu->rastercycles -= cpu->icycles;
   cpu->cycles += cpu->icycles;
 
   if( cpu->calcint > 0 )
