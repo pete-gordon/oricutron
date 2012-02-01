@@ -52,8 +52,8 @@ Credits
   Kamel Biskri
 
 
-  MorphOS port
-  ------------
+  MorphOS & AROS port
+  -------------------
 
   Stefan Haubenthal
 
