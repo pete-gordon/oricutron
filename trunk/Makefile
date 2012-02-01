@@ -8,6 +8,7 @@
 # PLATFORM = linux
 # PLATFORM = gphwiz
 # PLATFORM = aitouchbook
+# PLATFORM = aros
 
 VERSION_MAJ = 0
 VERSION_MIN = 8
@@ -41,6 +42,9 @@ DOCFILES = ReadMe.txt oricutron.cfg ChangeLog.txt
 ####### PLATFORM DETECTION HERE #######
 
 UNAME_S = $(shell uname -s)
+ifeq ($(UNAME_S),AROS)
+PLATFORM ?= aros
+endif
 ifeq ($(UNAME_S),BeOS)
 PLATFORM ?= beos
 endif
@@ -78,6 +82,13 @@ endif
 
 # MorphOS
 ifeq ($(PLATFORM),morphos)
+CFLAGS += `sdl-config --cflags` -D__OPENGL_AVAILABLE__
+LFLAGS += `sdl-config --libs` -s
+FILEREQ_OBJ = filereq_amiga.o
+endif
+
+# AROS
+ifeq ($(PLATFORM),aros)
 CFLAGS += `sdl-config --cflags` -D__OPENGL_AVAILABLE__
 LFLAGS += `sdl-config --libs` -s
 FILEREQ_OBJ = filereq_amiga.o
@@ -234,7 +245,9 @@ winicon.o: winicon.ico oricutron.rc
 	windres -i oricutron.rc -o winicon.o
 
 %.guide: ReadMe.txt
-	rx ReadMe2Guide <$? >$(APP_NAME).guide
+	-rx ReadMe2Guide <$? >$(APP_NAME).guide
+# AROS needs path
+	-SYS:Rexxc/rx ReadMe2Guide <$? >$(APP_NAME).guide
 	-GuideCheck $@
 
 $(RSRC_BEOS): oricutron.rdef
