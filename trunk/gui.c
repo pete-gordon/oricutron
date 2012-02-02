@@ -238,7 +238,7 @@ struct osdmenuitem aboutitems[] = { { "",                                  NULL,
                                     { APP_NAME_FULL,                       NULL,   0, NULL, 0, OMIF_BRIGHT|OMIF_CENTRED },
                                     { "http://code.google.com/p/oriculator/",NULL,  0, gotosite, 0, OMIF_CENTRED },
                                     { "",                                  NULL,   0, NULL, 0, 0 },
-                                    { "(C)2011 Peter Gordon",              NULL,   0, NULL, 0, OMIF_BRIGHT|OMIF_CENTRED },
+                                    { "(C)" APP_YEAR " Peter Gordon",      NULL,   0, NULL, 0, OMIF_BRIGHT|OMIF_CENTRED },
                                     { "http://www.petergordon.org.uk",     NULL,   0, gotosite, 0, OMIF_CENTRED },
                                     { "",                                  NULL,   0, NULL, 0, 0 },
                                     { "Additional programming",            NULL,   0, NULL, 0, OMIF_BRIGHT|OMIF_CENTRED },
@@ -1014,10 +1014,10 @@ void setoverclock( struct machine *oric, struct osdmenuitem *mitem, int value )
 
   /* Don't want to just modify name[0], since */
   /* string constants are supposed to be constant.. */
-  char *setnames[] = { "\x0e"" 1mhz (None)", "\x0e"" 2mhz", "\x0e"" 4mhz", "\x0e"" 8mhz",
-                       "\x0e""16mhz", "\x0e""32mhz", "\x0e""64mhz" };
-  char *unsetnames[] = { "  1mhz (None)", "  2mhz", "  4mhz", "  8mhz",
-                         " 16mhz", " 32mhz", " 64mhz" };
+  char *setnames[] = { "\x0e"" 1MHz (None)", "\x0e"" 2MHz", "\x0e"" 4MHz", "\x0e"" 8MHz",
+                       "\x0e""16MHz", "\x0e""32MHz", "\x0e""64MHz" };
+  char *unsetnames[] = { "  1MHz (None)", "  2MHz", "  4MHz", "  8MHz",
+                         " 16MHz", " 32MHz", " 64MHz" };
 
   oric->overclockmult  = 1<<value;
   oric->overclockshift = value;
