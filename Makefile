@@ -190,6 +190,7 @@ OBJECTS = \
 	font.o \
 	monitor.o \
 	via.o \
+	tape.o \
 	8912.o \
 	6551.o \
 	disk.o \

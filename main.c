@@ -44,6 +44,7 @@
 #include "render_sw.h"
 #include "render_gl.h"
 #include "joystick.h"
+#include "tape.h"
 
 #define FRAMES_TO_AVERAGE 15
 
@@ -804,6 +805,7 @@ void frameloop_overclock( struct machine *oric, SDL_bool *framedone, SDL_bool *n
         }
 
         instcycles += oric->cpu.icycles;
+        tape_patches( oric );
 
         if( instloop < (oric->overclockmult-1) )
         {
@@ -862,6 +864,7 @@ void frameloop_normal( struct machine *oric, SDL_bool *framedone, SDL_bool *need
         break;
       }
 
+      tape_patches( oric );
       via_clock( &oric->via, oric->cpu.icycles );
       ay_ticktock( &oric->ay, oric->cpu.icycles );
       if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );

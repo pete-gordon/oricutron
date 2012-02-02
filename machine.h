@@ -146,6 +146,15 @@ struct machine
   int pch_fd_getname_addr;
   SDL_bool pch_fd_available;
 
+  // CSAVE patch addresses
+  int pch_csave_pc;
+  int pch_csave_getname_pc;
+  int pch_csave_end_pc;
+  int pch_csave_header_addr;
+  int pch_csave_getname_addr;
+  int pch_csave_stack;
+  SDL_bool pch_csave_available;
+
   // Turbo tape patch addresses
   int pch_tt_getsync_pc;
   int pch_tt_getsync_end_pc;

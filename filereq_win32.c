@@ -78,7 +78,9 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       ofn.nFilterIndex = 2;
       break;
     
-    case FR_TAPES:
+    case FR_TAPESAVE:
+      ofn.Flags = OFN_PATHMUSTEXIST;
+    case FR_TAPELOAD:
       ofn.lpstrFilter = "All Files\0*.*\0Tape Images (*.tap)\0*.TAP\0";
       ofn.nFilterIndex = 2;
       break;
