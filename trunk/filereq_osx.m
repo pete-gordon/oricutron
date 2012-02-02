@@ -63,7 +63,9 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       pat = @"dsk";
       break;
     
-    case FR_TAPES:
+    case FT_TAPESAVE:
+      dosavemode = true;
+    case FR_TAPELOAD:
       pat = @"tap";
       break;
     

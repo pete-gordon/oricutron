@@ -756,7 +756,7 @@ void joinpath( char *path, char *file )
 // "insert" a tape into the virtual tape drive, via filerequester
 void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
-  if( !filerequester( oric, "Insert tape", tapepath, tapefile, FR_TAPES ) ) return;
+  if( !filerequester( oric, "Insert tape", tapepath, tapefile, FR_TAPELOAD ) ) return;
   oric->lasttapefile[0] = 0;
   joinpath( tapepath, tapefile );
   tape_load_tap( oric, filetmp );

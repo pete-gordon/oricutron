@@ -40,6 +40,7 @@
 #include "6551.h"
 #include "machine.h"
 #include "ula.h"
+#include "tape.h"
 
 #define LOG_DEBUG 0
 
@@ -3785,6 +3786,7 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
 static unsigned int steppy_step( struct machine *oric )
 {
   m6502_set_icycles( &oric->cpu, SDL_FALSE, mon_bpmsg );
+  tape_patches( oric );
   via_clock( &oric->via, oric->cpu.icycles );
   ay_ticktock( &oric->ay, oric->cpu.icycles );
   if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
@@ -3890,6 +3892,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
         case SDLK_F2:
           // In case we're on a breakpoint
           m6502_set_icycles( &oric->cpu, SDL_FALSE, mon_bpmsg );
+          tape_patches( oric );
           via_clock( &oric->via, oric->cpu.icycles );
           ay_ticktock( &oric->ay, oric->cpu.icycles );
           if( oric->drivetype ) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );

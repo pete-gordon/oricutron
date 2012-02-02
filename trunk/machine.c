@@ -970,6 +970,13 @@ void clear_patches( struct machine *oric )
   oric->pch_tt_readbyte_storezero_addr = -1;
   oric->pch_tt_available               = SDL_FALSE;
 
+  oric->pch_csave_pc                   = -1;
+  oric->pch_csave_getname_pc           = -1;
+  oric->pch_csave_end_pc               = -1;
+  oric->pch_csave_header_addr          = -1;
+  oric->pch_csave_getname_addr         = -1;
+  oric->pch_csave_available            = SDL_FALSE;
+
   oric->keymap = KMAP_QWERTY;
 }
 
@@ -1010,6 +1017,11 @@ void load_patches( struct machine *oric, char *fname )
     if( read_config_int(    &filetmp[i], "tt_readbyte_storebyte_addr", &oric->pch_tt_readbyte_storebyte_addr, 0, 65535 ) ) continue;
     if( read_config_int(    &filetmp[i], "tt_readbyte_storezero_addr", &oric->pch_tt_readbyte_storezero_addr, 0, 65535 ) ) continue;
     if( read_config_bool(   &filetmp[i], "tt_readbyte_setcarry",       &oric->pch_tt_readbyte_setcarry ) )                 continue;
+    if( read_config_int(    &filetmp[i], "csave_pc",                   &oric->pch_csave_pc, 0, 65535 ) )                   continue;
+    if( read_config_int(    &filetmp[i], "csave_getname_pc",           &oric->pch_csave_getname_pc, 0, 65535 ) )           continue;
+    if( read_config_int(    &filetmp[i], "csave_end_pc",               &oric->pch_csave_end_pc, 0, 65535 ) )               continue;
+    if( read_config_int(    &filetmp[i], "csave_getname_addr",         &oric->pch_csave_getname_addr, 0, 65535 ) )         continue;
+    if( read_config_int(    &filetmp[i], "csave_header_addr",          &oric->pch_csave_header_addr, 0, 65535 ) )          continue;
     if( read_config_option( &filetmp[i], "keymap",                     &oric->keymap, keymapnames ) )                      continue; 
   }
 
@@ -1020,12 +1032,19 @@ void load_patches( struct machine *oric, char *fname )
       ( oric->pch_fd_getname_addr != -1 ) )
     oric->pch_fd_available = SDL_TRUE;
 
-  if( ( oric->pch_tt_getsync_pc ) &&
-      ( oric->pch_tt_getsync_end_pc ) &&
-      ( oric->pch_tt_getsync_loop_pc ) &&
-      ( oric->pch_tt_readbyte_pc ) &&
-      ( oric->pch_tt_readbyte_end_pc ) )
+  if( ( oric->pch_tt_getsync_pc != -1 ) &&
+      ( oric->pch_tt_getsync_end_pc != -1 ) &&
+      ( oric->pch_tt_getsync_loop_pc != -1 ) &&
+      ( oric->pch_tt_readbyte_pc != -1 ) &&
+      ( oric->pch_tt_readbyte_end_pc != -1 ) )
     oric->pch_tt_available = SDL_TRUE;
+
+  if( ( oric->pch_csave_pc != -1 ) &&
+      ( oric->pch_csave_getname_pc != -1 ) &&
+      ( oric->pch_csave_end_pc != -1 ) &&
+      ( oric->pch_csave_getname_addr != -1 ) &&
+      ( oric->pch_csave_header_addr != -1 ) )
+    oric->pch_csave_available = SDL_TRUE;
 }
 
 SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints )
