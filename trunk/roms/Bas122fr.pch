@@ -23,6 +23,25 @@ fd_getname_pc = $e4ac
 fd_getname_addr = $027f
 
 
+; ****** CSAVE ******
+
+; Address of CSAVE routine
+csave_pc = $e909
+
+; Address where we are far enough into CSAVE that the
+; filename and addresses have been decoded
+csave_getname_pc = $e92c
+
+; Address of the RTS at the end of the CSAVE routine
+csave_end_pc = $e93c
+
+; Address to read the CSAVE filename
+csave_getname_addr = $027f
+
+; Location to get the header information
+csave_header_addr = $02a8
+
+
 ; ****** TURBOTAPE ******
 
 ; Address of the "Cassette Sync" function in ROM
