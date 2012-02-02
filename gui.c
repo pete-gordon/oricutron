@@ -36,7 +36,8 @@
 #include <proto/dos.h>
 #endif
 
-#ifdef __MORPHOS__
+#if defined(__MORPHOS__) || defined(__AROS__)
+#include <proto/exec.h>
 #include <proto/openurl.h>
 #endif
 
@@ -1035,10 +1036,15 @@ void setoverclock( struct machine *oric, struct osdmenuitem *mitem, int value )
 void gotosite( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
 /* TODO: mode those to their own gui_*.c */
-#if defined(__MORPHOS__)
-  static const struct TagItem URLTags[1] = {{TAG_DONE, (ULONG) NULL}};
+#if defined(__MORPHOS__) || defined(__AROS__)
+  struct Library *OpenURLBase = OpenLibrary( "openurl.library", 0 );
+  static const struct TagItem URLTags[] = {{TAG_DONE, (ULONG) NULL}};
 
-  URL_OpenA(mitem->name, (struct TagItem*) URLTags);
+  if( OpenURLBase )
+  {
+    URL_OpenA(mitem->name, (struct TagItem*) URLTags);
+    CloseLibrary( OpenURLBase );
+  }
 
 #elif defined(__amigaos4__)
   char tmp[256];
