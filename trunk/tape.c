@@ -271,10 +271,10 @@ void tape_rewind( struct machine *oric )
 {
   if( oric->rawtape )
   {
-    oric->tapeout = oric->tapebuf[5];
+    oric->tapeout = oric->tapebuf[4];
     via_write_CB1( &oric->via, oric->tapeout );
 
-    oric->tapeoffs = 6;
+    oric->tapeoffs = 5;
     tape_next_raw_count( oric );
   }
   else
