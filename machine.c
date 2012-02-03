@@ -652,6 +652,7 @@ void preinit_machine( struct machine *oric )
   oric->rampattern = 0;
   oric->tapecap = NULL;
   oric->tapenoise = SDL_FALSE;
+  oric->rawtape = SDL_FALSE;
 
   oric->joy_iface = JOYIFACE_NONE;
   oric->joymode_a = JOYMODE_KB1;
