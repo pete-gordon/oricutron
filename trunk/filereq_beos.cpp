@@ -129,7 +129,9 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       pat = "*.dsk";
       break;
 
-    case FR_TAPESAVE:
+    // FIXME: Save TAP should be *.tap, save ORT should be *.ort, Load should be *.tap, *.ort, *.wav
+    case FR_TAPESAVETAP:
+    case FR_TAPESAVEORT:
       dosavemode = true;
     case FR_TAPELOAD:
       pat = "*.tap";

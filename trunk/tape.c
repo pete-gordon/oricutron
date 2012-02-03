@@ -35,10 +35,12 @@
 #include "joystick.h"
 #include "filereq.h"
 #include "tape.h"
+#include "msgbox.h"
 
 extern char tapefile[], tapepath[];
 extern SDL_bool refreshtape;
 char csavename[4096];
+extern char filetmp[];
 
 // Pop-up the name of the currently inserted tape
 // image file (or an eject symbol if no tape image).
@@ -57,6 +59,117 @@ void tape_popup( struct machine *oric )
   sprintf( tmp, "\x0f\x10""%c %-16s", oric->tapemotor ? 18 : 17, oric->tapename );
   do_popup( oric, tmp );
 }
+
+void toggletapecap( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+  char ortheader[] = { 'O', 'R', 'T', 0 };  // Oric Raw Tape, Version 0
+
+  /* If capturing, stop */
+  if( oric->tapecap )
+  {
+    fclose( oric->tapecap );
+    oric->tapecap = NULL;
+    mitem->name = "Save tape output...";
+    refreshtape = SDL_TRUE;
+    return;
+  }
+
+  /* Otherwise, prompt for the file to capture */
+  if( !filerequester( oric, "Capture tape output", tapepath, csavename, FR_TAPESAVEORT ) )
+  {
+    // Never mind
+    return;
+  }
+  if( csavename[0] == 0 ) return;
+
+  /* If it ends in ".tap", we need to change it to ".ort", because
+     we're capturing real signals here folks! */
+  if( (strlen(csavename)>3) && (strcasecmp(&csavename[strlen(csavename)-4], ".tap")==0) )
+    csavename[strlen(csavename)-4] = 0;
+
+  /* Add .ort extension, if necessary */
+  if( (strlen(csavename)<4) || (strcasecmp(&csavename[strlen(csavename)-4], ".ort")!=0) )
+    strncat(csavename, ".ort", 4096);
+  csavename[4095] = 0;
+
+  joinpath( tapepath, csavename );
+
+  /* Open the file */
+  oric->tapecap = fopen( filetmp, "wb" );
+  if( !oric->tapecap )
+  {
+    /* Oh well */
+    msgbox( oric, MSGBOX_OK, "Unable to create file" );
+    return;
+  }
+
+  /* Write header */
+  fwrite( ortheader, 4, 1, oric->tapecap );
+  
+  /* Counter reset */
+  oric->tapecapcount = -1;
+  oric->tapecaplastbit = (oric->via.orb&oric->via.ddrb)>>7;
+
+  /* Update menu */
+  mitem->name = "Stop tape recording";
+  refreshtape = SDL_TRUE;
+}
+
+void tape_orbchange( struct via *via )
+{
+  struct machine *oric = via->oric;
+  unsigned char buffer[4], tapebit, bufwrite;
+  unsigned int count;
+
+  /* Capturing tape output? */
+  if( !oric->tapecap ) return;
+  
+  tapebit = (via->orb & via->ddrb) >> 7;
+  if( tapebit == oric->tapecaplastbit ) return;
+
+  oric->tapecaplastbit = tapebit;
+
+  /* Were we waiting for the first toggle? */
+  if( oric->tapecapcount < 0 )
+  {
+    /* Well, we found it */
+    oric->tapecapcount = 0;
+    fputc( tapebit, oric->tapecap );
+    return;
+  }
+
+  count = (oric->tapecapcount>>1);
+
+  if( count < 0xfc )
+  {
+    buffer[0] = count;
+    bufwrite = 1;
+  }
+  else if( count < 0x100 )
+  {
+    buffer[0] = 0xfc;
+    buffer[1] = count;
+    bufwrite = 2;
+  }
+  else if( count < 0x10000 )
+  {
+    buffer[0] = 0xfd;
+    buffer[1] = (count>>8)&0xff;
+    buffer[2] = count&0xff;
+    bufwrite = 3;
+  }
+  else
+  {
+    buffer[0] = 0xfd;
+    buffer[1] = 0xff;
+    buffer[2] = 0xff;
+    bufwrite = 3;
+  }
+
+  fwrite( buffer, bufwrite, 1, oric->tapecap );
+  oric->tapecapcount = 0;
+}
+
 
 // Set the tape motor on or off
 void tape_setmotor( struct machine *oric, SDL_bool motoron )
@@ -106,14 +219,72 @@ void tape_eject( struct machine *oric )
   refreshtape = SDL_TRUE;
 }
 
+void tape_next_raw_count( struct machine *oric )
+{
+  unsigned int n;
+
+  if( oric->tapeoffs >= oric->tapelen )
+  {
+    oric->tapecount = -1;
+    return;
+  }
+
+  n = oric->tapebuf[oric->tapeoffs++];
+  if (n < 0xfc)
+  {
+    oric->tapecount = n<<1;
+    return;
+  }
+
+  switch (n)
+  {
+    case 0xfc:
+      if( oric->tapeoffs >= oric->tapelen )
+      {
+        oric->tapecount = -1;
+        return;
+      }
+
+      oric->tapecount = oric->tapebuf[oric->tapeoffs++] << 1;
+      return;
+    
+    case 0xfd:
+      if( oric->tapeoffs >= (oric->tapelen-1) )
+      {
+        oric->tapeoffs = oric->tapelen;
+        oric->tapecount = -1;
+        return;
+      }
+      
+      oric->tapecount = (oric->tapebuf[oric->tapeoffs]<<9)|(oric->tapebuf[oric->tapeoffs+1]<<1);
+      oric->tapeoffs += 2;
+      return;
+  }
+
+  // Invalid data
+  oric->tapeoffs = oric->tapelen;
+  oric->tapecount = -1;
+}
+
 // Rewind to the start of the tape
 void tape_rewind( struct machine *oric )
 {
-  oric->tapeoffs   = 0;
-  oric->tapebit    = 0;
-  oric->tapecount  = 2;
-  oric->tapeout    = 0;
-  oric->tapedupbytes = 80;
+  if( oric->rawtape )
+  {
+    oric->tapeout = oric->tapebuf[5];
+    via_write_CB1( &oric->via, oric->tapeout );
+
+    oric->tapeoffs = 6;
+    tape_next_raw_count( oric );
+  }
+  else
+  {
+    oric->tapeoffs   = 0;
+    oric->tapebit    = 0;
+    oric->tapecount  = 2;
+    oric->tapeout    = 0;
+    oric->tapedupbytes = 80;
+  }
   refreshtape = SDL_TRUE;
 }
 
@@ -134,14 +305,14 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
   oric->tapelen = ftell( f );
   fseek( f, 0, SEEK_SET );
 
-  if( oric->tapelen <= 0 )
+  if( oric->tapelen <= 4 )   // Even worth loading it?
   {
     fclose( f );
     return SDL_FALSE;
   }
 
   // Allocate memory for the tape image and read it in
-  oric->tapebuf = malloc( oric->tapelen+1 );
+  oric->tapebuf = malloc( oric->tapelen );
   if( !oric->tapebuf )
   {
     fclose( f );
@@ -156,10 +327,16 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
     return SDL_FALSE;
   }
 
-  // Add an extra zero byte to the end. I don't know why this
-  // is necessary, but it makes some tapes work that otherwise
-  // get stuck at the end.
-  oric->tapebuf[oric->tapelen++] = 0;
+  // RAW tape?
+  if (memcmp(oric->tapebuf, "ORT\0", 4) == 0)
+  {
+    oric->rawtape = SDL_TRUE;
+  }
+  else
+  {
+    oric->rawtape = SDL_FALSE;
+  }
+
 
   fclose( f );
   
@@ -184,12 +361,14 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
 void tape_autoinsert( struct machine *oric )
 {
   char *odir;
+  int i;
 
   if( strncmp( (char *)&oric->mem[oric->pch_fd_getname_addr], oric->lasttapefile, 16 ) == 0 )
     oric->mem[oric->pch_fd_getname_addr] = 0;
 
   // Try and load the tape image
   strcpy( tapefile, oric->lasttapefile );
+  i = strlen(tapefile);
 
   odir = getcwd( NULL, 0 );
   chdir( tapepath );
@@ -197,9 +376,22 @@ void tape_autoinsert( struct machine *oric )
   if( !oric->tapebuf )
   {
     // Try appending .tap
-    strcat( tapefile, ".tap" );
+    strcpy( &tapefile[i], ".tap" );
     tape_load_tap( oric, tapefile );
   }
+  if( !oric->tapebuf )
+  {
+    // Try appending .ort
+    strcpy( &tapefile[i], ".ort" );
+    tape_load_tap( oric, tapefile );
+  }
+  
+  if( oric->tapebuf )
+  {
+    // We already inserted this one. Don't re-insert it when we get to the end. */
+    oric->lasttapefile[0] = 0;
+  }
+    
   chdir( odir );
   free( odir );
 }
@@ -231,16 +423,18 @@ void tape_patches( struct machine *oric )
             ( oric->autoinsert ) )
         {
           // Only do this if there is no tape inserted, or we're at the
-          // end of the current tape, or the filename ends in .TAP
+          // end of the current tape, or the filename ends in .TAP, .ORT or .WAV
           if( ( !oric->tapebuf ) ||
               ( oric->tapeoffs >= oric->tapelen ) ||
-              ( ( i > 3 ) && ( strcasecmp( &oric->lasttapefile[i-4], ".tap" ) == 0 ) ) )
+              ( ( i > 3 ) && ( strcasecmp( &oric->lasttapefile[i-4], ".tap" ) == 0 ) ) ||
+              ( ( i > 3 ) && ( strcasecmp( &oric->lasttapefile[i-4], ".ort" ) == 0 ) ) /*||
+              ( ( i > 3 ) && ( strcasecmp( &oric->lasttapefile[i-4], ".wav" ) == 0 ) )*/ )
             tape_autoinsert( oric );
         }
       }
     }
 
-    if( oric->pch_csave_available )
+    if( ( oric->pch_csave_available ) && ( !oric->tapecap ) )
     {
       int docsave = 0;
 
@@ -263,7 +457,7 @@ void tape_patches( struct machine *oric )
         // No filename?
         if( csavename[0] == 0)
         {
-          if( filerequester( oric, "Save to tape", tapepath, csavename, FR_TAPESAVE ) )
+          if( filerequester( oric, "Save to tape", tapepath, csavename, FR_TAPESAVETAP ) )
             docsave = 1;
         }
         else
@@ -316,8 +510,16 @@ void tape_patches( struct machine *oric )
           free( odir );
 
           oric->cpu.calcpc = oric->pch_csave_end_pc;
-	        oric->cpu.calcop = oric->cpu.read(&oric->cpu, oric->cpu.calcpc);
+          oric->cpu.calcop = oric->cpu.read(&oric->cpu, oric->cpu.calcpc);
           oric->cpu.sp = oric->pch_csave_stack;
+
+          snprintf( filetmp, 32, "\x0f\x10 Saved to %s", csavename );
+          filetmp[31] = 0;
+          if (strlen(csavename) > 20)
+          {
+            filetmp[30] = '\x16';
+          }
+          do_popup( oric, filetmp );
         }
       }
     }
@@ -335,6 +537,10 @@ void tape_patches( struct machine *oric )
 
   if( ( oric->tapeturbo_forceoff ) && ( oric->pch_tt_available ) && ( oric->romon ) && ( oric->cpu.calcpc == oric->pch_tt_getsync_end_pc ) )
     oric->tapeturbo_forceoff = SDL_FALSE;
+
+  // Don't do turbotape if we have a raw tape
+  // Turbotape can't work with rawtape. TODO: Auto enable warpspeed when CLOADing/CSAVEing rawtape
+  if( oric->rawtape ) return;
 
   // Maybe do turbotape
   if( ( oric->pch_tt_available ) && ( oric->tapeturbo ) && ( !oric->tapeturbo_forceoff ) && ( oric->romon ) )
@@ -416,6 +622,10 @@ void tape_ticktock( struct machine *oric, int cycles )
 {
   Sint32 j;
 
+  // Update the counter since last PB7 toggle
+  if( ( oric->tapecap ) && ( oric->tapecapcount != -1 ) )
+    oric->tapecapcount += cycles;
+
   // The VSync hack is triggered in the video emulation
   // but actually handled here, since the VSync signal
   // is read into the tape input. The video emulation
@@ -444,17 +654,20 @@ void tape_ticktock( struct machine *oric, int cycles )
   // Tape offset outside the tape image limits?
   if( ( oric->tapeoffs < 0 ) || ( oric->tapeoffs >= oric->tapelen ) )
   {
-    // Try to autoinsert a tape image
-    if( ( oric->lasttapefile[0] ) && ( oric->autoinsert ) )
+    if( oric->tapecount < 0 )
     {
-      tape_autoinsert( oric );
-      oric->lasttapefile[0] = 0;
+      // Try to autoinsert a tape image
+      if( ( oric->lasttapefile[0] ) && ( oric->autoinsert ) )
+      {
+        tape_autoinsert( oric );
+        oric->lasttapefile[0] = 0;
+      }
+      return;
     }
-    return;
   }
 
   // Abort if turbotape is on
-  if( ( oric->pch_tt_available ) && ( oric->tapeturbo ) && ( !oric->tapeturbo_forceoff ) && ( oric->romon ) )
+  if( ( oric->pch_tt_available ) && ( oric->tapeturbo ) && ( !oric->tapeturbo_forceoff ) && ( oric->romon ) && ( !oric->rawtape ) )
     return;
 
   // No turbotape. Do "real" tape emulation.
@@ -464,6 +677,9 @@ void tape_ticktock( struct machine *oric, int cycles )
     oric->tapecount -= cycles;
     return;
   }
+
+  // Get the remainder cycles for raw tape
+//  remcycles = cycles - oric->tapecount;
 
   // Toggle the tape input
   oric->tapeout ^= 1;
@@ -489,6 +705,19 @@ void tape_ticktock( struct machine *oric, int cycles )
     via_write_CB1( &oric->via, oric->tapeout );
   }
 
+  // Raw tape
+  if( oric->rawtape )
+  {
+    tape_next_raw_count( oric );
+    if( oric->tapecount < 0 )
+    {
+      refreshtape = SDL_TRUE;
+      return;
+    }
+    return;
+  }
+
+  // .TAP real tape simulation
   // Tape signal rising edge
   if( oric->tapeout )
   {
@@ -504,6 +733,11 @@ void tape_ticktock( struct machine *oric, int cycles )
         break;
       
       default:    // For bit numbers 2 to 9, send actual byte bits 0 to 7
+        if( oric->tapeoffs >= oric->tapelen )
+        {
+          oric->tapetime = TAPE_0_PULSE;
+          break;
+        }
         if( oric->tapebuf[oric->tapeoffs]&(1<<(oric->tapebit-2)) )
         {
           oric->tapetime = TAPE_1_PULSE;
@@ -533,13 +767,18 @@ void tape_ticktock( struct machine *oric, int cycles )
     oric->tapebit = (oric->tapebit+1)%16;
     if( !oric->tapebit )
     {
+      if( oric->tapeoffs >= oric->tapelen )
+      {
+        oric->tapecount = -1;
+        refreshtape = SDL_TRUE;
+        return;
+      }
       if( oric->tapedupbytes > 0 )
         oric->tapedupbytes--;
       else
         oric->tapeoffs++;
-      if( oric->tapeoffs >= oric->tapelen )
-        refreshtape = SDL_TRUE;
     }
   }
   oric->tapecount = oric->tapetime;
 }
+

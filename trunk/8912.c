@@ -344,7 +344,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
   dcadjustave = 0;
   dcadjustmax = -32768;
 
-  tapenoise = ay->oric->tapenoise && !ay->oric->tapeturbo;
+  tapenoise = ay->oric->tapenoise && ((!ay->oric->tapeturbo)||(ay->oric->rawtape));
   if( !tapenoise ) ay->tapeout = 0;
 
   out = (Uint16 *)stream;

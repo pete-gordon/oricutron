@@ -60,6 +60,7 @@
 #include "render_gl.h"
 #include "render_null.h"
 #include "ula.h"
+#include "tape.h"
 
 extern struct symboltable usersyms;
 extern SDL_bool fullscreen;
@@ -95,6 +96,7 @@ struct guiimg gimgs[NUM_GIMG]  = { { IMAGEPREFIX"statusbar.bmp",              64
                                    { IMAGEPREFIX"tape_pause.bmp",     GIMG_W_TAPE, 16, NULL },
                                    { IMAGEPREFIX"tape_play.bmp",      GIMG_W_TAPE, 16, NULL },
                                    { IMAGEPREFIX"tape_stop.bmp",      GIMG_W_TAPE, 16, NULL },
+                                   { IMAGEPREFIX"tape_record.bmp",    GIMG_W_TAPE, 16, NULL },
                                    { IMAGEPREFIX"avirec.bmp",         GIMG_W_AVIR, 16, NULL } };
 
 SDL_bool soundavailable, soundon;
@@ -156,6 +158,7 @@ void setoverclock( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 // Keys that are also available while emulating should be marked with
 // square brackets
 struct osdmenuitem mainitems[] = { { "Insert tape...",         "T",    't',      inserttape,      0, 0 },
+                                   { "Save tape output...",    "[F9]", SDLK_F9,  toggletapecap,   0, 0 },
                                    { "Insert disk 0...",       "0",    SDLK_0,   insertdisk,      0, 0 },
                                    { "Insert disk 1...",       "1",    SDLK_1,   insertdisk,      1, 0 },
                                    { "Insert disk 2...",       "2",    SDLK_2,   insertdisk,      2, 0 },
@@ -383,6 +386,12 @@ void draw_avirec( struct machine *oric, SDL_bool recording )
 // Overlay the tape icon onto the status bar
 void draw_tape( struct machine *oric )
 {
+  if( oric->tapecap )
+  {
+    oric->render_gimg( GIMG_TAPE_RECORD, GIMG_POS_TAPEX, GIMG_POS_SBARY );
+    return;
+  }
+
   if( !oric->tapebuf )
   {
     oric->render_gimg( GIMG_TAPE_EJECTED, GIMG_POS_TAPEX, GIMG_POS_SBARY );
