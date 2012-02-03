@@ -137,9 +137,13 @@ struct machine
   SDL_bool tapemotor, tapenoise, tapeturbo, autorewind, autoinsert;
   SDL_bool tapeturbo_forceoff;
   SDL_bool symbolsautoload, symbolscase;
+  SDL_bool rawtape;
   char lasttapefile[20];
   char tapename[32];
   int tapeturbo_syncstack;
+  FILE *tapecap;
+  int tapecapcount;
+  int tapecaplastbit;
 
   // Filename decoding patch addresses
   int pch_fd_getname_pc;

@@ -369,6 +369,7 @@ void via_init( struct via *v, struct machine *oric, int viatype )
       v->ca2pulsed  = via_main_ca2pulsed;
       v->cb2pulsed  = via_main_cb2pulsed;
       v->cb2shifted = via_main_cb2pulsed;  // Does the same (for now)
+      v->orbchange  = tape_orbchange;
       v->irqbit     = IRQF_VIA;
       v->read_port_a  = via_read_porta;
       v->read_port_b  = via_read_portb;
@@ -391,6 +392,7 @@ void via_init( struct via *v, struct machine *oric, int viatype )
       v->ca2pulsed  = NULL;
       v->cb2pulsed  = NULL;
       v->cb2shifted = NULL;
+      v->orbchange  = NULL;
       v->irqbit     = IRQF_VIA2;
       v->read_port_a  = via_read_porta;
       v->read_port_b  = via_read_portb;
@@ -463,7 +465,11 @@ void via_clock( struct via *v, unsigned int cycles )
         if( cycles > v->t1c )  // Going to end the timer run?
         {
           via_set_irq( v, VIRQF_T1 );
-          if( v->acr&0x80 ) v->orb |= 0x80;   // PB7 high now that the timer has finished
+          if( v->acr&0x80 )
+          {
+            v->orb |= 0x80;   // PB7 high now that the timer has finished
+            if (v->orbchange) v->orbchange( v );
+          }
           v->t1run = SDL_FALSE;
         }
       }
@@ -486,7 +492,11 @@ void via_clock( struct via *v, unsigned int cycles )
         crem -= (v->t1c+1); // Clock down to 0xffff
         v->t1c = 0xffff;
         via_set_irq( v, VIRQF_T1 );
-        if( v->acr&0x80 ) v->orb ^= 0x80;     // PB7 low now that the timer has finished
+        if( v->acr&0x80 )
+        {
+          v->orb ^= 0x80;     // PB7 low now that the timer has finished
+          if( v->orbchange ) v->orbchange( v );
+        }
 
         if( !crem )
         {
@@ -648,6 +658,7 @@ void via_write( struct via *v, int offset, unsigned char data )
           break;
       }
       if( v->w_iorb ) v->w_iorb( v, tmp );
+      if( v->orbchange ) v->orbchange( v );
       break;
     case VIA_IORA:
       v->ora = data;
@@ -678,10 +689,14 @@ void via_write( struct via *v, int offset, unsigned char data )
     case VIA_T1C_H:
       v->t1l_h = data;
       v->t1c = (v->t1l_h<<8)|v->t1l_l;
-	  v->t1reload = 1;
+      v->t1reload = 1;
       via_clr_irq( v, VIRQF_T1 );
       v->t1run = SDL_TRUE;
-      if( (v->acr&ACRF_T1CON) == 0x80 ) v->orb &= 0x7f;
+      if( (v->acr&ACRF_T1CON) == 0x80 )
+      {
+        v->orb &= 0x7f;
+        if( v->orbchange ) v->orbchange( v );
+      }
       break;
     case VIA_T1C_L:
     case VIA_T1L_L:

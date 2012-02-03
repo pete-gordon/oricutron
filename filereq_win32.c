@@ -78,10 +78,20 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       ofn.nFilterIndex = 2;
       break;
     
-    case FR_TAPESAVE:
+    case FR_TAPESAVETAP:
       ofn.Flags = OFN_PATHMUSTEXIST;
-    case FR_TAPELOAD:
       ofn.lpstrFilter = "All Files\0*.*\0Tape Images (*.tap)\0*.TAP\0";
+      ofn.nFilterIndex = 2;
+      break;
+
+    case FR_TAPESAVEORT:
+      ofn.Flags = OFN_PATHMUSTEXIST;
+      ofn.lpstrFilter = "All Files\0*.*\0Raw Tape Images (*.ort)\0*.ORT\0";
+      ofn.nFilterIndex = 2;
+      break;
+
+    case FR_TAPELOAD:
+      ofn.lpstrFilter = "All Files\0*.*\0Tape Images (*.tap, *.ort, *.wav)\0*.TAP;*.ORT;*.WAV\0";
       ofn.nFilterIndex = 2;
       break;
 

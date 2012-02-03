@@ -72,6 +72,7 @@ struct via
   void (*ca2pulsed)(struct via *);
   void (*cb2pulsed)(struct via *);
   void (*cb2shifted)(struct via *);
+  void (*orbchange)(struct via *);
 
   unsigned char (*read_port_a)(struct via *);
   unsigned char (*read_port_b)(struct via *);

@@ -13,7 +13,7 @@ Current status
   VIA:   95% done.
   AY:    99% done.
   Video: 100% done
-  Tape:  ".TAP" file support (no WAV yet, reading only)
+  Tape:  ".TAP", "*.ORT" file support (no WAV yet)
   Disk:  Reading/Writing sectors works. No track read/write.
 
 Telestrat emulation is included, but is far from finished and doesn't currently

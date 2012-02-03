@@ -27,4 +27,6 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname );
 void tape_ticktock( struct machine *oric, int cycles );
 void tape_setmotor( struct machine *oric, SDL_bool motoron );
 void tape_patches( struct machine *oric );
+void toggletapecap( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void tape_orbchange(struct via *via);
 

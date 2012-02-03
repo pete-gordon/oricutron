@@ -43,11 +43,13 @@
 #include "main.h"
 #include "ula.h"
 #include "joystick.h"
+#include "tape.h"
 
 extern SDL_bool warpspeed, soundavailable, soundon;
 extern char diskpath[], diskfile[], filetmp[];
 extern char telediskpath[], telediskfile[];
 extern SDL_bool refreshstatus, refreshavi;
+extern struct osdmenuitem mainitems[];
 
 char atmosromfile[1024];
 char oric1romfile[1024];
@@ -648,6 +650,8 @@ void preinit_machine( struct machine *oric )
   oric->sdljoy_a = NULL;
   oric->sdljoy_b = NULL;
   oric->rampattern = 0;
+  oric->tapecap = NULL;
+  oric->tapenoise = SDL_FALSE;
 
   oric->joy_iface = JOYIFACE_NONE;
   oric->joymode_a = JOYMODE_KB1;
@@ -704,6 +708,10 @@ int mapkey( int key )
     case '>': return '.';
     case '?': return '/';
     case '~': return '\'';
+    case '_': return '-';
+    case '+': return '=';
+    case '{': return '[';
+    case '}': return ']';
   }
 #endif
   return key;
@@ -833,7 +841,11 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             }
           }
           break;
-        
+
+        case SDLK_F9:
+          toggletapecap( oric, &mainitems[1], 0 );
+          break;
+
         case SDLK_F10:
            if( vidcap )
            {
@@ -1381,6 +1393,7 @@ void shut_machine( struct machine *oric )
   if( oric->drivetype == DRV_JASMIN )    { jasmin_free( &oric->jasmin ); oric->drivetype = DRV_NONE; }
   if( oric->mem ) { free( oric->mem ); oric->mem = NULL; oric->rom = NULL; }
   if( oric->prf ) { fclose( oric->prf ); oric->prf = NULL; }
+  if( oric->tapecap ) { toggletapecap( oric, &mainitems[1], 0 ); }
   mon_freesyms( &sym_microdisc );
   mon_freesyms( &sym_jasmin );
   mon_freesyms( &oric->romsyms );

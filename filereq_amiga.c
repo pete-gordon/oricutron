@@ -73,7 +73,7 @@ void shut_filerequester( struct machine *oric )
 
 SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fname, int type )
 {
-  char *pat, ppat[6*2+2];
+  char *pat, ppat[16*2+2];
   BOOL dosavemode = FALSE;
   
   switch( type )
@@ -84,10 +84,18 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       pat = "#?.dsk";
       break;
     
-    case FR_TAPESAVE:
+    case FR_TAPESAVETAP:
       dosavemode = TRUE;
-    case FR_TAPELOAD:
       pat = "#?.tap";
+      break;
+
+    case FR_TAPESAVEORT:
+      dosavemode = TRUE;
+      pat = "#?.ort";
+      break;
+
+    case FR_TAPELOAD:
+      pat = "#?.(tap|ort|wav)";
       break;
     
     case FR_ROMS:
@@ -105,7 +113,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       break;
   }
   
-  if( pat ) ParsePatternNoCase( pat, ppat, 6*2+2 );
+  if( pat ) ParsePatternNoCase( pat, ppat, 16*2+2 );
   
   if( !AslRequestTags( req,
          ASLFR_TitleText,     title,
@@ -115,6 +123,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
          ASLFR_RejectIcons,   TRUE,
          ASLFR_DoSaveMode,    dosavemode,
          pat ? ASLFR_AcceptPattern : TAG_IGNORE, ppat,
+         pat ? ASLFR_InitialPattern : TAG_IGNORE, pat,
          TAG_DONE ) )
     return SDL_FALSE;
   
