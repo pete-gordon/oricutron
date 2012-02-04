@@ -138,6 +138,7 @@ struct machine
   SDL_bool tapeturbo_forceoff;
   SDL_bool symbolsautoload, symbolscase;
   SDL_bool rawtape;
+  int nonrawend, tapehitend;
   char lasttapefile[20];
   char tapename[32];
   int tapeturbo_syncstack;
