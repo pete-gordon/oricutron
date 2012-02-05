@@ -267,13 +267,15 @@ struct osdmenuitem ovopitems[] = { { "  1mhz (None)", "1",    '1', setoverclock,
                                    { "Back",         "\x17", SDLK_BACKSPACE,gotomenu,0, 0 },
                                    { NULL, } };
 
-struct osdmenu menus[] = { { "Main Menu",         0, mainitems },
-                           { "Hardware options", 13, hwopitems },
-                           { "Audio options",     3, auopitems },
-                           { "Debug options",     3, dbopitems },
-                           { "Video options",     3, vdopitems },
-                           { "About Oricutron",  15, aboutitems },
-                           { "Overclock",        11, ovopitems } };
+#define LAST_ITEM(x) ((sizeof(x)/sizeof(struct osdmenuitem))-2)
+
+struct osdmenu menus[] = { { "Main Menu",                           0,  mainitems },
+                           { "Hardware options", LAST_ITEM(hwopitems),  hwopitems },
+                           { "Audio options",    LAST_ITEM(auopitems),  auopitems },
+                           { "Debug options",    LAST_ITEM(dbopitems),  dbopitems },
+                           { "Video options",    LAST_ITEM(vdopitems),  vdopitems },
+                           { "About Oricutron",  LAST_ITEM(aboutitems), aboutitems },
+                           { "Overclock",        LAST_ITEM(ovopitems),  ovopitems } };
 
 // Load a 24bit BMP for the GUI
 SDL_bool gimg_load( struct guiimg *gi )
