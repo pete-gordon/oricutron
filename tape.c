@@ -142,6 +142,7 @@ void tape_setup_header( struct machine *oric )
   }
   if( ( i < 3 ) || ( oric->tapebuf[oric->tapeoffs+i] != 0x24 ) )
     return;
+  i++;
   if( (oric->tapeoffs+i+9) >= oric->tapelen )
     return;
   i+=9;
@@ -801,7 +802,7 @@ void tape_ticktock( struct machine *oric, int cycles )
 
   if( ( oric->tapehdrend != 0 ) && ( oric->tapeoffs == oric->tapehdrend ) )
   {
-    oric->tapedelay = 1285;
+    oric->tapedelay = 1281;
     oric->tapehdrend = 0;
   }
 
@@ -810,10 +811,12 @@ void tape_ticktock( struct machine *oric, int cycles )
   if( oric->tapecount > cycles )
   {
     oric->tapecount -= cycles;
-    if( oric->tapedelay > cycles )
+    if( oric->tapedelay > 0 )
+    {
       oric->tapedelay -= cycles;
-    else
-      oric->tapedelay = 0;
+      if( oric->tapedelay < 0 )
+        oric->tapedelay = 1;
+    }
     return;
   }
 
@@ -841,14 +844,19 @@ void tape_ticktock( struct machine *oric, int cycles )
     via_write_CB1( &oric->via, oric->tapeout );
   }
 
-  if( oric->tapedelay > cycles )
+  if( oric->tapedelay > 0 )
   {
     oric->tapedelay -= cycles;
+    if( oric->tapedelay <= 0)
+    {
+      if( oric->tapebit == 1 )
+        oric->tapedelay = 1;
+      else
+        oric->tapedelay = 0;
+    }
     oric->tapecount = TAPE_1_PULSE;
-    dbg_printf("toggle");
     return;
   }
-  oric->tapedelay = 0;
 
   if( oric->tapeoffs >= oric->tapelen )
   {
