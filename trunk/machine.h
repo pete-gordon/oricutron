@@ -127,6 +127,7 @@ struct machine
   struct microdisc md;
   struct jasmin jasmin;
   char diskname[MAX_DRIVES][32];
+  SDL_bool diskautosave;
   
   FILE *prf;
   int prclose, prclock;
