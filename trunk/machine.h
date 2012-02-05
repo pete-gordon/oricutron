@@ -132,7 +132,7 @@ struct machine
   int prclose, prclock;
 
   unsigned char tapebit, tapeout, tapeparity;
-  int tapelen, tapeoffs, tapecount, tapetime, tapedupbytes;
+  int tapelen, tapeoffs, tapecount, tapetime, tapedupbytes, tapehdrend, tapedelay;
   unsigned char *tapebuf;
   SDL_bool tapemotor, tapenoise, tapeturbo, autorewind, autoinsert;
   SDL_bool tapeturbo_forceoff;
