@@ -420,6 +420,7 @@ void preinit_ula( struct machine *oric )
   oric->scr = NULL;
   oric->hstretch = SDL_TRUE;
   oric->scanlines = SDL_FALSE;
+  oric->palghost = SDL_TRUE;
 }
 
 SDL_bool init_ula( struct machine *oric )
