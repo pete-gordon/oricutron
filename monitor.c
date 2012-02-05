@@ -1318,32 +1318,34 @@ static void mon_viamod( int x, int y, int w, struct textzone *vtz )
 
 void mon_update_via( struct machine *oric, struct textzone *vtz, struct via *v, struct via *old, SDL_bool *oldvalid  )
 {
-  tzprintfpos( vtz, 2, 2, "PCR=%02X ACR=%02X SR=%02X",
-    v->pcr,
-    v->acr,
-    v->sr );
-  tzprintfpos( vtz, 2, 3, "IFR=%02X IER=%02X",
-    v->ifr,
-    v->ier );  
-  tzprintfpos( vtz, 2, 5, "A=%02X DDRA=%02X  B=%02X DDRB=%02X",
-    (v->ora&v->ddra)|(v->ira&(~v->ddra)),
-    v->ddra,
-    (v->orb&v->ddrb)|(v->irb&(~v->ddrb)),
-    v->ddrb );
-  tzprintfpos( vtz, 2, 6, "CA1=%01X CA2=%01X   CB1=%01X CB2=%01X",
-    v->ca1,
-    v->ca2,
-    v->cb1,
-    v->cb2 );
-  tzprintfpos( vtz, 2, 8, "T1L=%02X%02X T1C=%04X",
-    v->t1l_h,
-    v->t1l_l,
-    v->t1c );
-  tzprintfpos( vtz, 2, 9, "T2L=%02X%02X T2C=%04X",
-    v->t2l_h,
-    v->t2l_l,
-    v->t2c );
+  int i, j, o;
+  unsigned char val;
+  char *names[] = { "IORB ", "IORAh", "DDRB ", "DDRA ", "T1CL ", "T1CH ", "T1LL ", "T1LH ", "T2CL ", "T2CH ", "SR   ", "ACR  ", "PCR  ", "IFR  ", "IER  ", "IORA " };
 
+  for( i=0; i<16; i++ )
+  {
+    val = via_mon_read( v, 0x300+i );
+    tzprintfpos( vtz, 2, i+1, "%04X:  %s $%02X %", 0x300+i, names[i], val );
+    for( j=128; j; j>>=1 )
+      tzputc(vtz, (val&j)?'1':'0');
+    
+    if( *oldvalid )
+    {
+      unsigned char oval = via_mon_read(old, 0x300+i);
+      if( val != oval ) mon_viamod( 16, i+1, 2, vtz );
+      for( j=128, o=20; j; j>>=1, o++ )
+      {
+        if ((val&j) != (oval&j))
+          mon_viamod( o, i+1, 1, vtz );
+      }
+    }
+  }
+
+  tzprintfpos( vtz, 2, 18, "---------- TAPE ----------");
+  tzprintfpos( vtz, 2, 19, "OFS %08u  LEN %08u", oric->tapeoffs, oric->tapelen );
+
+
+/*
   if( v == &oric->via )
   {
     tzprintfpos( vtz, 2, 11, "TAPE OFFS = %07d", oric->tapeoffs );
@@ -1382,6 +1384,7 @@ void mon_update_via( struct machine *oric, struct textzone *vtz, struct via *v, 
     if( ((v->ora&v->ddra)|(v->ira&(~v->ddra))) != ((old->ora&old->ddra)|(old->ira&(~old->ddra))) ) mon_viamod(  4, 5, 2, vtz );
     if( ((v->orb&v->ddrb)|(v->irb&(~v->ddrb))) != ((old->orb&old->ddrb)|(old->irb&(~old->ddrb))) ) mon_viamod( 26, 5, 2, vtz );
   }
+*/
 }
 
 static void mon_aymod( int x, int y, int w )
