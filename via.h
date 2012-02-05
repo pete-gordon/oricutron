@@ -18,9 +18,6 @@
 **
 */
 
-#define TAPE_0_PULSE 416
-#define TAPE_1_PULSE 208
-
 enum
 {
   VIA_MAIN = 0,

@@ -1350,7 +1350,7 @@ void mon_update_via( struct machine *oric, struct textzone *vtz, struct via *v, 
     tzprintfpos( vtz, 2, 12, "TAPE LEN  = %07d", oric->tapelen );
     tzprintfpos( vtz, 2, 13, "COUNT     = %07d", oric->tapecount );
     tzprintfpos( vtz, 2, 14, "BIT = %02X  DATA = %1X",
-      (oric->tapebit+9)%10,
+      oric->tapebit,
       oric->tapetime == TAPE_1_PULSE );
     tzprintfpos( vtz, 2, 15, "MOTOR = %1X", oric->tapemotor );
   }
