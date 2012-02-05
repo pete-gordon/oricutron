@@ -148,6 +148,7 @@ void togglecasesyms( struct machine *oric, struct osdmenuitem *mitem, int dummy 
 void togglevsynchack( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newrendermode );
 void togglehstretch( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void togglepalghost( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglefullscreen( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglelightpen( struct machine *oric, struct osdmenuitem *mitem, int dummy );
@@ -234,6 +235,7 @@ struct osdmenuitem glopitems[] = { { " OpenGL rendering",      "O",    'o',     
                                    { " Fullscreen",            "F",    'f',      togglefullscreen, 0, 0 },
                                    { " Horizontal stretch",    "H",    'h',      togglehstretch,  0, 0 },
                                    { " Scanlines",             "C",    'c',      togglescanlines, 0, 0 },
+                                   { " PAL ghosting",          "P",    'p',      togglepalghost,  0, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },
                                    { NULL, } };
@@ -1012,6 +1014,20 @@ void togglehstretch( struct machine *oric, struct osdmenuitem *mitem, int dummy 
   mitem->name = "\x0e""Horizontal stretch";
 }
 
+// Toggle PAL ghosting on/off
+void togglepalghost( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+  if( oric->palghost )
+  {
+    oric->palghost = SDL_FALSE;
+    mitem->name = " PAL ghosting";
+    return;
+  }
+
+  oric->palghost = SDL_TRUE;
+  mitem->name = "\x0e""PAL ghosting";
+}
+
 // Toggle scanlines on/off
 void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
@@ -1490,6 +1506,11 @@ void setmenutoggles( struct machine *oric )
     vdopitems[4].name = " Scanlines";
     glopitems[5].name = " Scanlines";
   }
+
+  if( oric->palghost )
+    glopitems[6].name = "\x0e""PAL ghosting";
+  else
+    glopitems[6].name = " PAL ghosting";
 
   hwopitems[7].func = microdiscrom_valid ? setdrivetype : NULL;
   hwopitems[8].func = jasminrom_valid ? setdrivetype : NULL;
