@@ -110,6 +110,7 @@ struct diskimage
   Uint8   *rawimage;              // The raw disk image file loaded into memory
   Uint32   rawimagelen;           // Size of the raw image file
   SDL_bool modified;              // Set to TRUE if the image in memory has been modified
+  Sint32   modified_time;         // Cycles since it was last modified
   char     filename[4096+512];    // Full path and filename of the current image file
 };
 

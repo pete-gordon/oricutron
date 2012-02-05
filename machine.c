@@ -683,6 +683,7 @@ void preinit_machine( struct machine *oric )
     oric->wddisk.disk[i] = NULL;
     oric->diskname[i][0] = 0;
   }
+  oric->diskautosave = SDL_FALSE;
   
   oric->lightpen  = SDL_FALSE;
   oric->lightpenx = 255;

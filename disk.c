@@ -145,6 +145,7 @@ struct diskimage *diskimage_alloc( Uint32 rawimglen )
   dimg->rawimage    = buf;
   dimg->rawimagelen = rawimglen;
   dimg->modified    = SDL_FALSE;
+  dimg->modified_time = 0;
   return dimg;
 }
 
@@ -249,6 +250,7 @@ SDL_bool diskimage_save( struct machine *oric, char *fname, int drive )
 
   // The image in memory is no longer different to the last saved version
   oric->wddisk.disk[drive]->modified = SDL_FALSE;
+  oric->wddisk.disk[drive]->modified_time = 0;
 
   // Remember to update the GUI
   refreshdisks = SDL_TRUE;
@@ -325,6 +327,7 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
 
   // Nobody has written to this disk yet
   oric->wddisk.disk[drive]->modified = SDL_FALSE;
+  oric->wddisk.disk[drive]->modified_time = 0;
 
   // Remember the filename of the image for this drive
   strncpy( oric->wddisk.disk[drive]->filename, fname, 4096+512 );
@@ -996,6 +999,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           wd->crc = calc_crc( wd->crc, wd->r_data );
           if( !wd->disk[wd->c_drive]->modified ) refreshdisks = SDL_TRUE;
           wd->disk[wd->c_drive]->modified = SDL_TRUE;
+          wd->disk[wd->c_drive]->modified_time = 0;
           wd->r_status &= ~WSF_DRQ;
           wd->clrdrq( wd->drqarg );
 

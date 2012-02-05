@@ -413,6 +413,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_joykey( &sto->lctmp[i], "kbjoy2_right", &oric->kbjoy2[3] ) ) continue;
     if( read_config_joykey( &sto->lctmp[i], "kbjoy2_fire1", &oric->kbjoy2[4] ) ) continue;
     if( read_config_joykey( &sto->lctmp[i], "kbjoy2_fire2", &oric->kbjoy2[5] ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "diskautosave", &oric->diskautosave ) ) continue;
   }
 
   fclose( f );
@@ -892,6 +893,27 @@ void frameloop_normal( struct machine *oric, SDL_bool *framedone, SDL_bool *need
   }
 }
 
+/* Tasks to do once per emulated frame */
+void once_per_frame( struct machine *oric )
+{
+  int i;
+
+  if( oric->diskautosave )
+  {
+    for( i=0; i<4; i++ )
+    {
+      if( ( oric->wddisk.disk[i] ) && ( oric->wddisk.disk[i]->modified ) )
+      {
+        oric->wddisk.disk[i]->modified_time++;
+        if( oric->wddisk.disk[i]->modified_time >= 20 )
+        {        
+          diskimage_save( oric, oric->wddisk.disk[i]->filename, i );
+        }
+      }
+    }
+  }
+}
+
 int main( int argc, char *argv[] )
 {
   SDL_bool isinit;
@@ -939,6 +961,7 @@ int main( int argc, char *argv[] )
             frametimeave = (frametimeave+lastframetimes[0])/FRAMES_TO_AVERAGE;
           }
 
+          once_per_frame( &oric );
           framestart = SDL_GetTicks();
           if( oric.overclockmult==1 )
             frameloop_normal( &oric, &framedone, &needrender );
