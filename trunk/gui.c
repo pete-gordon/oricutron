@@ -572,6 +572,14 @@ void tzstr( struct textzone *ptz, char *text )
   ptz->modified = SDL_TRUE;
 }
 
+void tzputc( struct textzone *ptz, char c )
+{
+  char tmp[2];
+  tmp[0] = c;
+  tmp[1] = 0;
+  tzstr( ptz, tmp );
+}
+
 // Print a formatted string into a textzone
 void tzprintf( struct textzone *ptz, char *fmt, ... )
 {
