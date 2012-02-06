@@ -21,6 +21,10 @@
 
 #ifdef __OPENGL_AVAILABLE__
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
 #include "system.h"
 
 #ifndef __APPLE__
@@ -29,7 +33,9 @@
 #include <OpenGL/gl.h>
 #endif
 
-#ifndef WIN32
+#ifdef __SPECIFY_SDL_DIR__
+#include <SDL/SDL_endian.h>
+#else
 #include <SDL_endian.h>
 #endif
 

@@ -20,6 +20,7 @@
 */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "system.h"
 #include "6502.h"
