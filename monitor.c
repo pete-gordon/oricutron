@@ -1225,8 +1225,8 @@ void mon_update_regs( struct machine *oric )
   tzstrpos( tz[TZ_REGS], 35, 5, (oric->cpu.irq&IRQF_DISK) ? "DISK" : "    " );
 
 
-  tzstrpos( tz[TZ_REGS], 25, 4, "NV-BDIZC" );
-  tzprintfpos( tz[TZ_REGS], 25, 5, "%01X%01X1%01X%01X%01X%01X%01X",
+  tzstrpos( tz[TZ_REGS], 20, 4, "NV-BDIZC" );
+  tzprintfpos( tz[TZ_REGS], 20, 5, "%01X%01X1%01X%01X%01X%01X%01X",
     oric->cpu.f_n,
     oric->cpu.f_v,
     oric->cpu.f_b,
@@ -1234,6 +1234,12 @@ void mon_update_regs( struct machine *oric )
     oric->cpu.f_i,
     oric->cpu.f_z,
     oric->cpu.f_c );
+
+  tzprintfpos( tz[TZ_REGS], 30, 4, "NMI=%04X RST=%04X",
+    (oric->cpu.read( &oric->cpu, 0xfffb )<<8)|oric->cpu.read( &oric->cpu, 0xfffa ),
+    (oric->cpu.read( &oric->cpu, 0xfffd )<<8)|oric->cpu.read( &oric->cpu, 0xfffc ) );
+  tzprintfpos( tz[TZ_REGS], 30, 5, "IRQ=%04X", (oric->cpu.read( &oric->cpu, 0xffff )<<8)|oric->cpu.read( &oric->cpu, 0xfffe ) );
+
 
   addr = pc;
   for( i=0; i<10; i++ )
@@ -1254,13 +1260,13 @@ void mon_update_regs( struct machine *oric )
     if( cpu_old.cycles != oric->cpu.cycles ) mon_regmod(  5, 4, 9 );
     if( frames_old     != oric->frames )     mon_regmod(  5, 5, 6 );
     if( vidraster_old  != oric->vid_raster ) mon_regmod( 15, 5, 3 );
-    if( cpu_old.f_n    != oric->cpu.f_n )    mon_regmod( 25, 5, 1 );
-    if( cpu_old.f_v    != oric->cpu.f_v )    mon_regmod( 26, 5, 1 );
-    if( cpu_old.f_b    != oric->cpu.f_b )    mon_regmod( 28, 5, 1 );
-    if( cpu_old.f_d    != oric->cpu.f_d )    mon_regmod( 29, 5, 1 );
-    if( cpu_old.f_i    != oric->cpu.f_i )    mon_regmod( 30, 5, 1 );
-    if( cpu_old.f_z    != oric->cpu.f_z )    mon_regmod( 31, 5, 1 );
-    if( cpu_old.f_c    != oric->cpu.f_c )    mon_regmod( 32, 5, 1 );
+    if( cpu_old.f_n    != oric->cpu.f_n )    mon_regmod( 20, 5, 1 );
+    if( cpu_old.f_v    != oric->cpu.f_v )    mon_regmod( 21, 5, 1 );
+    if( cpu_old.f_b    != oric->cpu.f_b )    mon_regmod( 23, 5, 1 );
+    if( cpu_old.f_d    != oric->cpu.f_d )    mon_regmod( 24, 5, 1 );
+    if( cpu_old.f_i    != oric->cpu.f_i )    mon_regmod( 25, 5, 1 );
+    if( cpu_old.f_z    != oric->cpu.f_z )    mon_regmod( 26, 5, 1 );
+    if( cpu_old.f_c    != oric->cpu.f_c )    mon_regmod( 27, 5, 1 );
 
     if( (cpu_old.irq&IRQF_VIA)  != (oric->cpu.irq&IRQF_VIA) )  mon_regmod( 35, 4, 3 );
     if( (cpu_old.irq&IRQF_DISK) != (oric->cpu.irq&IRQF_DISK) ) mon_regmod( 35, 5, 4 );

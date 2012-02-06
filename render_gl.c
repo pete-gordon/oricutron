@@ -217,7 +217,7 @@ void render_begin_gl( struct machine *oric )
   {
     memset( tx[TEX_POPUP].buf, 0, tx[TEX_POPUP].w*tx[TEX_POPUP].h*4 );
     for( i=0; oric->popupstr[i]; i++ )
-      printchar( TEX_POPUP, i*8, 0, oric->popupstr[i], gpal[1], gpal[4], SDL_TRUE );
+      printchar( TEX_POPUP, i*8, 0, oric->popupstr[i], gpal[1], gpal[0], SDL_TRUE );
     glBindTexture( GL_TEXTURE_2D, tex[TEX_POPUP] );
     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[TEX_POPUP].w, tx[TEX_POPUP].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[TEX_POPUP].buf );
     oric->newpopupstr = SDL_FALSE;
@@ -227,7 +227,7 @@ void render_begin_gl( struct machine *oric )
   {
     memset( tx[TEX_STATUS].buf, 0, tx[TEX_STATUS].w*tx[TEX_STATUS].h*4 );
     for( i=0; oric->statusstr[i]; i++ )
-      printchar( TEX_STATUS, i*8, 0, oric->statusstr[i], gpal[1], gpal[4], SDL_FALSE );
+      printchar( TEX_STATUS, i*8, 0, oric->statusstr[i], gpal[1], gpal[0], SDL_FALSE );
     glBindTexture( GL_TEXTURE_2D, tex[TEX_STATUS] );
     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[TEX_STATUS].w, tx[TEX_STATUS].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[TEX_STATUS].buf );
   }
@@ -399,7 +399,7 @@ void render_video_gl( struct machine *oric, SDL_bool doublesize )
 
     if( oric->palghost )
     {
-      float offs = (oric->hstretch) ? 3.2f : 1.8f;
+      float offs = (oric->hstretch) ? 3.2f : 2.2f;
       glColor4ub( 255, 255, 255, 128 );
       glBegin( GL_QUADS );
         glTexCoord2f(          0.0f,          0.0f ); glVertex3f( l+offs,  14.0f, 0.0f );
@@ -574,9 +574,9 @@ SDL_bool init_render_gl( struct machine *oric )
 
   SDL_WM_SetCaption( APP_NAME_FULL, APP_NAME_FULL );
 
-  clrcol[0] = ((float)sgpal[4*3+0])/255.0f;
-  clrcol[1] = ((float)sgpal[4*3+1])/255.0f;
-  clrcol[2] = ((float)sgpal[4*3+2])/255.0f;
+  clrcol[0] = ((float)sgpal[0*3+0])/255.0f;
+  clrcol[1] = ((float)sgpal[0*3+1])/255.0f;
+  clrcol[2] = ((float)sgpal[0*3+2])/255.0f;
 
   ula_set_dirty( oric );
 

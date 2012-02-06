@@ -120,7 +120,7 @@ void render_begin_sw( struct machine *oric )
       {
         dst_pixel = (Uint16 *)dst_scanline;
         for( x=320; x<640; x++, dst_pixel++ )
-          *dst_pixel = gpal[4];
+          *dst_pixel = gpal[0];
       }
     } else {
       Uint32 *dst_pixel;
@@ -128,7 +128,7 @@ void render_begin_sw( struct machine *oric )
       {
         dst_pixel = (Uint32 *)dst_scanline;
         for( x=320; x<640; x++, dst_pixel++ )
-          *dst_pixel = gpal[4];
+          *dst_pixel = gpal[0];
       }
     }
     oric->newpopupstr = SDL_FALSE;
@@ -157,7 +157,7 @@ void render_end_sw( struct machine *oric )
       dst_pixel += 320 * pixel_size;
 
       for( i=0; oric->popupstr[i]; i++, dst_pixel += char_pitch )
-        printchar( dst_pixel, oric->popupstr[i], gpal[1], gpal[4], SDL_TRUE );
+        printchar( dst_pixel, oric->popupstr[i], gpal[1], gpal[0], SDL_TRUE );
     }
   
     if( oric->statusstr[0] )
@@ -259,7 +259,7 @@ void render_video_sw_16bpp( struct machine *oric, SDL_bool doublesize )
   {
     if( needclr )
     {
-      SDL_FillRect(screen, NULL, gpal[4]);
+      SDL_FillRect(screen, NULL, gpal[0]);
       needclr = SDL_FALSE;
     }
 
@@ -352,7 +352,7 @@ void render_video_sw_32bpp( struct machine *oric, SDL_bool doublesize )
   {
     if( needclr )
     {
-      SDL_FillRect(screen, NULL, gpal[4]);
+      SDL_FillRect(screen, NULL, gpal[0]);
       needclr = SDL_FALSE;
     }
 
