@@ -406,17 +406,12 @@ void render_video_gl( struct machine *oric, SDL_bool doublesize )
     if( oric->palghost )
     {
       float offs = (oric->hstretch) ? 3.2f : 2.2f;
-      glColor4ub( 255, 255, 255, 128 );
+      glColor4ub( 255, 255, 255, 64 );
       glBegin( GL_QUADS );
         glTexCoord2f(          0.0f,          0.0f ); glVertex3f( l+offs,  14.0f, 0.0f );
         glTexCoord2f( 240.0f/256.0f,          0.0f ); glVertex3f( r+offs,  14.0f, 0.0f );
         glTexCoord2f( 240.0f/256.0f, 224.0f/256.0f ); glVertex3f( r+offs, 462.0f, 0.0f );
         glTexCoord2f(          0.0f, 224.0f/256.0f ); glVertex3f( l+offs, 462.0f, 0.0f );
-
-        glTexCoord2f(          0.0f,          0.0f ); glVertex3f( l,  14.0f, 0.0f );
-        glTexCoord2f( 240.0f/256.0f,          0.0f ); glVertex3f( r,  14.0f, 0.0f );
-        glTexCoord2f( 240.0f/256.0f, 224.0f/256.0f ); glVertex3f( r, 462.0f, 0.0f );
-        glTexCoord2f(          0.0f, 224.0f/256.0f ); glVertex3f( l, 462.0f, 0.0f );
       glEnd();
       glColor4ub( 255, 255, 255, 255 );
     }
