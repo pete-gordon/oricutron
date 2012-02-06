@@ -39,7 +39,7 @@
 
 extern char tapefile[], tapepath[];
 extern SDL_bool refreshtape;
-char csavename[4096];
+char tmptapename[4096];
 extern char filetmp[];
 
 // Pop-up the name of the currently inserted tape
@@ -75,24 +75,24 @@ void toggletapecap( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   }
 
   /* Otherwise, prompt for the file to capture */
-  if( !filerequester( oric, "Capture tape output", tapepath, csavename, FR_TAPESAVEORT ) )
+  if( !filerequester( oric, "Capture tape output", tapepath, tmptapename, FR_TAPESAVEORT ) )
   {
     // Never mind
     return;
   }
-  if( csavename[0] == 0 ) return;
+  if( tmptapename[0] == 0 ) return;
 
   /* If it ends in ".tap", we need to change it to ".ort", because
      we're capturing real signals here folks! */
-  if( (strlen(csavename)>3) && (strcasecmp(&csavename[strlen(csavename)-4], ".tap")==0) )
-    csavename[strlen(csavename)-4] = 0;
+  if( (strlen(tmptapename)>3) && (strcasecmp(&tmptapename[strlen(tmptapename)-4], ".tap")==0) )
+    tmptapename[strlen(tmptapename)-4] = 0;
 
   /* Add .ort extension, if necessary */
-  if( (strlen(csavename)<4) || (strcasecmp(&csavename[strlen(csavename)-4], ".ort")!=0) )
-    strncat(csavename, ".ort", 4096);
-  csavename[4095] = 0;
+  if( (strlen(tmptapename)<4) || (strcasecmp(&tmptapename[strlen(tmptapename)-4], ".ort")!=0) )
+    strncat(tmptapename, ".ort", 4096);
+  tmptapename[4095] = 0;
 
-  joinpath( tapepath, csavename );
+  joinpath( tapepath, tmptapename );
 
   /* Open the file */
   oric->tapecap = fopen( filetmp, "wb" );
@@ -104,7 +104,7 @@ void toggletapecap( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   }
 
   /* Write header */
-  fwrite( ortheader, 4, 1, oric->tapecap );
+  fwrite( ortheader, 4, 1, oric->tapecap);
   
   /* Counter reset */
   oric->tapecapcount = -1;
@@ -167,6 +167,9 @@ void tape_orbchange( struct via *via )
 
   /* Capturing tape output? */
   if( !oric->tapecap ) return;
+  
+  /* Saving a tap section? */
+  if( oric->tapecap == oric->tsavf ) return;
   
   tapebit = (via->orb & via->ddrb) >> 7;
   if( tapebit == oric->tapecaplastbit ) return;
@@ -477,6 +480,28 @@ void tape_autoinsert( struct machine *oric )
   free( odir );
 }
 
+void tape_stop_savepatch( struct machine *oric )
+{
+  if( !oric->tsavf ) return;
+
+  if( oric->tsavf == oric->tapecap )
+  {
+    unsigned char bufdata[2];
+    fseek( oric->tsavf, oric->tapecapsavoffs, SEEK_SET );
+    bufdata[0] = (oric->tapecapsavbytes>>8)&0xff;
+    bufdata[1] = oric->tapecapsavbytes&0xff;
+    fwrite( bufdata, 2, 1, oric->tsavf );
+    oric->tapecapsavoffs = 0;
+    oric->tapecapsavbytes = 0;
+  }
+  else
+  {
+    fclose( oric->tsavf );
+  }
+
+  oric->tsavf = NULL;
+}
+
 // Do the tape patches (must be done after every m6502 setcycles)
 void tape_patches( struct machine *oric )
 {
@@ -489,7 +514,8 @@ void tape_patches( struct machine *oric )
       // Patch CLOAD to insert a tape image specified.
       // Unfortunately the way the ROM works means we
       // only have up to 16 chars.
-      if( oric->cpu.calcpc == oric->pch_fd_getname_pc )
+      if( ( oric->cpu.calcpc == oric->pch_fd_cload_getname_pc ) ||
+          ( oric->cpu.calcpc == oric->pch_fd_recall_getname_pc ) )
       {
         // Read in the filename from RAM
         for( i=0; i<16; i++ )
@@ -500,9 +526,11 @@ void tape_patches( struct machine *oric )
         }
         oric->lasttapefile[i] = 0;
 
+        dbg_printf("found '%s'", oric->lasttapefile);
         if( ( oric->cpu.read( &oric->cpu, oric->pch_fd_getname_addr ) != 0 ) &&
             ( oric->autoinsert ) )
         {
+          dbg_printf("moo");
           // Only do this if there is no tape inserted, or we're at the
           // end of the current tape, or the filename ends in .TAP, .ORT or .WAV
           if( ( !oric->tapebuf ) ||
@@ -516,139 +544,111 @@ void tape_patches( struct machine *oric )
           }
         }
       }
+      else if( ( ( oric->cpu.calcpc == oric->pch_fd_csave_getname_pc ) ||
+                 ( oric->cpu.calcpc == oric->pch_fd_store_getname_pc ) ) &&
+               ( ( !oric->tapecap ) || ( oric->tapeturbo ) ) )
+      {
+        // Did we miss the end of a previous one?
+        if( oric->tsavf )
+          tape_stop_savepatch( oric );
+
+        // If we're doing tape capture, we can just use that
+        if( oric->tapecap )
+        {
+          oric->tsavf = oric->tapecap;
+          if( oric->tapecapcount < 0 )
+            fputc( 0, oric->tapecap );
+          fputc( 0xff, oric->tapecap );
+          oric->tapecapsavoffs = ftell(oric->tapecap);
+          fputc( 0x00, oric->tapecap );
+          fputc( 0x00, oric->tapecap );
+          oric->tapecapsavbytes = 0;
+        }
+        else
+        {
+          char *odir = NULL;
+
+          // Read in the filename from RAM
+          for( i=0; i<16; i++ )
+          {
+            j = oric->cpu.read( &oric->cpu, oric->pch_fd_getname_addr+i );
+            if( !j ) break;
+            tmptapename[i] = j;
+          }
+          tmptapename[i] = 0;
+
+          // If no name, prompt for one
+          if( tmptapename[0] == 0 ) 
+          {
+            if( !filerequester( oric, "Save to tape", tapepath, tmptapename, FR_TAPESAVETAP ) )
+              tmptapename[0] = 0;
+          }
+
+          // If there is one, append .TAP
+          if( tmptapename[0] )
+          {
+            if( (strlen(tmptapename) < 4) || (strcasecmp(&tmptapename[strlen(tmptapename)-4], ".tap") != 0) )
+            {
+              strncat(tmptapename, ".tap", sizeof(tmptapename));
+              tmptapename[sizeof(tmptapename)-1] = 0;
+            }
+          }
+
+          odir = getcwd( NULL, 0 );
+          if( odir )
+          {
+            chdir( tapepath );
+            oric->tsavf = fopen(tmptapename, "wb");
+            chdir( odir );
+            free( odir );
+          }
+        }
+      }
+      else if( ( oric->cpu.calcpc == oric->pch_tt_csave_end_pc ) ||
+               ( oric->cpu.calcpc == oric->pch_tt_store_end_pc ) )
+      {
+        SDL_bool justtap = (oric->tsavf != oric->tapecap);
+        tape_stop_savepatch( oric );
+        if( justtap )
+        {
+          snprintf( filetmp, 32, "\x0f\x10 Saved to %s", tmptapename );
+          filetmp[31] = 0;
+          if (strlen(tmptapename) > 20)
+          {
+            filetmp[30] = '\x16';
+          }
+          do_popup( oric, filetmp );
+        }
+        tmptapename[0] = 0;
+      }
     }
 
-    if( ( oric->pch_csave_available ) && ( ( !oric->tapecap ) || ( oric->tapeturbo ) ) )
+    if( ( oric->pch_tt_save_available ) && ( ( !oric->tapecap ) || ( oric->tapeturbo ) ) )
     {
-      int docsave = 0;
-
-      // Patch CSAVE to write to a file
-      if( oric->cpu.calcpc == oric->pch_csave_pc )
+      if( oric->cpu.calcpc == oric->pch_tt_putbyte_pc )
       {
-        oric->pch_csave_stack = oric->cpu.sp;
+        if( oric->tsavf )
+        {
+          fputc( oric->cpu.a, oric->tsavf );
+          if( oric->tsavf == oric->tapecap )
+            oric->tapecapsavbytes++;
+        }
+
+        oric->cpu.calcpc = oric->pch_tt_putbyte_end_pc;
+        oric->cpu.calcop = oric->cpu.read( &oric->cpu, oric->cpu.calcpc );
       }
-      else if(( oric->cpu.calcpc == oric->pch_csave_getname_pc ) && ( oric->pch_csave_stack != 0 ))
+      else if( oric->cpu.calcpc == oric->pch_tt_writeleader_pc )
       {
-        int start, end, len, headerlen;
-
-        // Get start address
-        start = (oric->cpu.read( &oric->cpu, oric->pch_csave_header_addr+2 )<<8) | oric->cpu.read( &oric->cpu, oric->pch_csave_header_addr+1 );
-        // Get end address
-        end   = (oric->cpu.read( &oric->cpu, oric->pch_csave_header_addr+4 )<<8) | oric->cpu.read( &oric->cpu, oric->pch_csave_header_addr+3 );
-        len = end-start;
-
-        i=0;
-        do
+        if( oric->tsavf )
         {
-          j = oric->cpu.read( &oric->cpu, oric->pch_csave_getname_addr+i );
-          if( i >= 16 ) j=0;
-          i++;
+          unsigned char leader[] = { 0x16, 0x16, 0x16, 0x16 };
+          fwrite( leader, 4, 1, oric->tsavf );
+          if( oric->tsavf == oric->tapecap )
+            oric->tapecapsavbytes += 4;
         }
-        while( j!=0 );
-        headerlen = 5+9+i;
 
-        if( len > 0)
-        {
-          if( !oric->tapecap )
-          {
-            // Read the filename from RAM
-            for( i=0; i<16; i++ )
-            {
-              j = oric->cpu.read( &oric->cpu, oric->pch_csave_getname_addr+i );
-              if( !j ) break;
-              csavename[i] = j;
-            }
-            csavename[i] = 0;
-
-            // No filename?
-            if( csavename[0] == 0)
-            {
-              if( filerequester( oric, "Save to tape", tapepath, csavename, FR_TAPESAVETAP ) )
-                docsave = csavename[0]!=0;
-            }
-            else
-            {
-              if ((strlen(csavename)<4) || (strcasecmp(&csavename[strlen(csavename)-4], ".tap")!=0))
-                strcat(csavename, ".tap");
-              docsave = 1;
-            }
-          }
-          else
-          {
-            docsave = 1;
-          }
-
-          // Do the CSAVE operation?
-          if( docsave )
-          {
-            FILE *f = NULL;
-            char *odir = NULL;
-            unsigned char tmp[] = { 0x16, 0x16, 0x16, 0x16, 0x24 };
-
-            if( !oric->tapecap )
-            {
-              odir = getcwd( NULL, 0 );
-              chdir( tapepath );
-
-              f = fopen(csavename, "wb");
-            }
-            else
-            {
-              f = oric->tapecap;
-
-              // Straight into a CSAVE at the start?
-              if( oric->tapecapcount < 0 )
-              {
-                fputc( 0, f );
-              }
-
-              fputc( 0xff, f );
-              fputc( ((len+headerlen+1)>>8)&0xff, f );
-              fputc( (len+headerlen+1)&0xff, f );
-            }
-
-            if( f )
-            {
-              fwrite( tmp, 5, 1, f ); // Output leader
-              for( i=8; i>=0; i-- ) fputc( oric->cpu.read( &oric->cpu, oric->pch_csave_header_addr+i ), f );
-              i=0;
-              do
-              {
-                j = oric->cpu.read( &oric->cpu, oric->pch_csave_getname_addr+i );
-                if( i >= 16 ) j=0;
-                fputc( j, f );
-                i++;
-              }
-              while( j!=0 );
-
-              i = start;
-              while( i <= end )
-              {
-                fputc( oric->cpu.read(&oric->cpu, i), f );
-                i++;
-              }
-
-              if( f != oric->tapecap ) fclose( f );
-            }
-
-            oric->cpu.calcpc = oric->pch_csave_end_pc;
-            oric->cpu.calcop = oric->cpu.read(&oric->cpu, oric->cpu.calcpc);
-            oric->cpu.sp = oric->pch_csave_stack;
-
-            if( !oric->tapecap )
-            {
-              chdir( odir );
-              free( odir );
-              snprintf( filetmp, 32, "\x0f\x10 Saved to %s", csavename );
-              filetmp[31] = 0;
-              if (strlen(csavename) > 20)
-              {
-                filetmp[30] = '\x16';
-              }
-              do_popup( oric, filetmp );
-            }
-          }
-        }
+        oric->cpu.calcpc = oric->pch_tt_writeleader_end_pc;
+        oric->cpu.calcop = oric->cpu.read( &oric->cpu, oric->cpu.calcpc );
       }
     }
   }

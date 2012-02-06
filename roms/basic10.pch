@@ -16,30 +16,14 @@ keymap = qwerty
 ; ****** FILENAME DECODING *******
 
 ; When the PC is about to execute this address, we should be at a point
-; in CLOAD where the filename is valid in memory.
-fd_getname_pc = $e4af
+; in CLOAD/CSAVE/STORE/RECALL where the filename is valid in memory.
+fd_cload_getname_pc = $e4af
+fd_csave_getname_pc = $e7ef
+;fd_store_getname_pc =
+;fd_recall_getname_pc =
 
 ; The address to read the CLOAD filename
 fd_getname_addr = $0035
-
-
-; ****** CSAVE ******
-
-; Address of CSAVE routine
-csave_pc = $e7db
-
-; Address where we are far enough into CSAVE that the
-; filename and addresses have been decoded
-csave_getname_pc = $e7ef
-
-; Address of the RTS at the end of the CSAVE routine
-csave_end_pc = $e7fe
-
-; Address to read the CSAVE filename
-csave_getname_addr = $0035
-
-; Location to get the header information
-csave_header_addr = $005e
 
 
 ; ****** TURBOTAPE ******
@@ -71,3 +55,20 @@ tt_readbyte_setcarry = no
 ; zero to.
 tt_readbyte_storebyte_addr = $002f
 ;tt_readbyte_storezero_addr =
+
+; Address of the "put byte" function in ROM
+tt_putbyte_pc = $e5c6
+
+; Address of the RTS at the end of the put byte function
+tt_putbyte_end_pc = $e5f2
+
+; Address of the RTS at the end of CSAVE
+tt_csave_end_pc = $e7fe
+
+; Address of the RTS at the end of STORE
+;tt_store_end_pc =
+
+; Address of the function that writes the tape leader
+; (so we can write a shorter one)
+tt_writeleader_pc = $e6ba
+tt_writeleader_end_pc = $e6c9
