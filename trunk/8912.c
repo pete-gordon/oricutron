@@ -618,7 +618,7 @@ void ay_keypress( struct ay8912 *ay, unsigned short key, SDL_bool down )
 */
 void ay_modeset( struct ay8912 *ay )
 {
-  unsigned char v, lasts6;
+  unsigned char v, lasts6=0;
 
   switch( ay->bmode )
   {

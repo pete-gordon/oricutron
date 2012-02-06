@@ -688,6 +688,8 @@ void preinit_machine( struct machine *oric )
   oric->lightpen  = SDL_FALSE;
   oric->lightpenx = 255;
   oric->lightpeny = 255;
+
+  oric->tsavf = NULL;
 }
 
 void load_diskroms( struct machine *oric )
@@ -971,7 +973,10 @@ void blank_ram( Sint32 how, Uint8 *mem, Uint32 size )
 
 void clear_patches( struct machine *oric )
 {
-  oric->pch_fd_getname_pc              = -1;
+  oric->pch_fd_cload_getname_pc        = -1;
+  oric->pch_fd_csave_getname_pc        = -1;
+  oric->pch_fd_store_getname_pc        = -1;
+  oric->pch_fd_recall_getname_pc       = -1;
   oric->pch_fd_getname_addr            = -1;
   oric->pch_fd_available               = SDL_FALSE;
 
@@ -982,14 +987,11 @@ void clear_patches( struct machine *oric )
   oric->pch_tt_readbyte_end_pc         = -1;
   oric->pch_tt_readbyte_storebyte_addr = -1;
   oric->pch_tt_readbyte_storezero_addr = -1;
+  oric->pch_tt_putbyte_pc              = -1;
+  oric->pch_tt_putbyte_end_pc          = -1;
+  oric->pch_tt_csave_end_pc            = -1;
+  oric->pch_tt_store_end_pc            = -1;
   oric->pch_tt_available               = SDL_FALSE;
-
-  oric->pch_csave_pc                   = -1;
-  oric->pch_csave_getname_pc           = -1;
-  oric->pch_csave_end_pc               = -1;
-  oric->pch_csave_header_addr          = -1;
-  oric->pch_csave_getname_addr         = -1;
-  oric->pch_csave_available            = SDL_FALSE;
 
   oric->keymap = KMAP_QWERTY;
 }
@@ -1021,7 +1023,10 @@ void load_patches( struct machine *oric, char *fname )
 
     for( i=0; isws( filetmp[i] ); i++ ) ;
 
-    if( read_config_int(    &filetmp[i], "fd_getname_pc",              &oric->pch_fd_getname_pc, 0, 65535 ) )              continue;
+    if( read_config_int(    &filetmp[i], "fd_cload_getname_pc",        &oric->pch_fd_cload_getname_pc, 0, 65535 ) )        continue;
+    if( read_config_int(    &filetmp[i], "fd_csave_getname_pc",        &oric->pch_fd_csave_getname_pc, 0, 65535 ) )        continue;
+    if( read_config_int(    &filetmp[i], "fd_store_getname_pc",        &oric->pch_fd_store_getname_pc, 0, 65535 ) )        continue;
+    if( read_config_int(    &filetmp[i], "fd_recall_getname_pc",       &oric->pch_fd_recall_getname_pc, 0, 65535 ) )       continue;
     if( read_config_int(    &filetmp[i], "fd_getname_addr",            &oric->pch_fd_getname_addr, 0, 65535 ) )            continue;
     if( read_config_int(    &filetmp[i], "tt_getsync_pc",              &oric->pch_tt_getsync_pc, 0, 65535 ) )              continue;
     if( read_config_int(    &filetmp[i], "tt_getsync_end_pc",          &oric->pch_tt_getsync_end_pc, 0, 65535 ) )          continue;
@@ -1031,18 +1036,22 @@ void load_patches( struct machine *oric, char *fname )
     if( read_config_int(    &filetmp[i], "tt_readbyte_storebyte_addr", &oric->pch_tt_readbyte_storebyte_addr, 0, 65535 ) ) continue;
     if( read_config_int(    &filetmp[i], "tt_readbyte_storezero_addr", &oric->pch_tt_readbyte_storezero_addr, 0, 65535 ) ) continue;
     if( read_config_bool(   &filetmp[i], "tt_readbyte_setcarry",       &oric->pch_tt_readbyte_setcarry ) )                 continue;
-    if( read_config_int(    &filetmp[i], "csave_pc",                   &oric->pch_csave_pc, 0, 65535 ) )                   continue;
-    if( read_config_int(    &filetmp[i], "csave_getname_pc",           &oric->pch_csave_getname_pc, 0, 65535 ) )           continue;
-    if( read_config_int(    &filetmp[i], "csave_end_pc",               &oric->pch_csave_end_pc, 0, 65535 ) )               continue;
-    if( read_config_int(    &filetmp[i], "csave_getname_addr",         &oric->pch_csave_getname_addr, 0, 65535 ) )         continue;
-    if( read_config_int(    &filetmp[i], "csave_header_addr",          &oric->pch_csave_header_addr, 0, 65535 ) )          continue;
+    if( read_config_int(    &filetmp[i], "tt_putbyte_pc",              &oric->pch_tt_putbyte_pc, 0, 65535 ) )              continue;
+    if( read_config_int(    &filetmp[i], "tt_putbyte_end_pc",          &oric->pch_tt_putbyte_end_pc, 0, 65535 ) )          continue;
+    if( read_config_int(    &filetmp[i], "tt_csave_end_pc",            &oric->pch_tt_csave_end_pc, 0, 65535 ) )            continue;
+    if( read_config_int(    &filetmp[i], "tt_store_end_pc",            &oric->pch_tt_store_end_pc, 0, 65535 ) )            continue;
+    if( read_config_int(    &filetmp[i], "tt_writeleader_pc",          &oric->pch_tt_writeleader_pc, 0, 65535 ) )          continue;
+    if( read_config_int(    &filetmp[i], "tt_writeleader_end_pc",      &oric->pch_tt_writeleader_end_pc, 0, 65535 ) )      continue;
     if( read_config_option( &filetmp[i], "keymap",                     &oric->keymap, keymapnames ) )                      continue; 
   }
 
   fclose( f );
 
   // Got all the addresses needed for each patch?
-  if( ( oric->pch_fd_getname_pc != -1 ) &&
+  if( ( ( oric->pch_fd_cload_getname_pc != -1 ) ||
+        ( oric->pch_fd_csave_getname_pc != -1 ) ||
+        ( oric->pch_fd_store_getname_pc != -1 ) ||
+        ( oric->pch_fd_recall_getname_pc != -1 ) ) &&
       ( oric->pch_fd_getname_addr != -1 ) )
     oric->pch_fd_available = SDL_TRUE;
 
@@ -1053,12 +1062,9 @@ void load_patches( struct machine *oric, char *fname )
       ( oric->pch_tt_readbyte_end_pc != -1 ) )
     oric->pch_tt_available = SDL_TRUE;
 
-  if( ( oric->pch_csave_pc != -1 ) &&
-      ( oric->pch_csave_getname_pc != -1 ) &&
-      ( oric->pch_csave_end_pc != -1 ) &&
-      ( oric->pch_csave_getname_addr != -1 ) &&
-      ( oric->pch_csave_header_addr != -1 ) )
-    oric->pch_csave_available = SDL_TRUE;
+  if( ( oric->pch_tt_putbyte_pc != -1 ) &&
+      ( oric->pch_tt_putbyte_end_pc != -1 ) )
+    oric->pch_tt_save_available = SDL_TRUE;
 }
 
 SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints )
@@ -1395,7 +1401,8 @@ void shut_machine( struct machine *oric )
   if( oric->drivetype == DRV_JASMIN )    { jasmin_free( &oric->jasmin ); oric->drivetype = DRV_NONE; }
   if( oric->mem ) { free( oric->mem ); oric->mem = NULL; oric->rom = NULL; }
   if( oric->prf ) { fclose( oric->prf ); oric->prf = NULL; }
-  if( oric->tapecap ) { toggletapecap( oric, &mainitems[1], 0 ); }
+  if( oric->tsavf ) tape_stop_savepatch( oric );
+  if( oric->tapecap ) toggletapecap( oric, &mainitems[1], 0 );
   mon_freesyms( &sym_microdisc );
   mon_freesyms( &sym_jasmin );
   mon_freesyms( &oric->romsyms );

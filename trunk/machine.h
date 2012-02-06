@@ -146,20 +146,16 @@ struct machine
   FILE *tapecap;
   int tapecapcount;
   int tapecaplastbit;
+  int tapecapsavbytes;
+  int tapecapsavoffs;
 
   // Filename decoding patch addresses
-  int pch_fd_getname_pc;
+  int pch_fd_cload_getname_pc;
+  int pch_fd_csave_getname_pc;
+  int pch_fd_store_getname_pc;
+  int pch_fd_recall_getname_pc;
   int pch_fd_getname_addr;
   SDL_bool pch_fd_available;
-
-  // CSAVE patch addresses
-  int pch_csave_pc;
-  int pch_csave_getname_pc;
-  int pch_csave_end_pc;
-  int pch_csave_header_addr;
-  int pch_csave_getname_addr;
-  int pch_csave_stack;
-  SDL_bool pch_csave_available;
 
   // Turbo tape patch addresses
   int pch_tt_getsync_pc;
@@ -169,8 +165,16 @@ struct machine
   int pch_tt_readbyte_end_pc;
   int pch_tt_readbyte_storebyte_addr;
   int pch_tt_readbyte_storezero_addr;
+  int pch_tt_putbyte_pc;
+  int pch_tt_putbyte_end_pc;
+  int pch_tt_csave_end_pc;
+  int pch_tt_store_end_pc;
+  int pch_tt_writeleader_pc;
+  int pch_tt_writeleader_end_pc;
   SDL_bool pch_tt_readbyte_setcarry;
   SDL_bool pch_tt_available;
+  SDL_bool pch_tt_save_available;
+  FILE *tsavf;
 
   Sint32 keymap;
 

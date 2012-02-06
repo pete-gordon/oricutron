@@ -29,4 +29,4 @@ void tape_setmotor( struct machine *oric, SDL_bool motoron );
 void tape_patches( struct machine *oric );
 void toggletapecap( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void tape_orbchange(struct via *via);
-
+void tape_stop_savepatch( struct machine *oric );
