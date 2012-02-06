@@ -266,6 +266,7 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
             break;
           
           case SDLK_RETURN:
+          case SDLK_KP_ENTER:
             switch( type )
             {
               case MSGBOX_YES_NO:

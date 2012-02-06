@@ -1922,6 +1922,12 @@ void mon_enter( struct machine *oric )
   updatepreview = SDL_TRUE;
 }
 
+void mon_warminit( struct machine *oric )
+{
+  mon_start_input();
+  mon_show_curs();
+}
+
 void mon_init( struct machine *oric )
 {
   defaultsyms.numsyms = 0;
@@ -3508,6 +3514,7 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
         break;
       
       case SDLK_RETURN:
+      case SDLK_KP_ENTER:
         mon_hide_curs();
         ibuf[ilen] = 0;
 
@@ -3517,14 +3524,14 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
           mon_start_input();
           mon_show_curs();
           *needrender = SDL_TRUE;
-		  updatepreview = SDL_TRUE;
+          updatepreview = SDL_TRUE;
           break;
         }
 
         mon_start_input();
         mon_show_curs();
         *needrender = SDL_TRUE;
-		updatepreview = SDL_TRUE;
+        updatepreview = SDL_TRUE;
         break;
 
       default:
@@ -3631,6 +3638,7 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
       break;
     
     case SDLK_RETURN:
+    case SDLK_KP_ENTER:
       mon_hide_curs();
       ibuf[ilen] = 0;
       if( ilen == 0 )
@@ -3724,6 +3732,7 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
       break;
     
     case SDLK_RETURN:
+    case SDLK_KP_ENTER:
       if( mw_mode != 1 ) break;
       mw_ibuf[5] = 0;
       mw_mode = 0;
