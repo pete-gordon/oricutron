@@ -1339,7 +1339,7 @@ void mon_update_via( struct machine *oric, struct textzone *vtz, struct via *v, 
     {
       unsigned char oval = via_mon_read(old, 0x300+i);
       if( val != oval ) mon_viamod( 16, i+1, 2, vtz );
-      for( j=128, o=20; j; j>>=1, o++ )
+      for( j=128, o=19; j; j>>=1, o++ )
       {
         if ((val&j) != (oval&j))
           mon_viamod( o, i+1, 1, vtz );
