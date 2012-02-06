@@ -429,6 +429,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
             return SDL_FALSE;
 
           case SDLK_RETURN:
+          case SDLK_KP_ENTER:
             switch( freqf_cgad )
             {
               case 0:

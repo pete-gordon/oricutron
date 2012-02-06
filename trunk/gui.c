@@ -61,6 +61,7 @@
 #include "render_null.h"
 #include "ula.h"
 #include "tape.h"
+#include "joystick.h"
 
 extern struct symboltable usersyms;
 extern SDL_bool fullscreen;
@@ -79,6 +80,8 @@ char filetmp[4096+512];
 
 SDL_bool refreshstatus = SDL_TRUE, refreshdisks = SDL_TRUE, refreshavi = SDL_TRUE, refreshtape = SDL_TRUE;
 extern struct avi_handle *vidcap;
+
+extern SDL_bool need_sdl_quit;
 
 
 #define GIMG_W_DISK 18
@@ -1279,6 +1282,7 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
       switch( ev->key.keysym.sym )
       {
         case SDLK_RETURN:
+        case SDLK_KP_ENTER:
           if( !cmenu->items[cmenu->citem].func ) break;
           cmenu->items[cmenu->citem].func( oric, &cmenu->items[cmenu->citem], cmenu->items[cmenu->citem].arg );
           drawitems();
@@ -1391,18 +1395,52 @@ void set_render_mode( struct machine *oric, int whichrendermode )
   }
 }
 
+Uint32 systemtiming( Uint32 interval, void *userdata );
+
 void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newrendermode )
 {
   if( oric->rendermode == newrendermode ) return;
-  oric->shut_render( oric );
-  set_render_mode( oric, newrendermode );
-  if( oric->init_render( oric ) )
+
+  shut_gui( oric );
+  shut_joy( oric );
+  SDL_Quit();
+  need_sdl_quit = SDL_FALSE;
+
+  // Go SDL!
+  if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO ) < 0 )
   {
-    oric->emu_mode = EM_RUNNING;
+    printf( "SDL init failed\n" );
+    oric->emu_mode = EM_PLEASEQUIT;
     return;
   }
-  set_render_mode( oric, RENDERMODE_NULL );
-  oric->emu_mode = EM_PLEASEQUIT; 
+  need_sdl_quit = SDL_TRUE;
+
+  SDL_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
+
+  if( !init_joy( oric ) )
+  {
+    oric->emu_mode = EM_PLEASEQUIT;
+    return;
+  }
+
+  if( !init_gui( oric, newrendermode ) )
+  {
+    oric->emu_mode = EM_PLEASEQUIT;
+    return;
+  }
+
+  if( !ay_init( &oric->ay, oric ) )
+  {
+    oric->emu_mode = EM_PLEASEQUIT;
+    return;
+  }
+
+  joy_setup( oric );
+  mon_warminit( oric );
+
+  SDL_AddTimer( 1000/50, (SDL_NewTimerCallback)systemtiming, (void *)oric );
+
+  setemumode( oric, NULL, EM_RUNNING );
 }
 
 
