@@ -443,7 +443,7 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
             ay->oric->cpu.write( &ay->oric->cpu, 0x2df, 0 );
             ay->oric->cpu.f_n = 1;
             ay->oric->cpu.calcpc = 0xeb88;
-			ay->oric->cpu.calcop = ay->oric->cpu.read( &ay->oric->cpu, ay->oric->cpu.calcpc );
+            ay->oric->cpu.calcop = ay->oric->cpu.read( &ay->oric->cpu, ay->oric->cpu.calcpc );
           }
           break;
         
@@ -455,7 +455,7 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
             ay->oric->cpu.write( &ay->oric->cpu, 0x2df, 0 );
             ay->oric->cpu.f_n = 1;
             ay->oric->cpu.calcpc = 0xe915;
-			ay->oric->cpu.calcop = ay->oric->cpu.read( &ay->oric->cpu, ay->oric->cpu.calcpc );
+            ay->oric->cpu.calcop = ay->oric->cpu.read( &ay->oric->cpu, ay->oric->cpu.calcpc );
           }
           break;
       }
@@ -567,6 +567,13 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
 void ay_update_keybits( struct ay8912 *ay )
 {
   ay->currkeyoffs = ay->oric->via.read_port_b( &ay->oric->via ) & 0x7;
+
+  if( (ay->eregs[AY_STATUS]&0x40) == 0 )
+  {
+    ay->oric->via.write_port_b( &ay->oric->via, 0x08, 0x00 );
+    return;
+  }
+
   if( ay->keystates[ay->currkeyoffs] & (ay->eregs[AY_PORT_A]^0xff) )
     ay->oric->via.write_port_b( &ay->oric->via, 0x08, 0x08 );
   else
@@ -611,7 +618,7 @@ void ay_keypress( struct ay8912 *ay, unsigned short key, SDL_bool down )
 */
 void ay_modeset( struct ay8912 *ay )
 {
-  unsigned char v;
+  unsigned char v, lasts6;
 
   switch( ay->bmode )
   {
@@ -625,18 +632,25 @@ void ay_modeset( struct ay8912 *ay )
       if( ay->creg >= NUM_AY_REGS ) break;
       v = ay->oric->via.read_port_a( &ay->oric->via );
 
+      if( ay->creg == AY_STATUS )
+        lasts6 = ay->eregs[AY_STATUS] & 0x40;
+
       if( ( ay->creg != AY_ENV_CYCLE ) || ( v != 0xff ) )
         ay->eregs[ay->creg] = v;
 
       switch( ay->creg )
       {
+        case AY_STATUS:
+          if( (ay->eregs[AY_STATUS]&0x40) != lasts6 )
+          {
+            ay->keybitdelay = 3;
+          }
         case AY_CHA_PER_L:   // Channel A period
         case AY_CHA_PER_H:
         case AY_CHB_PER_L:   // Channel B period
         case AY_CHB_PER_H:
         case AY_CHC_PER_L:   // Channel C period
         case AY_CHC_PER_H:
-        case AY_STATUS:      // Status
         case AY_NOISE_PER:   // Noise period
         case AY_CHA_AMP:
         case AY_CHB_AMP:
