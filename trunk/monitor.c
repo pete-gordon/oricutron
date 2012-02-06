@@ -1281,13 +1281,13 @@ static void mon_click_regs( struct machine *oric, SDL_bool *needrender, int x, i
   {
     switch( x )
     {
-      case 25: mon_set_modified( oric ); oric->cpu.f_n ^= 1; *needrender = SDL_TRUE; return;
-      case 26: mon_set_modified( oric ); oric->cpu.f_v ^= 1; *needrender = SDL_TRUE; return;
-      case 28: mon_set_modified( oric ); oric->cpu.f_b ^= 1; *needrender = SDL_TRUE; return;
-      case 29: mon_set_modified( oric ); oric->cpu.f_d ^= 1; *needrender = SDL_TRUE; return;
-      case 30: mon_set_modified( oric ); oric->cpu.f_i ^= 1; *needrender = SDL_TRUE; return;
-      case 31: mon_set_modified( oric ); oric->cpu.f_z ^= 1; *needrender = SDL_TRUE; return;
-      case 32: mon_set_modified( oric ); oric->cpu.f_c ^= 1; *needrender = SDL_TRUE; return;
+      case 20: mon_set_modified( oric ); oric->cpu.f_n ^= 1; *needrender = SDL_TRUE; return;
+      case 21: mon_set_modified( oric ); oric->cpu.f_v ^= 1; *needrender = SDL_TRUE; return;
+      case 23: mon_set_modified( oric ); oric->cpu.f_b ^= 1; *needrender = SDL_TRUE; return;
+      case 24: mon_set_modified( oric ); oric->cpu.f_d ^= 1; *needrender = SDL_TRUE; return;
+      case 25: mon_set_modified( oric ); oric->cpu.f_i ^= 1; *needrender = SDL_TRUE; return;
+      case 26: mon_set_modified( oric ); oric->cpu.f_z ^= 1; *needrender = SDL_TRUE; return;
+      case 27: mon_set_modified( oric ); oric->cpu.f_c ^= 1; *needrender = SDL_TRUE; return;
     }
   }
 
