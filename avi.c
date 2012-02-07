@@ -35,7 +35,7 @@ static SDL_bool write32l( SDL_bool stillok, struct avi_handle *ah, Uint32 val, U
   if( !stillok ) return SDL_FALSE; // Something failed earlier, so we're aborting
   if( rem ) (*rem) = ah->csize;
   ah->csize += 4;
-  val = _LE32(val);
+  _MAKE_LE32(val);
   return (fwrite( &val, 4, 1, ah->f ) == 1);
 }
 
@@ -45,7 +45,7 @@ static SDL_bool write16l( SDL_bool stillok, struct avi_handle *ah, Uint16 val, U
   if( !stillok ) return SDL_FALSE; // Something failed earlier, so we're aborting
   if( rem ) (*rem) = ah->csize;
   ah->csize += 2;
-  val = _LE16(val);
+  _MAKE_LE16(val);
   return (fwrite( &val, 2, 1, ah->f ) == 1);
 }
 
@@ -66,7 +66,7 @@ static SDL_bool seek_write32l( SDL_bool stillok, struct avi_handle *ah, Uint32 o
   if( !stillok ) return SDL_FALSE; // Something failed earlier, so we're aborting
   if( offs == 0 ) return SDL_TRUE; // Don't overwrite RIFF!
   fseek( ah->f, offs, SEEK_SET );
-  val = _LE32(val);
+  _MAKE_LE32(val);
   return (fwrite( &val, 4, 1, ah->f ) == 1);
 }
 

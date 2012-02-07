@@ -200,6 +200,7 @@ OBJECTS = \
 	render_gl.o \
 	render_null.o \
 	joystick.o \
+	snapshot.o \
 	$(FILEREQ_OBJ) \
 	$(MSGBOX_OBJ) \
 	$(EXTRAOBJS)

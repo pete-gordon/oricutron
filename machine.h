@@ -76,6 +76,7 @@ struct machine
   int emu_mode;
 
   struct symboltable romsyms;
+  struct symboltable usersyms;
   struct symboltable *disksyms;
 
   struct telebankinfo tele_bank[8];
@@ -234,4 +235,3 @@ void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type );
 void swapmach( struct machine *oric, struct osdmenuitem *mitem, int which );
 SDL_bool isram( struct machine *oric, unsigned short addr );
 
-void save_snapshot( struct machine *oric, char *filename );
