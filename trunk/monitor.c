@@ -85,7 +85,6 @@ static SDL_bool kshifted = SDL_FALSE, updatepreview = SDL_FALSE;
 static int helpcount=0;
 
 static struct symboltable defaultsyms;
-struct symboltable usersyms;
 
 char mon_bpmsg[80];
 
@@ -914,7 +913,7 @@ struct msym *mon_find_sym_by_addr( struct machine *oric, unsigned short addr )
 {
   struct msym *ret;
 
-  ret = mon_tab_find_sym_by_addr( &usersyms, oric, addr );
+  ret = mon_tab_find_sym_by_addr( &oric->usersyms, oric, addr );
   if( !ret ) ret = mon_tab_find_sym_by_addr( &oric->romsyms, oric, addr );
   if( ( !ret ) && ( oric->type == MACH_TELESTRAT ) ) ret = mon_tab_find_sym_by_addr( &oric->tele_banksyms[oric->tele_currbank], oric, addr );
   if( ( !ret ) && ( oric->disksyms ) ) ret = mon_tab_find_sym_by_addr( oric->disksyms, oric, addr );
@@ -927,7 +926,7 @@ struct msym *mon_find_sym_by_name( struct machine *oric, char *name )
 {
   struct msym *ret;
 
-  ret = mon_tab_find_sym_by_name( &usersyms, oric, name, NULL );
+  ret = mon_tab_find_sym_by_name( &oric->usersyms, oric, name, NULL );
   if( !ret ) ret = mon_tab_find_sym_by_name( &oric->romsyms, oric, name, NULL );
   if( ( !ret ) && ( oric->type == MACH_TELESTRAT ) ) ret = mon_tab_find_sym_by_name( &oric->tele_banksyms[oric->tele_currbank], oric, name, NULL );
   if( ( !ret ) && ( oric->disksyms ) ) ret = mon_tab_find_sym_by_name( oric->disksyms, oric, name, NULL );
@@ -1939,9 +1938,9 @@ void mon_init( struct machine *oric )
   defaultsyms.numsyms = 0;
   defaultsyms.symspace = 0;
   defaultsyms.syms = NULL;
-  usersyms.numsyms = 0;
-  usersyms.symspace = 0;
-  usersyms.syms = NULL;
+  oric->usersyms.numsyms = 0;
+  oric->usersyms.symspace = 0;
+  oric->usersyms.syms = NULL;
 
   mon_bpmsg[0] = 0;
   mshow = MSHOW_VIA;
@@ -1962,9 +1961,9 @@ void mon_init( struct machine *oric )
 #endif
 }
 
-void mon_shut( void )
+void mon_shut( struct machine *oric )
 {
-  mon_freesyms( &usersyms );
+  mon_freesyms( &oric->usersyms );
 #if LOG_DEBUG
   if( debug_logfile ) fclose( debug_logfile );
   debug_logfile = NULL;
@@ -2541,7 +2540,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
             break;
           }
 
-          tmpsym = mon_replace_or_add_symbol( &usersyms, oric, &cmd[j], SYM_BESTGUESS, v );
+          tmpsym = mon_replace_or_add_symbol( &oric->usersyms, oric, &cmd[j], SYM_BESTGUESS, v );
           if( !tmpsym )
           {
             mon_str( "Failed for some reason" );
@@ -2576,20 +2575,20 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
             break;
           }
 
-          if( !mon_tab_find_sym_by_name( &usersyms, oric, &cmd[j], &k ) )
+          if( !mon_tab_find_sym_by_name( &oric->usersyms, oric, &cmd[j], &k ) )
           {
             mon_printf( "Couldn't find '%s' in the user symbol table", &cmd[j] );
             break;
           }
 
-          for( ; k<(usersyms.numsyms-1); k++ )
-            usersyms.syms[k] = usersyms.syms[k+1];
-          usersyms.numsyms--;
+          for( ; k<(oric->usersyms.numsyms-1); k++ )
+            oric->usersyms.syms[k] = oric->usersyms.syms[k+1];
+          oric->usersyms.numsyms--;
           mon_printf( "Killed symbol '%s'", &cmd[j] );
           break;
 
         case 'z':  // Zap
-          usersyms.numsyms = 0;
+          oric->usersyms.numsyms = 0;
           mon_str( "Symbols zapped!" );
           break;
 
@@ -2602,7 +2601,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
           i+=2;
 
-          mon_new_symbols( &usersyms, oric, &cmd[i], SYM_BESTGUESS, SDL_FALSE, SDL_TRUE );
+          mon_new_symbols( &oric->usersyms, oric, &cmd[i], SYM_BESTGUESS, SDL_FALSE, SDL_TRUE );
           break;
 
         case 'x':  // Export
@@ -2621,8 +2620,8 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
             break;
           }
 
-          for( j=0; j<usersyms.numsyms; j++ )
-            fprintf( f, "%04X %s\n", usersyms.syms[j].addr, usersyms.syms[j].name );
+          for( j=0; j<oric->usersyms.numsyms; j++ )
+            fprintf( f, "%04X %s\n", oric->usersyms.syms[j].addr, oric->usersyms.syms[j].name );
           fclose( f );
 
           mon_printf( "User symbols exported to '%s'", &cmd[i] );
@@ -3465,7 +3464,7 @@ static SDL_bool mon_assemble_line( struct machine *oric )
   }
   
   if( addsym != -1 )
-    mon_replace_or_add_symbol( &usersyms, oric, &ibuf[addsym], SYM_BESTGUESS, mon_addr );
+    mon_replace_or_add_symbol( &oric->usersyms, oric, &ibuf[addsym], SYM_BESTGUESS, mon_addr );
 
   mon_oprintf( mon_disassemble( oric, &mon_addr, NULL, SDL_FALSE ) );
   return SDL_FALSE;

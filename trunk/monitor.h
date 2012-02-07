@@ -78,7 +78,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender );
 void dbg_printf( char *fmt, ... );
 void mon_printf_above( char *fmt, ... );
 void mon_enter( struct machine *oric );
-void mon_shut( void );
+void mon_shut( struct machine *oric );
 void mon_init_symtab( struct symboltable *stab );
 void mon_freesyms( struct symboltable *stab );
 SDL_bool mon_new_symbols( struct symboltable *stab, struct machine *oric, char *fname, unsigned short flags, SDL_bool above, SDL_bool verbose );

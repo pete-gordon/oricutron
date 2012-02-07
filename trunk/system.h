@@ -71,13 +71,20 @@
 #define _LE16(X) (X)
 #define _BE32(X) SDL_Swap32(X)
 #define _BE16(X) SDL_Swap16(X)
+#define _MAKE_LE32(X)
+#define _MAKE_LE16(X)
+#define _MAKE_BE32(X) X = SDL_Swap32(X)
+#define _MAKE_BE16(X) X = SDL_Swap16(X)
 #else
 #define _LE32(X) SDL_Swap32(X)
 #define _LE16(X) SDL_Swap16(X)
 #define _BE32(X) (X)
 #define _BE16(X) (X)
+#define _MAKE_LE32(X) X = SDL_Swap32(X)
+#define _MAKE_LE16(X) X = SDL_Swap16(X)
+#define _MAKE_BE32(X)
+#define _MAKE_BE16(X)
 #endif
-
 
 
 #endif /* ORICUTRON_SYSTEM_H */

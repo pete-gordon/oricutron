@@ -1469,3 +1469,4 @@ void swapmach( struct machine *oric, struct osdmenuitem *mitem, int which )
     exit( EXIT_FAILURE );
   }
 }
+

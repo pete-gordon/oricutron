@@ -62,8 +62,8 @@
 #include "ula.h"
 #include "tape.h"
 #include "joystick.h"
+#include "snapshot.h"
 
-extern struct symboltable usersyms;
 extern SDL_bool fullscreen;
 
 char tapepath[4096], tapefile[512];
@@ -75,7 +75,7 @@ extern char mdiscromfile[];
 extern char jasmnromfile[];
 extern char pravzromfile[];
 extern char telebankfiles[8][1024];
-//char snappath[4096], snapfile[512];
+char snappath[4096], snapfile[512];
 char filetmp[4096+512];
 
 SDL_bool refreshstatus = SDL_TRUE, refreshdisks = SDL_TRUE, refreshavi = SDL_TRUE, refreshtape = SDL_TRUE;
@@ -156,7 +156,7 @@ void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy
 void togglefullscreen( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglelightpen( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void setoverclock( struct machine *oric, struct osdmenuitem *mitem, int dummy );
-//void savesnap( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void savesnap( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 
 // Menu definitions. Name, key name, SDL key code, function, parameter
 // Keys that are also available while emulating should be marked with
@@ -168,9 +168,9 @@ struct osdmenuitem mainitems[] = { { "Insert tape...",         "T",    't',     
                                    { "Insert disk 2...",       "2",    SDLK_2,   insertdisk,      2, 0 },
                                    { "Insert disk 3...",       "3",    SDLK_3,   insertdisk,      3, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
-//                                   { "Save snapshot...",       NULL,   0,        savesnap,        0, 0 },
-//                                   { "Load snapshot...",       NULL,   0,        NULL,            0, 0 },
-//                                   { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
+                                   { "Save snapshot...",       NULL,   0,        savesnap,        0, 0 },
+                                   { "Load snapshot...",       NULL,   0,        NULL,            0, 0 },
+                                   { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Hardware options...",    "H",    'h',      gotomenu,        1, 0 },
                                    { "Audio options...",       "A",    'a',      gotomenu,        2, 0 },
 #ifdef __OPENGL_AVAILABLE__
@@ -274,7 +274,7 @@ struct osdmenuitem ovopitems[] = { { "  1mhz (None)", "1",    '1', setoverclock,
 
 #define LAST_ITEM(x) ((sizeof(x)/sizeof(struct osdmenuitem))-2)
 
-struct osdmenu menus[] = { { "Main Menu",                           0,  mainitems },
+struct osdmenu menus[] = { { "Main Menu",        LAST_ITEM(mainitems)-4, mainitems },
                            { "Hardware options", LAST_ITEM(hwopitems),  hwopitems },
                            { "Audio options",    LAST_ITEM(auopitems),  auopitems },
                            { "Debug options",    LAST_ITEM(dbopitems),  dbopitems },
@@ -785,7 +785,7 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   oric->lasttapefile[0] = 0;
   joinpath( tapepath, tapefile );
   tape_load_tap( oric, filetmp );
-  if( oric->symbolsautoload ) mon_new_symbols( &usersyms, oric, "symbols", SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
+  if( oric->symbolsautoload ) mon_new_symbols( &oric->usersyms, oric, "symbols", SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
   setemumode( oric, NULL, EM_RUNNING );
 }
 
@@ -816,14 +816,12 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
   setemumode( oric, NULL, EM_RUNNING );
 }
 
-/*
 void savesnap( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
   if( !filerequester( oric, "Save Snapshot", snappath, snapfile, FR_SNAPSHOTSAVE ) ) return;
   joinpath( snappath, snapfile );
   save_snapshot( oric, filetmp );
 }
-*/
 
 // Reset the oric
 void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy )

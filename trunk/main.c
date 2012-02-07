@@ -54,7 +54,6 @@ extern SDL_bool warpspeed, soundon;
 Uint32 lastframetimes[FRAMES_TO_AVERAGE], frametimeave;
 extern char mon_bpmsg[];
 extern struct avi_handle *vidcap;
-extern struct symboltable usersyms;
 extern char tapepath[], diskpath[], telediskpath[];
 extern char atmosromfile[];
 extern char oric1romfile[];
@@ -712,7 +711,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 
   mon_init( oric );
   if( sto->start_syms[0] )
-    mon_new_symbols( &usersyms, oric, sto->start_syms, SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
+    mon_new_symbols( &oric->usersyms, oric, sto->start_syms, SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
 
   if( sto->start_breakpoint )
   {
@@ -744,7 +743,7 @@ void shut( struct machine *oric )
     shut_machine( oric );
     shut_joy( oric );
     shut_ula( oric );
-    mon_shut();
+    mon_shut( oric );
     shut_filerequester( oric );
     shut_msgbox( oric );
     shut_gui( oric );
