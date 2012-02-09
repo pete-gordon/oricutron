@@ -1476,8 +1476,8 @@ void preinit_gui( struct machine *oric )
   strcpy( telebankfiles[6], ROMPREFIX"hyperbas" );
   strcpy( telebankfiles[7], ROMPREFIX"telmon24" );
   set_render_mode( oric, RENDERMODE_NULL );
-//  strcpy( snappath, FILEPREFIX"snapshots" );
-//  strcpy( snapfile, "" );
+  strcpy( snappath, FILEPREFIX"snapshots" );
+  strcpy( snapfile, "" );
 }
 
 // Ensure the sanity of toggle menuitems
