@@ -157,6 +157,7 @@ void togglefullscreen( struct machine *oric, struct osdmenuitem *mitem, int dumm
 void togglelightpen( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void setoverclock( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void savesnap( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void loadsnap( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 
 // Menu definitions. Name, key name, SDL key code, function, parameter
 // Keys that are also available while emulating should be marked with
@@ -169,7 +170,7 @@ struct osdmenuitem mainitems[] = { { "Insert tape...",         "T",    't',     
                                    { "Insert disk 3...",       "3",    SDLK_3,   insertdisk,      3, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Save snapshot...",       NULL,   0,        savesnap,        0, 0 },
-                                   { "Load snapshot...",       NULL,   0,        NULL,            0, 0 },
+                                   { "Load snapshot...",       NULL,   0,        loadsnap,        0, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Hardware options...",    "H",    'h',      gotomenu,        1, 0 },
                                    { "Audio options...",       "A",    'a',      gotomenu,        2, 0 },
@@ -821,6 +822,13 @@ void savesnap( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   if( !filerequester( oric, "Save Snapshot", snappath, snapfile, FR_SNAPSHOTSAVE ) ) return;
   joinpath( snappath, snapfile );
   save_snapshot( oric, filetmp );
+}
+
+void loadsnap( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+  if( !filerequester( oric, "Load Snapshot", snappath, snapfile, FR_SNAPSHOTLOAD ) ) return;
+  joinpath( snappath, snapfile );
+  load_snapshot( oric, filetmp );
 }
 
 // Reset the oric

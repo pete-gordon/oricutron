@@ -169,6 +169,8 @@ struct jasmin
 // Functions to read/write diskimages
 SDL_bool diskimage_load( struct machine *oric, char *fname, int drive ); 
 SDL_bool diskimage_save( struct machine *oric, char *fname, int drive );
+void diskimage_cachetrack( struct diskimage *dimg, int track, int side );
+struct mfmsector *wd17xx_find_sector( struct wd17xx *wd, Uint8 secid );
 
 // Call this to emulate some cycles of disk activity
 void wd17xx_ticktock( struct wd17xx *wd, int cycles );
@@ -184,3 +186,4 @@ void jasmin_init( struct jasmin *j, struct wd17xx *wd, struct machine *oric );
 void jasmin_free( struct jasmin *j );
 unsigned char jasmin_read( struct jasmin *j, unsigned short addr );
 void jasmin_write( struct jasmin *j, unsigned short addr, unsigned char data );
+

@@ -33,7 +33,8 @@ enum
   MACH_ORIC1_16K,
   MACH_ATMOS,
   MACH_TELESTRAT,
-  MACH_PRAVETZ
+  MACH_PRAVETZ,
+  MACH_LAST
 };
 
 enum
@@ -71,6 +72,7 @@ struct machine
   struct m6502 cpu;
   struct via via;
   struct ay8912 ay;
+  unsigned int memsize;
   unsigned char *mem;
   unsigned char *rom;
   int emu_mode;
@@ -234,4 +236,6 @@ void shut_machine( struct machine *oric );
 void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type );
 void swapmach( struct machine *oric, struct osdmenuitem *mitem, int which );
 SDL_bool isram( struct machine *oric, unsigned short addr );
+
+void clear_patches( struct machine *oric );
 

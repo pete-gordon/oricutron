@@ -1105,7 +1105,8 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       hwopitems[2].name = " Atmos";
       hwopitems[3].name = " Telestrat";
       hwopitems[4].name = " Pravetz 8D";
-      oric->mem = malloc( 16384 + 16384 );
+      oric->memsize = 16384 + 16384;
+      oric->mem = malloc( oric->memsize );
       if( !oric->mem )
       {
         printf( "Out of memory\n" );
@@ -1161,7 +1162,8 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       hwopitems[2].name = " Atmos";
       hwopitems[3].name = " Telestrat";
       hwopitems[4].name = " Pravetz 8D";
-      oric->mem = malloc( 65536 + 16384 );
+      oric->memsize = 65536 + 16384;
+      oric->mem = malloc( oric->memsize );
       if( !oric->mem )
       {
         printf( "Out of memory\n" );
@@ -1217,7 +1219,9 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       hwopitems[2].name = "\x0e""Atmos";
       hwopitems[3].name = " Telestrat";
       hwopitems[4].name = " Pravetz 8D";
-      oric->mem = malloc( 65536 + 16384 );
+
+      oric->memsize = 65536 + 16384;
+      oric->mem = malloc( oric->memsize );
       if( !oric->mem )
       {
         printf( "Out of memory\n" );
@@ -1273,7 +1277,9 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       hwopitems[2].name = " Atmos";
       hwopitems[3].name = "\x0e""Telestrat";
       hwopitems[4].name = " Pravetz 8D";
-      oric->mem = malloc( 65536+16384*7 );
+
+      oric->memsize = 65536 + 16384*7;
+      oric->mem = malloc( oric->memsize );
       if( !oric->mem )
       {
         printf( "Out of memory\n" );
@@ -1322,7 +1328,9 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       hwopitems[2].name = " Atmos";
       hwopitems[3].name = " Telestrat";
       hwopitems[4].name = "\x0e""Pravetz 8D";
-      oric->mem = malloc( 65536 + 16384 );
+
+      oric->memsize = 65536 + 16384;
+      oric->mem = malloc( oric->memsize );
       if( !oric->mem )
       {
         printf( "Out of memory\n" );
