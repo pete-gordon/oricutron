@@ -176,7 +176,10 @@ void save_snapshot(struct machine *oric, char *filename)
   PUTU8(oric->romon);           // 11
   PUTU8(oric->vsynchack);       // 12
   PUTU8(oric->drivetype);       // 13
-  PUTU32(oric->keymap);         // 14 = 18
+  PUTU8(oric->tapeturbo);       // 14
+  PUTU8(oric->vid_mode);        // 15
+  PUTU8(oric->vid_mode);        // 16
+  PUTU32(oric->keymap);         // 17 = 20
   DATABLOCK(oric->mem, oric->memsize);
 
   NEWBLOCK("TAP\x00");
@@ -574,7 +577,7 @@ static SDL_bool getheaders(struct machine *oric, FILE *f)
     bkh[i].offset = offset;
     bkh[i].size   = size;
     
-    //printf("Block: %c%c%c%c (@ %d, size %d)\n", bkh[i].id[0], bkh[i].id[1], (bkh[i].id[2]>31)?bkh[i].id[2]:'.', (bkh[i].id[3]>31)?bkh[i].id[3]:'.', bkh[i].offset, bkh[i].size);
+    printf("Block: %c%c%c%c (@ %d, size %d)\n", bkh[i].id[0], bkh[i].id[1], (bkh[i].id[2]>31)?bkh[i].id[2]:'.', (bkh[i].id[3]>31)?bkh[i].id[3]:'.', bkh[i].offset, bkh[i].size);
     
     if ((i>0) && (memcmp(bkh[i].id, "DATA", 4)==0))
     {
@@ -750,7 +753,7 @@ void load_snapshot(struct machine *oric, char *filename)
   }
 
   /* Get the main block */
-  blk = load_block(oric, "OSN\x00", f, SDL_TRUE, 18, SDL_TRUE);
+  blk = load_block(oric, "OSN\x00", f, SDL_TRUE, 20, SDL_TRUE);
   if (!blk)
   {
     free_blockheaders();
@@ -807,6 +810,8 @@ void load_snapshot(struct machine *oric, char *filename)
   oric->romon          = getu8 (blk);
   oric->vsynchack      = getu8 (blk);
   blk->offs++; // Skip drivetype (already got it)
+  oric->tapeturbo      = getu8 (blk);
+  oric->vid_mode       = getu8 (blk);
   oric->keymap         = getu32(blk);
   
   // Finished with this one
@@ -818,6 +823,7 @@ void load_snapshot(struct machine *oric, char *filename)
   {
     free_blockheaders();
     fclose(f);
+    setmenutoggles( oric );
     return;
   }
 
@@ -846,6 +852,7 @@ void load_snapshot(struct machine *oric, char *filename)
   {
     free_blockheaders();
     fclose(f);
+    setmenutoggles( oric );
     return;
   }
 
@@ -891,6 +898,7 @@ void load_snapshot(struct machine *oric, char *filename)
   {
     free_blockheaders();
     fclose(f);
+    setmenutoggles( oric );
     return;
   }
 
@@ -932,11 +940,12 @@ void load_snapshot(struct machine *oric, char *filename)
   free_block(blk);
 
   /* Get the tape block */
-  blk = load_block(oric, "TAP\x00", f, SDL_TRUE, 46, SDL_TRUE);
+  blk = load_block(oric, "TAP\x00", f, SDL_TRUE, 46, SDL_FALSE);
   if (!blk)
   {
     free_blockheaders();
     fclose(f);
+    setmenutoggles( oric );
     return;
   }
 
@@ -970,6 +979,7 @@ void load_snapshot(struct machine *oric, char *filename)
       msgbox(oric, MSGBOX_OK, "Snapshot load failed: Out of memory (19)");
       free_blockheaders();
       fclose(f);
+      setmenutoggles( oric );
       return;
     }
 
@@ -977,6 +987,7 @@ void load_snapshot(struct machine *oric, char *filename)
     {
       free_blockheaders();
       fclose(f);
+      setmenutoggles( oric );
       return;
     }
   }
@@ -1023,6 +1034,7 @@ void load_snapshot(struct machine *oric, char *filename)
       {
         free_blockheaders();
         fclose(f);
+        setmenutoggles( oric );
         return;
       }
 
@@ -1042,6 +1054,7 @@ void load_snapshot(struct machine *oric, char *filename)
       {
         free_blockheaders();
         fclose(f);
+        setmenutoggles( oric );
         return;
       }
 
@@ -1067,6 +1080,7 @@ void load_snapshot(struct machine *oric, char *filename)
     {
       free_blockheaders();
       fclose(f);
+      setmenutoggles( oric );
       return;
     }
     
@@ -1104,6 +1118,7 @@ void load_snapshot(struct machine *oric, char *filename)
         msgbox(oric, MSGBOX_OK, "Snapshot load failed: Invalid file (20)");
         free_blockheaders();
         fclose(f);
+        setmenutoggles( oric );
         return;
       }
 
@@ -1114,8 +1129,10 @@ void load_snapshot(struct machine *oric, char *filename)
         msgbox(oric, MSGBOX_OK, "Snapshot load failed: Out of memory (21)");
         free_blockheaders();
         fclose(f);
+        setmenutoggles( oric );
         return;
       }
+      memset(oric->wddisk.disk[i], 0, sizeof(struct diskimage));
 
       // Allocate space for the disk image
       oric->wddisk.disk[i]->rawimage = malloc(blk->datablock->size);
@@ -1126,6 +1143,7 @@ void load_snapshot(struct machine *oric, char *filename)
         msgbox(oric, MSGBOX_OK, "Snapshot load failed: Out of memory (22)");
         free_blockheaders();
         fclose(f);
+        setmenutoggles( oric );
         return;
       }
 
@@ -1137,10 +1155,10 @@ void load_snapshot(struct machine *oric, char *filename)
         oric->wddisk.disk[i] = NULL;
         free_blockheaders();
         fclose(f);
+        setmenutoggles( oric );
         return;
       }
 
-      memset(oric->wddisk.disk[i], 0, sizeof(struct diskimage));
       oric->wddisk.disk[i]->cachedtrack = -1;
       oric->wddisk.disk[i]->cachedside  = -1;
 
@@ -1156,7 +1174,8 @@ void load_snapshot(struct machine *oric, char *filename)
       if ((track_to_cache != -1) && (side_to_cache != -1))
         diskimage_cachetrack(oric->wddisk.disk[i], track_to_cache, side_to_cache);
 
-      oric->wddisk.currsector = wd17xx_find_sector(&oric->wddisk, oric->wddisk.r_sector);
+      if (oric->wddisk.c_drive == i)
+        oric->wddisk.currsector = wd17xx_find_sector(&oric->wddisk, oric->wddisk.r_sector);
 
       sprintf(oric->wddisk.disk[i]->filename, "%s%cSNAPDISK%d.DSK", diskpath, PATHSEP, i);
 
@@ -1173,6 +1192,7 @@ void load_snapshot(struct machine *oric, char *filename)
     {
       free_blockheaders();
       fclose(f);
+      setmenutoggles( oric );
       return;
     }
 
@@ -1189,6 +1209,7 @@ void load_snapshot(struct machine *oric, char *filename)
     {
       free_blockheaders();
       fclose(f);
+      setmenutoggles( oric );
       return;
     }
     
@@ -1203,6 +1224,7 @@ void load_snapshot(struct machine *oric, char *filename)
     {
       free_blockheaders();
       fclose(f);
+      setmenutoggles( oric );
       return;
     }
   
@@ -1297,5 +1319,6 @@ void load_snapshot(struct machine *oric, char *filename)
     
   free_blockheaders();
   fclose(f);
+  setmenutoggles( oric );
 }
 

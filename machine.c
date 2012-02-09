@@ -1288,6 +1288,8 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
 
       blank_ram( oric->rampattern, oric->mem, 65536+16384*7 );      
 
+      clear_patches( oric );
+
       oric->cpu.read = telestratread;
       oric->cpu.write = telestratwrite;
       oric->drivetype = DRV_MICRODISC;
@@ -1307,8 +1309,6 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           oric->tele_bank[i].type = TELEBANK_RAM;
         }
       }
-
-      clear_patches( oric );
 
       oric->tele_currbank = 7;
       oric->tele_banktype = oric->tele_bank[7].type;
@@ -1379,6 +1379,10 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->vid_raster  = 0;
       ula_powerup_default( oric );
       break;
+    
+    default:
+      // Huh?!
+      return SDL_FALSE;
   }
 
   setromon( oric );
