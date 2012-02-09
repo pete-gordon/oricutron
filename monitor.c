@@ -2398,6 +2398,35 @@ struct msym *mon_replace_or_add_symbol( struct symboltable *stab, struct machine
   return retval;
 }
 
+SDL_bool mon_symsfromsnapshot( struct symboltable *stab, unsigned char *buffer, unsigned int len)
+{
+  int offs, symlen, addr, flags;
+  char *symname;
+
+  stab->numsyms = 0;
+
+  offs = 0;
+  while (offs < len)
+  {
+    symlen = (buffer[offs]<<24)|(buffer[offs+1]<<16)|(buffer[offs+2]<<8)|buffer[offs+3];
+    offs+=4;
+    if (symlen+offs >= len) return SDL_FALSE;
+
+    symname = (char *)(&buffer[offs]);
+    offs += symlen;
+
+    addr = (buffer[offs]<<8)|buffer[offs+1];
+    offs += 2;
+
+    flags = (buffer[offs]<<8)|buffer[offs+1];
+    offs += 2;
+
+    mon_addsym( stab, addr, flags, symname, NULL );
+  }
+
+  return SDL_TRUE;
+}
+
 
 
 SDL_bool mon_new_symbols( struct symboltable *stab, struct machine *oric, char *fname, unsigned short flags, SDL_bool above, SDL_bool verbose )

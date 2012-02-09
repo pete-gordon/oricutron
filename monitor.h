@@ -82,6 +82,7 @@ void mon_shut( struct machine *oric );
 void mon_init_symtab( struct symboltable *stab );
 void mon_freesyms( struct symboltable *stab );
 SDL_bool mon_new_symbols( struct symboltable *stab, struct machine *oric, char *fname, unsigned short flags, SDL_bool above, SDL_bool verbose );
+SDL_bool mon_symsfromsnapshot( struct symboltable *stab, unsigned char *buffer, unsigned int len);
 void mon_state_reset( struct machine *oric );
 SDL_bool mon_getnum( struct machine *oric, unsigned int *num, char *buf, int *off, SDL_bool addrregs, SDL_bool nregs, SDL_bool viaregs, SDL_bool symbols );
 SDL_bool mon_do_cmd( char *cmd, struct machine *oric, SDL_bool *needrender );

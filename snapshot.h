@@ -20,5 +20,6 @@
 **
 */
 
-void save_snapshot( struct machine *oric, char *filename );
+void save_snapshot(struct machine *oric, char *filename);
+void load_snapshot(struct machine *oric, char *filename);
 

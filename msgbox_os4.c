@@ -94,7 +94,7 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
 {
   Object *req_obj;
   int32 result, imgtype=REQIMAGE_INFO;
-  STRPTR btns;
+  STRPTR btns = "huh?!";
 
   switch( type )
   {
@@ -117,7 +117,7 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
   req_obj = (Object *)IIntuition->NewObject( IRequester->REQUESTER_GetClass(), NULL,
     REQ_TitleText,  "Oriculator Request",
     REQ_BodyText,   msg,
-    REQ_GadgetText, "Yes|No",
+    REQ_GadgetText, btns,
     REQ_Image,      imgtype,
     TAG_DONE );
 
