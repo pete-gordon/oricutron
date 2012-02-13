@@ -236,6 +236,8 @@ Commands:
   m <addr>              - Dump memory
   mm <addr> <value>     - Modify memory
   mw <addr>             - Memory watch at addr
+  nl <file>             - Load snapshot
+  ns <file>             - Save snapshot
   r <reg> <val>         - Set <reg> to <val>
   q, x or qm            - Quit monitor
   qe                    - Quit emulator
