@@ -41,6 +41,7 @@
 #include "machine.h"
 #include "ula.h"
 #include "tape.h"
+#include "snapshot.h"
 
 #define LOG_DEBUG 0
 
@@ -74,6 +75,7 @@ static struct click leftclick[2];
 
 extern struct textzone *tz[];
 extern char vsptmp[];
+extern char snappath[], filetmp[];
 
 static char distmp[128];
 static unsigned short disaddrs[10];
@@ -3126,6 +3128,45 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
       }
       break;
 
+    case 'n':
+      lastcmd = 0;
+      i++;
+      j = cmd[i];
+      switch( j )
+      {
+        case 'l':
+        case 's':
+          i++;
+          while( isws( cmd[i] ) ) i++;
+          if( !cmd[i] )
+          {
+            mon_str( "Filename expected" );
+            break;
+          }
+
+          joinpath(snappath, &cmd[i]);
+          if (j == 'l')
+          {
+            if (!load_snapshot(oric, filetmp))
+              mon_printf("Snapshot load failed");
+            else
+              mon_printf("Snapshot loaded");
+          }
+          else
+          {
+            if (!save_snapshot(oric, filetmp))
+              mon_printf("Snapshot save failed");
+            else
+              mon_printf("Snapshot saved");
+          }
+          break;
+
+        default:
+          mon_printf( "???" );
+          break;
+      }
+      break;
+
     case '?':
       lastcmd = cmd[i];
       switch( helpcount )
@@ -3158,6 +3199,8 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "  m <addr>              - Dump memory" );
           mon_str( "  mm <addr> <value>     - Modify memory" );
           mon_str( "  mw <addr>             - Memory watch at addr" );
+          mon_str( "  nl <filename>         - Load snapshot" );
+          mon_str( "  ns <filename>         - Save snapshot" );
           mon_str( "  r <reg> <val>         - Set <reg> to <val>" );
           mon_str( "  q, x or qm            - Quit monitor" );
           mon_str( "  qe                    - Quit emulator" );
