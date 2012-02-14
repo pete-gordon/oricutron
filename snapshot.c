@@ -1214,7 +1214,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
 
   if (oric->type == MACH_TELESTRAT)
   {
-    /* Get the tape block */
+    /* Get the bank information block */
     blk = load_block(oric, "BNK\x00", f, SDL_TRUE, 9, SDL_FALSE);
     if (!blk)
     {
@@ -1326,7 +1326,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
   }
 
   /* ... and finally, breakpoints! */
-  if ((blk = load_block(oric, "SYU\x00", f, SDL_FALSE, -1, SDL_FALSE)))
+  if ((blk = load_block(oric, "BKP\x00", f, SDL_FALSE, -1, SDL_FALSE)))
   {
     cpu->anybp = SDL_FALSE;
     cpu->anymbp = SDL_FALSE;
