@@ -372,6 +372,180 @@ void tape_rewind( struct machine *oric )
   refreshtape = SDL_TRUE;
 }
 
+static inline signed short getsmp(unsigned char *buf, SDL_bool is8bit)
+{
+  return is8bit ? ((short)*buf)-128 : (short)((buf[1]<<8)|buf[0]);
+}
+
+// tapebuf, tapelen must contain a wav file
+static SDL_bool wav_convert( struct machine *oric )
+{
+  // Chunk pointers
+  unsigned char *p=oric->tapebuf, *data=NULL, *ortbuf=NULL;
+  unsigned int i, j, k, chunklen, bps, freq=0, smpdelta=0, datalen=0, ortlen, count;
+  signed int smax, smin, dcoffs;
+  signed short smp;
+  // Cycles per sample
+  double cps, pos;
+  SDL_bool stereo = SDL_FALSE, fmtseen = SDL_FALSE;
+
+  // Basic validation
+  i = 12;
+  while ((!fmtseen) || (!data))
+  {
+    // Run out of data?
+    if (i >= (oric->tapelen-8)) return SDL_FALSE;
+
+    // Length of this chunk
+    chunklen = (p[i+7]<<24)|(p[i+6]<<16)|(p[i+5]<<8)|p[i+4];
+
+    // Sane length?
+    if ((i+chunklen+8) > oric->tapelen)
+      return SDL_FALSE;
+ 
+    // Format chunk?
+    if (memcmp(&p[i], "fmt ", 4) == 0)
+    {
+      // PCM?
+      if ((chunklen != 16) || (((p[i+9]<<8)|p[i+8])!=1))
+        return SDL_FALSE;
+      
+      // Channels
+      switch ((p[i+11]<<8)|(p[i+10]))
+      {
+        case 1:  stereo = SDL_FALSE; break;
+        case 2:  stereo = SDL_TRUE;  break;
+        default: return SDL_FALSE;   break;
+      }
+
+      // Frequency
+      freq = (p[i+15]<<24)|(p[i+14]<<16)|(p[i+13]<<8)|p[i+12];
+      if( !freq ) return SDL_FALSE;
+
+      // Sample delta
+      smpdelta = (p[i+21]<<16)|p[i+20];
+
+      // Bits per sample
+      bps = (p[i+23]<<16)|p[i+22];
+      if ((bps!=8)&&(bps!=16)) return SDL_FALSE;
+
+      // Bytes per sample
+      bps /= 8;
+
+      fmtseen = SDL_TRUE;
+    }
+    else if (memcmp(&p[i], "data", 4) == 0)
+    {
+      data = &p[i+8];
+      datalen = chunklen;
+    }
+    
+    // Skip chunk
+    i += chunklen+8;
+  }
+
+  smax = -70000;
+  smin =  70000;
+
+  // If we got here, we found a format and some data
+  // Calculate the DC offset
+  for (i=0; i<datalen; i+=smpdelta)
+  {
+    smp = getsmp(&data[i], bps==1);
+    if (stereo) smp += getsmp(&data[i+bps], bps==1);
+
+    if (smp < smin) smin = smp;
+    if (smp > smax) smin = smax;
+  }
+  dcoffs = (smax-smin)/2;
+
+  // Now convert to a 1/0 squarewave
+  j = 0;
+  for (i=0; i<datalen; i+=smpdelta)
+  {
+    smp = getsmp(&data[i], bps==1);
+    if (stereo) smp += getsmp(&data[i+bps], bps==1);
+
+    oric->tapebuf[j++] = (smp>dcoffs) ? 1 : 0;
+  }
+
+  // Calculate samples per cycle
+  cps = 500000 / ((double)freq);  // .ORT is 500khz
+
+  // Calculate the length of the .ORT data
+  ortlen = 5; // header + initial state
+  i = oric->tapebuf[0];
+  count = 0;
+  for (pos=cps; pos<((double)j); pos+=cps)
+  {
+    if (oric->tapebuf[(int)pos] != i)
+    {
+      i = oric->tapebuf[(int)pos];
+      if (count < 0xfc)
+      {
+        ortlen++;
+        count = 0;
+        continue;
+      }
+
+      if (count < 0x100)
+      {
+        ortlen+=2;
+        count = 0;
+        continue;
+      }
+
+      ortlen+=3;
+      count = 0;
+      continue;
+    }
+    count++;
+  }
+
+  ortbuf = malloc(ortlen);
+  if (!ortbuf) return SDL_FALSE;
+
+  memcpy(ortbuf, "ORT\0", 4);
+  i = oric->tapebuf[0];
+  ortbuf[4] = i;
+  count = 0;
+  k = 5;
+  for (pos=cps; pos<((double)j); pos+=cps)
+  {
+    if (oric->tapebuf[(int)pos] != i)
+    {
+      i = oric->tapebuf[(int)pos];
+      if (count < 0xfc)
+      {
+        ortbuf[k++] = count;
+        count = 0;
+        continue;
+      }
+
+      if (count < 0x100)
+      {
+        ortbuf[k++] = 0xfc;
+        ortbuf[k++] = count;
+        count = 0;
+        continue;
+      }
+
+      ortbuf[k++] = 0xfd;
+      ortbuf[k++] = (count>>8)&0xff;
+      ortbuf[k++] = count&0xff;
+      count = 0;
+      continue;
+    }
+    count++;
+  }
+
+  free(oric->tapebuf);
+  oric->tapebuf = ortbuf;
+  oric->tapelen = ortlen;
+
+  return SDL_TRUE;
+}
+
 // Insert a new tape image
 SDL_bool tape_load_tap( struct machine *oric, char *fname )
 {
@@ -411,19 +585,38 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
     return SDL_FALSE;
   }
 
-  // RAW tape?
-  if (memcmp(oric->tapebuf, "ORT\0", 4) == 0)
+  fclose( f );
+
+  // WAV
+  if ((oric->tapelen >= 36) &&
+      (memcmp(oric->tapebuf,   "RIFF", 4) == 0) &&
+      (memcmp(oric->tapebuf+8, "WAVE", 4) == 0))
+  {
+    if (!wav_convert( oric ))
+    {
+      msgbox( oric, MSGBOX_OK, "Invalid wav file" );
+      tape_eject( oric );
+      return SDL_FALSE;
+    }
+  }
+  // ORT
+  else if (memcmp(oric->tapebuf, "ORT\0", 4) == 0)
   {
     oric->rawtape = SDL_TRUE;
   }
-  else
+  // TAP
+  else if (memcmp(oric->tapebuf, "\x16\x16\x16", 3) == 0)
   {
     oric->rawtape = SDL_FALSE;
   }
+  // ???
+  else
+  {
+    tape_eject( oric );
+    msgbox( oric, MSGBOX_OK, "Unrecognised tape format" );
+    return SDL_FALSE;
+  }
 
-
-  fclose( f );
-  
   // Rewind the tape
   tape_rewind( oric );
 
@@ -526,18 +719,16 @@ void tape_patches( struct machine *oric )
         }
         oric->lasttapefile[i] = 0;
 
-        dbg_printf("found '%s'", oric->lasttapefile);
         if( ( oric->cpu.read( &oric->cpu, oric->pch_fd_getname_addr ) != 0 ) &&
             ( oric->autoinsert ) )
         {
-          dbg_printf("moo");
           // Only do this if there is no tape inserted, or we're at the
           // end of the current tape, or the filename ends in .TAP, .ORT or .WAV
           if( ( !oric->tapebuf ) ||
               ( oric->tapeoffs >= oric->tapelen ) ||
               ( ( i > 3 ) && ( strcasecmp( &oric->lasttapefile[i-4], ".tap" ) == 0 ) ) ||
-              ( ( i > 3 ) && ( strcasecmp( &oric->lasttapefile[i-4], ".ort" ) == 0 ) ) /*||
-              ( ( i > 3 ) && ( strcasecmp( &oric->lasttapefile[i-4], ".wav" ) == 0 ) )*/ )
+              ( ( i > 3 ) && ( strcasecmp( &oric->lasttapefile[i-4], ".ort" ) == 0 ) ) ||
+              ( ( i > 3 ) && ( strcasecmp( &oric->lasttapefile[i-4], ".wav" ) == 0 ) ) )
           {
             tape_autoinsert( oric );
             oric->cpu.write( &oric->cpu, oric->pch_fd_getname_addr, 0 );
