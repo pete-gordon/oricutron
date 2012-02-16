@@ -382,11 +382,11 @@ static SDL_bool wav_convert( struct machine *oric )
 {
   // Chunk pointers
   unsigned char *p=oric->tapebuf, *data=NULL, *ortbuf=NULL;
-  unsigned int i, j, k, chunklen, bps, freq=0, smpdelta=0, datalen=0, ortlen, count;
+  unsigned int i, j, k, l, chunklen, bps, freq=0, smpdelta=0, datalen=0, ortlen;
   signed int smax, smin, dcoffs;
   signed short smp;
   // Cycles per sample
-  double cps, pos;
+  double cps, count;
   SDL_bool stereo = SDL_FALSE, fmtseen = SDL_FALSE;
 
   // Basic validation
@@ -455,9 +455,9 @@ static SDL_bool wav_convert( struct machine *oric )
     if (stereo) smp += getsmp(&data[i+bps], bps==1);
 
     if (smp < smin) smin = smp;
-    if (smp > smax) smin = smax;
+    if (smp > smax) smax = smp;
   }
-  dcoffs = (smax-smin)/2;
+  dcoffs = ((smax-smin)/2)+smin;
 
   // Now convert to a 1/0 squarewave
   j = 0;
@@ -468,38 +468,33 @@ static SDL_bool wav_convert( struct machine *oric )
 
     oric->tapebuf[j++] = (smp>dcoffs) ? 1 : 0;
   }
-
-  // Calculate samples per cycle
+  // Calculate cycles per sample
   cps = 500000 / ((double)freq);  // .ORT is 500khz
 
   // Calculate the length of the .ORT data
   ortlen = 5; // header + initial state
   i = oric->tapebuf[0];
-  count = 0;
-  for (pos=cps; pos<((double)j); pos+=cps)
+  count = 0.0f;
+  for (k=1; k<j; k++)
   {
-    if (oric->tapebuf[(int)pos] != i)
+    if (oric->tapebuf[k] != i)
     {
-      i = oric->tapebuf[(int)pos];
-      if (count < 0xfc)
+      i = oric->tapebuf[k];
+      if (((int)count) < 0xfc)
       {
         ortlen++;
-        count = 0;
-        continue;
       }
-
-      if (count < 0x100)
+      else if (((int)count) < 0x100)
       {
         ortlen+=2;
-        count = 0;
-        continue;
       }
-
-      ortlen+=3;
-      count = 0;
-      continue;
+      else
+      {
+        ortlen+=3;
+      }
+      count = 0.0f;
     }
-    count++;
+    count+=cps;
   }
 
   ortbuf = malloc(ortlen);
@@ -508,35 +503,31 @@ static SDL_bool wav_convert( struct machine *oric )
   memcpy(ortbuf, "ORT\0", 4);
   i = oric->tapebuf[0];
   ortbuf[4] = i;
-  count = 0;
-  k = 5;
-  for (pos=cps; pos<((double)j); pos+=cps)
+  count = 0.0f;
+  l = 5;
+  for (k=1; k<j; k++)
   {
-    if (oric->tapebuf[(int)pos] != i)
+    if (oric->tapebuf[k] != i)
     {
-      i = oric->tapebuf[(int)pos];
-      if (count < 0xfc)
+      i = oric->tapebuf[k];
+      if (((int)count) < 0xfc)
       {
-        ortbuf[k++] = count;
-        count = 0;
-        continue;
+        ortbuf[l++] = count;
       }
-
-      if (count < 0x100)
+      else if (((int)count) < 0x100)
       {
-        ortbuf[k++] = 0xfc;
-        ortbuf[k++] = count;
-        count = 0;
-        continue;
+        ortbuf[l++] = 0xfc;
+        ortbuf[l++] = count;
       }
-
-      ortbuf[k++] = 0xfd;
-      ortbuf[k++] = (count>>8)&0xff;
-      ortbuf[k++] = count&0xff;
-      count = 0;
-      continue;
+      else
+      {
+        ortbuf[l++] = 0xfd;
+        ortbuf[l++] = (((int)count)>>8)&0xff;
+        ortbuf[l++] = ((int)count)&0xff;
+      }
+      count = 0.0f;
     }
-    count++;
+    count+=cps;
   }
 
   free(oric->tapebuf);
@@ -598,6 +589,8 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
       tape_eject( oric );
       return SDL_FALSE;
     }
+
+    oric->rawtape = SDL_TRUE;
   }
   // ORT
   else if (memcmp(oric->tapebuf, "ORT\0", 4) == 0)
