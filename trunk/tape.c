@@ -386,7 +386,7 @@ static SDL_bool wav_convert( struct machine *oric )
   signed int smax, smin, dcoffs;
   signed short smp;
   // Cycles per sample
-  double cps, count;
+  double cps, count, pcount;
   SDL_bool stereo = SDL_FALSE, fmtseen = SDL_FALSE;
 
   // Basic validation
@@ -475,24 +475,36 @@ static SDL_bool wav_convert( struct machine *oric )
   ortlen = 5; // header + initial state
   i = oric->tapebuf[0];
   count = 0.0f;
+  pcount = 0.0f;
   for (k=1; k<j; k++)
   {
     if (oric->tapebuf[k] != i)
     {
       i = oric->tapebuf[k];
-      if (((int)count) < 0xfc)
+      if (((int)count) < 1)
+      {
+        // Just a spike?
+        if (ortlen>5) ortlen--;
+        count += pcount;
+      }
+      else if (((int)count) < 0xfc)
       {
         ortlen++;
+        pcount = count;
+        count = 0.0f;
       }
       else if (((int)count) < 0x100)
       {
         ortlen+=2;
+        pcount = count;
+        count = 0.0f;
       }
       else
       {
         ortlen+=3;
+        pcount = count;
+        count = 0.0f;
       }
-      count = 0.0f;
     }
     count+=cps;
   }
@@ -504,28 +516,43 @@ static SDL_bool wav_convert( struct machine *oric )
   i = oric->tapebuf[0];
   ortbuf[4] = i;
   count = 0.0f;
+  pcount = 0.0f;
   l = 5;
   for (k=1; k<j; k++)
   {
     if (oric->tapebuf[k] != i)
     {
       i = oric->tapebuf[k];
-      if (((int)count) < 0xfc)
+      if (((int)count) < 1)
+      {
+        // Just a spike. Cancel the last swap.
+        if (l==5)
+          ortbuf[4] = i;
+        else
+          l--;
+        count += pcount;
+      }
+      else if (((int)count) < 0xfc)
       {
         ortbuf[l++] = count;
+        pcount = count;
+        count = 0.0f;
       }
       else if (((int)count) < 0x100)
       {
         ortbuf[l++] = 0xfc;
         ortbuf[l++] = count;
+        pcount = count;
+        count = 0.0f;
       }
       else
       {
         ortbuf[l++] = 0xfd;
         ortbuf[l++] = (((int)count)>>8)&0xff;
         ortbuf[l++] = ((int)count)&0xff;
+        pcount = count;
+        count = 0.0f;
       }
-      count = 0.0f;
     }
     count+=cps;
   }
