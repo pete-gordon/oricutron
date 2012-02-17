@@ -382,7 +382,7 @@ static SDL_bool wav_convert( struct machine *oric )
 {
   // Chunk pointers
   unsigned char *p=oric->tapebuf, *data=NULL, *ortbuf=NULL;
-  unsigned int i, j, k, l, chunklen, bps, freq=0, smpdelta=0, datalen=0, ortlen;
+  unsigned int i, j, k, l, chunklen, bps=0, freq=0, smpdelta=0, datalen=0, ortlen;
   signed int smax, smin, dcoffs;
   signed short smp;
   // Cycles per sample
