@@ -372,12 +372,264 @@ void tape_rewind( struct machine *oric )
   refreshtape = SDL_TRUE;
 }
 
+// This is used by the "tapsections" function. It returns the next time
+// value from an ort buffer, or -1 for invalid (or if an existing tapsection
+// is found)
+static int next_ort_value( unsigned char *ortdata, int *offset, int end )
+{
+  int val=0;
+
+  if ((*offset) >= end) return 0;
+
+  switch (ortdata[*offset])
+  {
+    case 0xfc:
+      if ((*offset) >= (end-1)) return 0;
+      val = ortdata[(*offset)+1];
+      (*offset) += 2;
+      return val;
+    
+    case 0xfd:
+      if ((*offset) >= (end-2)) return 0;
+      val = (ortdata[(*offset)+1]<<8)|ortdata[(*offset)+2];
+      (*offset) += 2;
+      return val;
+    
+    case 0xfe:
+    case 0xff:
+      return 0;
+  }
+
+  return ortdata[(*offset)++];
+}
+
+enum
+{
+  TAPSEC_STATE_SEARCH = 0,
+  TAPSEC_STATE_LEADER,
+  TAPSEC_STATE_FINDHEADER,
+  TAPSEC_STATE_HEADER,
+  TAPSEC_STATE_FILENAME,
+  TAPSEC_STATE_FINDDATA,
+  TAPSEC_STATE_DATA
+};
+
+// This converts oric standard encoded waveforms to decoded TAP sections
+static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scratch )
+{
+  int ort_offs, tapebit, ort_val, cyccount;
+  int accum, state, thisbit, leaderstart=0, leadercount=0;
+  int last_offsets[20], i, bitcount, tapbytes=0;
+  int data_bytes=0;
+
+  ort_offs = 4;
+  tapebit  = ortbuf[ort_offs++];
+  cyccount = 0;
+  state    = TAPSEC_STATE_SEARCH;
+  accum    = 0;
+  bitcount = 0;
+
+  for (i=0; i<20; i++)
+    last_offsets[i] = 5;
+
+  // Loop through the ORT data
+  while (ort_offs < ortbuflen)
+  {
+    // Shuffle the offset array
+    for (i=0; i<19; i++)
+      last_offsets[i] = last_offsets[i+1];
+    last_offsets[19] = ort_offs;
+
+    ort_val = next_ort_value(ortbuf, &ort_offs, ortbuflen);
+    // Invalid ORT data?
+    if (ort_val == -1) return ortbuflen;
+
+    // Count these cycles
+    cyccount += ort_val;
+
+    // Invert the tape input
+    tapebit ^= 1;
+
+    // Rising edge?
+    if (tapebit)
+    {
+      // Convert to 1/0
+      thisbit = TIME_TO_BIT(cyccount);
+
+      // Seen a value that is outside the bounds of Oric standard encoding?
+      if (thisbit == -1)
+      {
+        // This can't be a TAP section
+        state    = TAPSEC_STATE_SEARCH;
+        cyccount = 0;
+        accum    = 0;
+      }
+      else
+      {
+        // Accumulate this bit
+        accum = (accum>>1) | (thisbit<<10);
+
+        // What are we doing?
+        switch (state)
+        {
+          case TAPSEC_STATE_SEARCH:
+            // Look for 0x058 (0x16 encoded with start bit and parity)
+            if ((accum&0x7fe) == 0x58)
+            {
+              leaderstart = last_offsets[8];
+              leadercount = 1;
+              state = TAPSEC_STATE_LEADER;
+              bitcount = 0;
+            }
+            break;
+          
+          case TAPSEC_STATE_LEADER:
+            bitcount = (bitcount+1)%14;
+            if (!bitcount)
+            {
+              if ((accum&0x7fe) != 0x58)
+              {
+                state    = TAPSEC_STATE_SEARCH;
+                cyccount = 0;
+                break;
+              }
+
+              leadercount++;
+              if (leadercount==4)
+              {
+                state = TAPSEC_STATE_FINDHEADER;
+                break;
+              }
+            }
+            break;
+          
+          case TAPSEC_STATE_FINDHEADER:
+            bitcount = (bitcount+1)%14;
+            if (!bitcount)
+            {
+              if ((accum&0x7fe) == 0x490) // 0x24 fully encoded
+              {
+                state = TAPSEC_STATE_HEADER;
+                scratch[0] = 0x16;
+                scratch[1] = 0x16;
+                scratch[2] = 0x16;
+                scratch[3] = 0x24;
+                tapbytes = 4;
+                state = TAPSEC_STATE_HEADER;
+              }
+            }
+            break;
+
+          case TAPSEC_STATE_HEADER:
+            bitcount = (bitcount+1)%14;
+            if (!bitcount)
+            {
+              // Maybe todo: check the parity bit?
+              scratch[tapbytes++] = (accum>>2)&0xff;
+              if (tapbytes == 13)
+              {
+                int load_start, load_end;
+
+                load_start = (scratch[10]<<8)|scratch[11];
+                load_end   = (scratch[ 8]<<8)|scratch[ 9];
+
+                if (load_end <= load_start)
+                {
+                  state = TAPSEC_STATE_SEARCH;
+                  cyccount = 0;
+                  break;
+                }
+
+                data_bytes = (load_end-load_start)+1;
+                state = TAPSEC_STATE_FILENAME;
+              }
+            }
+            break;
+
+          case TAPSEC_STATE_FILENAME:
+            bitcount = (bitcount+1)%14;
+            if (!bitcount)
+            {
+              // Maybe todo: check the parity bit?
+              scratch[tapbytes++] = (accum>>2)&0xff;
+              if (scratch[tapbytes-1] == 0)
+              {
+                state = TAPSEC_STATE_FINDDATA;
+              }
+            }              
+            break;
+          
+          case TAPSEC_STATE_FINDDATA:
+            // Look for a valid byte (start bits, valid parity)
+            if ((accum&3)==1)
+            {
+              int parity = 1;
+              for (i=4; i!=0x800; i<<=1)
+                if (accum&i) parity ^= 1;
+              if (!parity)
+              {
+                scratch[tapbytes++] = (accum>>2)&0xff;
+                data_bytes--;
+                bitcount=0;
+                state = TAPSEC_STATE_DATA;
+              }
+            }
+            break;
+
+          case TAPSEC_STATE_DATA:
+            bitcount = (bitcount+1)%14;
+            if (!bitcount)
+            {
+              scratch[tapbytes++] = (accum>>2)&0xff;
+              data_bytes--;
+
+              // ??
+              if (data_bytes < 0)
+              {
+                state = TAPSEC_STATE_SEARCH;
+                break;
+              }
+
+              if (data_bytes > 0)
+                break;
+
+              // Got a whole standard oric tap section!
+              ortbuf[leaderstart++] = 0xff;
+              ortbuf[leaderstart++] = (tapbytes>>8)&0xff;
+              ortbuf[leaderstart++] = (tapbytes&0xff);
+              memcpy(&ortbuf[leaderstart], scratch, tapbytes);
+              leaderstart += tapbytes;
+              memmove(&ortbuf[leaderstart], &ortbuf[ort_offs], ortbuflen-ort_offs);
+              ortbuflen -= (ort_offs-leaderstart);
+              ort_offs = leaderstart;
+              state = TAPSEC_STATE_SEARCH;
+              cyccount = 0;
+              accum = 0;
+            }
+            break;
+        }
+      }
+
+      cyccount = 0;
+    }
+  }
+  return ortbuflen;
+}
+
+// This is used by the wav loader routine. It gets a sample from a wav
+// file (either 8 or 16bit), and returns it as a signed value. No scaling
+// is performed, so it returns -128 to 127 for 8bit wavs, and -32768 to
+// 32767 for 16bit wavs.
 static inline signed short getsmp(unsigned char *buf, SDL_bool is8bit)
 {
   return is8bit ? ((short)*buf)-128 : (short)((buf[1]<<8)|buf[0]);
 }
 
-// tapebuf, tapelen must contain a wav file
+// This converts a WAV file to Oricutron's ORT format. It should cope
+// with any PCM wav file (stereo, mono, 8bit, 16bit...). It also adjusts
+// any DC offset in the recording. It also calls "tapsections" to convert
+// any standard oric tape format waveforms it finds into non-raw "tap"
+// style sections to enable turbo loading of those parts.
 static SDL_bool wav_convert( struct machine *oric )
 {
   // Chunk pointers
@@ -509,10 +761,14 @@ static SDL_bool wav_convert( struct machine *oric )
     count+=cps;
   }
 
+  // Allocate a buffer for the converted data
   ortbuf = malloc(ortlen);
   if (!ortbuf) return SDL_FALSE;
 
+  // Write the header
   memcpy(ortbuf, "ORT\0", 4);
+
+  // Write the ORT data
   i = oric->tapebuf[0];
   ortbuf[4] = i;
   count = 0.0f;
@@ -557,6 +813,11 @@ static SDL_bool wav_convert( struct machine *oric )
     count+=cps;
   }
 
+  // Look for any standard oric encoded parts to convert
+  // to non-raw "tap" sections
+  ortlen = tapsections(ortbuf, ortlen, oric->tapebuf);
+
+  // Substitute the ORT data for the original WAV data
   free(oric->tapebuf);
   oric->tapebuf = ortbuf;
   oric->tapelen = ortlen;
@@ -879,7 +1140,7 @@ void tape_patches( struct machine *oric )
 
   // Don't do turbotape if we have a raw tape
   // Turbotape can't work with rawtape. TODO: Auto enable warpspeed when CLOADing/CSAVEing rawtape
-  if( oric->rawtape ) return;
+  if(( oric->rawtape ) && ( oric->tapeoffs >= oric->nonrawend )) return;
 
   // Maybe do turbotape
   if( ( oric->pch_tt_available ) && ( oric->tapeturbo ) && ( !oric->tapeturbo_forceoff ) && ( oric->romon ) )

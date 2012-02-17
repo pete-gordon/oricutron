@@ -21,6 +21,13 @@
 #define TAPE_0_PULSE 416
 #define TAPE_1_PULSE 208
 
+#define TAPE_DECODE_0_MIN (((TAPE_0_PULSE-TAPE_1_PULSE)/2)+TAPE_1_PULSE)
+#define TAPE_DECODE_0_MAX (TAPE_0_PULSE*2)
+#define TAPE_DECODE_1_MIN (TAPE_1_PULSE/2)
+#define TAPE_DECODE_1_MAX (TAPE_DECODE_0_MIN)
+
+#define TIME_TO_BIT(t) ((t<TAPE_DECODE_1_MIN)||(t>TAPE_DECODE_0_MAX))?-1:((t<TAPE_DECODE_0_MIN)?1:0)
+
 void tape_eject( struct machine *oric );
 void tape_rewind( struct machine *oric );
 SDL_bool tape_load_tap( struct machine *oric, char *fname );
