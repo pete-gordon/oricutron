@@ -701,20 +701,26 @@ void load_diskroms( struct machine *oric )
 // This is currently used to workaround a change in the behaviour of SDL
 // on OS4, but in future it would be a handy place to fix keyboard layout
 // issues, such as the problems with a non-uk keymap on linux.
+// Also helps German keymap on MorphOS.
 int mapkey( int key )
 {
-#ifdef __amigaos4__
+#if defined(__amigaos4__) || defined(__MORPHOS__)
   switch( key )
   {
     case '@': return '#';
+    case 'ö':
     case ':': return ';';
     case '<': return ',';
     case '>': return '.';
+    case 'ß':
     case '?': return '/';
+    case '#':
     case '~': return '\'';
     case '_': return '-';
     case '+': return '=';
+    case 'ä':
     case '{': return '[';
+    case 'ü':
     case '}': return ']';
   }
 #endif
