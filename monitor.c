@@ -711,7 +711,12 @@ unsigned char mon_read( struct machine *oric, unsigned short addr )
   }
 
   if( ( addr & 0xff00 ) == 0x0300 )
-    return via_mon_read( &oric->via, addr );
+  {
+    if ( ( !oric->lightpen ) || ( addr < 0x3e0 ) || ( addr > 0x3e1 ) )
+    {
+      return via_mon_read( &oric->via, addr );
+    }
+  }
 
   return oric->cpu.read( &oric->cpu, addr );
 }
