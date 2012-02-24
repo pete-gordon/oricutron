@@ -79,6 +79,7 @@ CFLAGS += -mcrt=newlib -gstabs -I/SDK/Local/common/include/ -I/SDK/Local/common/
 LFLAGS += -lm `sdl-config --libs` -lGL -mcrt=newlib -gstabs
 FILEREQ_OBJ = filereq_amiga.o
 MSGBOX_OBJ = msgbox_os4.o
+AMIGA_ICONS = os4icon
 endif
 
 # MorphOS
@@ -86,6 +87,7 @@ ifeq ($(PLATFORM),morphos)
 CFLAGS += `sdl-config --cflags` -D__OPENGL_AVAILABLE__
 LFLAGS += `sdl-config --libs` -s
 FILEREQ_OBJ = filereq_amiga.o
+AMIGA_ICONS = pngicon
 endif
 
 # AROS
@@ -93,6 +95,7 @@ ifeq ($(PLATFORM),aros)
 CFLAGS += `sdl-config --cflags` -D__OPENGL_AVAILABLE__
 LFLAGS += `sdl-config --libs` -s
 FILEREQ_OBJ = filereq_amiga.o
+AMIGA_ICONS = pngicon
 endif
 
 # Windows 32bit
@@ -271,10 +274,24 @@ install-beos install-haiku:
 install-linux:
 	install -m 755 $(TARGET) $(INSTALLDIR)/bin
 
+%.info: %_$(AMIGA_ICONS).info
+	copy $< $@
 
-package-os4 package-morphos: Oricutron.guide
-	copy ChangeLog.txt.info Oricutron.guide.info
-	lha -r u RAM:$(PKGDIR) // $(TARGET) $(TARGET).info
+package-morphos package-aros package-os4: Oricutron.guide $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info))
+	-@delete ram:$(PKGDIR) all >NIL:
+	-@delete ram:$(PKGDIR).lha >NIL:
+	makedir ram:$(PKGDIR) ram:$(PKGDIR)/disks ram:$(PKGDIR)/tapes ram:$(PKGDIR)/teledisks ram:$(PKGDIR)/roms ram:$(PKGDIR)/snapshots
+	copy $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info)) ram:$(PKGDIR)
+	copy images/#?.bmp ram:$(PKGDIR)/images
+	copy disks/#?.(dsk|txt) ram:$(PKGDIR)/disks
+	copy tapes/#?.(tap|ort|txt) ram:$(PKGDIR)/tapes
+	copy roms/#?.(rom|sym|pch) ram:$(PKGDIR)/roms
+	copy $(DOCFILES) ram:$(PKGDIR)
+	copy Oricutron.guide ram:$(PKGDIR)
+	copy $(TARGET) ram:$(PKGDIR)
+	lha a -r -e ram:$(PKGDIR).lha ram:$(PKGDIR)
+	delete $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info))
+	-@delete ram:$(PKGDIR) all >NIL:
 
 package-beos package-haiku:
 	mkdir -p $(PKGDIR)/images
