@@ -34,7 +34,7 @@
 #include "render_sw.h"
 #include "ula.h"
 
-/*static*/ struct SDL_Surface *screen;
+static struct SDL_Surface *screen;
 static Uint32 gpal[NUM_GUI_COLS];
 
 static Uint32 pixel_size, offset_top;
@@ -587,7 +587,7 @@ SDL_bool init_render_sw( struct machine *oric )
 
   // Calculate the offset to render the screen
   offset_top = (240 - 226) * screen->pitch;
-  offset_top += (screen->pitch - 2 * 240 * pixel_size) / 2;
+  offset_top += pixel_size * 80;
 
   ula_set_dirty( oric );
 
