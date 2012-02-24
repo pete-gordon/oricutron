@@ -686,8 +686,8 @@ void preinit_machine( struct machine *oric )
   oric->diskautosave = SDL_FALSE;
   
   oric->lightpen  = SDL_FALSE;
-  oric->lightpenx = 255;
-  oric->lightpeny = 255;
+  oric->lightpenx = 0;
+  oric->lightpeny = 0;
 
   oric->tsavf = NULL;
 }

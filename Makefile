@@ -278,20 +278,21 @@ install-linux:
 	copy $< $@
 
 package-morphos package-aros package-os4: Oricutron.guide $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info))
-	-@delete ram:$(PKGDIR) all >NIL:
+	-@delete ram:Oricutron all >NIL:
 	-@delete ram:$(PKGDIR).lha >NIL:
-	makedir ram:$(PKGDIR) ram:$(PKGDIR)/disks ram:$(PKGDIR)/tapes ram:$(PKGDIR)/teledisks ram:$(PKGDIR)/roms ram:$(PKGDIR)/snapshots
-	copy $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info)) ram:$(PKGDIR)
-	copy images/#?.bmp ram:$(PKGDIR)/images
-	copy disks/#?.(dsk|txt) ram:$(PKGDIR)/disks
-	copy tapes/#?.(tap|ort|txt) ram:$(PKGDIR)/tapes
-	copy roms/#?.(rom|sym|pch) ram:$(PKGDIR)/roms
-	copy $(DOCFILES) ram:$(PKGDIR)
-	copy Oricutron.guide ram:$(PKGDIR)
-	copy $(TARGET) ram:$(PKGDIR)
-	lha a -r -e ram:$(PKGDIR).lha ram:$(PKGDIR)
+	makedir ram:Oricutron ram:Oricutron/disks ram:Oricutron/tapes ram:Oricutron/teledisks ram:Oricutron/roms ram:Oricutron/snapshots
+	copy ENVARC:sys/def_drawer.info ram:Oricutron.info
+	copy $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info)) ram:Oricutron
+	copy images/#?.bmp ram:Oricutron/images
+	copy disks/#?.(dsk|txt) ram:Oricutron/disks
+	copy tapes/#?.(tap|ort|txt) ram:Oricutron/tapes
+	copy roms/#?.(rom|sym|pch) ram:Oricutron/roms
+	copy $(DOCFILES) ram:Oricutron
+	copy Oricutron.guide ram:Oricutron
+	copy $(TARGET) ram:Oricutron
+	lha a -r -e ram:$(PKGDIR).lha ram:Oricutron ram:Oricutron.info
 	delete $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info))
-	-@delete ram:$(PKGDIR) all >NIL:
+	-@delete ram:Oricutron ram:Oricutron.info all >NIL:
 
 package-beos package-haiku:
 	mkdir -p $(PKGDIR)/images
