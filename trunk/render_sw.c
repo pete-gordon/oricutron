@@ -34,7 +34,7 @@
 #include "render_sw.h"
 #include "ula.h"
 
-static struct SDL_Surface *screen;
+/*static*/ struct SDL_Surface *screen;
 static Uint32 gpal[NUM_GUI_COLS];
 
 static Uint32 pixel_size, offset_top;

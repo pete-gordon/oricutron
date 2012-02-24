@@ -50,6 +50,7 @@ extern char diskpath[], diskfile[], filetmp[];
 extern char telediskpath[], telediskfile[];
 extern SDL_bool refreshstatus, refreshavi;
 extern struct osdmenuitem mainitems[];
+extern SDL_Surface *screen;
 
 char atmosromfile[1024];
 char oric1romfile[1024];
@@ -727,6 +728,37 @@ int mapkey( int key )
   return key;
 }
 
+/*
+ * Return the pixel value at (x, y)
+ * NOTE: The surface must be locked before calling this!
+ */
+Uint32 getpixel(SDL_Surface *surface, int x, int y)
+{
+    int bpp = surface->format->BytesPerPixel;
+    /* Here p is the address to the pixel we want to retrieve */
+    Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
+
+    switch(bpp) {
+    case 1:
+        return *p;
+
+    case 2:
+        return *(Uint16 *)p;
+
+    case 3:
+        if(SDL_BYTEORDER == SDL_BIG_ENDIAN)
+            return p[0] << 16 | p[1] << 8 | p[2];
+        else
+            return p[0] | p[1] << 8 | p[2] << 16;
+
+    case 4:
+        return *(Uint32 *)p;
+
+    default:
+        return 0;       /* shouldn't happen, but avoids warnings */
+    }
+}
+
 static SDL_bool shifted = SDL_FALSE;
 SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 {
@@ -746,8 +778,15 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
     case SDL_MOUSEBUTTONDOWN:
       if( ev->button.button == SDL_BUTTON_LEFT )
       {
-        oric->lightpenx = ev->button.x/2.5;
-        oric->lightpeny = ev->button.y/1.875;
+        Uint8 r, g, b;
+
+        SDL_GetRGB(getpixel(screen, ev->button.x, ev->button.y), screen->format, &r, &g, &b);
+        // Any coloured pixel?
+        if( r || g || b )
+        {
+          oric->lightpenx = ev->button.x/(640./240)+219;
+          oric->lightpeny = ev->button.y/(480./224)+54;
+        }
       }
       if( ev->button.button == SDL_BUTTON_RIGHT )
         setemumode( oric, NULL, EM_MENU );
