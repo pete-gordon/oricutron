@@ -967,12 +967,6 @@ SDL_bool wav_convert( struct machine *oric )
   ortlen = tapsections(ortbuf, ortlen, oric->tapebuf, SDL_FALSE);
   ortlen = tapsections(ortbuf, ortlen, oric->tapebuf, SDL_TRUE);
 
-  {
-    FILE *f = fopen("test.ort", "wb");
-    fwrite(ortbuf, ortlen, 1, f);
-    fclose(f);
-  }
-
   // Substitute the ORT data for the original WAV data
   free(oric->tapebuf);
   oric->tapebuf = ortbuf;
