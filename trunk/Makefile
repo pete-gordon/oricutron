@@ -11,7 +11,7 @@
 # PLATFORM = aros
 
 VERSION_MAJ = 0
-VERSION_MIN = 8
+VERSION_MIN = 9
 VERSION_REV = 0
 VERSION_FULL = $(VERSION_MAJ).$(VERSION_MIN).$(VERSION_REV)
 APP_NAME = Oricutron
@@ -22,8 +22,8 @@ VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) (c)$(APP_YEAR) Peter Gordon (p
 ####### DEFAULT SETTINGS HERE #######
 
 CFLAGS = -Wall -O3
-CFLAGS += -DAPP_NAME_FULL='"$(APP_NAME) WIP"'
-#CFLAGS += -DAPP_NAME_FULL='"$(APP_NAME) $(VERSION_MAJ).$(VERSION_MIN)"'
+#CFLAGS += -DAPP_NAME_FULL='"$(APP_NAME) WIP"'
+CFLAGS += -DAPP_NAME_FULL='"$(APP_NAME) $(VERSION_MAJ).$(VERSION_MIN)"'
 CFLAGS += -DAPP_YEAR='"$(APP_YEAR)"' -DVERSION_COPYRIGHTS='$(VERSION_COPYRIGHTS)'
 LFLAGS = 
 
@@ -280,7 +280,7 @@ install-linux:
 package-morphos package-aros package-os4: Oricutron.guide $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info))
 	-@delete ram:Oricutron all >NIL:
 	-@delete ram:$(PKGDIR).lha >NIL:
-	makedir ram:Oricutron ram:Oricutron/disks ram:Oricutron/tapes ram:Oricutron/teledisks ram:Oricutron/roms ram:Oricutron/snapshots
+	makedir ram:Oricutron ram:Oricutron/disks ram:Oricutron/tapes ram:Oricutron/teledisks ram:Oricutron/roms ram:Oricutron/snapshots ram:Oricutron/images
 	copy ENVARC:sys/def_drawer.info ram:Oricutron.info
 	copy $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info)) ram:Oricutron
 	copy images/#?.bmp ram:Oricutron/images/

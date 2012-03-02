@@ -1,7 +1,7 @@
-Oricutron 0.8
+Oricutron 0.9
 -------------
 
-(c)2009-2011 Peter Gordon (pete@petergordon.org.uk)
+(c)2009-2012 Peter Gordon (pete@petergordon.org.uk)
 
 This is a work in progress.
 
@@ -13,7 +13,7 @@ Current status
   VIA:   95% done.
   AY:    99% done.
   Video: 100% done
-  Tape:  ".TAP", "*.ORT" file support (no WAV yet)
+  Tape:  99% done (.TAP, .ORT and .WAV supported)
   Disk:  Reading/Writing sectors works. No track read/write.
 
 Telestrat emulation is included, but is far from finished and doesn't currently
@@ -153,8 +153,8 @@ oricutron -ddemos/barbitoric.dsk -f
 Keys
 ====
 
-In emulator
------------
+  In emulator
+  -----------
 
   F1       - Bring up the menu
   F2       - Go to debugger/monitor
@@ -170,8 +170,8 @@ In emulator
   Help     - Show guide
 
 
-In menus
---------
+  In menus
+  --------
 
   Cursors   - Navigate
   Enter     - Perform option
@@ -180,8 +180,8 @@ In menus
   (or use the mouse)
 
 
-In Debugger/Monitor
--------------------
+  In Debugger/Monitor
+  -------------------
 
   F2      - Return to the emulator
   F3      - Toggle console/debug output/memwatch
