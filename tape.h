@@ -26,7 +26,7 @@
 #define TAPE_DECODE_1_MIN (TAPE_1_PULSE/4)
 #define TAPE_DECODE_1_MAX (TAPE_DECODE_0_MIN)
 
-#define TIME_TO_BIT(t) ((t<TAPE_DECODE_1_MIN)||(t>TAPE_DECODE_0_MAX))?-1:((t<TAPE_DECODE_0_MIN)?1:0)
+#define TIME_TO_BIT(t) ((t<TAPE_DECODE_1_MIN)?-1:((t<TAPE_DECODE_0_MIN)?1:0))
 
 void tape_eject( struct machine *oric );
 void tape_rewind( struct machine *oric );

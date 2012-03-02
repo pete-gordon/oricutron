@@ -375,32 +375,44 @@ void tape_rewind( struct machine *oric )
 // This is used by the "tapsections" function. It returns the next time
 // value from an ort buffer, or -1 for invalid (or if an existing tapsection
 // is found)
-static int next_ort_value( unsigned char *ortdata, int *offset, int end )
+static int next_ort_value( unsigned char *ortdata, int *offset, int end, SDL_bool *anytapsec )
 {
-  int val=0;
+  int val=0, skip;
 
-  if ((*offset) >= end) return 0;
-
-  switch (ortdata[*offset])
+  while ((*offset) < end)
   {
-    case 0xfc:
-      if ((*offset) >= (end-1)) return 0;
-      val = ortdata[(*offset)+1];
-      (*offset) += 2;
-      return val;
-    
-    case 0xfd:
-      if ((*offset) >= (end-2)) return 0;
-      val = (ortdata[(*offset)+1]<<8)|ortdata[(*offset)+2];
-      (*offset) += 2;
-      return val;
-    
-    case 0xfe:
-    case 0xff:
-      return 0;
+    switch (ortdata[*offset])
+    {
+      case 0xfc:
+        if ((*offset) >= (end-1)) return 0;
+        val = ortdata[(*offset)+1];
+        (*offset) += 2;
+        return val;
+      
+      case 0xfd:
+        if ((*offset) >= (end-2)) return 0;
+        val = (ortdata[(*offset)+1]<<8)|ortdata[(*offset)+2];
+        (*offset) += 3;
+        return val;
+      
+      case 0xfe:
+        return 0;
+
+      case 0xff:
+        if ((*offset) >= (end-2)) return 0;
+        skip = (ortdata[(*offset)+1]<<8)|ortdata[(*offset)+2];
+        (*offset)+=3;
+        if ((*offset) >= (end-skip)) return 0;
+        (*offset)+=skip;
+        (*anytapsec) = SDL_TRUE;
+        break;
+      
+      default:
+        return ortdata[(*offset)++];
+    }
   }
 
-  return ortdata[(*offset)++];
+  return 0;
 }
 
 enum
@@ -424,12 +436,13 @@ static int validbyte(int accum)
 }
 
 // This converts oric standard encoded waveforms to decoded TAP sections
-static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scratch )
+static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scratch, SDL_bool slow )
 {
   int ort_offs, tapebit, ort_val, cyccount;
   int accum, state, thisbit, leaderstart=0, leadercount=0;
   int last_offsets[20], i, bitcount, tapbytes=0;
-  int data_bytes=0;
+  int data_bytes=0, slow0s=0, slow1s=0;
+  SDL_bool anytapsec = SDL_FALSE;
 
   ort_offs = 4;
   tapebit  = ortbuf[ort_offs++];
@@ -449,9 +462,9 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
       last_offsets[i] = last_offsets[i+1];
     last_offsets[19] = ort_offs;
 
-    ort_val = next_ort_value(ortbuf, &ort_offs, ortbuflen);
+    ort_val = next_ort_value(ortbuf, &ort_offs, ortbuflen, &anytapsec);
     // Invalid ORT data?
-    if (ort_val == -1) return ortbuflen;
+    if (ort_val < 1) return ortbuflen;
 
     // Count these cycles
     cyccount += ort_val;
@@ -472,18 +485,51 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
       // Seen a value that is outside the bounds of Oric standard encoding?
       if (thisbit == -1)
       {
-        if (state != TAPSEC_STATE_SEARCH)
-        {
-          if (cyccount < TAPE_DECODE_1_MIN) printf("%d is too fast\n", cyccount);
-          if (cyccount > TAPE_DECODE_0_MAX) printf("%d is too slow\n", cyccount);
-        }
-        // This can't be a TAP section
+//        if ((state != TAPSEC_STATE_SEARCH) || (slow0s>0) || (slow1s>0))
+//        {
+//          if (cyccount < TAPE_DECODE_1_MIN) printf("%d is too fast\n", cyccount);
+//          if (cyccount > TAPE_DECODE_0_MAX) printf("%d is too slow\n", cyccount);
+//          fflush(stdout);
+//        }
         state    = TAPSEC_STATE_SEARCH;
         cyccount = 0;
         accum    = 0;
+        slow1s   = 0;
+        slow0s   = 0;
       }
       else
       {
+        // Slow mode?
+        if (slow)
+        {
+          if (thisbit==1)
+          {
+            slow1s++;
+            slow0s=0;
+
+            if (slow1s != 2)
+            {
+              if (slow1s >= 8)
+                slow1s = 0;
+              cyccount=0;
+              continue;
+            }
+          }
+          else
+          {
+            slow0s++;
+            slow1s=0;
+
+            if (slow0s != 2)
+            {
+              if (slow0s >= 4)
+                slow0s = 0;
+              cyccount=0;
+              continue;
+            }
+          }
+        }
+
         // Accumulate this bit
         accum = (accum>>1) | (thisbit<<10);
 
@@ -494,11 +540,17 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
             // Look for 0x058 (0x16 encoded with start bit and parity)
             if ((accum&0x7fe) == 0x58)
             {
-              printf("Seen 0x16 @ %d\n", ort_offs);
+//              printf("Seen 0x16 @ %d\n", ort_offs);
+//              fflush(stdout);
               leaderstart = last_offsets[8];
               leadercount = 1;
               state = TAPSEC_STATE_LEADER;
               bitcount = 0;
+            }
+            else if (validbyte(accum))
+            {
+//              printf("Saw %02X @ %d\n", (accum>>2)&0xff, ort_offs);
+//              fflush(stdout);
             }
             break;
           
@@ -507,10 +559,11 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
             if ((bitcount==13)&&validbyte(accum)) bitcount = 0;
             if (!bitcount)
             {
-              printf("Byte @ %d is %03x\n", ort_offs, accum&0x7fe);
+//              printf("Byte @ %d is %03x\n", ort_offs, accum&0x7fe);
+//              fflush(stdout);
               if ((accum&0x7fe) != 0x58)
               {
-                printf("Which is NOT 0x58 :-(\n");
+//                printf("Which is NOT 0x58 :-(\n");
                 state    = TAPSEC_STATE_SEARCH;
                 cyccount = 0;
                 break;
@@ -530,10 +583,12 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
             if ((bitcount==13)&&validbyte(accum)) bitcount = 0;
             if (!bitcount)
             {
-              printf("Byte @ %d is %03x\n", ort_offs, accum&0x7fe);
+//              printf("Byte @ %d is %03x\n", ort_offs, accum&0x7fe);
+//              fflush(stdout);
               if ((accum&0x7fe) == 0x490) // 0x24 fully encoded
               {
-                printf("At the header...\n");
+//                printf("At the header...\n");
+//                fflush(stdout);
                 state = TAPSEC_STATE_HEADER;
                 scratch[0] = 0x16;
                 scratch[1] = 0x16;
@@ -550,7 +605,8 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
             if ((bitcount==13)&&validbyte(accum)) bitcount = 0;
             if (!bitcount)
             {
-              printf("Byte @ %d is %03x (%02X)\n", ort_offs, accum&0x7fe, (accum>>2)&0xff);
+//              printf("Byte @ %d is %03x (%02X)\n", ort_offs, accum&0x7fe, (accum>>2)&0xff);
+//              fflush(stdout);
               scratch[tapbytes++] = (accum>>2)&0xff;
               if (tapbytes == 13)
               {
@@ -559,7 +615,8 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
                 load_start = (scratch[10]<<8)|scratch[11];
                 load_end   = (scratch[ 8]<<8)|scratch[ 9];
 
-                printf("Load start = %04X, Load end = %04X\n", load_start, load_end);
+//                printf("Load start = %04X, Load end = %04X\n", load_start, load_end);
+//                fflush(stdout);
 
                 if (load_end <= load_start)
                 {
@@ -571,7 +628,8 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
                 data_bytes = (load_end-load_start)+1;
                 state = TAPSEC_STATE_FILENAME;
                 
-                printf("Lets try and load %d bytes!\n", data_bytes);
+//                printf("Lets try and load %d bytes!\n", data_bytes);
+//                fflush(stdout);
               }
             }
             break;
@@ -581,7 +639,8 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
             if ((bitcount==13)&&validbyte(accum)) bitcount = 0;
             if (!bitcount)
             {
-              printf("Filename byte = %03x (%02x) %c\n", accum&0x7fe, (accum>>2)&0xff, (accum>>2)&0xff);
+//              printf("Filename byte = %03x (%02x) %c\n", accum&0x7fe, (accum>>2)&0xff, (accum>>2)&0xff);
+//              fflush(stdout);
               scratch[tapbytes++] = (accum>>2)&0xff;
               if (scratch[tapbytes-1] == 0)
               {
@@ -594,7 +653,8 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
             // Look for a valid byte (start bits, valid parity)
             if (validbyte(accum))
             {
-              printf("Data starts @ %d\n", ort_offs);
+//              printf("Data starts @ %d\n", ort_offs);
+//              fflush(stdout);
               scratch[tapbytes++] = (accum>>2)&0xff;
               data_bytes--;
               bitcount=0;
@@ -609,7 +669,8 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
             {
               scratch[tapbytes++] = (accum>>2)&0xff;
               data_bytes--;
-              printf("%d to go..\n", data_bytes);
+//              printf("%d to go..\n", data_bytes);
+//              fflush(stdout);
 
               // ??
               if (data_bytes < 0)
@@ -621,6 +682,9 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
               if (data_bytes > 0)
                 break;
 
+              if ((!anytapsec) && (leaderstart < 512))
+                leaderstart = 5;
+
               // Got a whole standard oric tap section!
               ortbuf[leaderstart++] = 0xff;
               ortbuf[leaderstart++] = (tapbytes>>8)&0xff;
@@ -631,8 +695,11 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
               ortbuflen -= (ort_offs-leaderstart);
               ort_offs = leaderstart;
               state = TAPSEC_STATE_SEARCH;
-              cyccount = 0;
               accum = 0;
+              anytapsec = SDL_TRUE;
+
+//              printf("Back to scanning...\n");
+//              fflush(stdout);
             }
             break;
         }
@@ -641,6 +708,7 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
       cyccount = 0;
     }
   }
+
   return ortbuflen;
 }
 
@@ -658,16 +726,17 @@ static inline signed short getsmp(unsigned char *buf, SDL_bool is8bit)
 // any DC offset in the recording. It also calls "tapsections" to convert
 // any standard oric tape format waveforms it finds into non-raw "tap"
 // style sections to enable turbo loading of those parts.
-static SDL_bool wav_convert( struct machine *oric )
+SDL_bool wav_convert( struct machine *oric )
 {
   // Chunk pointers
   unsigned char *p=oric->tapebuf, *data=NULL, *ortbuf=NULL;
   unsigned int i, j, k, l, chunklen, bps=0, freq=0, smpdelta=0, datalen=0, ortlen;
-  signed int smax, smin, dcoffs;
-  signed short smp;
+  signed int smaxl, sminl, smaxr, sminr, dcoffs=0, dcoffsav;
+  signed int *lastsmps = NULL;
+  signed short smp=0;
   // Cycles per sample
   double cps, count, pcount;
-  SDL_bool stereo = SDL_FALSE, fmtseen = SDL_FALSE;
+  SDL_bool stereo = SDL_FALSE, fmtseen = SDL_FALSE, useright = SDL_FALSE;
 
   // Basic validation
   i = 12;
@@ -724,43 +793,81 @@ static SDL_bool wav_convert( struct machine *oric )
     i += chunklen+8;
   }
 
-  smax = -70000;
-  smin =  70000;
+//  printf("wavsize = %d\n", datalen);
 
-  // If we got here, we found a format and some data
-  // Calculate the DC offset
+  smaxl = -70000;
+  sminl =  70000;
+  smaxr = -70000;
+  sminr =  70000;
+
   for (i=0; i<datalen; i+=smpdelta)
   {
     smp = getsmp(&data[i], bps==1);
-    if (stereo) smp += getsmp(&data[i+bps], bps==1);
+    if (smp < sminl) sminl = smp;
+    if (smp > smaxl) smaxl = smp;
 
-    if (smp < smin) smin = smp;
-    if (smp > smax) smax = smp;
+    if (stereo)
+    {
+      smp = getsmp(&data[i+bps], bps==1);
+      if (smp < sminr) sminr = smp;
+      if (smp > smaxr) smaxr = smp;
+    }
   }
-  dcoffs = ((smax-smin)/2)+smin;
 
-  printf("min = %d, max = %d, dcoffs = %d\n", smin, smax, dcoffs);
-  printf("wavsize = %d\n", datalen);
-  fflush(stdout);
+  // Use the loudest channel
+  if ((stereo) && ((smaxr-sminr)>(smaxl-sminl)))
+  {
+    useright = SDL_TRUE;
+  }
+  else
+  {
+    useright = SDL_FALSE;
+  }
+
+  dcoffsav = freq / 700;
+  if (dcoffsav)
+  {
+    lastsmps = malloc(dcoffsav * sizeof(int));
+    if (lastsmps) memset(lastsmps, 0, dcoffsav * sizeof(int));
+  }
+  dcoffsav--;
 
   // Now convert to a 1/0 squarewave
   j = 0;
   for (i=0; i<datalen; i+=smpdelta)
   {
+    if (useright)
+      smp = getsmp(&data[i+bps], bps==1);
+    else
+      smp = getsmp(&data[i], bps==1);
+
+    if (lastsmps)
+    {
+      smaxl = smp;
+      sminl = smp;
+
+      for (k=0; k<dcoffsav; k++)
+      {
+        lastsmps[k] = lastsmps[k+1];
+
+        if (lastsmps[k] < sminl) sminl = lastsmps[k];
+        if (lastsmps[k] > smaxl) smaxl = lastsmps[k];
+      }
+      dcoffs = ((smaxl-sminl)/2)+sminl;
+    }
+
     if (j >= oric->tapelen)
     {
-      printf("Oh dear\n");
-      fflush(stdout);
+//      printf("Oh dear\n");
+//      fflush(stdout);
       break;
     }
-    smp = getsmp(&data[i], bps==1);
-    if (stereo) smp += getsmp(&data[i+bps], bps==1);
 
     oric->tapebuf[j++] = (smp>dcoffs) ? 1 : 0;
   }
 
-  printf("ortsize = %d\n", datalen);
-  fflush(stdout);
+//  printf("ortsize = %d\n", j);
+//  fflush(stdout);
 
   // Calculate cycles per sample
   cps = 500000 / ((double)freq);  // .ORT is 500khz
@@ -857,7 +964,14 @@ static SDL_bool wav_convert( struct machine *oric )
 
   // Look for any standard oric encoded parts to convert
   // to non-raw "tap" sections
-  ortlen = tapsections(ortbuf, ortlen, oric->tapebuf);
+  ortlen = tapsections(ortbuf, ortlen, oric->tapebuf, SDL_FALSE);
+  ortlen = tapsections(ortbuf, ortlen, oric->tapebuf, SDL_TRUE);
+
+  {
+    FILE *f = fopen("test.ort", "wb");
+    fwrite(ortbuf, ortlen, 1, f);
+    fclose(f);
+  }
 
   // Substitute the ORT data for the original WAV data
   free(oric->tapebuf);
