@@ -100,8 +100,8 @@ endif
 
 # Windows 32bit
 ifeq ($(PLATFORM),win32)
-CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__
-LFLAGS += -lm -mwindows -lmingw32 -lSDLmain -lSDL -lopengl32
+CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -g
+LFLAGS += -g -lm -mwindows -lmingw32 -lSDLmain -lSDL -lopengl32
 TARGET = oricutron.exe
 FILEREQ_OBJ = filereq_win32.o
 MSGBOX_OBJ = msgbox_win32.o
