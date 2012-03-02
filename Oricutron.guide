@@ -2,10 +2,10 @@
 @author "ReadMe2Guide"
 @node Main "Main"
 @toc Contents
-Oricutron 0.8
+Oricutron 0.9
 -------------
 
-(c)2009-2011 Peter Gordon (pete\@petergordon.org.uk)
+(c)2009-2012 Peter Gordon (pete\@petergordon.org.uk)
 
 This is a work in progress.
 
@@ -20,7 +20,7 @@ Current status
   VIA:   95% done.
   AY:    99% done.
   Video: 100% done
-  Tape:  ".TAP" file support (no WAV yet, reading only)
+  Tape:  99% done (.TAP, .ORT and .WAV supported)
   Disk:  Reading/Writing sectors works. No track read/write.
 
 Telestrat emulation is included, but is far from finished and doesn't currently
@@ -135,22 +135,28 @@ Here are all the options:
   -m / --machine    = Specify machine type. Valid types are:
 
                       "atmos" or "a" for Oric atmos
-                      "oric1" or "1" for Oric 1
-                      "o16k" for Oric 1 16k
-		      "telestrat" or "t" for Telestrat
-		      "pravetz", "pravetz8d" or "p" for Pravetz 8D
+                      "oric1" or "1" for Oric-1
+                      "o16k" for Oric-1 16k
+                      "telestrat" or "t" for Telestrat
+                      "pravetz", "pravetz8d" or "p" for Pravetz 8D
 
   -d / --disk       = Specify a disk image to use in drive 0
   -t / --tape       = Specify a tape image to use
   -k / --drive      = Specify a disk drive controller. Valid types are:
-  
+
                       "microdisc" or "m" for Microdisc
                       "jasmin" or "j" for Jasmin
 
   -s / --symbols    = Load symbols from a file
   -f / --fullscreen = Run oricutron fullscreen
   -w / --window     = Run oricutron in a window
+  -R / --rendermode = Render mode. Valid modes are:
+
+                      "soft" for software rendering
+                      "opengl" for OpenGL
+
   -b / --debug      = Start oricutron in the debugger
+  -r / --breakpoint = Set a breakpoint
   -h / --help       = Print command line help and quit
 
 
@@ -169,8 +175,8 @@ oricutron -ddemos/barbitoric.dsk -f
 Keys
 ====
 
-In emulator
------------
+  In emulator
+  -----------
 
   F1       - Bring up the menu
   F2       - Go to debugger/monitor
@@ -181,12 +187,13 @@ In emulator
   F6       - Toggle warp speed
   F7       - Save all modified disks
   Shift+F7 - Save all modified disks to new disk images
+  F9       - Save tape output
   F10      - Start/Stop AVI capture
   Help     - Show guide
 
 
-In menus
---------
+  In menus
+  --------
 
   Cursors   - Navigate
   Enter     - Perform option
@@ -195,8 +202,8 @@ In menus
   (or use the mouse)
 
 
-In Debugger/Monitor
--------------------
+  In Debugger/Monitor
+  -------------------
 
   F2      - Return to the emulator
   F3      - Toggle console/debug output/memwatch
@@ -254,6 +261,8 @@ Commands:
   m <addr>              - Dump memory
   mm <addr> <value>     - Modify memory
   mw <addr>             - Memory watch at addr
+  nl <file>             - Load snapshot
+  ns <file>             - Save snapshot
   r <reg> <val>         - Set <reg> to <val>
   q, x or qm            - Quit monitor
   qe                    - Quit emulator

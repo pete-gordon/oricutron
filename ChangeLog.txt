@@ -1,5 +1,42 @@
 Oricutron ChangeLog
 
+0.9 (02-Mar-2012)
+-----------------
+
+* Now uses comes with appropriate icons for OS4, MorphOS
+  and AROS.
+* Audio sync problems fixed in AVI recordings
+* Various optimisations to the display routines
+* 6502 emulation now includes all illegal opcodes
+* Now includes an option to emulate the 6502 at various
+  clock speeds from 1Mhz to 64Mhz (the rest of the hw
+  is emulated at normal speed).
+* Tape saving is now implemented. CSAVE/STORE will save
+  to a standard tap file. You can also capture all tape
+  output to a new .ORT format, which will record the
+  actual output waveform from the tape port.
+* Changes to disks are now automatically saved back to
+  the disk image file. The old behaviour can still be
+  selected from the config file.
+* Reformatted the VIA panel in the debugger (thanks to
+  Twilighte for the suggestion)
+* Printer emulation now filters out non-ascii chars as
+  a workaround for the phantom printer output (this is
+  temporary until a proper fix is found)
+* Added a PAL ghosting simulation to the GL renderer
+* Switching between OpenGL and software rendering on the
+  fly no longer causes hang-on-exit problems.
+* Added NMI, reset and IRQ vector display in the
+  debugger (thanks to Twilighte for the suggestion!)
+* Keyboard can now only be read when the AY direction
+  register is set up correctly (thanks to Chema for
+  pointing this out).
+* Added experimental snapshot functionality (use with
+  caution!)
+* The Oric lightpen is now emulated (thanks to Stefan
+  Haubenthal for his help)
+
+
 0.8 (19-Nov-2011)
 -----------------
 
