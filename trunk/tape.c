@@ -414,6 +414,15 @@ enum
   TAPSEC_STATE_DATA
 };
 
+static int validbyte(int accum)
+{
+  int i, parity = 0;
+  if ((accum&3)!=1) return 0;
+  for (i=4; i!=0x800; i<<=1)
+    if (accum&i) parity ^= 1;
+  return parity;
+}
+
 // This converts oric standard encoded waveforms to decoded TAP sections
 static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scratch )
 {
@@ -453,12 +462,21 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
     // Rising edge?
     if (tapebit)
     {
+      // smaller than 100? filter it out
+      if (cyccount < 100)
+        continue;
+
       // Convert to 1/0
       thisbit = TIME_TO_BIT(cyccount);
 
       // Seen a value that is outside the bounds of Oric standard encoding?
       if (thisbit == -1)
       {
+        if (state != TAPSEC_STATE_SEARCH)
+        {
+          if (cyccount < TAPE_DECODE_1_MIN) printf("%d is too fast\n", cyccount);
+          if (cyccount > TAPE_DECODE_0_MAX) printf("%d is too slow\n", cyccount);
+        }
         // This can't be a TAP section
         state    = TAPSEC_STATE_SEARCH;
         cyccount = 0;
@@ -476,6 +494,7 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
             // Look for 0x058 (0x16 encoded with start bit and parity)
             if ((accum&0x7fe) == 0x58)
             {
+              printf("Seen 0x16 @ %d\n", ort_offs);
               leaderstart = last_offsets[8];
               leadercount = 1;
               state = TAPSEC_STATE_LEADER;
@@ -485,10 +504,13 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
           
           case TAPSEC_STATE_LEADER:
             bitcount = (bitcount+1)%14;
+            if ((bitcount==13)&&validbyte(accum)) bitcount = 0;
             if (!bitcount)
             {
+              printf("Byte @ %d is %03x\n", ort_offs, accum&0x7fe);
               if ((accum&0x7fe) != 0x58)
               {
+                printf("Which is NOT 0x58 :-(\n");
                 state    = TAPSEC_STATE_SEARCH;
                 cyccount = 0;
                 break;
@@ -505,10 +527,13 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
           
           case TAPSEC_STATE_FINDHEADER:
             bitcount = (bitcount+1)%14;
+            if ((bitcount==13)&&validbyte(accum)) bitcount = 0;
             if (!bitcount)
             {
+              printf("Byte @ %d is %03x\n", ort_offs, accum&0x7fe);
               if ((accum&0x7fe) == 0x490) // 0x24 fully encoded
               {
+                printf("At the header...\n");
                 state = TAPSEC_STATE_HEADER;
                 scratch[0] = 0x16;
                 scratch[1] = 0x16;
@@ -522,9 +547,10 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
 
           case TAPSEC_STATE_HEADER:
             bitcount = (bitcount+1)%14;
+            if ((bitcount==13)&&validbyte(accum)) bitcount = 0;
             if (!bitcount)
             {
-              // Maybe todo: check the parity bit?
+              printf("Byte @ %d is %03x (%02X)\n", ort_offs, accum&0x7fe, (accum>>2)&0xff);
               scratch[tapbytes++] = (accum>>2)&0xff;
               if (tapbytes == 13)
               {
@@ -532,6 +558,8 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
 
                 load_start = (scratch[10]<<8)|scratch[11];
                 load_end   = (scratch[ 8]<<8)|scratch[ 9];
+
+                printf("Load start = %04X, Load end = %04X\n", load_start, load_end);
 
                 if (load_end <= load_start)
                 {
@@ -542,15 +570,18 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
 
                 data_bytes = (load_end-load_start)+1;
                 state = TAPSEC_STATE_FILENAME;
+                
+                printf("Lets try and load %d bytes!\n", data_bytes);
               }
             }
             break;
 
           case TAPSEC_STATE_FILENAME:
             bitcount = (bitcount+1)%14;
+            if ((bitcount==13)&&validbyte(accum)) bitcount = 0;
             if (!bitcount)
             {
-              // Maybe todo: check the parity bit?
+              printf("Filename byte = %03x (%02x) %c\n", accum&0x7fe, (accum>>2)&0xff, (accum>>2)&0xff);
               scratch[tapbytes++] = (accum>>2)&0xff;
               if (scratch[tapbytes-1] == 0)
               {
@@ -561,27 +592,24 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
           
           case TAPSEC_STATE_FINDDATA:
             // Look for a valid byte (start bits, valid parity)
-            if ((accum&3)==1)
+            if (validbyte(accum))
             {
-              int parity = 1;
-              for (i=4; i!=0x800; i<<=1)
-                if (accum&i) parity ^= 1;
-              if (!parity)
-              {
-                scratch[tapbytes++] = (accum>>2)&0xff;
-                data_bytes--;
-                bitcount=0;
-                state = TAPSEC_STATE_DATA;
-              }
+              printf("Data starts @ %d\n", ort_offs);
+              scratch[tapbytes++] = (accum>>2)&0xff;
+              data_bytes--;
+              bitcount=0;
+              state = TAPSEC_STATE_DATA;
             }
             break;
 
           case TAPSEC_STATE_DATA:
             bitcount = (bitcount+1)%14;
+            if ((bitcount==13)&&validbyte(accum)) bitcount = 0;
             if (!bitcount)
             {
               scratch[tapbytes++] = (accum>>2)&0xff;
               data_bytes--;
+              printf("%d to go..\n", data_bytes);
 
               // ??
               if (data_bytes < 0)
@@ -711,15 +739,29 @@ static SDL_bool wav_convert( struct machine *oric )
   }
   dcoffs = ((smax-smin)/2)+smin;
 
+  printf("min = %d, max = %d, dcoffs = %d\n", smin, smax, dcoffs);
+  printf("wavsize = %d\n", datalen);
+  fflush(stdout);
+
   // Now convert to a 1/0 squarewave
   j = 0;
   for (i=0; i<datalen; i+=smpdelta)
   {
+    if (j >= oric->tapelen)
+    {
+      printf("Oh dear\n");
+      fflush(stdout);
+      break;
+    }
     smp = getsmp(&data[i], bps==1);
     if (stereo) smp += getsmp(&data[i+bps], bps==1);
 
     oric->tapebuf[j++] = (smp>dcoffs) ? 1 : 0;
   }
+
+  printf("ortsize = %d\n", datalen);
+  fflush(stdout);
+
   // Calculate cycles per sample
   cps = 500000 / ((double)freq);  // .ORT is 500khz
 
