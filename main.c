@@ -70,7 +70,7 @@ char __attribute__((used)) stackcookie[] = "$STACK: 1000000";
 #endif
 
 #if defined(__amigaos4__) || defined(__MORPHOS__) || defined(__AROS__)
-char __attribute__((used)) versiontag[] = "$VER: " APP_NAME_FULL " (20.9.2010)";
+char __attribute__((used)) versiontag[] = "$VER: " APP_NAME_FULL " (2.3.2012)";
 #endif
 
 struct start_opts
