@@ -708,19 +708,19 @@ int mapkey( int key )
   switch( key )
   {
     case '@': return '#';
-    case 'ö':
+    case '\xF6':
     case ':': return ';';
     case '<': return ',';
     case '>': return '.';
-    case 'ß':
+    case '\xDF':
     case '?': return '/';
     case '#':
     case '~': return '\'';
     case '_': return '-';
     case '+': return '=';
-    case 'ä':
+    case '\xE4':
     case '{': return '[';
-    case 'ü':
+    case '\xFC':
     case '}': return ']';
   }
 #endif
