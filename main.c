@@ -917,8 +917,7 @@ void once_per_frame( struct machine *oric )
 int main( int argc, char *argv[] )
 {
   SDL_bool isinit;
-  void *thetimer;
-  Sint32 i, foo;
+  Sint32 i;
   struct machine oric;
   Uint32 framestart;
 
@@ -926,8 +925,7 @@ int main( int argc, char *argv[] )
   {
     SDL_bool done, needrender, framedone;
 
-    thetimer = SDL_AddTimer( 1000/50, (SDL_NewTimerCallback)systemtiming, (void *)&oric );
-    foo = 0;
+    SDL_AddTimer( 1000/50, (SDL_NewTimerCallback)systemtiming, (void *)&oric );
     framestart = 0;
 
     done = SDL_FALSE;
