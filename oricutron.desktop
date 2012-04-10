@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Oricutron
+GenericName=ORIC Emulator
+Comment=Emulator for the Oric series of computers
+Comment[fr]=Emulateur de micro-ordinateurs ORIC
+Type=Application
+Exec=oricutron %U
+;TryExec=oricutron
+MimeType=application/x-oric-rom;application/x-oric-tape;application/x-oric-disk
+Icon=oricutron
+Categories=Emulator;Utility;
+Keywords=ORIC,Oric1,Atmos
