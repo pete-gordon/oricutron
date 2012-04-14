@@ -1023,7 +1023,7 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
   {
     if (!wav_convert( oric ))
     {
-      msgbox( oric, MSGBOX_OK, "Invalid wav file" );
+      msgbox( oric, MSGBOX_OK, "Invalid wav file" );  
       tape_eject( oric );
       return SDL_FALSE;
     }
@@ -1063,6 +1063,7 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
 
   // Show it in the popup
   tape_popup( oric );
+
   return SDL_TRUE;
 };
 
@@ -1291,6 +1292,8 @@ void tape_patches( struct machine *oric )
   // Don't do turbotape if we have a raw tape
   // Turbotape can't work with rawtape. TODO: Auto enable warpspeed when CLOADing/CSAVEing rawtape
   if(( oric->rawtape ) && ( oric->tapeoffs >= oric->nonrawend )) return;
+
+  if(( !oric->tapebuf ) || ( oric->tapeoffs >= oric->tapelen )) return;
 
   // Maybe do turbotape
   if( ( oric->pch_tt_available ) && ( oric->tapeturbo ) && ( !oric->tapeturbo_forceoff ) && ( oric->romon ) )
