@@ -118,7 +118,8 @@ PLATFORMTYPE = beos
 endif
 
 ifeq ($(PLATFORMTYPE),beos)
-CFLAGS += -D__OPENGL_AVAILABLE__ $(shell sdl-config --cflags)
+#CFLAGS += -D__OPENGL_AVAILABLE__
+CFLAGS += $(shell sdl-config --cflags)
 LFLAGS += $(shell sdl-config --libs)
 CFLAGS += -Wno-multichar
 CFLAGS += -g
