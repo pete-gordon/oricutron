@@ -151,7 +151,7 @@ endif
 
 # Linux
 ifeq ($(PLATFORM),linux)
-CFLAGS += $(shell sdl-config --cflags)
+CFLAGS += -g $(shell sdl-config --cflags)
 LFLAGS += -lm $(shell sdl-config --libs)
 TARGET = oricutron
 INSTALLDIR = /usr/local
