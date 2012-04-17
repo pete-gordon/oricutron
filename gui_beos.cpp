@@ -61,7 +61,7 @@ static rgb_color oric_colors[] = {
 
 extern struct osdmenu menus[];
 extern struct osdmenuitem aboutitems[];
-static BPopUpMenu *sPopup;
+//static BPopUpMenu *sPopup;
 
 class OSDMenuItem : public BMenuItem {
 public:
@@ -115,6 +115,7 @@ static void build_native_menus( struct osdmenu *menu, BMenu *m )
 	printf("}\n");
 }
 
+#if 0
 static void run_native_about( void )
 {
 	struct osdmenuitem *item = aboutitems;
@@ -128,6 +129,7 @@ static void run_native_about( void )
 	BAlert *alert = new BAlert("About", text.String(), "Ok");
 	alert->Go();
 }
+#endif
 
 SDL_bool init_gui_native( struct machine *oric )
 {
@@ -193,7 +195,6 @@ SDL_bool clipboard_copy_text( struct machine *oric )
 	// TEXT
 	BString text;
 	BList textruns;
-	int lastColor = 0;
 
 	textruns.AddItem(new_run(0, 0));
 
@@ -246,7 +247,7 @@ SDL_bool clipboard_copy_text( struct machine *oric )
 	}
 	
 	for (int i = 0; i < textruns.CountItems(); i++) {
-		delete textruns.ItemAt(i);
+		delete (text_run *)(textruns.ItemAt(i));
 	}
 	textruns.MakeEmpty();
 
@@ -256,7 +257,7 @@ SDL_bool clipboard_copy_text( struct machine *oric )
 
 SDL_bool clipboard_copy( struct machine *oric )
 {
-	unsigned char *vidmem = (&oric->mem[oric->vid_addr]);
+	//unsigned char *vidmem = (&oric->mem[oric->vid_addr]);
 	if (oric->vid_addr == oric->vidbases[0]) {
 		// HIRES
 	} else if (oric->vid_addr == oric->vidbases[2]) {
@@ -276,7 +277,7 @@ SDL_bool clipboard_paste( struct machine *oric )
 	if (be_clipboard->Lock()) {
 		clip = be_clipboard->Data();
 		if (clip && clip->FindData("text/plain", B_MIME_TYPE, (const void **)&text, &textLen) == B_OK) {
-			printf("clip: tlen %d\n", textLen);
+			printf("clip: tlen %ld\n", textLen);
 			BString t(text, textLen);
 			t.ReplaceAll('\n', '\r');
 			t.ReplaceAll('\t', ' ');
