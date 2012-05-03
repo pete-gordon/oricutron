@@ -272,11 +272,11 @@ void joy_buildmask( struct machine *oric )
 
       if( joysel & 0x40 )
       {
-        if( joystate_b[0] ) mkmask &= 0xef;
-        if( joystate_b[1] ) mkmask &= 0xf7;
-        if( joystate_b[2] ) mkmask &= 0xfe;
-        if( joystate_b[3] ) mkmask &= 0xfd;
-        if( joystate_b[4] ) mkmask &= 0xdf;
+        if( joystate_b[0] ) mkmask &= 0xef; // 0x10  - up
+        if( joystate_b[1] ) mkmask &= 0xf7; // 0x08  - down
+        if( joystate_b[2] ) mkmask &= 0xfe; // 0x01  - left
+        if( joystate_b[3] ) mkmask &= 0xfd; // 0x02  - right
+        if( joystate_b[4] ) mkmask &= 0xdf; // 0x20  - fire
         gimme_port_a = SDL_TRUE;
       }
       break;
@@ -303,11 +303,11 @@ void joy_buildmask( struct machine *oric )
 
       if( joysel & 0x80 )
       {
-        if( joystate_b[0] ) mkmask &= 0xef;
-        if( joystate_b[1] ) mkmask &= 0xf7;
-        if( joystate_b[2] ) mkmask &= 0xfd;
-        if( joystate_b[3] ) mkmask &= 0xfe;
-        if( joystate_b[4] ) mkmask &= 0xfb;
+        if( joystate_b[0] ) mkmask &= 0xef;  // 0x10  - up
+        if( joystate_b[1] ) mkmask &= 0xf7;  // 0x08  - down
+        if( joystate_b[2] ) mkmask &= 0xfd;  // 0x02  - left
+        if( joystate_b[3] ) mkmask &= 0xfe;  // 0x01  - right
+        if( joystate_b[4] ) mkmask &= 0xfb;  // 0x04  - fire
       }
       break;
   }

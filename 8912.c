@@ -620,6 +620,13 @@ void ay_modeset( struct ay8912 *ay )
 {
   unsigned char v, lasts6=0;
 
+  if( (ay->bmode != AYBMF_BC1) && (ay->oric->porta_ay != 0xff) )
+  {
+    ay->oric->porta_ay = 0xff;
+    if( ay->oric->porta_is_ay )
+      ay->oric->via.write_port_a( &ay->oric->via, 0xff, 0xff );
+  }
+
   switch( ay->bmode )
   {
     case AYBMF_BC1: // Read AY register
