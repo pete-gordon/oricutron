@@ -324,10 +324,10 @@ void via_init( struct via *v, struct machine *oric, int viatype )
 {
   v->orb = 0;
   v->ora = 0;
-  v->irb = 0;
-  v->ira = 0;
-  v->irbl = 0;
-  v->iral = 0;
+  v->irb = 0xff;
+  v->ira = 0xff;
+  v->irbl = 0xff;
+  v->iral = 0xff;
   v->ddra = 0;
   v->ddrb = 0;
   v->t1l_l = 0;
