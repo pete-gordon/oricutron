@@ -667,7 +667,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
         strncpy( sto->start_disk, argv[i], 1024 );
         sto->start_disk[1023] = 0;
       }
-      else if( p && ( strcasecmp(p, ".tap") == 0 ) )
+      else if( p && ( strcasecmp(p, ".tap") == 0 || strcasecmp(p, ".ort") == 0 ) )
       {
         strncpy( sto->start_tape, argv[i], 1024 );
         sto->start_tape[1023] = 0;
@@ -715,7 +715,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 
   if( sto->start_breakpoint )
   {
-    int i;
+    int i = 0;
     unsigned int addr;
     if( !mon_getnum( oric, &addr, sto->start_breakpoint, &i, SDL_FALSE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
     {
