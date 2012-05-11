@@ -113,33 +113,37 @@ the long version does.
 Here are all the options:
 
 
-  -m / --machine    = Specify machine type. Valid types are:
+  -m / --machine     = Specify machine type. Valid types are:
 
-                      "atmos" or "a" for Oric atmos
-                      "oric1" or "1" for Oric-1
-                      "o16k" for Oric-1 16k
-                      "telestrat" or "t" for Telestrat
-                      "pravetz", "pravetz8d" or "p" for Pravetz 8D
+                       "atmos" or "a" for Oric atmos
+                       "oric1" or "1" for Oric-1
+                       "o16k" for Oric-1 16k
+                       "telestrat" or "t" for Telestrat
+                       "pravetz", "pravetz8d" or "p" for Pravetz 8D
 
-  -d / --disk       = Specify a disk image to use in drive 0
-  -t / --tape       = Specify a tape image to use
-  -k / --drive      = Specify a disk drive controller. Valid types are:
+  -d / --disk        = Specify a disk image to use in drive 0
+  -t / --tape        = Specify a tape image to use
+  -k / --drive       = Specify a disk drive controller. Valid types are:
 
-                      "microdisc" or "m" for Microdisc
-                      "jasmin" or "j" for Jasmin
+                       "microdisc" or "m" for Microdisc
+                       "jasmin" or "j" for Jasmin
 
-  -s / --symbols    = Load symbols from a file
-  -f / --fullscreen = Run oricutron fullscreen
-  -w / --window     = Run oricutron in a window
-  -R / --rendermode = Render mode. Valid modes are:
+  -s / --symbols     = Load symbols from a file
+  -f / --fullscreen  = Run oricutron fullscreen
+  -w / --window      = Run oricutron in a window
+  -R / --rendermode  = Render mode. Valid modes are:
 
-                      "soft" for software rendering
-                      "opengl" for OpenGL
+                       "soft" for software rendering
+                       "opengl" for OpenGL
 
-  -b / --debug      = Start oricutron in the debugger
-  -r / --breakpoint = Set a breakpoint
-  -h / --help       = Print command line help and quit
+  -b / --debug       = Start oricutron in the debugger
+  -r / --breakpoint  = Set a breakpoint
+  -h / --help        = Print command line help and quit
 
+  --turbotape on|off = Enable or disable turbotape
+  --lightpen on|off  = Enable or disable lightpen
+  --vsynchack on|off = Enable or disable VSync hack
+  --scanlines on|off = Enable or disable scanline simulation
 
 Examples:
 
@@ -147,6 +151,7 @@ oricutron --machine atmos --tape "tape files/foo.tap" --symbols "my files/symbol
 oricutron -m1 -tBUILD/foo.tap -sBUILD/symbols -b
 oricutron --drive microdisc --disk demos/barbitoric.dsk --fullscreen
 oricutron -ddemos/barbitoric.dsk -f
+oricutron --turbotape off tapes/hobbit.tap
 
 
 

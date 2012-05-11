@@ -62,13 +62,13 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
   switch( type )
   {
     case MSGBOX_YES_NO:
-      return (MessageBoxA( hwnd, msg, "Oriculator Request", MB_YESNO ) == IDYES);
+      return (MessageBoxA( hwnd, msg, "Oricutron Request", MB_YESNO ) == IDYES);
 
     case MSGBOX_OK_CANCEL:
-      return (MessageBoxA( hwnd, msg, "Oriculator Request", MB_OKCANCEL ) == IDOK);
+      return (MessageBoxA( hwnd, msg, "Oricutron Request", MB_OKCANCEL ) == IDOK);
     
     case MSGBOX_OK:
-      MessageBoxA( hwnd, msg, "Oriculator Request", MB_OK );
+      MessageBoxA( hwnd, msg, "Oricutron Request", MB_OK );
       return SDL_TRUE;
   }
 
