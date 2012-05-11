@@ -115,7 +115,7 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
   }
 
   req_obj = (Object *)IIntuition->NewObject( IRequester->REQUESTER_GetClass(), NULL,
-    REQ_TitleText,  "Oriculator Request",
+    REQ_TitleText,  "Oricutron Request",
     REQ_BodyText,   msg,
     REQ_GadgetText, btns,
     REQ_Image,      imgtype,

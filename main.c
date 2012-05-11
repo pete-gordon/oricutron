@@ -27,6 +27,10 @@
 #include <proto/dos.h>
 #endif
 
+#ifdef WIN32
+#include <windows.h>
+#endif  
+
 #include "system.h"
 #include "6502.h"
 #include "via.h"
@@ -45,6 +49,7 @@
 #include "render_gl.h"
 #include "joystick.h"
 #include "tape.h"
+#include "snapshot.h"
 
 #define FRAMES_TO_AVERAGE 15
 
@@ -83,6 +88,7 @@ struct start_opts
   char     start_disk[1024];
   char     start_tape[1024];
   char     start_syms[1024];
+  char     start_snapshot[1024];
   char    *start_breakpoint;
 };
 
@@ -422,36 +428,82 @@ static void load_config( struct start_opts *sto, struct machine *oric )
 static void usage( int ret )
 {
   printf( VERSION_COPYRIGHTS "\n\n"
-          "Usage:\toricutron [-a|--arg [option]] [disk file] [tape file]\n"
-          "  -m / --machine    = Specify machine type. Valid types are:\n"
+          "Usage:\toricutron [-a|--arg [option]] [disk file] [tape file] [snapshot file]\n"
+          "  -m / --machine     = Specify machine type. Valid types are:\n"
           "\n"
-          "                      \"atmos\" or \"a\" for Oric Atmos\n"
-          "                      \"oric1\" or \"1\" for Oric-1\n"
-          "                      \"o16k\" for Oric-1 16k\n"
-          "                      \"telestrat\" or \"t\" for Telestrat\n"
-          "                      \"pravetz\", \"pravetz8d\" or \"p\" for Pravetz 8D\n"
+          "                       \"atmos\" or \"a\" for Oric Atmos\n"
+          "                       \"oric1\" or \"1\" for Oric-1\n"
+          "                       \"o16k\" for Oric-1 16k\n"
+          "                       \"telestrat\" or \"t\" for Telestrat\n"
+          "                       \"pravetz\", \"pravetz8d\" or \"p\" for Pravetz 8D\n"
           "\n"
-          "  -d / --disk       = Specify a disk image to use in drive 0\n"
-          "  -t / --tape       = Specify a tape image to use\n"
-          "  -k / --drive      = Specify a disk drive controller. Valid types are:\n"
+          "  -d / --disk        = Specify a disk image to use in drive 0\n"
+          "  -t / --tape        = Specify a tape image to use\n"
+          "  -k / --drive       = Specify a disk drive controller. Valid types are:\n"
           "  \n"
-          "                      \"microdisc\" or \"m\" for Microdisc\n"
-          "                      \"jasmin\" or \"j\" for Jasmin\n"
-//          "                      \"pravetz\" or \"p\" for Pravetz\n"
+          "                       \"microdisc\" or \"m\" for Microdisc\n"
+          "                       \"jasmin\" or \"j\" for Jasmin\n"
+//          "                       \"pravetz\" or \"p\" for Pravetz\n"
           "\n"
-          "  -s / --symbols    = Load symbols from a file\n"
-          "  -f / --fullscreen = Run oricutron fullscreen\n"
-          "  -w / --window     = Run oricutron in a window\n"
+          "  -s / --symbols     = Load symbols from a file\n"
+          "  -f / --fullscreen  = Run oricutron fullscreen\n"
+          "  -w / --window      = Run oricutron in a window\n"
 #ifdef __OPENGL_AVAILABLE__
-          "  -R / --rendermode = Render mode. Valid modes are:\n"
+          "  -R / --rendermode  = Render mode. Valid modes are:\n"
           "\n"
-          "                      \"soft\" for software rendering\n"
-          "                      \"opengl\" for OpenGL\n"
+          "                       \"soft\" for software rendering\n"
+          "                       \"opengl\" for OpenGL\n"
           "\n"
 #endif
-          "  -b / --debug      = Start oricutron in the debugger\n"
-          "  -r / --breakpoint = Set a breakpoint\n" );
+          "  -b / --debug       = Start oricutron in the debugger\n"
+          "  -r / --breakpoint  = Set a breakpoint\n"
+          "\n"
+          "  --turbotape on|off = Enable or disable turbotape\n"
+          "  --lightpen on|off  = Enable or disable lightpen\n"
+          "  --vsynchack on|off = Enable or disable VSync hack\n"
+          "  --scanlines on|off = Enable or disable scanline simulation\n");
   exit(ret);
+}
+
+// Print a formatted string into a textzone
+static void error_printf( char *fmt, ... )
+{
+  static char str[256];  // Stupid MinGW32 not having vasprintf...
+
+  va_list ap;
+  va_start( ap, fmt );
+  if( vsnprintf( str, 256, fmt, ap ) != -1 )
+  {
+    str[255] = 0;
+#ifdef WIN32
+    MessageBoxA( NULL, str, "Oricutron", MB_OK );
+#else
+    fprintf( stderr, "%s\n", str );
+#endif
+    free( str );
+  }
+  va_end( ap );
+}
+
+static SDL_bool on_or_off( char *arg, char *option, SDL_bool *storage )
+{
+  if( option )
+  {
+    if( strcasecmp( option, "on" ) == 0 )
+    {
+      *storage = SDL_TRUE;
+      return SDL_TRUE;
+    }
+
+    if( strcasecmp( option, "off" ) == 0 )
+    {
+      *storage = SDL_FALSE;
+      return SDL_TRUE;
+    }
+  }
+
+  error_printf("Parameter '%s' should be followed by 'on' or 'off'", arg);
+  return SDL_FALSE;
 }
 
 SDL_bool init( struct machine *oric, int argc, char *argv[] )
@@ -471,6 +523,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   sto->start_disk[0]  = 0;
   sto->start_tape[0]  = 0;
   sto->start_syms[0]  = 0;
+  sto->start_snapshot[0] = 0;
   sto->start_breakpoint = NULL;
   fullscreen          = SDL_FALSE;
 #ifdef WIN32
@@ -490,7 +543,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   // Go SDL!
   if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO ) < 0 )
   {
-    printf( "SDL init failed\n" );
+    error_printf( "SDL init failed" );
     return SDL_FALSE;
   }
   need_sdl_quit = SDL_TRUE;
@@ -532,6 +585,31 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 #ifdef __OPENGL_AVAILABLE__
           if( strcasecmp( tmp, "rendermode" ) == 0 ) { opt_type = 'R'; break; }
 #endif
+
+          /* Options with no short form */
+          if( strcasecmp( tmp, "turbotape" ) == 0 )
+          {
+            if( !on_or_off( argv[i-1], opt_arg, &oric->tapeturbo ) ) exit( EXIT_FAILURE );
+            continue;
+          }          
+
+          if( strcasecmp( tmp, "lightpen" ) == 0 )
+          {
+            if( !on_or_off( argv[i-1], opt_arg, &oric->lightpen ) ) exit( EXIT_FAILURE );
+            continue;
+          }          
+
+          if( strcasecmp( tmp, "vsynchack" ) == 0 )
+          {
+            if( !on_or_off( argv[i-1], opt_arg, &oric->vsynchack ) ) exit( EXIT_FAILURE );
+            continue;
+          }          
+
+          if( strcasecmp( tmp, "scanlines" ) == 0 )
+          {
+            if( !on_or_off( argv[i-1], opt_arg, &oric->scanlines ) ) exit( EXIT_FAILURE );
+            continue;
+          }          
           break;
         
         default:
@@ -576,7 +654,9 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
                ( strcasecmp( opt_arg, "p"         ) == 0 )) { sto->start_machine = MACH_PRAVETZ;   break; }
           }
           
-          printf( "Invalid machine type\n" );
+          error_printf( "Invalid machine type" );
+          free( sto );
+          exit( EXIT_FAILURE );
           break;
         
         case 'd':  // Disk image
@@ -585,7 +665,9 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
             strncpy( sto->start_disk, opt_arg, 1024 );
             sto->start_disk[1023] = 0;
           } else {
-            printf( "No disk image specified\n" );
+            error_printf( "No disk image specified" );
+            free( sto );
+            exit( EXIT_FAILURE );
           }
           break;
         
@@ -595,7 +677,9 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
             strncpy( sto->start_tape, opt_arg, 1024 );
             sto->start_tape[1023] = 0;
           } else {
-            printf( "No tape image specified\n" );
+            error_printf( "No tape image specified" );
+            free( sto );
+            exit( EXIT_FAILURE );
           }          
           break;
    
@@ -610,7 +694,9 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
                ( strcasecmp( opt_arg, "p"         ) == 0 )) { sto->start_disktype = DRV_PRAVETZ;   break; }
           }
 
-          printf( "Invalid drive type\n" );
+          error_printf( "Invalid drive type" );
+          free( sto );
+          exit( EXIT_FAILURE );
           break;
         
         case 's':  // Pre-load symbols file
@@ -619,7 +705,9 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
             strncpy( sto->start_syms, opt_arg, 1024 );
             sto->start_syms[1023] = 0;
           } else {
-            printf( "No symbols file specified\n" );
+            error_printf( "No symbols file specified" );
+            free( sto );
+            exit( EXIT_FAILURE );
           }          
           break;
         
@@ -637,9 +725,15 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
         
         case 'r': // Breakpoint
           if( opt_arg )
+          {
             sto->start_breakpoint = opt_arg;
+          }
           else
-            printf( "Breakpoint address or symbol expected\r\n" );
+          {
+            error_printf( "Breakpoint address or symbol expected" );
+            free( sto );
+            exit( EXIT_FAILURE );
+          }
           break;
 
 #ifdef __OPENGL_AVAILABLE__
@@ -650,11 +744,14 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
             if( strcasecmp( opt_arg, "opengl" ) == 0 ) { sto->start_rendermode = RENDERMODE_GL; break; }
           }
 
-          printf( "Invalid render mode\n" );
+          error_printf( "Invalid render mode" );
+          free( sto );
+          exit( EXIT_FAILURE );
           break;
 #endif
 
         case 'h':
+          free( sto );
           usage( EXIT_SUCCESS );
           break;
       }        
@@ -667,13 +764,21 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
         strncpy( sto->start_disk, argv[i], 1024 );
         sto->start_disk[1023] = 0;
       }
-      else if( p && ( strcasecmp(p, ".tap") == 0 || strcasecmp(p, ".ort") == 0 ) )
+      else if( p && ( strcasecmp(p, ".tap") == 0 || strcasecmp(p, ".ort") == 0 || strcasecmp(p, ".wav") == 0 ) )
       {
         strncpy( sto->start_tape, argv[i], 1024 );
         sto->start_tape[1023] = 0;
       }
+      else if( p && ( strcasecmp(p, ".sna") == 0 ) )
+      {
+        strncpy( sto->start_snapshot, argv[i], 1024 );
+        sto->start_snapshot[1023] = 0;
+      }
       else
+      {
+        free( sto );
         usage( EXIT_FAILURE );
+      }
     }
   }
 
@@ -719,7 +824,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
     unsigned int addr;
     if( !mon_getnum( oric, &addr, sto->start_breakpoint, &i, SDL_FALSE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
     {
-      printf( "Invalid breakpoint\n" );
+      error_printf( "Invalid breakpoint" );
       free( sto );
       return SDL_FALSE;
     }
@@ -727,6 +832,9 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
     oric->cpu.breakpoints[0] = addr;
     oric->cpu.anybp = SDL_TRUE;
   }
+
+  if( sto->start_snapshot[0] )
+    load_snapshot( oric, sto->start_snapshot );
 
   if( sto->start_debug )
     setemumode( oric, NULL, EM_DEBUG );

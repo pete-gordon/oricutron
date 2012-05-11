@@ -1512,12 +1512,12 @@ void setmenutoggles( struct machine *oric )
     hwopitems[14].name = "\x0e""VSync hack";
   else
     hwopitems[14].name = " VSync hack";
-/*
+
   if( oric->lightpen )
-    hwopitems[17].name = "\x0e""Lightpen";
+    hwopitems[15].name = "\x0e""Lightpen";
   else
-    hwopitems[17].name = " Lightpen";
-*/
+    hwopitems[15].name = " Lightpen";
+
   if( oric->symbolsautoload )
     dbopitems[0].name = "\x0e""Autoload symbols file";
   else
