@@ -172,10 +172,7 @@ void ula_renderscreen( struct machine *oric )
 
     // Always start each scanline with white on black
     ula_raster_default( oric );
-    if( oric->vid_textattrs & 0x02 )
-      oric->vid_chline = (y>>1) & 0x07;
-    else
-      oric->vid_chline = y & 0x07;
+    oric->vid_chline = y & 0x07;
 
     if( y < 200 )
     {
@@ -340,6 +337,7 @@ SDL_bool ula_doraster( struct machine *oric )
 
   // Always start each scanline with white on black
   ula_raster_default( oric );
+  oric->vid_chline = y & 0x07;
 
   // warpspeed does frameskipping, so lines may still be dirty
   oric->vid_block_func = oric->vid_dirty[y] ? ula_render_block : ula_render_block_checkdirty;
