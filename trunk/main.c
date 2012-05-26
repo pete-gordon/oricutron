@@ -480,7 +480,6 @@ static void error_printf( char *fmt, ... )
 #else
     fprintf( stderr, "%s\n", str );
 #endif
-    free( str );
   }
   va_end( ap );
 }
