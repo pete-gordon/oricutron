@@ -17,7 +17,7 @@ Note that this method involves just lazily copying the libSDL files right into y
   * Hit Ctrl+V to paste. Let it merge the contents of directories
   * Go to your environmental variables
     * For Windows XP, hit Windows+Break, select the advanced tab, and click "Environment Variables"
-    * For Windows 7, hit Windows+Break, ... todo when i'm back at the laptop
+    * For Windows 7, hit Windows+Break, click "Advanced system settings", then click "Environment variables"
   * Add the MinGW bin directory to your path variable (defaults to "C:\MinGW\bin"
   * Either download and extract a source package from the [http://code.google.com/p/oriculator/downloads/list download page], or [http://code.google.com/p/oriculator/source/checkout check out] the current subversion trunk.
   * Open a command prompt, and navigate to the Oricutron sourcecode
