@@ -9,7 +9,7 @@ Note that this method involves just lazily copying the libSDL files right into y
 
 
   * Download the latest MinGW installer from the [http://sourceforge.net/projects/mingw/files/ MinGW sourceforge site].
-  * Run the installer. Pick any components you like, but the only component you strictly need for Oricutron is the "C compiler".
+  * Run the installer. Pick any components you like, but the only components you strictly need for Oricutron are the "C compiler" and "C++ compiler".
   * Download the latest SDL development libraries for MinGW from [http://www.libsdl.org/download-1.2.php the libSDL 1.2 download page].
   * Navigate to the extracted SDL folder (so that you can see "bin", and "include" directories for example).
   * Hit Ctrl+A to select all files and Ctrl+C to copy
