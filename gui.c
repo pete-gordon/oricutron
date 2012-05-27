@@ -929,11 +929,13 @@ void togglelightpen( struct machine *oric, struct osdmenuitem *mitem, int dummy 
   if( oric->lightpen )
   {
     oric->lightpen = SDL_FALSE;
+    oric->cpu.read = oric->read_not_lightpen;
     mitem->name = " Lightpen";
     return;
   }
 
   oric->lightpen = SDL_TRUE;
+  oric->cpu.read = lightpen_read;
   mitem->name = "\x0e""Lightpen";
 }
 

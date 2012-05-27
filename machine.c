@@ -347,12 +347,6 @@ unsigned char atmosread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
 
-  if( oric->lightpen )
-  {
-    if( addr == 0x3e0 ) return oric->lightpenx;
-    if( addr == 0x3e1 ) return oric->lightpeny;
-  }
-
   if( ( addr & 0xff00 ) == 0x0300 )
     return via_read( &oric->via, addr );
 
@@ -367,12 +361,6 @@ unsigned char o16kread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
 
-  if( oric->lightpen )
-  {
-    if( addr == 0x3e0 ) return oric->lightpenx;
-    if( addr == 0x3e1 ) return oric->lightpeny;
-  }
-
   if( ( addr & 0xff00 ) == 0x0300 )
     return via_read( &oric->via, addr );
 
@@ -386,12 +374,6 @@ unsigned char o16kread( struct m6502 *cpu, unsigned short addr )
 unsigned char telestratread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
-
-  if( oric->lightpen )
-  {
-    if( addr == 0x3e0 ) return oric->lightpenx;
-    if( addr == 0x3e1 ) return oric->lightpeny;
-  }
 
   if( ( addr & 0xff00 ) == 0x0300 )
   {
@@ -431,12 +413,6 @@ unsigned char jasmin_atmosread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
 
-  if( oric->lightpen )
-  {
-    if( addr == 0x3e0 ) return oric->lightpenx;
-    if( addr == 0x3e1 ) return oric->lightpeny;
-  }
-
   if( oric->jasmin.olay == 0 )
   {
     if( oric->romdis )
@@ -462,12 +438,6 @@ unsigned char jasmin_atmosread( struct m6502 *cpu, unsigned short addr )
 unsigned char jasmin_o16kread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
-
-  if( oric->lightpen )
-  {
-    if( addr == 0x3e0 ) return oric->lightpenx;
-    if( addr == 0x3e1 ) return oric->lightpeny;
-  }
 
   if( oric->jasmin.olay == 0 )
   {
@@ -495,12 +465,6 @@ unsigned char microdisc_atmosread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
 
-  if( oric->lightpen )
-  {
-    if( addr == 0x3e0 ) return oric->lightpenx;
-    if( addr == 0x3e1 ) return oric->lightpeny;
-  }
-
   if( oric->romdis )
   {
     if( ( oric->md.diskrom ) && ( addr >= 0xe000 ) )
@@ -526,12 +490,6 @@ unsigned char microdisc_o16kread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
 
-  if( oric->lightpen )
-  {
-    if( addr == 0x3e0 ) return oric->lightpenx;
-    if( addr == 0x3e1 ) return oric->lightpeny;
-  }
-
   if( oric->romdis )
   {
     if( ( oric->md.diskrom ) && ( addr >= 0xe000 ) )
@@ -551,6 +509,21 @@ unsigned char microdisc_o16kread( struct m6502 *cpu, unsigned short addr )
 
   return oric->mem[addr&0x3fff];
 }
+
+/* Wrapper for the above when lightpen is enabled */
+unsigned char lightpen_read( struct m6502 *cpu, unsigned short addr )
+{
+  struct machine *oric = (struct machine *)cpu->userdata;
+
+  if( oric->lightpen )
+  {
+    if( addr == 0x3e0 ) return oric->lightpenx;
+    if( addr == 0x3e1 ) return oric->lightpeny;
+  }
+
+  return oric->read_not_lightpen( cpu, addr );
+}
+
 
 static SDL_bool load_rom( struct machine *oric, char *fname, int size, unsigned char *where, struct symboltable *stab, int symflags )
 {
@@ -688,6 +661,7 @@ void preinit_machine( struct machine *oric )
   oric->lightpen  = SDL_FALSE;
   oric->lightpenx = 0;
   oric->lightpeny = 0;
+  oric->read_not_lightpen = NULL;
 
   oric->tsavf = NULL;
 }
@@ -1421,6 +1395,11 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       // Huh?!
       return SDL_FALSE;
   }
+
+  oric->read_not_lightpen  = oric->cpu.read;
+ 
+  if (oric->lightpen)
+    oric->cpu.read  = lightpen_read;
 
   setromon( oric );
   oric->tapename[0] = 0;

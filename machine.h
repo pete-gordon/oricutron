@@ -217,6 +217,7 @@ struct machine
 
   SDL_bool lightpen;
   Uint8  lightpenx, lightpeny;
+  unsigned char (*read_not_lightpen)(struct m6502 *,Uint16);
 
   Uint8  porta_joy, porta_ay;
   SDL_bool porta_is_ay;
@@ -239,3 +240,4 @@ SDL_bool isram( struct machine *oric, unsigned short addr );
 
 void clear_patches( struct machine *oric );
 
+unsigned char lightpen_read( struct m6502 *cpu, unsigned short addr );

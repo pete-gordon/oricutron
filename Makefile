@@ -25,7 +25,7 @@ CFLAGS = -Wall -O3
 CFLAGS += -DAPP_NAME_FULL='"$(APP_NAME) WIP"'
 #CFLAGS += -DAPP_NAME_FULL='"$(APP_NAME) $(VERSION_MAJ).$(VERSION_MIN)"'
 CFLAGS += -DAPP_YEAR='"$(APP_YEAR)"' -DVERSION_COPYRIGHTS='$(VERSION_COPYRIGHTS)'
-LFLAGS = 
+LFLAGS =
 
 CC = gcc
 CXX = g++
@@ -102,6 +102,10 @@ endif
 ifeq ($(PLATFORM),win32)
 CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -g
 LFLAGS += -g -lm -mwindows -lmingw32 -lSDLmain -lSDL -lopengl32
+ifneq ($(PROFILING),)
+CFLAGS += -pg
+LFLAGS += -pg
+endif
 TARGET = oricutron.exe
 FILEREQ_OBJ = filereq_win32.o
 MSGBOX_OBJ = msgbox_win32.o

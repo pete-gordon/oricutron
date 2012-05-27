@@ -78,7 +78,7 @@ struct m6502
   Sint32   rastercycles;
   Uint32   icycles;
   Uint32   cycles;
-  Uint16   pc, lastpc, calcpc, calcint;
+  Uint16   pc, lastpc, calcpc, calcint, baddr;
   SDL_bool nmi;
   void (*write)(struct m6502 *,Uint16,Uint8);
   unsigned char (*read)(struct m6502 *,Uint16);
