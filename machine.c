@@ -515,11 +515,8 @@ unsigned char lightpen_read( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
 
-  if( oric->lightpen )
-  {
-    if( addr == 0x3e0 ) return oric->lightpenx;
-    if( addr == 0x3e1 ) return oric->lightpeny;
-  }
+  if( addr == 0x3e0 ) return oric->lightpenx;
+  if( addr == 0x3e1 ) return oric->lightpeny;
 
   return oric->read_not_lightpen( cpu, addr );
 }
