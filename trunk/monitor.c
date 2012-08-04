@@ -1336,14 +1336,14 @@ void mon_update_via( struct machine *oric, struct textzone *vtz, struct via *v, 
 
   for( i=0; i<16; i++ )
   {
-    val = via_mon_read( v, 0x300+i );
-    tzprintfpos( vtz, 2, i+1, "%04X:  %s $%02X %", 0x300+i, names[i], val );
+    val = via_mon_read( v, v == &oric->via ? 0x300+i : 0x320+i );
+    tzprintfpos( vtz, 2, i+1, "%04X:  %s $%02X %", v == &oric->via ? 0x300+i : 0x320+i, names[i], val );
     for( j=128; j; j>>=1 )
       tzputc(vtz, (val&j)?'1':'0');
     
     if( *oldvalid )
     {
-      unsigned char oval = via_mon_read(old, 0x300+i);
+      unsigned char oval = via_mon_read(old, v == &oric->via ? 0x300+i : 0x320+i );
       if( val != oval ) mon_viamod( 16, i+1, 2, vtz );
       for( j=128, o=20; j; j>>=1, o++ )
       {
