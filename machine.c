@@ -675,7 +675,7 @@ void load_diskroms( struct machine *oric )
 // Also helps German keymap on MorphOS.
 int mapkey( int key )
 {
-#if defined(__amigaos4__) || defined(__MORPHOS__)
+#if defined(__amigaos4__) || defined(__MORPHOS__) || defined(__AROS__)
   switch( key )
   {
     case '@': return '#';
@@ -693,6 +693,7 @@ int mapkey( int key )
     case '{': return '[';
     case '\xFC':
     case '}': return ']';
+    case '^': return '\\';
   }
 #endif
   return key;
