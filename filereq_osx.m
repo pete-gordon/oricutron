@@ -63,12 +63,12 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       pat = @"dsk";
       break;
     
-    case FT_TAPESAVETAP:
+    case FR_TAPESAVETAP:
       dosavemode = true;
       pat = @"tap";
       break;
 
-    case FT_TAPESAVEORT:
+    case FR_TAPESAVEORT:
       dosavemode = true;
       pat = @"ort";
       break;
@@ -120,5 +120,3 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
 
   return ret;
 }
-
-
