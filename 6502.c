@@ -26,6 +26,8 @@
 #include "system.h"
 #include "6502.h"
 
+#define ILLEGALS
+
 void dbg_printf( char *fmt, ... );
 
 
@@ -360,13 +362,15 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
         case 0x66: // { "ROR", AM_ZP  },  // 66
         case 0xC6: // { "DEC", AM_ZP  },  // C6
         case 0xE6: // { "INC", AM_ZP  },  // E6
+#ifdef ILLEGALS
         case 0xC7: // { "DCP", AM_ZP  },  // C7 (illegal)
         case 0xE7: // { "ISC", AM_ZP  },  // E7 (illegal)
         case 0x27: // { "RLA", AM_ZP  },  // 27 (illegal)
         case 0x67: // { "RRA", AM_ZP  },  // 67 (illegal)
         case 0x07: // { "SLO", AM_ZP  },  // 07 (illegal)
         case 0x47: // { "SRE", AM_ZP  },  // 47 (illegal)
-          RW_BADDR_ZP;
+#endif
+		  RW_BADDR_ZP;
           break;
 
         case 0x0E: // { "ASL", AM_ABS },  // 0E
@@ -375,13 +379,15 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
         case 0x6E: // { "ROR", AM_ABS },  // 6E
         case 0xCE: // { "DEC", AM_ABS },  // CE
         case 0xEE: // { "INC", AM_ABS },  // EE
+#ifdef ILLEGALS
         case 0xCF: // { "DCP", AM_ABS },  // CF (illegal)
         case 0xEF: // { "ISC", AM_ABS },  // EF (illegal)
         case 0x2F: // { "RLA", AM_ABS },  // 2F (illegal)
         case 0x6F: // { "RRA", AM_ABS },  // 6F (illegal)
         case 0x0F: // { "SLO", AM_ABS },  // 0F (illegal)
         case 0x4F: // { "SRE", AM_ABS },  // 4F (illegal)
-          RW_BADDR_ABS;
+#endif
+		  RW_BADDR_ABS;
           break;
 
         case 0x1E: // { "ASL", AM_ABX },  // 1E
@@ -390,13 +396,15 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
         case 0x7E: // { "ROR", AM_ABX },  // 7E
         case 0xDE: // { "DEC", AM_ABX },  // DE
         case 0xFE: // { "INC", AM_ABX },  // FE
+#ifdef ILLEGALS
         case 0xDF: // { "DCP", AM_ABX },  // DF (illegal)
         case 0xFF: // { "ISC", AM_ABX },  // FF (illegal)
         case 0x3F: // { "RLA", AM_ABX },  // 3F (illegal)
         case 0x7F: // { "RRA", AM_ABX },  // 7F (illegal)
         case 0x1F: // { "SLO", AM_ABX },  // 1F (illegal)
         case 0x5F: // { "SRE", AM_ABX },  // 5F (illegal)
-          RW_BADDR_ABX;
+#endif
+		  RW_BADDR_ABX;
           break;
 
         case 0x16: // { "ASL", AM_ZPX },  // 16
@@ -405,15 +413,18 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
         case 0x76: // { "ROR", AM_ZPX },  // 76
         case 0xD6: // { "DEC", AM_ZPX },  // D6
         case 0xF6: // { "INC", AM_ZPX },  // F6
+#ifdef ILLEGALS
         case 0xD7: // { "DCP", AM_ZPX },  // D7 (illegal)
         case 0xF7: // { "ISC", AM_ZPX },  // F7 (illegal)
         case 0x37: // { "RLA", AM_ZPX },  // 37 (illegal)
         case 0x77: // { "RRA", AM_ZPX },  // 77 (illegal)
         case 0x17: // { "SLO", AM_ZPX },  // 17 (illegal)
         case 0x57: // { "SRE", AM_ZPX },  // 57 (illegal)
-          RW_BADDR_ZPX;
+#endif
+		  RW_BADDR_ZPX;
           break;
         
+#ifdef ILLEGALS
         case 0xDB: // { "DCP", AM_ABY },  // DB (illegal)
         case 0xFB: // { "ISC", AM_ABY },  // FB (illegal)
         case 0x3B: // { "RLA", AM_ABY },  // 3B (illegal)
@@ -440,6 +451,7 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
         case 0x53: // { "SRE", AM_ZIY },  // 53 (illegal)
           RW_BADDR_ZIY;
           break;
+#endif
 
         case 0x01: // { "ORA", AM_ZIX },  // 01
         case 0x21: // { "AND", AM_ZIX },  // 21
@@ -448,8 +460,10 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
         case 0xA1: // { "LDA", AM_ZIX },  // A1
         case 0xC1: // { "CMP", AM_ZIX },  // C1
         case 0xE1: // { "SBC", AM_ZIX },  // E1
+#ifdef ILLEGALS
         case 0xA3: // { "LAX", AM_ZIX },  // A3 (illegal)
-          R_BADDR_ZIX;
+#endif
+		  R_BADDR_ZIX;
           break;
 
         case 0x11: // { "ORA", AM_ZIY },  // 11
@@ -460,8 +474,10 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
         case 0xD1: // { "CMP", AM_ZIY },  // D1
         case 0xF1: // { "SBC", AM_ZIY },  // F1
         case 0xBB: // { "LAS", AM_ZIY },  // BB
+#ifdef ILLEGALS
         case 0xB3: // { "LAX", AM_ZIY },  // B3 (illegal)
-          R_BADDR_ZIY;
+#endif
+		  R_BADDR_ZIY;
           break;
 
         case 0x05: // { "ORA", AM_ZP  },  // 05
@@ -476,8 +492,10 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
         case 0xC5: // { "CMP", AM_ZP  },  // C5
         case 0xE4: // { "CPX", AM_ZP  },  // E4
         case 0xE5: // { "SBC", AM_ZP  },  // E5
+#ifdef ILLEGALS
         case 0xA7: // { "LAX", AM_ZP  },  // A7 (illegal)
-          R_BADDR_ZP;
+#endif
+		  R_BADDR_ZP;
           break;
 
         case 0x0D: // { "ORA", AM_ABS },  // 0D
@@ -492,8 +510,10 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
         case 0xCD: // { "CMP", AM_ABS },  // CD
         case 0xEC: // { "CPX", AM_ABS },  // EC
         case 0xED: // { "SBC", AM_ABS },  // ED
+#ifdef ILLEGALS
         case 0xAF: // { "LAX", AM_ABS },  // AF (illegal)
-          R_BADDR_ABS;
+#endif
+		  R_BADDR_ABS;
           break;
 
         case 0x15: // { "ORA", AM_ZPX },  // 15
@@ -515,8 +535,10 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
         case 0xBE: // { "LDX", AM_ABY },  // BE
         case 0xD9: // { "CMP", AM_ABY },  // D9
         case 0xF9: // { "SBC", AM_ABY },  // F9
+#ifdef ILLEGALS
         case 0xBF: // { "LAX", AM_ABY },  // BF (illegal)
-          R_BADDR_ABY;
+#endif
+		  R_BADDR_ABY;
           break;    
 
         case 0x1D: // { "ORA", AM_ABX },  // 1D
@@ -531,8 +553,10 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
           break;    
 
         case 0xB6: // { "LDX", AM_ZPY },  // B6
-        case 0xB7: // { "LAX", AM_ZPY },  // B7 (illegal)
-          R_BADDR_ZPY;
+#ifdef ILLEGALS
+		case 0xB7: // { "LAX", AM_ZPY },  // B7 (illegal)
+#endif
+		  R_BADDR_ZPY;
           break;
 
         case 0x6C: // { "JMP", AM_IND },  // 6C
@@ -541,22 +565,28 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
           break;
           
         case 0x81: // { "STA", AM_ZIX },  // 81
+#ifdef ILLEGALS
         case 0x83: // { "SAX", AM_ZIX },  // 83 (illegal)
-          W_BADDR_ZIX;
+#endif
+		  W_BADDR_ZIX;
           break;
 
         case 0x84: // { "STY", AM_ZP  },  // 84
         case 0x85: // { "STA", AM_ZP  },  // 85
         case 0x86: // { "STX", AM_ZP  },  // 86
+#ifdef ILLEGALS
         case 0x87: // { "SAX", AM_ZP  },  // 87 (illegal)
-          W_BADDR_ZP;
+#endif
+		  W_BADDR_ZP;
           break;
          
         case 0x8C: // { "STY", AM_ABS },  // 8C
         case 0x8D: // { "STA", AM_ABS },  // 8D
         case 0x8E: // { "STX", AM_ABS },  // 8E
+#ifdef ILLEGALS
         case 0x8F: // { "SAX", AM_ABS },  // 8F (illegal)
-          W_BADDR_ABS;
+#endif
+		  W_BADDR_ABS;
           break;
 
         case 0x91: // { "STA", AM_ZIY },  // 91
@@ -569,14 +599,18 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
           break;
 
         case 0x96: // { "STX", AM_ZPY },  // 96
+#ifdef ILLEGALS
         case 0x97: // { "SAX", AM_ZPY },  // 97 (illegal)
-          W_BADDR_ZPY;
+#endif
+		  W_BADDR_ZPY;
           break;
 
         case 0x99: // { "STA", AM_ABY },  // 99
+#ifdef ILLEGALS
         case 0x9F: // { "AHX", AM_ABY },  // 9F (illegal, unstable)
         case 0x9B: // { "TAS", AM_ABY },  // 9B (illegal, unstable)
-          W_BADDR_ABY;
+#endif
+		  W_BADDR_ABY;
           break;
 
         case 0x9D: // { "STA", AM_ABX },  // 9D
@@ -1665,8 +1699,10 @@ SDL_bool m6502_inst( struct m6502 *cpu )
       break;
 
     case 0xE9: // { "SBC", AM_IMM },  // E9
+#ifdef ILLEGALS
     case 0xEB: // { "SBC", AM_IMM },  // EB (illegal)
-      READ_IMM;
+#endif
+	  READ_IMM;
       DO_SBC;
       break;
 
@@ -1729,6 +1765,7 @@ SDL_bool m6502_inst( struct m6502 *cpu )
       break;
 
     // Illegal opcodes
+#ifdef ILLEGALS
     case 0x0B: // { "ANC", AM_IMM },  // 0B (illegal)
     case 0x2B: // { "ANC", AM_IMM },  // 2B (illegal)
       READ_IMM;
@@ -2387,6 +2424,7 @@ SDL_bool m6502_inst( struct m6502 *cpu )
     default: // JAM
       cpu->pc = cpu->lastpc;
       return SDL_TRUE; // jammed
+#endif
   }
   
   return SDL_FALSE;
