@@ -1,5 +1,5 @@
 #summary How to compile Oricutron for Mac OS X
-#labels Featured
+#labels Phase-Implementation
 
 = Introduction =
 
