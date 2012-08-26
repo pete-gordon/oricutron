@@ -145,7 +145,7 @@ endif
 # Mac OS X
 ifeq ($(PLATFORM),osx)
 CFLAGS += -D__OPENGL_AVAILABLE__ $(shell sdl-config --cflags)
-LFLAGS += $(shell sdl-config --libs)
+LFLAGS += $(shell sdl-config --libs) -s
 LFLAGS += -lm -Wl,-framework,OpenGL
 TARGET = oricutron
 FILEREQ_OBJ =
@@ -309,13 +309,14 @@ package-beos package-haiku:
 package-osx:
 	mkdir -p $(PKGDIR)/Oriculator.app/Contents/MacOS
 	mkdir -p $(PKGDIR)/Oriculator.app/Contents/Resources/images
+	mkdir -p $(PKGDIR)/Oriculator.app/Contents/Resources/roms
 	install -m 755 $(TARGET) $(PKGDIR)/Oriculator.app/Contents/MacOS/Oricutron
 	echo 'APPL????' > $(PKGDIR)/Oriculator.app/Contents/PkgInfo
 	sed "s/@@VERSION@@/$(VERSION_MAJ).$(VERSION_MIN)/g" Info.plist > $(PKGDIR)/Oriculator.app/Contents/Info.plist
 	install -m 644 images/* $(PKGDIR)/Oriculator.app/Contents/Resources/images
 	# XXX: SDL now opens files in bundles first, but not old versions
 	ln -s Oriculator.app/Contents/Resources/images $(PKGDIR)/images
-	#install -m 644 roms/* $(PKGDIR)/Oriculator.app/Contents/Resources/roms
+	install -m 644 roms/* $(PKGDIR)/Oriculator.app/Contents/Resources/roms
 	ln -s Oriculator.app/Contents/Resources/roms $(PKGDIR)/roms
 	install -m 644 $(DOCFILES) $(PKGDIR)
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
