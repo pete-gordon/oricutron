@@ -6,6 +6,18 @@
 This page describes how to compile Oricutron for 10.3 without Xcode
 
   * Install the [http://www.libsdl.org/release/ SDL framework]
+*sdl-config:*
+{{{
+#!/bin/sh
+case $1 in
+--cflags)
+        echo -I/Library/Frameworks/SDL.framework/Headers
+        ;;
+--libs)
+        echo SDLMain.o -framework SDL -framework Cocoa
+        ;;
+esac
+}}}
   * Either download and extract a source package from the [http://code.google.com/p/oriculator/downloads/list download page], or [http://code.google.com/p/oriculator/source/checkout check out] the current subversion trunk.
   * Open a shell, and navigate to the Oricutron archive
   * For example type "unzip -a Downloads:Oricutron_src_v09.zip -d oricutron"
