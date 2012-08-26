@@ -139,11 +139,13 @@ SDL_bool clipboard_paste( struct machine *oric )
 	NSDictionary *options = [NSDictionary dictionary];
 	NSArray *copiedItems = [pasteboard readObjectsForClasses:classes options:options];
 
+#if __GNUC__ == 4 && __GNUC_MINOR__ >= 6 || __GNUC__ > 4
 	for (NSString *t in copiedItems) {
 		t = [t stringByReplacingOccurrencesOfString: @"\n" withString: @"\r"];
 		t = [t stringByReplacingOccurrencesOfString: @"\t" withString: @" "];
 		queuekeys( (char *)[t UTF8String] );
 	}
+#endif
 
 	return SDL_FALSE;
 }
