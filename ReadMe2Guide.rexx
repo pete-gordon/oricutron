@@ -1,13 +1,14 @@
-/* $VER: ReadMe2Guide 0.4 $
+/* $VER: ReadMe2Guide 0.5 $
  * Convert simple ReadMe file to AmigaGuide
  * © Stefan Haubenthal 2010-2012
- * rx ReadMe2Guide <foo.txt >foo.guide
+ * rx ReadMe2Guide <foo.txt >foo.guide foo 1.0
  */
 
 say '@database ""'
 say '@author "ReadMe2Guide"'
 say '@node Main "Main"'
 say '@toc Contents'
+if arg() then say '@$VER: 'arg(1)
 if ~eof(stdin) then parse pull last "0d"x
 prevnode="Main"
 toc=""
