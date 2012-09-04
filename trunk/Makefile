@@ -256,9 +256,8 @@ winicon.o: winicon.ico oricutron.rc
 	windres -i oricutron.rc -o winicon.o
 
 %.guide: ReadMe.txt
-	-rx ReadMe2Guide <$? >$(APP_NAME).guide
 # AROS needs path
-	-SYS:Rexxc/rx ReadMe2Guide <$? >$(APP_NAME).guide
+	-rx ReadMe2Guide <$? >$(APP_NAME).guide $(APP_NAME) $(VERSION_FULL) || SYS:Rexxc/rx ReadMe2Guide <$? >$(APP_NAME).guide $(APP_NAME) $(VERSION_FULL)
 	-GuideCheck $@
 
 $(RSRC_BEOS): oricutron.rdef
