@@ -341,4 +341,17 @@ package-osx:
 	install -m 644 $(DOCFILES) $(PKGDIR)
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
 
+package-win32:
+	mkdir -p $(PKGDIR)/images
+	mkdir -p $(PKGDIR)/disks
+	mkdir -p $(PKGDIR)/tapes
+	mkdir -p $(PKGDIR)/roms
+	install -m 755 $(TARGET) $(PKGDIR)
+	install -m 644 images/* $(PKGDIR)/images
+	#install -m 644 disks/* $(PKGDIR)/disks
+	#install -m 644 tapes/* $(PKGDIR)/tapes
+	install -m 644 roms/* $(PKGDIR)/roms
+	install -m 644 $(DOCFILES) $(PKGDIR)
+	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
+
 # torpor: added to test commit status
