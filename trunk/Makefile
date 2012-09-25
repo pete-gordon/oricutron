@@ -44,30 +44,38 @@ DOCFILES = ReadMe.txt oricutron.cfg ChangeLog.txt
 
 UNAME_S = $(shell uname -s)
 ifeq ($(UNAME_S),AROS)
+HOSTOS = aros
 PLATFORM ?= aros
 endif
 ifeq ($(UNAME_S),BeOS)
+HOSTOS = beos
 PLATFORM ?= beos
 endif
 ifeq ($(UNAME_S),Darwin)
+HOSTOS = osx
 PLATFORM ?= osx
 endif
 ifeq ($(UNAME_S),Haiku)
+HOSTOS = haiku
 PLATFORM ?= haiku
 endif
 ifeq ($(UNAME_S),Linux)
+HOSTOS = linux
 PLATFORM ?= linux
 endif
 ifeq ($(UNAME_S),MorphOS)
+HOSTOS = morphos
 PLATFORM ?= morphos
 endif
 ifeq ($(PLATFORM),)
 UNAME_O = $(shell uname -o)
 ifeq ($(UNAME_O),Msys)
+HOSTOS = win32
 PLATFORM ?= win32
 endif
 endif
 # default
+HOSTOS ?= os4
 PLATFORM ?= os4
 #$(info Target platform: $(PLATFORM))
 
@@ -100,6 +108,15 @@ endif
 
 # Windows 32bit
 ifeq ($(PLATFORM),win32)
+ifneq ($(HOSTOS),win32)
+# in Debian: apt:mingw32
+CROSS_COMPILE ?= i586-mingw32msvc-
+endif
+CC := $(CROSS_COMPILE)$(CC)
+CXX := $(CROSS_COMPILE)$(CXX)
+AR :=  $(CROSS_COMPILE)$(AR)
+RANLIB :=  $(CROSS_COMPILE)$(RANLIB)
+WINDRES := $(CROSS_COMPILE)windres
 CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -g
 LFLAGS += -g -lm -mwindows -lmingw32 -lSDLmain -lSDL -lopengl32
 ifneq ($(PROFILING),)
@@ -253,7 +270,7 @@ $(OBJECTS): %.o: %.c
 	@$(CC) -MM $(CFLAGS) $< > $*.d
 
 winicon.o: winicon.ico oricutron.rc
-	windres -i oricutron.rc -o winicon.o
+	$(WINDRES) -i oricutron.rc -o winicon.o
 
 %.guide: ReadMe.txt
 # AROS needs path
