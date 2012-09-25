@@ -294,20 +294,20 @@ clean:
 	rm -rf "$(PKGDIR)"
 
 
-install-beos install-haiku:
+install-beos install-haiku: $(TARGET)
 	mkdir -p $(INSTALLDIR)
 	copyattr -d $(TARGET) $(INSTALLDIR)
 # TODO: use resources
 	mkdir -p $(INSTALLDIR)/images
 	copyattr -d images/* $(INSTALLDIR)/images
 
-install-linux:
+install-linux: $(TARGET)
 	install -m 755 $(TARGET) $(INSTALLDIR)/bin
 
 %.info: %_$(AMIGA_ICONS).info
 	copy $< $@
 
-package-morphos package-aros package-os4: Oricutron.guide $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info))
+package-morphos package-aros package-os4: Oricutron.guide $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info)) $(TARGET)
 	-@delete ram:Oricutron all >NIL:
 	-@delete ram:$(PKGDIR).lha >NIL:
 	makedir ram:Oricutron ram:Oricutron/disks ram:Oricutron/tapes ram:Oricutron/teledisks ram:Oricutron/roms ram:Oricutron/snapshots ram:Oricutron/images
@@ -324,14 +324,14 @@ package-morphos package-aros package-os4: Oricutron.guide $(patsubst %_$(AMIGA_I
 	delete $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info))
 	-@delete ram:Oricutron ram:Oricutron.info all >NIL:
 
-package-beos package-haiku:
+package-beos package-haiku: $(TARGET)
 	mkdir -p $(PKGDIR)/images
 	copyattr -d $(TARGET) $(PKGDIR)
 	copyattr -d images/* $(PKGDIR)/images
 	install -m 644 $(DOCFILES) $(PKGDIR)
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
 
-package-osx:
+package-osx: $(TARGET)
 	mkdir -p $(PKGDIR)/Oriculator.app/Contents/MacOS
 	mkdir -p $(PKGDIR)/Oriculator.app/Contents/Resources/images
 	mkdir -p $(PKGDIR)/Oriculator.app/Contents/Resources/roms
@@ -346,7 +346,7 @@ package-osx:
 	install -m 644 $(DOCFILES) $(PKGDIR)
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
 
-package-win32:
+package-win32: $(TARGET)
 	mkdir -p $(PKGDIR)/images
 	mkdir -p $(PKGDIR)/disks
 	mkdir -p $(PKGDIR)/tapes
