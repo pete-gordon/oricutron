@@ -359,4 +359,3 @@ package-win32: $(TARGET)
 	install -m 644 $(DOCFILES) $(PKGDIR)
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
 
-# torpor: added to test commit status
