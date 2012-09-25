@@ -357,5 +357,7 @@ package-win32: $(TARGET)
 	#install -m 644 tapes/* $(PKGDIR)/tapes
 	install -m 644 roms/* $(PKGDIR)/roms
 	install -m 644 $(DOCFILES) $(PKGDIR)
+	# unix2dos is not always installed
+	sed -i "s/$$/\r/g" $(PKGDIR)/ReadMe.txt
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
 
