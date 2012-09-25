@@ -16,15 +16,20 @@ VERSION_REV = 0
 VERSION_FULL = $(VERSION_MAJ).$(VERSION_MIN).$(VERSION_REV)
 APP_NAME = Oricutron
 APP_YEAR = 2012
-VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) (c)$(APP_YEAR) Peter Gordon (pete@petergordon.org.uk)"
+COPYRIGHTS = (c)$(APP_YEAR) Peter Gordon (pete@petergordon.org.uk)
+VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) $(COPYRIGHTS)"
 #COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) ©$(APP_YEAR) Peter Gordon (pete@petergordon.org.uk)"
 
 ####### DEFAULT SETTINGS HERE #######
 
+DEFINES = -DAPP_NAME_FULL='"$(APP_NAME) WIP"'
+#DEFINES = -DAPP_NAME_FULL='"$(APP_NAME) $(VERSION_MAJ).$(VERSION_MIN)"'
+#DEFINES += -DAPP_WVER='$(VERSION_MAJ),$(VERSION_MIN),$(VERSION_REV),0'
+#DEFINES += -DAPP_COPYRIGHTS='"$(COPYRIGHTS)"'
+DEFINES += -DAPP_YEAR='"$(APP_YEAR)"' -DVERSION_COPYRIGHTS='$(VERSION_COPYRIGHTS)'
+
 CFLAGS = -Wall -O3
-CFLAGS += -DAPP_NAME_FULL='"$(APP_NAME) WIP"'
-#CFLAGS += -DAPP_NAME_FULL='"$(APP_NAME) $(VERSION_MAJ).$(VERSION_MIN)"'
-CFLAGS += -DAPP_YEAR='"$(APP_YEAR)"' -DVERSION_COPYRIGHTS='$(VERSION_COPYRIGHTS)'
+CFLAGS += $(DEFINES)
 LFLAGS =
 
 CC = gcc
@@ -274,7 +279,7 @@ $(OBJECTS): %.o: %.c
 	@$(CC) -MM $(CFLAGS) $< > $*.d
 
 winicon.o: winicon.ico oricutron.rc
-	$(WINDRES) -i oricutron.rc -o winicon.o
+	$(WINDRES) $(DEFINES) -i oricutron.rc -o winicon.o
 
 %.guide: ReadMe.txt
 # AROS needs path
