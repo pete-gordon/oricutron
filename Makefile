@@ -117,6 +117,10 @@ CXX := $(CROSS_COMPILE)$(CXX)
 AR :=  $(CROSS_COMPILE)$(AR)
 RANLIB :=  $(CROSS_COMPILE)$(RANLIB)
 WINDRES := $(CROSS_COMPILE)windres
+ifneq ($(SDL_PREFIX),)
+CFLAGS += -I$(SDL_PREFIX)/include
+LFLAGS += -L$(SDL_PREFIX)/lib
+endif
 CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -g
 LFLAGS += -g -lm -mwindows -lmingw32 -lSDLmain -lSDL -lopengl32
 ifneq ($(PROFILING),)
