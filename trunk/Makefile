@@ -245,9 +245,9 @@ all: $(TARGET)
 run: $(TARGET)
 	$(TARGET)
 
-install: install-$(PLATFORM)
+install: install-$(PLATFORM) $(TARGET)
 
-package: package-$(PLATFORM)
+package: package-$(PLATFORM) $(TARGET)
 
 $(TARGET): $(OBJECTS) $(CUSTOMOBJS) $(RESOURCES)
 	$(CXX) -o $(TARGET) $(OBJECTS) $(CUSTOMOBJS) $(LFLAGS)
@@ -294,20 +294,20 @@ clean:
 	rm -rf "$(PKGDIR)"
 
 
-install-beos install-haiku: $(TARGET)
+install-beos install-haiku:
 	mkdir -p $(INSTALLDIR)
 	copyattr -d $(TARGET) $(INSTALLDIR)
 # TODO: use resources
 	mkdir -p $(INSTALLDIR)/images
 	copyattr -d images/* $(INSTALLDIR)/images
 
-install-linux: $(TARGET)
+install-linux:
 	install -m 755 $(TARGET) $(INSTALLDIR)/bin
 
 %.info: %_$(AMIGA_ICONS).info
 	copy $< $@
 
-package-morphos package-aros package-os4: Oricutron.guide $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info)) $(TARGET)
+package-morphos package-aros package-os4: Oricutron.guide $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info))
 	-@delete ram:Oricutron all >NIL:
 	-@delete ram:$(PKGDIR).lha >NIL:
 	makedir ram:Oricutron ram:Oricutron/disks ram:Oricutron/tapes ram:Oricutron/teledisks ram:Oricutron/roms ram:Oricutron/snapshots ram:Oricutron/images
@@ -324,14 +324,14 @@ package-morphos package-aros package-os4: Oricutron.guide $(patsubst %_$(AMIGA_I
 	delete $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info))
 	-@delete ram:Oricutron ram:Oricutron.info all >NIL:
 
-package-beos package-haiku: $(TARGET)
+package-beos package-haiku:
 	mkdir -p $(PKGDIR)/images
 	copyattr -d $(TARGET) $(PKGDIR)
 	copyattr -d images/* $(PKGDIR)/images
 	install -m 644 $(DOCFILES) $(PKGDIR)
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
 
-package-osx: $(TARGET)
+package-osx:
 	mkdir -p $(PKGDIR)/Oriculator.app/Contents/MacOS
 	mkdir -p $(PKGDIR)/Oriculator.app/Contents/Resources/images
 	mkdir -p $(PKGDIR)/Oriculator.app/Contents/Resources/roms
@@ -346,7 +346,7 @@ package-osx: $(TARGET)
 	install -m 644 $(DOCFILES) $(PKGDIR)
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
 
-package-win32: $(TARGET)
+package-win32:
 	mkdir -p $(PKGDIR)/images
 	mkdir -p $(PKGDIR)/disks
 	mkdir -p $(PKGDIR)/tapes
@@ -360,4 +360,3 @@ package-win32: $(TARGET)
 	# unix2dos is not always installed
 	sed -i "s/$$/\r/g" $(PKGDIR)/ReadMe.txt
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
-
