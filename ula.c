@@ -326,11 +326,6 @@ SDL_bool ula_doraster( struct machine *oric )
       ( oric->vid_raster >= oric->vid_end ) ) return needrender;
 
   y = oric->vid_raster - oric->vid_start;
-  if( oric->vid_textattrs & 0x02 )
-    oric->vid_chline = (y>>1) & 0x07;
-  else
-    oric->vid_chline = y & 0x07;
-
   oric->scrpt = &oric->scr[y*240];
   
   cy = (y>>3) * 40;

@@ -127,9 +127,9 @@ void m6502_reset( struct m6502 *cpu )
                FLAG_ZN(cpu->a)
 
 // Macro to perform ASL logic
-#define DO_ASL(s) r = s << 1;\
-                  FLAG_ZCN(r);\
-                  s = r;
+#define DO_ASL(s) cpu->f_c = ((s)&0x80) != 0;\
+                  s <<= 1;\
+                  FLAG_ZN(s);
 
 // Macro to perform ORA logic
 #define DO_ORA cpu->a |= v;\

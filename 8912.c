@@ -437,6 +437,7 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
       switch( ay->oric->type )
       {
         case MACH_ATMOS:
+        case MACH_PRAVETZ:
           if( ( ay->oric->cpu.pc == 0xeb78 ) && ( ay->oric->romon ) )
           {
             ay->oric->cpu.a = keyqueue[kqoffs++];
