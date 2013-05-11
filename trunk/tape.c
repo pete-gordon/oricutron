@@ -1065,7 +1065,7 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
   tape_popup( oric );
 
   return SDL_TRUE;
-};
+}
 
 void tape_autoinsert( struct machine *oric )
 {
