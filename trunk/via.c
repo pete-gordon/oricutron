@@ -47,7 +47,8 @@
 void lprintchar( struct machine *oric, char c )
 {
   // Filter out chars that are probably not meant for the printer
-  if( ( c == 9 ) || ( c == 10 ) || ( c == 13 ) || ( c == 27 ) || ( c >= 32 ) )
+  if( ( c == 9 ) || ( c == 10 ) || ( c == 13 ) || ( c == 17 ) || ( c == 18 ) ||
+      ( c == 27 ) || (( c >= 32 ) && ( c <= 127 )) )
   {
     // If the printer handle isn't currently open,
     // open it and do a popup to tell the user.
