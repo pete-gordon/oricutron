@@ -166,6 +166,15 @@ struct jasmin
   struct machine *oric;    // Pointer to the Oric structure
 };
 
+// Current state of the Pravetz 8d disk hardware
+struct pravetz
+{
+  Uint8 olay;              // Overlay RAM enable
+  Uint8 romdis;            // ROMDIS
+  Uint16 extension;
+  struct machine *oric;    // Pointer to the Oric structure
+};
+
 // Functions to read/write diskimages
 SDL_bool diskimage_load( struct machine *oric, char *fname, int drive ); 
 SDL_bool diskimage_save( struct machine *oric, char *fname, int drive );
@@ -187,3 +196,8 @@ void jasmin_free( struct jasmin *j );
 unsigned char jasmin_read( struct jasmin *j, unsigned short addr );
 void jasmin_write( struct jasmin *j, unsigned short addr, unsigned char data );
 
+// Pravetz 8D disk interface
+void pravetz_init( struct pravetz *p, struct machine *oric );
+void pravetz_free( struct pravetz *p );
+unsigned char pravetz_read( struct pravetz *p, unsigned short addr );
+void pravetz_write( struct pravetz *p, unsigned short addr, unsigned char data );

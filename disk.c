@@ -30,6 +30,7 @@
 #include "8912.h"
 #include "gui.h"
 #include "disk.h"
+#include "disk_pravetz.h"
 #include "monitor.h"
 #include "6551.h"
 #include "machine.h"
@@ -217,35 +218,38 @@ void diskimage_cachetrack( struct diskimage *dimg, int track, int side )
 // memory back to disk.
 SDL_bool diskimage_save( struct machine *oric, char *fname, int drive )
 {
-  FILE *f;
-
   // Make sure there is a disk in the drive!
   if( !oric->wddisk.disk[drive] ) return SDL_FALSE;
 
-  // Open the file for writing
-  f = fopen( fname, "wb" );
-  if( !f )
+  if( oric->drivetype == DRV_MICRODISC || oric->drivetype == DRV_JASMIN )
   {
-    do_popup( oric, "\x14\x15Save failed" );
-    return SDL_FALSE;
-  }
-
-  // Dump it to disk
-  if( fwrite( oric->wddisk.disk[drive]->rawimage, oric->wddisk.disk[drive]->rawimagelen, 1, f ) != 1 )
-  {
+    FILE *f;
+    
+    // Open the file for writing
+    f = fopen( fname, "wb" );
+    if( !f )
+    {
+      do_popup( oric, "\x14\x15Save failed" );
+      return SDL_FALSE;
+    }
+    
+    // Dump it to disk
+    if( fwrite( oric->wddisk.disk[drive]->rawimage, oric->wddisk.disk[drive]->rawimagelen, 1, f ) != 1 )
+    {
+      fclose( f );
+      do_popup( oric, "\x14\x15Save failed" );
+      return SDL_FALSE;
+    }
+    
+    // All done!
     fclose( f );
-    do_popup( oric, "\x14\x15Save failed" );
-    return SDL_FALSE;
-  }
-
-  // All done!
-  fclose( f );
-
-  // If we are not just overwriting the original file, remember the new filename
-  if( fname != oric->wddisk.disk[drive]->filename )
-  {
-    strncpy( oric->wddisk.disk[drive]->filename, fname, 4096+512 );
-    oric->wddisk.disk[drive]->filename[4096+511] = 0;
+    
+    // If we are not just overwriting the original file, remember the new filename
+    if( fname != oric->wddisk.disk[drive]->filename )
+    {
+      strncpy( oric->wddisk.disk[drive]->filename, fname, 4096+512 );
+      oric->wddisk.disk[drive]->filename[4096+511] = 0;
+    }
   }
 
   // The image in memory is no longer different to the last saved version
@@ -301,28 +305,49 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
   }
 
   fclose( f );
-
-  // Check for the header ID
-  if( strncmp( (char *)oric->wddisk.disk[drive]->rawimage, "MFM_DISK", 8 ) != 0 )
+  
+  if( oric->drivetype == DRV_PRAVETZ )
   {
-    disk_eject( oric, drive );
-    do_popup( oric, "\x14\x15""Invalid disk image" );
-    return SDL_FALSE;
+    if( drive < 2 )
+    {
+      if( !disk_pravetz_load( fname, drive, SDL_FALSE ) )
+      {
+        disk_eject( oric, drive );
+        do_popup( oric, "\x14\x15""Invalid disk image" );
+        return SDL_FALSE;
+      }
+    }
+    else
+    {
+      disk_eject( oric, drive );
+      do_popup( oric, "\x14\x15""Invalid drive number" );
+      return SDL_FALSE;
+    }
   }
-
-  // Get some basic image info
-  oric->wddisk.disk[drive]->drivenum  = drive;
-  oric->wddisk.disk[drive]->numsides  = diskimage_rawint( oric->wddisk.disk[drive], 8 );
-  oric->wddisk.disk[drive]->numtracks = diskimage_rawint( oric->wddisk.disk[drive], 12 );
-  oric->wddisk.disk[drive]->geometry  = diskimage_rawint( oric->wddisk.disk[drive], 16 );
-
-  // Is the disk sane!?
-  if( ( oric->wddisk.disk[drive]->numsides < 1 ) ||
-      ( oric->wddisk.disk[drive]->numsides > 2 ) )
+  else
   {
-    disk_eject( oric, drive );
-    do_popup( oric, "\x14\x15""Invalid disk image" );
-    return SDL_FALSE;
+    // Check for the header ID
+    if( strncmp( (char *)oric->wddisk.disk[drive]->rawimage, "MFM_DISK", 8 ) != 0 )
+    {
+      disk_eject( oric, drive );
+      do_popup( oric, "\x14\x15""Invalid disk image" );
+      return SDL_FALSE;
+    }
+    
+    // Get some basic image info
+    oric->wddisk.disk[drive]->drivenum  = drive;
+    oric->wddisk.disk[drive]->numsides  = diskimage_rawint( oric->wddisk.disk[drive], 8 );
+    oric->wddisk.disk[drive]->numtracks = diskimage_rawint( oric->wddisk.disk[drive], 12 );
+    oric->wddisk.disk[drive]->geometry  = diskimage_rawint( oric->wddisk.disk[drive], 16 );
+    
+    // Is the disk sane!?
+    if( ( oric->wddisk.disk[drive]->numsides < 1 ) ||
+      ( oric->wddisk.disk[drive]->numsides > 2 ) )
+    {
+      disk_eject( oric, drive );
+      do_popup( oric, "\x14\x15""Invalid disk image" );
+      return SDL_FALSE;
+    }
   }
 
   // Nobody has written to this disk yet
@@ -1273,4 +1298,42 @@ void jasmin_write( struct jasmin *j, unsigned short addr, unsigned char data )
       via_write( &j->oric->via, addr, data );
       break;
   }
+}
+
+// Pravetz
+void pravetz_init( struct pravetz *p, struct machine *oric )
+{
+  p->olay = 0;
+  p->romdis = 1;
+  p->extension = 0;
+  p->oric = oric;
+  disk_pravetz_init();
+}
+
+void pravetz_free( struct pravetz *p )
+{
+  int i;
+  for( i=0; i<MAX_DRIVES; i++ )
+  {
+    disk_eject( p->oric, i );
+    disk_pravetz_free(i);
+  }
+}
+
+unsigned char pravetz_read( struct pravetz *p, unsigned short addr )
+{
+  unsigned char data = 0;
+  p->oric->wddisk.c_drive = disk_pravetz_drive();
+  p->oric->wddisk.currentop = disk_pravetz_active() ? COP_READ_SECTOR : COP_NUFFINK;
+  data = disk_pravetz_read( addr );
+  p->oric->wddisk.currentop = disk_pravetz_active() ? COP_READ_SECTOR : COP_NUFFINK;
+  return data;
+}
+
+void pravetz_write( struct pravetz *p, unsigned short addr, unsigned char data )
+{
+  p->oric->wddisk.c_drive = disk_pravetz_drive();
+  p->oric->wddisk.currentop = disk_pravetz_active() ? COP_WRITE_SECTOR : COP_NUFFINK;
+  disk_pravetz_write( addr, data );
+  p->oric->wddisk.currentop = disk_pravetz_active() ? COP_WRITE_SECTOR : COP_NUFFINK;
 }
