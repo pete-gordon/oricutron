@@ -64,7 +64,7 @@ extern char atmosromfile[];
 extern char oric1romfile[];
 extern char mdiscromfile[];
 extern char jasmnromfile[];
-extern char pravzromfile[];
+extern char pravetzromfile[2][1024];
 extern char telebankfiles[8][1024];
 
 #ifdef __amigaos4__
@@ -385,7 +385,8 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_string( &sto->lctmp[i], "oric1rom",     oric1romfile, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "mdiscrom",     mdiscromfile, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "jasminrom",    jasmnromfile, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "pravetzrom",   pravzromfile, 1024 ) ) continue;
+    if( read_config_string( &sto->lctmp[i], "pravetzrom",   pravetzromfile[0], 1024 ) ) continue;
+    if( read_config_string( &sto->lctmp[i], "pravetz8drom", pravetzromfile[1], 1024 ) ) continue;
     if( read_config_int(    &sto->lctmp[i], "rampattern",   &oric->rampattern, 0, 1 ) ) continue;
     if( read_config_option( &sto->lctmp[i], "swdepth",      &oric->sw_depth, swdepths ) ) continue;
     if( read_config_option( &sto->lctmp[i], "rendermode",   &sto->start_rendermode, rendermodes ) )
@@ -443,7 +444,7 @@ static void usage( int ret )
           "  \n"
           "                       \"microdisc\" or \"m\" for Microdisc\n"
           "                       \"jasmin\" or \"j\" for Jasmin\n"
-//          "                       \"pravetz\" or \"p\" for Pravetz\n"
+          "                       \"pravetz\" or \"p\" for Pravetz\n"
           "\n"
           "  -s / --symbols     = Load symbols from a file\n"
           "  -f / --fullscreen  = Run oricutron fullscreen\n"

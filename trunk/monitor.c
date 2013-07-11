@@ -710,6 +710,19 @@ unsigned char mon_read( struct machine *oric, unsigned short addr )
     }
   }
 
+  if( oric->drivetype == DRV_PRAVETZ )
+  {
+    if ( ( 0x300 <= addr ) && ( addr <= 0x30f ) )
+    {
+      return via_mon_read( &oric->via, addr );
+    }
+    if ( ( 0x310 <= addr ) && ( addr <= 0x31f ) )
+    {
+      return 0xFF;
+    }
+    return oric->cpu.read( &oric->cpu, addr );
+  }
+
   if( ( addr & 0xff00 ) == 0x0300 )
   {
     if ( ( !oric->lightpen ) || ( addr < 0x3e0 ) || ( addr > 0x3e1 ) )
@@ -1573,6 +1586,10 @@ void mon_update_disk( struct machine *oric )
     
     case DRV_JASMIN:
       tzprintfpos( tz[TZ_DISK], 2, 8, "OVRAM=%s", oric->jasmin.olay ? "ON " : "OFF" );
+      break;
+
+    case DRV_PRAVETZ:
+      tzprintfpos( tz[TZ_DISK], 2, 8, "OVRAM=%s", oric->pravetz.olay ? "ON " : "OFF" );
       break;
   }
 }

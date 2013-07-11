@@ -128,7 +128,8 @@ struct machine
   int drivetype;
   struct wd17xx    wddisk;
   struct microdisc md;
-  struct jasmin jasmin;
+  struct jasmin    jasmin;
+  struct pravetz   pravetz;
   char diskname[MAX_DRIVES][32];
   SDL_bool diskautosave;
   

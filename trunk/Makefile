@@ -2,10 +2,13 @@
 # PLATFORM = os4
 # PLATFORM = morphos
 # PLATFORM = win32
+# PLATFORM = win32-gcc
+# PLATFORM = win64-gcc
 # PLATFORM = beos
 # PLATFORM = haiku
 # PLATFORM = osx
 # PLATFORM = linux
+# PLATFORM = linux-opengl
 # PLATFORM = gphwiz
 # PLATFORM = aitouchbook
 # PLATFORM = aros
@@ -15,12 +18,14 @@ VERSION_MIN = 9
 VERSION_REV = 0
 VERSION_FULL = $(VERSION_MAJ).$(VERSION_MIN).$(VERSION_REV)
 APP_NAME = Oricutron
-APP_YEAR = 2012
+APP_YEAR = 2013
 COPYRIGHTS = (c)$(APP_YEAR) Peter Gordon (pete@petergordon.org.uk)
 VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) $(COPYRIGHTS)"
 #COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) ©$(APP_YEAR) Peter Gordon (pete@petergordon.org.uk)"
 
 ####### DEFAULT SETTINGS HERE #######
+
+VPATH ?= .
 
 DEFINES = -DAPP_NAME_FULL='"$(APP_NAME) WIP $$Rev$$"'
 #DEFINES = -DAPP_NAME_FULL='"$(APP_NAME) $(VERSION_MAJ).$(VERSION_MIN)"'
@@ -82,7 +87,7 @@ endif
 # default
 HOSTOS ?= os4
 PLATFORM ?= os4
-#$(info Target platform: $(PLATFORM))
+$(info Target platform: $(PLATFORM))
 
 ####### PLATFORM SPECIFIC STUFF HERE #######
 
@@ -138,6 +143,68 @@ MSGBOX_OBJ = msgbox_win32.o
 CUSTOMOBJS = winicon.o
 endif
 
+# Windows 32bit GCC
+ifeq ($(PLATFORM),win32-gcc)
+ifneq ($(HOSTOS),win32)
+# in Debian: apt:mingw32
+CROSS_PREFIX ?= i686-w64-mingw32
+CROSS_COMPILE ?= $(CROSS_PREFIX)-
+endif
+CC := $(CROSS_COMPILE)$(CC)
+CXX := $(CROSS_COMPILE)$(CXX)
+AR :=  $(CROSS_COMPILE)$(AR)
+RANLIB :=  $(CROSS_COMPILE)$(RANLIB)
+WINDRES := $(CROSS_COMPILE)windres
+ifneq ($(SDL_PREFIX),)
+CFLAGS += -I$(SDL_PREFIX)/include
+LFLAGS += -L$(SDL_PREFIX)/lib
+else
+CFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config sdl --cflags)
+LFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config sdl --libs)
+endif
+CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -g
+LFLAGS += -g -static-libgcc -static-libstdc++ -mwindows -lopengl32
+ifneq ($(PROFILING),)
+CFLAGS += -pg
+LFLAGS += -pg
+endif
+TARGET = oricutron.exe
+FILEREQ_OBJ = filereq_win32.o
+MSGBOX_OBJ = msgbox_win32.o
+CUSTOMOBJS = winicon.o
+endif
+
+# Windows 64bit GCC
+ifeq ($(PLATFORM),win64-gcc)
+ifneq ($(HOSTOS),win32)
+# in Debian: apt:mingw32
+CROSS_PREFIX ?= x86_64-w64-mingw32
+CROSS_COMPILE ?= $(CROSS_PREFIX)-
+endif
+CC := $(CROSS_COMPILE)$(CC)
+CXX := $(CROSS_COMPILE)$(CXX)
+AR :=  $(CROSS_COMPILE)$(AR)
+RANLIB :=  $(CROSS_COMPILE)$(RANLIB)
+WINDRES := $(CROSS_COMPILE)windres
+ifneq ($(SDL_PREFIX),)
+CFLAGS += -I$(SDL_PREFIX)/include
+LFLAGS += -L$(SDL_PREFIX)/lib
+else
+CFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config sdl --cflags)
+LFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config sdl --libs)
+endif
+CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -g
+LFLAGS += -g -static-libgcc -static-libstdc++ -mwindows -lopengl32
+ifneq ($(PROFILING),)
+CFLAGS += -pg
+LFLAGS += -pg
+endif
+TARGET = oricutron-64.exe
+FILEREQ_OBJ = filereq_win32.o
+MSGBOX_OBJ = msgbox_win32.o
+CUSTOMOBJS = winicon.o
+endif
+
 # BeOS / Haiku
 ifeq ($(PLATFORM),beos)
 PLATFORMTYPE = beos
@@ -187,6 +254,23 @@ TARGET = oricutron
 INSTALLDIR = /usr/local
 endif
 
+# Linux OpenGL
+ifeq ($(PLATFORM),linux-opengl)
+ifeq (x86_64,$(shell uname -m))
+BASELIBDIR := lib64
+CFLAGS += -m64
+LFLAGS += -m64
+else
+BASELIBDIR := lib
+CFLAGS += -m32
+LFLAGS += -m32
+endif
+CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) -D__OPENGL_AVAILABLE__
+LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --libs) -lGL
+TARGET = oricutron
+INSTALLDIR = /usr/local
+endif
+
 # Linux-gph-wiz
 ifeq ($(PLATFORM),gphwiz)
 WIZ_HOME = /opt/openwiz/toolchain/arm-openwiz-linux-gnu
@@ -229,6 +313,7 @@ OBJECTS = \
 	8912.o \
 	6551.o \
 	disk.o \
+	disk_pravetz.o \
 	avi.o \
 	render_sw.o \
 	render_gl.o \
@@ -278,8 +363,8 @@ $(OBJECTS): %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
 	@$(CC) -MM $(CFLAGS) $< > $*.d
 
-winicon.o: winicon.ico oricutron.rc
-	$(WINDRES) $(DEFINES) -i oricutron.rc -o winicon.o
+winicon.o: $(VPATH)/winicon.ico $(VPATH)/oricutron.rc
+	$(WINDRES) $(DEFINES) -i $(VPATH)/oricutron.rc -o winicon.o
 
 %.guide: ReadMe.txt
 # AROS needs path

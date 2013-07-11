@@ -55,7 +55,7 @@ char atmosromfile[1024];
 char oric1romfile[1024];
 char mdiscromfile[1024];
 char jasmnromfile[1024];
-char pravzromfile[1024];
+char pravetzromfile[2][1024];
 char telebankfiles[8][1024];
 
 struct avi_handle *vidcap = NULL;
@@ -64,9 +64,9 @@ int vidcapcount = 0;
 
 extern struct osdmenuitem hwopitems[];
 
-unsigned char rom_microdisc[8912], rom_jasmin[2048];
-struct symboltable sym_microdisc, sym_jasmin;
-SDL_bool microdiscrom_valid, jasminrom_valid;
+unsigned char rom_microdisc[8912], rom_jasmin[2048], rom_pravetz[512];
+struct symboltable sym_microdisc, sym_jasmin, sym_pravetz;
+SDL_bool microdiscrom_valid, jasminrom_valid, pravetzrom_valid;
 
 Uint8 oricpalette[] = { 0x00, 0x00, 0x00,
                         0xff, 0x00, 0x00,
@@ -127,6 +127,10 @@ void setromon( struct machine *oric )
     } else {
       oric->romon = SDL_FALSE;
     }
+  } 
+  else if( oric->drivetype == DRV_PRAVETZ )
+  {
+    oric->romon = !oric->pravetz.olay;
   } else {
     oric->romon = !oric->romdis;
   }
@@ -314,6 +318,51 @@ void microdisc_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char 
   oric->mem[addr&0x3fff] = data;
 }
 
+// Pravetz
+void pravetz_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
+{
+  struct machine *oric = (struct machine *)cpu->userdata;
+  
+  oric->mem[addr] = data;
+
+  if( 0x300 <= addr && addr <= 0x30f )
+  {
+    via_write( &oric->via, addr, data );
+  }
+  else if( 0x310 <= addr && addr <= 0x31f )
+  {
+    pravetz_write( &oric->pravetz, addr, data );
+  }
+  else if( 0x320 <= addr && addr <= 0x3ff )
+  {
+    switch( addr )
+    {
+      case 0x380:
+        oric->pravetz.olay = 0;
+        oric->pravetz.romdis = 1;
+        oric->pravetz.extension = 0;
+        break;
+      case 0x381:
+        oric->pravetz.olay = 1;
+        oric->pravetz.romdis = 0;
+        oric->pravetz.extension = 0;
+        break;
+      case 0x382:
+        oric->pravetz.olay = 0;
+        oric->pravetz.romdis = 1;
+        oric->pravetz.extension = 0x100;
+        break;
+      case 0x383:
+        oric->pravetz.olay = 1;
+        oric->pravetz.romdis = 0;
+        oric->pravetz.extension = 0x100;
+        break;
+      default:
+        break;
+    }
+  }
+}
+
 // VIA is returned as RAM since it isn't ROM
 SDL_bool isram( struct machine *oric, unsigned short addr )
 {
@@ -336,6 +385,11 @@ SDL_bool isram( struct machine *oric, unsigned short addr )
     case DRV_JASMIN:
       if( oric->jasmin.olay ) return SDL_TRUE;
       if( addr >= 0xf800 ) return SDL_FALSE;
+      break;
+
+    case DRV_PRAVETZ:
+      if( oric->pravetz.olay ) return SDL_TRUE;
+      if( addr >= 0xc000 ) return SDL_FALSE;
       break;
   }
   
@@ -510,6 +564,40 @@ unsigned char microdisc_o16kread( struct m6502 *cpu, unsigned short addr )
   return oric->mem[addr&0x3fff];
 }
 
+// Pravetz
+unsigned char pravetz_atmosread( struct m6502 *cpu, unsigned short addr )
+{
+  struct machine *oric = (struct machine *)cpu->userdata;
+
+  if( 0x300 == ( addr & 0xfff0 ) )
+  {
+    return via_read( &oric->via, addr );
+  }
+  
+  if( 0x310 == ( addr & 0xfff0 ) )
+  {
+    return pravetz_read( &oric->pravetz, addr );
+  }
+  
+  if( 0x320 <= addr && addr <= 0x3ff )
+  {
+    if( pravetzrom_valid )
+    {
+      return rom_pravetz[addr - 0x300 + oric->pravetz.extension];
+    }
+  }
+
+  if( 0xc000 <= addr      /* 0xFFFF */)
+  {
+    if( !oric->pravetz.olay )
+    {
+      return oric->rom[addr-0xc000];
+    }
+  }
+
+  return oric->mem[addr];
+}
+
 /* Wrapper for the above when lightpen is enabled */
 unsigned char lightpen_read( struct m6502 *cpu, unsigned short addr )
 {
@@ -667,6 +755,7 @@ void load_diskroms( struct machine *oric )
 {
   microdiscrom_valid = load_rom( oric, mdiscromfile, 8192, rom_microdisc, &sym_microdisc, SYMF_ROMDIS1|SYMF_MICRODISC );
   jasminrom_valid    = load_rom( oric, jasmnromfile, 2048, rom_jasmin,    &sym_jasmin,    SYMF_ROMDIS1|SYMF_JASMIN );
+  pravetzrom_valid   = load_rom( oric, pravetzromfile[1], 512, rom_pravetz, &sym_pravetz,  SYMF_ROMDIS1|SYMF_PRAVZ8D );
 }
 
 // This is currently used to workaround a change in the behaviour of SDL
@@ -1372,6 +1461,13 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           break;
 
         case DRV_PRAVETZ:
+          oric->cpu.read = pravetz_atmosread;
+          oric->cpu.write = pravetz_atmoswrite;
+          oric->romdis = SDL_FALSE;
+          pravetz_init( &oric->pravetz, oric );
+          oric->disksyms = &sym_pravetz;
+          break;
+
         default:
           oric->drivetype = DRV_NONE;
           oric->cpu.read = atmosread;
@@ -1381,8 +1477,8 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           break;
       }
 
-      if( !load_rom( oric, pravzromfile, -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) ) return SDL_FALSE;
-      load_patches( oric, pravzromfile );
+      if( !load_rom( oric, pravetzromfile[0], -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) ) return SDL_FALSE;
+      load_patches( oric, pravetzromfile[0] );
 
       oric->cyclesperraster = 64;
       oric->vid_start = 65;
@@ -1428,12 +1524,14 @@ void shut_machine( struct machine *oric )
 {
   if( oric->drivetype == DRV_MICRODISC ) { microdisc_free( &oric->md ); oric->drivetype = DRV_NONE; }
   if( oric->drivetype == DRV_JASMIN )    { jasmin_free( &oric->jasmin ); oric->drivetype = DRV_NONE; }
+  if( oric->drivetype == DRV_PRAVETZ )    { pravetz_free( &oric->pravetz ); oric->drivetype = DRV_NONE; }
   if( oric->mem ) { free( oric->mem ); oric->mem = NULL; oric->rom = NULL; }
   if( oric->prf ) { fclose( oric->prf ); oric->prf = NULL; }
   if( oric->tsavf ) tape_stop_savepatch( oric );
   if( oric->tapecap ) toggletapecap( oric, &mainitems[1], 0 );
   mon_freesyms( &sym_microdisc );
   mon_freesyms( &sym_jasmin );
+  mon_freesyms( &sym_pravetz );
   mon_freesyms( &oric->romsyms );
   mon_freesyms( &oric->tele_banksyms[0] );
   mon_freesyms( &oric->tele_banksyms[1] );
@@ -1457,10 +1555,10 @@ void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
   {
     case DRV_MICRODISC:
     case DRV_JASMIN:
-      oric->drivetype = type;
+    case DRV_PRAVETZ:
+        oric->drivetype = type;
       break;
     
-    case DRV_PRAVETZ:
     default:
       oric->drivetype = DRV_NONE;
       break;
