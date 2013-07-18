@@ -450,6 +450,7 @@ void render_sw_detectvideo( struct machine *oric )
     switch( info->vfmt->BitsPerPixel )
     {
       // Great, cases we handle
+      case 8:
       case 16:
       case 32:
         oric->sw_depth = info->vfmt->BitsPerPixel;

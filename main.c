@@ -46,6 +46,7 @@
 #include "main.h"
 #include "ula.h"
 #include "render_sw.h"
+#include "render_sw8.h"
 #include "render_gl.h"
 #include "joystick.h"
 #include "tape.h"
@@ -131,7 +132,7 @@ static char *rendermodes[] = { "{{INVALID}}",
                                "opengl",
                                NULL };
 
-static char *swdepths[] = { "16", "32", NULL };
+static char *swdepths[] = { "8", "16", "32", NULL };
 
 static SDL_bool istokend( char c )
 {
@@ -388,7 +389,17 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_string( &sto->lctmp[i], "pravetzrom",   pravetzromfile[0], 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "pravetz8drom", pravetzromfile[1], 1024 ) ) continue;
     if( read_config_int(    &sto->lctmp[i], "rampattern",   &oric->rampattern, 0, 1 ) ) continue;
-    if( read_config_option( &sto->lctmp[i], "swdepth",      &oric->sw_depth, swdepths ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "swdepth",      &oric->sw_depth, swdepths ) )
+    {
+      /* Convert index to depth */
+      switch (oric->sw_depth)
+      {
+        case 0:  oric->sw_depth = 8; break;
+        case 2:  oric->sw_depth = 32; break;
+        default: oric->sw_depth = 16; break;
+      }
+      continue;
+    }
     if( read_config_option( &sto->lctmp[i], "rendermode",   &sto->start_rendermode, rendermodes ) )
     {
 #ifndef __OPENGL_AVAILABLE__
@@ -535,6 +546,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   preinit_ula( oric );
   preinit_machine( oric );
   preinit_render_sw( oric );
+  preinit_render_sw8( oric );
 #ifdef __OPENGL_AVAILABLE__
   preinit_render_gl( oric );
 #endif

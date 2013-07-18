@@ -316,6 +316,7 @@ OBJECTS = \
 	disk_pravetz.o \
 	avi.o \
 	render_sw.o \
+	render_sw8.o \
 	render_gl.o \
 	render_null.o \
 	joystick.o \

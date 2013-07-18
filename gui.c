@@ -57,6 +57,7 @@
 #include "machine.h"
 #include "filereq.h"
 #include "render_sw.h"
+#include "render_sw8.h"
 #include "render_gl.h"
 #include "render_null.h"
 #include "ula.h"
@@ -1331,6 +1332,26 @@ void set_render_mode( struct machine *oric, int whichrendermode )
   switch( whichrendermode )
   {
     case RENDERMODE_SW:
+      if (oric->sw_depth == 8)
+      {
+        oric->render_begin          = render_begin_sw8;
+        oric->render_end            = render_end_sw8;
+        oric->render_textzone_alloc = render_textzone_alloc_sw8;
+        oric->render_textzone_free  = render_textzone_free_sw8;
+        oric->render_textzone       = render_textzone_sw8;
+        oric->render_gimg           = render_gimg_sw8;
+        oric->render_gimgpart       = render_gimgpart_sw8;
+        oric->render_video          = render_video_sw8;
+        oric->render_togglefullscreen = render_togglefullscreen_sw8;
+        oric->init_render           = init_render_sw8;
+        oric->shut_render           = shut_render_sw8;
+        vdopitems[0].name = " OpenGL rendering";
+        vdopitems[1].name = "\x0e""Software rendering";
+        glopitems[0].name = " OpenGL rendering";
+        glopitems[1].name = "\x0e""Software rendering";
+        menus[4].items = vdopitems;
+        break;
+      }
       oric->render_begin          = render_begin_sw;
       oric->render_end            = render_end_sw;
       oric->render_textzone_alloc = render_textzone_alloc_sw;
