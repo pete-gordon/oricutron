@@ -49,7 +49,6 @@ extern SDL_bool warpspeed, soundavailable, soundon;
 extern char diskpath[], diskfile[], filetmp[];
 extern char telediskpath[], telediskfile[];
 extern SDL_bool refreshstatus, refreshavi;
-extern struct osdmenuitem mainitems[];
 
 char atmosromfile[1024];
 char oric1romfile[1024];
@@ -62,11 +61,10 @@ struct avi_handle *vidcap = NULL;
 char vidcapname[128];
 int vidcapcount = 0;
 
-extern struct osdmenuitem hwopitems[];
-
 unsigned char rom_microdisc[8912], rom_jasmin[2048], rom_pravetz[512];
 struct symboltable sym_microdisc, sym_jasmin, sym_pravetz;
 SDL_bool microdiscrom_valid, jasminrom_valid, pravetzrom_valid;
+extern struct osdmenuitem mainitems[];
 
 Uint8 oricpalette[] = { 0x00, 0x00, 0x00,
                         0xff, 0x00, 0x00,
@@ -1093,6 +1091,7 @@ void clear_patches( struct machine *oric )
   oric->pch_tt_csave_end_pc            = -1;
   oric->pch_tt_store_end_pc            = -1;
   oric->pch_tt_available               = SDL_FALSE;
+  oric->pch_tt_save_available          = SDL_FALSE;
 
   oric->keymap = KMAP_QWERTY;
 }
@@ -1168,6 +1167,42 @@ void load_patches( struct machine *oric, char *fname )
     oric->pch_tt_save_available = SDL_TRUE;
 }
 
+static void setup_for_microdisc( struct machine *oric, void *readptr, void *writeptr )
+{
+  oric->cpu.read = readptr;
+  oric->cpu.write = writeptr;
+  oric->romdis = SDL_TRUE;
+  microdisc_init( &oric->md, &oric->wddisk, oric );
+  oric->disksyms = &sym_microdisc;
+}
+
+static void setup_for_jasmin( struct machine *oric, void *readptr, void *writeptr )
+{
+  oric->cpu.read = readptr;
+  oric->cpu.write = writeptr;
+  oric->romdis = SDL_FALSE;
+  jasmin_init( &oric->jasmin, &oric->wddisk, oric );
+  oric->disksyms = &sym_jasmin;
+}
+
+static void setup_for_pravetzdisk( struct machine *oric, void *readptr, void *writeptr )
+{
+  oric->cpu.read = readptr;
+  oric->cpu.write = writeptr;
+  oric->romdis = SDL_FALSE;
+  pravetz_init( &oric->pravetz, oric );
+  oric->disksyms = &sym_pravetz;
+}
+
+static void setup_for_no_disk( struct machine *oric, void *readptr, void *writeptr )
+{
+  oric->drivetype = DRV_NONE;
+  oric->cpu.read = readptr;
+  oric->cpu.write = writeptr;
+  oric->romdis = SDL_FALSE;
+  oric->disksyms = NULL;
+}
+
 SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints )
 {
   int i;
@@ -1201,11 +1236,6 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
     case MACH_ORIC1_16K:
       for( i=0; i<4; i++ )
         oric->vidbases[i] &= 0x7fff;
-      hwopitems[0].name = " Oric-1";
-      hwopitems[1].name = "\x0e""Oric-1 16K";
-      hwopitems[2].name = " Atmos";
-      hwopitems[3].name = " Telestrat";
-      hwopitems[4].name = " Pravetz 8D";
       oric->memsize = 16384 + 16384;
       oric->mem = malloc( oric->memsize );
       if( !oric->mem )
@@ -1221,48 +1251,24 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       switch( oric->drivetype )
       {
         case DRV_MICRODISC:
-          oric->cpu.read = microdisc_o16kread;
-          oric->cpu.write = microdisc_o16kwrite;
-          oric->romdis = SDL_TRUE;
-          microdisc_init( &oric->md, &oric->wddisk, oric );
-          oric->disksyms = &sym_microdisc;
+          setup_for_microdisc( oric, microdisc_o16kread, microdisc_o16kwrite);
           break;
         
         case DRV_JASMIN:
-          oric->cpu.read = jasmin_o16kread;
-          oric->cpu.write = jasmin_o16kwrite;
-          oric->romdis = SDL_FALSE;
-          jasmin_init( &oric->jasmin, &oric->wddisk, oric );
-          oric->disksyms = &sym_jasmin;
+          setup_for_jasmin( oric, jasmin_o16kread, jasmin_o16kwrite);
           break;
 
         case DRV_PRAVETZ:
         default:
-          oric->drivetype = DRV_NONE;
-          oric->cpu.read = o16kread;
-          oric->cpu.write = o16kwrite;
-          oric->romdis = SDL_FALSE;
-          oric->disksyms = NULL;
+          setup_for_no_disk( oric, o16kread, o16kwrite );
           break;
       }
 
       if( !load_rom( oric, oric1romfile, -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) ) return SDL_FALSE;
       load_patches( oric, oric1romfile );
-
-      oric->cyclesperraster = 64;
-      oric->vid_start = 65;
-      oric->vid_maxrast = 312;
-      oric->vid_end     = oric->vid_start + 224;
-      oric->vid_raster  = 0;
-      ula_powerup_default( oric );
       break;
     
     case MACH_ORIC1:
-      hwopitems[0].name = "\x0e""Oric-1";
-      hwopitems[1].name = " Oric-1 16K";
-      hwopitems[2].name = " Atmos";
-      hwopitems[3].name = " Telestrat";
-      hwopitems[4].name = " Pravetz 8D";
       oric->memsize = 65536 + 16384;
       oric->mem = malloc( oric->memsize );
       if( !oric->mem )
@@ -1278,49 +1284,24 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       switch( oric->drivetype )
       {
         case DRV_MICRODISC:
-          oric->cpu.read = microdisc_atmosread;
-          oric->cpu.write = microdisc_atmoswrite;
-          oric->romdis = SDL_TRUE;
-          microdisc_init( &oric->md, &oric->wddisk, oric );
-          oric->disksyms = &sym_microdisc;
+          setup_for_microdisc( oric, microdisc_atmosread, microdisc_atmoswrite);
           break;
         
         case DRV_JASMIN:
-          oric->cpu.read = jasmin_atmosread;
-          oric->cpu.write = jasmin_atmoswrite;
-          oric->romdis = SDL_FALSE;
-          jasmin_init( &oric->jasmin, &oric->wddisk, oric );
-          oric->disksyms = &sym_jasmin;
+          setup_for_jasmin( oric, jasmin_atmosread, jasmin_atmoswrite);
           break;
 
         case DRV_PRAVETZ:
         default:
-          oric->drivetype = DRV_NONE;
-          oric->cpu.read = atmosread;
-          oric->cpu.write = atmoswrite;
-          oric->romdis = SDL_FALSE;
-          oric->disksyms = NULL;
+          setup_for_no_disk( oric, atmosread, atmoswrite );
           break;
       }
 
       if( !load_rom( oric, oric1romfile, -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) ) return SDL_FALSE;
       load_patches( oric, oric1romfile );
-
-      oric->cyclesperraster = 64;
-      oric->vid_start = 65;
-      oric->vid_maxrast = 312;
-      oric->vid_end     = oric->vid_start + 224;
-      oric->vid_raster  = 0;
-      ula_powerup_default( oric );
       break;
     
     case MACH_ATMOS:
-      hwopitems[0].name = " Oric-1";
-      hwopitems[1].name = " Oric-1 16K";
-      hwopitems[2].name = "\x0e""Atmos";
-      hwopitems[3].name = " Telestrat";
-      hwopitems[4].name = " Pravetz 8D";
-
       oric->memsize = 65536 + 16384;
       oric->mem = malloc( oric->memsize );
       if( !oric->mem )
@@ -1336,49 +1317,24 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       switch( oric->drivetype )
       {
         case DRV_MICRODISC:
-          oric->cpu.read = microdisc_atmosread;
-          oric->cpu.write = microdisc_atmoswrite;
-          oric->romdis = SDL_TRUE;
-          microdisc_init( &oric->md, &oric->wddisk, oric );
-          oric->disksyms = &sym_microdisc;
+          setup_for_microdisc( oric, microdisc_atmosread, microdisc_atmoswrite);
           break;
         
         case DRV_JASMIN:
-          oric->cpu.read = jasmin_atmosread;
-          oric->cpu.write = jasmin_atmoswrite;
-          oric->romdis = SDL_FALSE;
-          jasmin_init( &oric->jasmin, &oric->wddisk, oric );
-          oric->disksyms = &sym_jasmin;
+          setup_for_jasmin( oric, jasmin_atmosread, jasmin_atmoswrite);
           break;
 
         case DRV_PRAVETZ:
         default:
-          oric->drivetype = DRV_NONE;
-          oric->cpu.read = atmosread;
-          oric->cpu.write = atmoswrite;
-          oric->romdis = SDL_FALSE;
-          oric->disksyms = NULL;
+          setup_for_no_disk( oric, atmosread, atmoswrite );
           break;
       }
 
       if( !load_rom( oric, atmosromfile, -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) ) return SDL_FALSE;
       load_patches( oric, atmosromfile );
-
-      oric->cyclesperraster = 64;
-      oric->vid_start = 65;
-      oric->vid_maxrast = 312;
-      oric->vid_end     = oric->vid_start + 224;
-      oric->vid_raster  = 0;
-      ula_powerup_default( oric );
       break;
 
     case MACH_TELESTRAT:
-      hwopitems[0].name = " Oric-1";
-      hwopitems[1].name = " Oric-1 16K";
-      hwopitems[2].name = " Atmos";
-      hwopitems[3].name = "\x0e""Telestrat";
-      hwopitems[4].name = " Pravetz 8D";
-
       oric->memsize = 65536 + 16384*7;
       oric->mem = malloc( oric->memsize );
       if( !oric->mem )
@@ -1391,11 +1347,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
 
       clear_patches( oric );
 
-      oric->cpu.read = telestratread;
-      oric->cpu.write = telestratwrite;
-      oric->drivetype = DRV_MICRODISC;
-      microdisc_init( &oric->md, &oric->wddisk, oric );
-      oric->romdis = SDL_FALSE;
+      setup_for_microdisc( oric, telestratread, telestratwrite );
       oric->disksyms = NULL;
 
       for( i=0; i<8; i++ )
@@ -1414,22 +1366,9 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->tele_currbank = 7;
       oric->tele_banktype = oric->tele_bank[7].type;
       oric->rom           = oric->tele_bank[7].ptr;
-
-      oric->cyclesperraster = 64;
-      oric->vid_start = 65;
-      oric->vid_maxrast = 312;
-      oric->vid_end     = oric->vid_start + 224;
-      oric->vid_raster  = 0;
-      ula_powerup_default( oric );
       break;
 
     case MACH_PRAVETZ:
-      hwopitems[0].name = " Oric-1";
-      hwopitems[1].name = " Oric-1 16K";
-      hwopitems[2].name = " Atmos";
-      hwopitems[3].name = " Telestrat";
-      hwopitems[4].name = "\x0e""Pravetz 8D";
-
       oric->memsize = 65536 + 16384;
       oric->mem = malloc( oric->memsize );
       if( !oric->mem )
@@ -1445,53 +1384,37 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       switch( oric->drivetype )
       {
         case DRV_MICRODISC:
-          oric->cpu.read = microdisc_atmosread;
-          oric->cpu.write = microdisc_atmoswrite;
-          oric->romdis = SDL_TRUE;
-          microdisc_init( &oric->md, &oric->wddisk, oric );
-          oric->disksyms = &sym_microdisc;
+          setup_for_microdisc( oric, microdisc_atmosread, microdisc_atmoswrite);
           break;
         
         case DRV_JASMIN:
-          oric->cpu.read = jasmin_atmosread;
-          oric->cpu.write = jasmin_atmoswrite;
-          oric->romdis = SDL_FALSE;
-          jasmin_init( &oric->jasmin, &oric->wddisk, oric );
-          oric->disksyms = &sym_jasmin;
+          setup_for_jasmin( oric, jasmin_atmosread, jasmin_atmoswrite);
           break;
 
         case DRV_PRAVETZ:
-          oric->cpu.read = pravetz_atmosread;
-          oric->cpu.write = pravetz_atmoswrite;
-          oric->romdis = SDL_FALSE;
-          pravetz_init( &oric->pravetz, oric );
-          oric->disksyms = &sym_pravetz;
+          setup_for_pravetzdisk( oric, pravetz_atmosread, pravetz_atmoswrite );
           break;
 
         default:
-          oric->drivetype = DRV_NONE;
-          oric->cpu.read = atmosread;
-          oric->cpu.write = atmoswrite;
-          oric->romdis = SDL_FALSE;
-          oric->disksyms = NULL;
+          setup_for_no_disk( oric, atmosread, atmoswrite );
           break;
       }
 
       if( !load_rom( oric, pravetzromfile[0], -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) ) return SDL_FALSE;
       load_patches( oric, pravetzromfile[0] );
-
-      oric->cyclesperraster = 64;
-      oric->vid_start = 65;
-      oric->vid_maxrast = 312;
-      oric->vid_end     = oric->vid_start + 224;
-      oric->vid_raster  = 0;
-      ula_powerup_default( oric );
       break;
     
     default:
       // Huh?!
       return SDL_FALSE;
   }
+
+  oric->cyclesperraster = 64;
+  oric->vid_start = 65;
+  oric->vid_maxrast = 312;
+  oric->vid_end     = oric->vid_start + 224;
+  oric->vid_raster  = 0;
+  ula_powerup_default( oric );
 
   oric->read_not_lightpen  = oric->cpu.read;
  
@@ -1548,6 +1471,13 @@ void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
 {
   if( oric->drivetype == type )
     return;
+
+  if( ( type == DRV_PRAVETZ ) &&
+      ( oric->type != MACH_PRAVETZ ) )
+  {
+    swapmach( oric, mitem, (DRV_PRAVETZ<<16)|MACH_PRAVETZ );
+    return;
+  }
 
   shut_machine( oric );
 

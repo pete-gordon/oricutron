@@ -1486,6 +1486,31 @@ void preinit_gui( struct machine *oric )
 // Ensure the sanity of toggle menuitems
 void setmenutoggles( struct machine *oric )
 {
+  switch (oric->drivetype)
+  {
+    case DRV_JASMIN:
+    case DRV_MICRODISC:
+      mainitems[2].func = insertdisk;
+      mainitems[3].func = insertdisk;
+      mainitems[4].func = insertdisk;
+      mainitems[5].func = insertdisk;
+      break;
+
+    case DRV_PRAVETZ:
+      mainitems[2].func = insertdisk;
+      mainitems[3].func = insertdisk;
+      mainitems[4].func = NULL;
+      mainitems[5].func = NULL;
+      break;
+
+    default:
+      mainitems[2].func = NULL;
+      mainitems[3].func = NULL;
+      mainitems[4].func = NULL;
+      mainitems[5].func = NULL;
+      break;
+  }
+
   if( soundavailable && soundon )
     auopitems[0].name = "\x0e""Sound enabled";
   else
@@ -1559,10 +1584,16 @@ void setmenutoggles( struct machine *oric )
   else
     glopitems[6].name = " PAL ghosting";
 
+  hwopitems[0].name = oric->type==MACH_ORIC1     ? "\x0e""Oric-1"     : " Oric-1";
+  hwopitems[1].name = oric->type==MACH_ORIC1_16K ? "\x0e""Oric-1 16K" : " Oric-1 16K";
+  hwopitems[2].name = oric->type==MACH_ATMOS     ? "\x0e""Atmos"      : " Atmos";
+  hwopitems[3].name = oric->type==MACH_TELESTRAT ? "\x0e""Telestrat"  : " Telestrat";
+  hwopitems[4].name = oric->type==MACH_PRAVETZ   ? "\x0e""Pravetz 8D" : " Pravetz 8D";
+
   hwopitems[7].func = microdiscrom_valid ? setdrivetype : NULL;
   hwopitems[8].func = jasminrom_valid ? setdrivetype : NULL;
   hwopitems[9].func = pravetzrom_valid ? setdrivetype : NULL;
-  
+
   hwopitems[6].name = oric->drivetype==DRV_NONE      ? "\x0e""No disk"   : " No disk";
   hwopitems[7].name = oric->drivetype==DRV_MICRODISC ? "\x0e""Microdisc" : " Microdisc";
   hwopitems[8].name = oric->drivetype==DRV_JASMIN    ? "\x0e""Jasmin"    : " Jasmin";
