@@ -41,7 +41,7 @@
 static struct SDL_Surface *screen;
 
 static Uint32 offset_top;
-static Uint16 dpen[16];
+static Uint32 qpen[16*256];
 
 extern SDL_bool fullscreen, hwsurface;
 static SDL_bool needclr;
@@ -216,11 +216,11 @@ void render_gimgpart_sw8( int img_id, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 oy
 void render_video_sw8( struct machine *oric, SDL_bool doublesize )
 {
   int x, y;
-  Uint8 *src_pixel;
+  Uint16 *src_pixel;
   Sint32 dst_pitch_x2;
-  Uint16 c;
+  Uint32 c;
   Uint8 *dst_scanline, *dst_even_scanline, *dst_odd_scanline;
-  Uint16 *dst_even_pixel, *dst_odd_pixel;
+  Uint32 *dst_even_pixel, *dst_odd_pixel;
 
   if( !oric->scr )
     return;
@@ -233,7 +233,7 @@ void render_video_sw8( struct machine *oric, SDL_bool doublesize )
       needclr = SDL_FALSE;
     }
 
-    src_pixel = oric->scr;
+    src_pixel = (Uint16 *)oric->scr;
 
     dst_pitch_x2 = 2 * screen->pitch;
 
@@ -248,17 +248,17 @@ void render_video_sw8( struct machine *oric, SDL_bool doublesize )
       {
         if (!oric->vid_dirty[y])
         {
-          src_pixel += 240;
+          src_pixel += 120;
           continue;
         }
-        dst_even_pixel = (Uint16*)dst_even_scanline;
-        dst_odd_pixel  = (Uint16*)dst_odd_scanline;
+        dst_even_pixel = (Uint32*)dst_even_scanline;
+        dst_odd_pixel  = (Uint32*)dst_odd_scanline;
 
-        for( x=240; x!=0; --x )
+        for( x=0; x<120; x++ )
         {
           c = *(src_pixel++);
-          *(dst_even_pixel++) = dpen[c];
-          *(dst_odd_pixel++)  = dpen[c+8];
+          *(dst_even_pixel++) = qpen[c];
+          *(dst_odd_pixel++)  = qpen[c+8*257];
         }
         oric->vid_dirty[y] = SDL_FALSE;
 
@@ -268,15 +268,15 @@ void render_video_sw8( struct machine *oric, SDL_bool doublesize )
       {
         if (!oric->vid_dirty[y])
         {
-          src_pixel += 240;
+          src_pixel += 120;
           continue;
         }
-        dst_even_pixel = (Uint16*)dst_even_scanline;
-        dst_odd_pixel  = (Uint16*)dst_odd_scanline;
+        dst_even_pixel = (Uint32*)dst_even_scanline;
+        dst_odd_pixel  = (Uint32*)dst_odd_scanline;
 
-        for( x=240; x!=0; --x ) 
+        for( x=0; x<120; x++ ) 
         {
-            c = dpen[*(src_pixel++)];
+            c = qpen[*(src_pixel++)];
             *(dst_even_pixel++) = c;
             *(dst_odd_pixel++)  = c;
         }
@@ -288,7 +288,7 @@ void render_video_sw8( struct machine *oric, SDL_bool doublesize )
 
   needclr = SDL_TRUE;
 
-  src_pixel = oric->scr;
+  src_pixel = (Uint16 *)oric->scr;
   dst_scanline = (Uint8*)screen->pixels;
 
   for( y=0; y<4; y++ )
@@ -311,8 +311,23 @@ void preinit_render_sw8( struct machine *oric )
 
 SDL_bool render_togglefullscreen_sw8( struct machine *oric )
 {
-  fullscreen = SDL_TRUE;
-  return SDL_TRUE;
+#if defined(__amigaos4__) || defined(__linux__)
+  // Use SDL_WM_ToggleFullScreen on systems where it is supported
+  if( SDL_WM_ToggleFullScreen( screen ) )
+  {
+    fullscreen = !fullscreen;
+    return SDL_TRUE;
+  }
+
+  return SDL_FALSE;
+#else
+  oric->shut_render( oric );
+  fullscreen = !fullscreen;
+  if( oric->init_render( oric ) ) return SDL_TRUE;
+  set_render_mode( oric, RENDERMODE_NULL );
+  oric->emu_mode = EM_PLEASEQUIT; 
+  return SDL_FALSE;
+#endif
 }
 
 static int similar_colour(int i, int r, int g, int b)
@@ -376,11 +391,12 @@ static SDL_bool guiimg_to_img(Uint8** dst, const struct guiimg* src)
 
 SDL_bool init_render_sw8( struct machine *oric )
 {
-  int i;
+  int i, j;
   Sint32 surfacemode;
 
-  surfacemode = SDL_FULLSCREEN|SDL_HWPALETTE;
-  if( hwsurface ) { surfacemode |= SDL_HWSURFACE; }
+  surfacemode = SDL_HWPALETTE;
+  if( fullscreen ) surfacemode |= SDL_FULLSCREEN;
+  if( hwsurface ) surfacemode |= SDL_HWSURFACE;
 
   // Try to setup the video display
   screen = SDL_SetVideoMode( 640, 480, 8, surfacemode );
@@ -418,9 +434,10 @@ SDL_bool init_render_sw8( struct machine *oric )
 
   SDL_SetPalette( screen, SDL_LOGPAL|SDL_PHYSPAL, colours, 0, next_gimgcol);
 
-  // Precompute pixels pairs for efficient rendering double size
+  // Precompute pixel quads for efficient rendering double size
   for( i=0; i<8*2; i++ )
-    dpen[i] = (i<<8)|i;
+	for( j=0; j<8*2; j++ )
+      qpen[(j<<8)|i] = (j<<24)|(j<<16)|(i<<8)|i;
 
   // For the first frame rendered, we need to clean the screen
   needclr = SDL_TRUE;
