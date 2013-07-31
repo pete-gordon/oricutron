@@ -70,6 +70,7 @@ extern SDL_bool fullscreen;
 char tapepath[4096], tapefile[512];
 char diskpath[4096], diskfile[512];
 char telediskpath[4096], telediskfile[512];
+char pravdiskpath[4096], pravdiskfile[512];
 extern char atmosromfile[];
 extern char oric1romfile[];
 extern char mdiscromfile[];
@@ -798,8 +799,18 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
 
   if( oric->type != MACH_TELESTRAT )
   {
-    dpath = diskpath;
-    dfile = diskfile;
+    switch (oric->drivetype)
+    {
+      case DRV_PRAVETZ:
+        dpath = pravdiskpath;
+        dfile = pravdiskfile;
+        break;
+
+      default:
+        dpath = diskpath;
+        dfile = diskfile;
+        break;
+    }
   } else {
     dpath = telediskpath;
     dfile = telediskfile;
@@ -1485,6 +1496,8 @@ void preinit_gui( struct machine *oric )
   strcpy( diskfile, "" );
   strcpy( telediskpath, FILEPREFIX"teledisks" );
   strcpy( telediskfile, "" );
+  strcpy( pravdiskpath, FILEPREFIX"pravdisks" );
+  strcpy( pravdiskfile, "" );
   strcpy( atmosromfile, ROMPREFIX"basic11b" );
   strcpy( oric1romfile, ROMPREFIX"basic10" );
   strcpy( mdiscromfile, ROMPREFIX"microdis" );

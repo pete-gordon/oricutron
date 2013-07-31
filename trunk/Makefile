@@ -396,7 +396,7 @@ install-linux:
 package-morphos package-aros package-os4: Oricutron.guide $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info))
 	-@delete ram:Oricutron all >NIL:
 	-@delete ram:$(PKGDIR).lha >NIL:
-	makedir ram:Oricutron ram:Oricutron/disks ram:Oricutron/tapes ram:Oricutron/teledisks ram:Oricutron/roms ram:Oricutron/snapshots ram:Oricutron/images
+	makedir ram:Oricutron ram:Oricutron/disks ram:Oricutron/tapes ram:Oricutron/teledisks ram:Oricutron/pravdisks ram:Oricutron/roms ram:Oricutron/snapshots ram:Oricutron/images
 	copy ENVARC:sys/def_drawer.info ram:Oricutron.info
 	copy $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info)) ram:Oricutron
 	copy images/#?.bmp ram:Oricutron/images/
@@ -435,6 +435,8 @@ package-osx:
 package-win32:
 	mkdir -p $(PKGDIR)/images
 	mkdir -p $(PKGDIR)/disks
+	mkdir -p $(PKGDIR)/teledisks
+	mkdir -p $(PKGDIR)/pravdisks
 	mkdir -p $(PKGDIR)/tapes
 	mkdir -p $(PKGDIR)/roms
 	install -m 755 $(TARGET) $(PKGDIR)
@@ -446,3 +448,4 @@ package-win32:
 	# unix2dos is not always installed
 	sed -i "s/$$/\r/g" $(PKGDIR)/ReadMe.txt
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
+

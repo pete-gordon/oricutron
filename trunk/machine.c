@@ -48,6 +48,7 @@
 extern SDL_bool warpspeed, soundavailable, soundon;
 extern char diskpath[], diskfile[], filetmp[];
 extern char telediskpath[], telediskfile[];
+extern char pravdiskpath[], pravdiskfile[];
 extern SDL_bool refreshstatus, refreshavi;
 
 char atmosromfile[1024];
@@ -925,8 +926,18 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
                 if( oric->type != MACH_TELESTRAT )
                 {
-                  dpath = diskpath;
-                  dfile = diskfile;
+                  switch (oric->drivetype)
+                  {
+                    case DRV_PRAVETZ:
+                      dpath = pravdiskpath;
+                      dfile = pravdiskfile;
+                      break;
+
+                    default:
+                      dpath = diskpath;
+                      dfile = diskfile;
+                      break;
+                  }
                 } else {
                   dpath = telediskpath;
                   dfile = telediskfile;

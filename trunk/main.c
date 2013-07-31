@@ -60,7 +60,7 @@ extern SDL_bool warpspeed, soundon;
 Uint32 lastframetimes[FRAMES_TO_AVERAGE], frametimeave;
 extern char mon_bpmsg[];
 extern struct avi_handle *vidcap;
-extern char tapepath[], diskpath[], telediskpath[];
+extern char tapepath[], diskpath[], telediskpath[], pravdiskpath[];
 extern char atmosromfile[];
 extern char oric1romfile[];
 extern char mdiscromfile[];
@@ -382,6 +382,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_string( &sto->lctmp[i], "tapepath",     tapepath, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "diskpath",     diskpath, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "telediskpath", telediskpath, 1024 ) ) continue;
+    if( read_config_string( &sto->lctmp[i], "pravdiskpath", pravdiskpath, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "atmosrom",     atmosromfile, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "oric1rom",     oric1romfile, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "mdiscrom",     mdiscromfile, 1024 ) ) continue;

@@ -29,75 +29,34 @@
 #include <unistd.h>
 
 #include "system.h"
+#include "6502.h"
+#include "via.h"
+#include "8912.h"
+#include "gui.h"
 #include "disk.h"
 #include "disk_pravetz.h"
+#include "monitor.h"
+#include "6551.h"
+#include "machine.h"
 
-#define disk_pravetz_offset      0x310
+static Uint8  disk_pravetz_read_selected(struct machine *oric);
+static void   disk_pravetz_write_selected(struct machine *oric, Uint8 data);
+static void   disk_pravetz_switch(struct machine *oric, Uint16 addr);
 
-#define SECTORS_PER_TRACK        16
-#define BYTES_PER_SECTOR         256
-#define RAW_BYTES_PER_SECTOR     374
-#define TRACKS_PER_DISK          35
-#define RAW_TRACK_SIZE           6200
-
-typedef
-struct disk_image_s
+Uint8 disk_pravetz_read(struct machine *oric, Uint16 addr)
 {
-    int num;
-    FILE * file;
-
-    SDL_bool dirty;
-    SDL_bool protected;
-
-    Uint8  volume;
-    Uint8  select;
-    Uint8  motor_on;
-    Uint8  write_ready;
-
-    Uint16 byte;
-    Uint16 half_track;
-    Uint8  sector_buf[256];    
-
-    Uint8  image[TRACKS_PER_DISK][RAW_TRACK_SIZE];
-} 
-disk_image_t, *disk_image_p;
-
-static disk_image_t  disk_drive[MAX_DRIVES];
-static disk_image_p  current_drive;
-
-static Uint8  disk_pravetz_read_selected(void);
-static void   disk_pravetz_write_selected(Uint8 data);
-static void   disk_pravetz_switch(Uint16 addr);
-
-void disk_pravetz_init(void)
-{
-    int i;
-    for( i=0; i<MAX_DRIVES; i++ )
-    {
-      current_drive = &disk_drive[i];
-      current_drive->write_ready = 0x80;
-      current_drive->volume = 254;
-      current_drive->select = 0;
-      current_drive->motor_on = 0;
-      current_drive->num = i;
-    }
-    current_drive = &disk_drive[0];
-}
-
-Uint8 disk_pravetz_read(Uint16 addr)
-{
-    disk_pravetz_switch(addr-disk_pravetz_offset);
+    disk_pravetz_switch(oric, addr-PRAV_DISK_OFFSET);
     /* odd addresses don't produce anything */
-    return (!(addr & 1))? disk_pravetz_read_selected() : 0;
+    return (!(addr & 1))? disk_pravetz_read_selected(oric) : 0;
 }
 
-void disk_pravetz_write(Uint16 addr, Uint8 data)
+void disk_pravetz_write(struct machine *oric, Uint16 addr, Uint8 data)
 {
-    disk_pravetz_switch(addr-disk_pravetz_offset);
+    disk_pravetz_switch(oric, addr-PRAV_DISK_OFFSET);
     /* even addresses don't write anything */
     if(addr & 1)
     {
-        disk_pravetz_write_selected(data);
+        disk_pravetz_write_selected(oric, data);
     }
 }
 
@@ -144,15 +103,15 @@ static int  translate[256] =
     0x80, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f
 };
 
-static void  disk_pravetz_update_position (void)
+static void  disk_pravetz_update_position (struct pravetz_drive *drv)
 {
-    if (current_drive->motor_on)
+    if (drv->motor_on)
     {
-        current_drive->byte = (1 + current_drive->byte) % RAW_TRACK_SIZE;
+        drv->byte = (1 + drv->byte) % PRAV_RAW_TRACK_SIZE;
     }
 }
 
-static Uint8  disk_pravetz_image_raw_byte (disk_image_p d_ptr, Uint16 t_idx, Uint16 s_idx, Uint16 b_idx)
+Uint8  disk_pravetz_image_raw_byte(struct machine *oric, int drive,  Uint16 t_idx, Uint16 s_idx, Uint16 b_idx)
 {
     long  f_pos;
 
@@ -160,6 +119,8 @@ static Uint8  disk_pravetz_image_raw_byte (disk_image_p d_ptr, Uint16 t_idx, Uin
     static Uint8  eor;
     static Uint8  raw;
     static Uint8  check;
+
+    struct pravetz_drive *drv = &oric->pravetz.drv[drive];
 
     raw = 0xFF;
 
@@ -195,12 +156,12 @@ static Uint8  disk_pravetz_image_raw_byte (disk_image_p d_ptr, Uint16 t_idx, Uin
 
     case 9:
         /* volume byte #1 */
-        check = current_drive->volume;
-        return 0xAA | (current_drive->volume >> 1);
+        check = drv->volume;
+        return 0xAA | (drv->volume >> 1);
 
     case 10:
         /* volume */
-        return 0xAA | current_drive->volume;
+        return 0xAA | drv->volume;
 
     case 11:
         /* track byte #1 */
@@ -249,10 +210,10 @@ static Uint8  disk_pravetz_image_raw_byte (disk_image_p d_ptr, Uint16 t_idx, Uin
 
         /* Read the coming sector */
         f_pos = (256 * 16 * t_idx) + (256 * skewing[s_idx]);
-
-        fseek(d_ptr->file, f_pos, SEEK_SET);
-        fread(current_drive->sector_buf, 1, 256, d_ptr->file);
-
+        if (drv->pimg)
+          drv->sector_ptr = &drv->pimg->rawimage[f_pos];
+        else
+          drv->sector_ptr = NULL;
         return 0xAD;
 
     case 370:
@@ -265,7 +226,7 @@ static Uint8  disk_pravetz_image_raw_byte (disk_image_p d_ptr, Uint16 t_idx, Uin
         if (b_idx >= 0x56)
         {
             /* 6 Bit */
-            old  = current_drive->sector_buf[b_idx - 0x56];
+            old  = drv->sector_ptr[b_idx - 0x56];
             old  = old >> 2;
             eor ^= old;
             raw  = translate[eor & 0x3F];
@@ -274,12 +235,12 @@ static Uint8  disk_pravetz_image_raw_byte (disk_image_p d_ptr, Uint16 t_idx, Uin
         else
         {
             /* 3 * 2 Bit */
-            old  = (current_drive->sector_buf[b_idx] & 0x01) << 1;
-            old |= (current_drive->sector_buf[b_idx] & 0x02) >> 1;
-            old |= (current_drive->sector_buf[b_idx + 0x56] & 0x01) << 3;
-            old |= (current_drive->sector_buf[b_idx + 0x56] & 0x02) << 1;
-            old |= (current_drive->sector_buf[b_idx + 0xAC] & 0x01) << 5;
-            old |= (current_drive->sector_buf[b_idx + 0xAC] & 0x02) << 3;
+            old  = (drv->sector_ptr[b_idx] & 0x01) << 1;
+            old |= (drv->sector_ptr[b_idx] & 0x02) >> 1;
+            old |= (drv->sector_ptr[b_idx + 0x56] & 0x01) << 3;
+            old |= (drv->sector_ptr[b_idx + 0x56] & 0x02) << 1;
+            old |= (drv->sector_ptr[b_idx + 0xAC] & 0x01) << 5;
+            old |= (drv->sector_ptr[b_idx + 0xAC] & 0x02) << 3;
             eor ^= old;
             raw  = translate[eor & 0x3F];
             eor  = old;
@@ -295,22 +256,17 @@ static Uint8  disk_pravetz_image_raw_byte (disk_image_p d_ptr, Uint16 t_idx, Uin
 ** Returns the next byte from the 'disk'
 */
 
-static Uint8  disk_pravetz_readbyte (void)
+static Uint8  disk_pravetz_readbyte(struct machine *oric)
 {
-    disk_pravetz_update_position();
-    /** disk_pravetz_load_images(); */
+    struct pravetz_drive *drv = &oric->pravetz.drv[oric->wddisk.c_drive];
 
     /* make sure there's a 'disk in the drive' */
-    if (0 == current_drive->file)
+    if (!drv->pimg)
         return 0xFF;
-    /*
-    printf("{R} fdu: T:%.2d%c S:%.2X.%.3d [%.2X]\n",
-        current_drive->half_track/2, (current_drive->half_track & 1) ? '+' : ' ',
-        current_drive->byte/RAW_BYTES_PER_SECTOR,
-        current_drive->byte%RAW_BYTES_PER_SECTOR,
-        current_drive->image[current_drive->half_track / 2][current_drive->byte]);
-    */
-    return current_drive->image[current_drive->half_track / 2][current_drive->byte];
+
+    disk_pravetz_update_position(drv);
+
+    return drv->image[drv->half_track / 2][drv->byte];
 }
 
 /**
@@ -318,29 +274,31 @@ static Uint8  disk_pravetz_readbyte (void)
 ** state of the Q6 and Q7 select bits.
 */
 
-static Uint8 disk_pravetz_read_selected(void)
+static Uint8 disk_pravetz_read_selected(struct machine *oric)
 {
-    if (!current_drive->write_ready)
+    struct pravetz_drive *drv = &oric->pravetz.drv[oric->wddisk.c_drive];
+
+    if (!drv->write_ready)
     {
-        current_drive->write_ready = 0x80;
+        drv->write_ready = 0x80;
     }
 
-    switch (current_drive->select)
+    switch (drv->select)
     {
     case 0:
-        return disk_pravetz_readbyte();
+        return disk_pravetz_readbyte(oric);
 
     case 1:
-        return current_drive->protected | current_drive->motor_on;
+        return drv->prot | drv->motor_on;
 
     case 2:
-        return current_drive->write_ready;
+        return drv->write_ready;
     }
 
     return 0;
 }
 
-static void  disk_pravetz_write_image (disk_image_p  d_ptr)
+void disk_pravetz_write_image(struct pravetz_drive *d_ptr)
 {
     Uint8   eor;
     Uint8   s_idx;
@@ -350,15 +308,15 @@ static void  disk_pravetz_write_image (disk_image_p  d_ptr)
     int  t_idx;
     int  b_idx;
     int  tb_idx;
-    int  sector_count;
+    int  sector_count, f_pos;
 
-    Uint8 temp_sector_buffer[BYTES_PER_SECTOR + 2];
+    Uint8 temp_sector_buffer[PRAV_BYTES_PER_SECTOR + 2];
 
     if (!d_ptr->dirty)
         return;
 
     tb_idx = 0;
-    for (t_idx = 0; t_idx < TRACKS_PER_DISK; t_idx++)
+    for (t_idx = 0; t_idx < PRAV_TRACKS_PER_DISK; t_idx++)
     {
         sector_count = 16;
 
@@ -369,63 +327,63 @@ find_sector:
         sector_search_count = 0;
         while (0xD5 != d_ptr->image[t_idx][tb_idx])
         {
-            tb_idx = (tb_idx + 1) % RAW_TRACK_SIZE;
-            if (++sector_search_count > RAW_TRACK_SIZE) return;
+            tb_idx = (tb_idx + 1) % PRAV_RAW_TRACK_SIZE;
+            if (++sector_search_count > PRAV_RAW_TRACK_SIZE) return;
         }
 
-        tb_idx = (tb_idx + 1) % RAW_TRACK_SIZE;
+        tb_idx = (tb_idx + 1) % PRAV_RAW_TRACK_SIZE;
         if (0xAA != d_ptr->image[t_idx][tb_idx])
         {
-            tb_idx = (tb_idx + 1) % RAW_TRACK_SIZE;
+            tb_idx = (tb_idx + 1) % PRAV_RAW_TRACK_SIZE;
             goto find_sector;
         }
 
-        tb_idx = (tb_idx + 1) % RAW_TRACK_SIZE;
+        tb_idx = (tb_idx + 1) % PRAV_RAW_TRACK_SIZE;
         if (0x96 != d_ptr->image[t_idx][tb_idx])
         {
-            tb_idx = (tb_idx + 1) % RAW_TRACK_SIZE;
+            tb_idx = (tb_idx + 1) % PRAV_RAW_TRACK_SIZE;
             goto find_sector;
         }
 
         /* found the sector header */
 
         /* skip 'volume' and 'track' */
-        tb_idx = (tb_idx + 5) % RAW_TRACK_SIZE;
+        tb_idx = (tb_idx + 5) % PRAV_RAW_TRACK_SIZE;
 
         /* sector byte #1 */
         s_idx  = 0x55 | (d_ptr->image[t_idx][tb_idx] << 1);
-        tb_idx = (tb_idx + 1) % RAW_TRACK_SIZE;
+        tb_idx = (tb_idx + 1) % PRAV_RAW_TRACK_SIZE;
         s_idx &= d_ptr->image[t_idx][tb_idx];
-        tb_idx = (tb_idx + 1) % RAW_TRACK_SIZE;
+        tb_idx = (tb_idx + 1) % PRAV_RAW_TRACK_SIZE;
 
         /* look for the sector data */
 
         while (0xD5 != d_ptr->image[t_idx][tb_idx])
-            tb_idx = (tb_idx + 1) % RAW_TRACK_SIZE;
+            tb_idx = (tb_idx + 1) % PRAV_RAW_TRACK_SIZE;
 
-        tb_idx = (tb_idx + 1) % RAW_TRACK_SIZE;
+        tb_idx = (tb_idx + 1) % PRAV_RAW_TRACK_SIZE;
         if (0xAA != d_ptr->image[t_idx][tb_idx])
         {
-            tb_idx = (tb_idx + 1) % RAW_TRACK_SIZE;
+            tb_idx = (tb_idx + 1) % PRAV_RAW_TRACK_SIZE;
             goto find_sector;
         }
 
-        tb_idx = (tb_idx + 1) % RAW_TRACK_SIZE;
+        tb_idx = (tb_idx + 1) % PRAV_RAW_TRACK_SIZE;
         if (0xAD != d_ptr->image[t_idx][tb_idx])
         {
-            tb_idx = (tb_idx + 1) % RAW_TRACK_SIZE;
+            tb_idx = (tb_idx + 1) % PRAV_RAW_TRACK_SIZE;
             goto find_sector;
         }
 
         /* found the sector data */
 
-        tb_idx = (tb_idx + 1) % RAW_TRACK_SIZE;
+        tb_idx = (tb_idx + 1) % PRAV_RAW_TRACK_SIZE;
         eor = 0;
 
         for (b_idx = 0; b_idx < 342; b_idx++)
         {
             eor ^= translate[d_ptr->image[t_idx][tb_idx]];
-            tb_idx = (tb_idx + 1) % RAW_TRACK_SIZE;
+            tb_idx = (tb_idx + 1) % PRAV_RAW_TRACK_SIZE;
 
             if (b_idx >= 0x56)
             {
@@ -445,13 +403,12 @@ find_sector:
         }
 
         /* write the sector */
+        f_pos = (PRAV_BYTES_PER_SECTOR * PRAV_SECTORS_PER_TRACK * t_idx) +
+                (PRAV_BYTES_PER_SECTOR * skewing[s_idx]);
 
-        fseek(d_ptr->file,
-              (BYTES_PER_SECTOR * SECTORS_PER_TRACK * t_idx) +
-              (BYTES_PER_SECTOR * skewing[s_idx]), SEEK_SET);
-
-        fwrite(temp_sector_buffer, 1, BYTES_PER_SECTOR, d_ptr->file);
-
+        memcpy(&d_ptr->pimg->rawimage[f_pos], temp_sector_buffer, PRAV_BYTES_PER_SECTOR);
+        d_ptr->pimg->modified = SDL_TRUE;
+        d_ptr->pimg->modified_time = 0;
         sector_count--;
 
         if (sector_count)
@@ -465,23 +422,24 @@ find_sector:
 ** Writes a byte to the next position on the 'disk'
 */
 
-static void  disk_pravetz_writebyte (Uint8  w_byte)
+static void  disk_pravetz_writebyte(struct machine *oric, Uint8  w_byte)
 {
-    disk_pravetz_update_position();
+    struct pravetz_drive *drv = &oric->pravetz.drv[oric->wddisk.c_drive];
+    disk_pravetz_update_position(drv);
 
     /* make sure there's a 'disk in the drive' */
-    if (0 == current_drive->file)
+    if (!drv->pimg)
         return;
 
-    if (current_drive->protected)
+    if (drv->prot)
         return;
 
     /* don't allow impossible bytes */
     if (w_byte < 0x96)
         return;
 
-    current_drive->dirty = SDL_TRUE;
-    current_drive->image[current_drive->half_track / 2][current_drive->byte] = w_byte;
+    drv->dirty = SDL_TRUE;
+    drv->image[drv->half_track / 2][drv->byte] = w_byte;
 
     /*
     printf("{W} fdu: T:%.2d%c S:%.2X.%.3d [%.2X]\n",
@@ -497,66 +455,62 @@ static void  disk_pravetz_writebyte (Uint8  w_byte)
 ** state of the Q6 and Q7 select bits.
 */
 
-static void  disk_pravetz_write_selected (Uint8  w_byte)
+static void  disk_pravetz_write_selected(struct machine *oric, Uint8  w_byte)
 {
-    if (3 == current_drive->select)
+    struct pravetz_drive *drv = &oric->pravetz.drv[oric->wddisk.c_drive];
+
+    if (3 == drv->select)
     {
-        if (current_drive->motor_on)
+        if (drv->motor_on)
         {
-            if (current_drive->write_ready)
+            if (drv->write_ready)
             {
-                disk_pravetz_writebyte(w_byte);
-                current_drive->write_ready = 0;
+                disk_pravetz_writebyte(oric, w_byte);
+                drv->write_ready = 0;
             }
         }
     }
 }
 
-static void  disk_pravetz_switch (Uint16  addr)
+static void  disk_pravetz_switch (struct machine *oric, Uint16  addr)
 {
+    struct pravetz_drive *drv = &oric->pravetz.drv[oric->wddisk.c_drive];
+
     switch (addr & 0xF)
     {
     case 0x08:
-        current_drive->motor_on = 0;
-        disk_pravetz_write_image(current_drive);
+        drv->motor_on = 0;
+        disk_pravetz_write_image(drv);
         break;
 
     case 0x09:
-        current_drive->motor_on = 0x20;
+        drv->motor_on = 0x20;
         break;
 
+    /* select drive 0/1 */
     case 0x0A:
-        /* select drive 0 */
-        if (current_drive != disk_drive)
-        {
-            disk_pravetz_write_image(current_drive);
-            current_drive = disk_drive;
-        }
-        break;
-
     case 0x0B:
-        /* select drive 1 */
-        if (current_drive == disk_drive)
+        if (oric->wddisk.c_drive != (addr&1))
         {
-            disk_pravetz_write_image(current_drive);
-            current_drive = disk_drive + 1;
+            disk_pravetz_write_image(drv);
+            oric->wddisk.c_drive = addr&1;
         }
         break;
 
     case 0x0C:
-        current_drive->select &= 0xFE;
+        drv->select &= 0xFE;
         break;
 
     case 0x0D:
-        current_drive->select |= 0x01;
+        drv->select |= 0x01;
         break;
 
     case 0x0E:
-        current_drive->select &= 0xFD;
+        drv->select &= 0xFD;
         break;
 
     case 0x0F:
-        current_drive->select |= 0x02;
+        drv->select |= 0x02;
         break;
 
     default:
@@ -567,21 +521,21 @@ static void  disk_pravetz_switch (Uint16  addr)
         if (addr & 0x01)
         {
             phase += 4;
-            phase -= (current_drive->half_track % 4);
+            phase -= (drv->half_track % 4);
             phase %= 4;
 
             if (1 == phase)
             {
-                if (current_drive->half_track < (2 * TRACKS_PER_DISK - 2))
+                if (drv->half_track < (2 * PRAV_TRACKS_PER_DISK - 2))
                 {
-                    current_drive->half_track++;
+                    drv->half_track++;
                 }
             }
             else if (3 == phase)
             {
-                if (current_drive->half_track > 0)
+                if (drv->half_track > 0)
                 {
-                    current_drive->half_track--;
+                    drv->half_track--;
                 }
             }
         }
@@ -590,134 +544,3 @@ static void  disk_pravetz_switch (Uint16  addr)
     }
 }
 
-SDL_bool disk_pravetz_load(const char* filename, int drive, SDL_bool readonly)
-{
-    disk_pravetz_free(drive);
-
-    if(readonly)
-    {
-        disk_drive[drive].file = fopen(filename, "rb");
-        if (disk_drive[drive].file)
-            disk_drive[drive].protected = SDL_TRUE;
-        else
-        {
-            disk_pravetz_free(drive);
-        }
-    }
-    else
-    {
-        /* Try to open for read/write */
-        disk_drive[drive].file = fopen(filename, "r+b");
-        if (disk_drive[drive].file)
-            disk_drive[drive].protected = SDL_FALSE;
-        else
-        {
-            disk_pravetz_free(drive);
-
-            /* Try to create the file */
-            disk_drive[drive].file = fopen(filename, "wb");
-            if (disk_drive[drive].file)
-            {
-                fclose(disk_drive[drive].file);
-                disk_drive[drive].file = fopen(filename, "r+b");
-
-                if (disk_drive[drive].file)
-                    disk_drive[drive].protected = SDL_FALSE;
-                else
-                    disk_pravetz_free(drive);
-            }
-        }
-    }
-
-    if (disk_drive[drive].file)
-    {
-        long  size;
-
-        fseek(disk_drive[drive].file, 0, SEEK_END);
-        size = ftell(disk_drive[drive].file);
-
-        if (0 == size)
-        {
-            /* new file... make a blank disk */
-            long  b_idx;
-
-            fseek(disk_drive[drive].file, 0, SEEK_SET);
-            for (b_idx = 0; b_idx < 143360; b_idx++)
-                fputc(0, disk_drive[drive].file);
-
-            fseek(disk_drive[drive].file, 0, SEEK_END);
-            size = ftell(disk_drive[drive].file);
-
-            if (143360 != size)
-            {
-                fclose(disk_drive[drive].file);
-                disk_drive[drive].file = 0;
-                remove(filename);
-                size = 0;
-            }
-        }
-
-        if (143360 == size)
-        {
-            Uint16  t_idx;
-            Uint16  s_idx;
-            Uint16  sb_idx;
-            Uint16  tb_idx;
-
-            /* ### */
-            for (t_idx = 0; t_idx < TRACKS_PER_DISK; t_idx++)
-            {
-                tb_idx = 0;
-
-                for (s_idx = 0; s_idx < SECTORS_PER_TRACK; s_idx++)
-                {
-                    for (sb_idx = 0; sb_idx < RAW_BYTES_PER_SECTOR; sb_idx++, tb_idx++)
-                    {
-                        disk_drive[drive].image[t_idx][tb_idx] =
-                            disk_pravetz_image_raw_byte(disk_drive + drive, t_idx, s_idx, sb_idx);
-                    }
-                }
-
-                while (tb_idx < RAW_TRACK_SIZE)
-                {
-                    disk_drive[drive].image[t_idx][tb_idx] = 0xFF;
-                    tb_idx++;
-                }
-            }
-        }
-        else
-            disk_pravetz_free(drive);
-    }
-
-    disk_drive[drive].dirty      = SDL_FALSE;
-    disk_drive[drive].byte       = 0;
-    disk_drive[drive].half_track = 0;
-    
-    return (disk_drive[drive].file)? SDL_TRUE : SDL_FALSE;
-}
-
-void disk_pravetz_free(int drive)
-{
-    /* write out and close the old disk image, if any */
-    if (disk_drive[drive].file)
-    {
-        disk_pravetz_write_image(disk_drive + drive);
-        fflush(disk_drive[drive].file);
-        fclose(disk_drive[drive].file);
-    }
-
-    disk_drive[drive].file       = 0;
-    disk_drive[drive].byte       = 0;
-    disk_drive[drive].dirty      = SDL_FALSE;
-    disk_drive[drive].half_track = 0;
-}
-
-int disk_pravetz_drive( void )
-{
-    return current_drive->num;
-}
-
-SDL_bool disk_pravetz_active( void )
-{
-  return current_drive->motor_on ? SDL_TRUE : SDL_FALSE;
-}
