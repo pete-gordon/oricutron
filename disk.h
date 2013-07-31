@@ -71,6 +71,15 @@
 #define WSB_NOTREADY 7
 #define WSF_NOTREADY (1<<WSB_NOTREADY)
 
+/******************** PRAVETZ *********************/
+#define PRAV_DISK_OFFSET      0x310
+
+#define PRAV_SECTORS_PER_TRACK        16
+#define PRAV_BYTES_PER_SECTOR         256
+#define PRAV_RAW_BYTES_PER_SECTOR     374
+#define PRAV_TRACKS_PER_DISK          35
+#define PRAV_RAW_TRACK_SIZE           6200
+
 // Current operation
 enum
 {
@@ -167,12 +176,28 @@ struct jasmin
 };
 
 // Current state of the Pravetz 8d disk hardware
+struct pravetz_drive
+{
+  Uint8    image[PRAV_TRACKS_PER_DISK][PRAV_RAW_TRACK_SIZE];
+  Uint8    volume;
+  Uint8    select;
+  Uint8    motor_on;
+  Uint8    write_ready;
+  Uint16   byte;
+  Uint16   half_track;
+  Uint8   *sector_ptr;
+  SDL_bool dirty;
+  struct diskimage *pimg;
+  SDL_bool prot;
+};
+
 struct pravetz
 {
   Uint8 olay;              // Overlay RAM enable
   Uint8 romdis;            // ROMDIS
   Uint16 extension;
   struct machine *oric;    // Pointer to the Oric structure
+  struct pravetz_drive drv[MAX_DRIVES];
 };
 
 // Functions to read/write diskimages

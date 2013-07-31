@@ -39,6 +39,7 @@
 
 extern char diskfile[], diskpath[], filetmp[];
 extern char telediskfile[], telediskpath[];
+extern char pravdiskfile[], pravdiskpath[];
 extern SDL_bool refreshdisks;
 
 #define GENERAL_DISK_DEBUG 0
@@ -82,8 +83,18 @@ void diskimage_free( struct machine *oric, struct diskimage **dimg )
 
   if( oric->type != MACH_TELESTRAT )
   {
-    dpath = diskpath;
-    dfile = diskfile;
+    switch (oric->drivetype)
+    {
+      case DRV_PRAVETZ:
+        dpath = pravdiskpath;
+        dfile = pravdiskfile;
+        break;
+
+      default:
+        dpath = diskpath;
+        dfile = diskfile;
+        break;
+    }
   } else {
     dpath = telediskpath;
     dfile = telediskfile;
@@ -154,6 +165,10 @@ struct diskimage *diskimage_alloc( Uint32 rawimglen )
 void disk_eject( struct machine *oric, int drive )
 {
   diskimage_free( oric, &oric->wddisk.disk[drive] );
+  oric->pravetz.drv[drive].pimg  = NULL;
+  oric->pravetz.drv[drive].byte  = 0;
+  oric->pravetz.drv[drive].dirty = SDL_FALSE;
+  oric->pravetz.drv[drive].half_track = 0;
   oric->diskname[drive][0] = 0;
   disk_popup( oric, drive );
 }
@@ -218,38 +233,38 @@ void diskimage_cachetrack( struct diskimage *dimg, int track, int side )
 // memory back to disk.
 SDL_bool diskimage_save( struct machine *oric, char *fname, int drive )
 {
+  FILE *f;
+
   // Make sure there is a disk in the drive!
   if( !oric->wddisk.disk[drive] ) return SDL_FALSE;
 
-  if( oric->drivetype == DRV_MICRODISC || oric->drivetype == DRV_JASMIN )
+  if( oric->drivetype == DRV_PRAVETZ )
+    disk_pravetz_write_image(&oric->pravetz.drv[drive]);
+
+  // Open the file for writing
+  f = fopen( fname, "wb" );
+  if( !f )
   {
-    FILE *f;
+    do_popup( oric, "\x14\x15Save failed" );
+    return SDL_FALSE;
+  }
     
-    // Open the file for writing
-    f = fopen( fname, "wb" );
-    if( !f )
-    {
-      do_popup( oric, "\x14\x15Save failed" );
-      return SDL_FALSE;
-    }
-    
-    // Dump it to disk
-    if( fwrite( oric->wddisk.disk[drive]->rawimage, oric->wddisk.disk[drive]->rawimagelen, 1, f ) != 1 )
-    {
-      fclose( f );
-      do_popup( oric, "\x14\x15Save failed" );
-      return SDL_FALSE;
-    }
-    
-    // All done!
+  // Dump it to disk
+  if( fwrite( oric->wddisk.disk[drive]->rawimage, oric->wddisk.disk[drive]->rawimagelen, 1, f ) != 1 )
+  {
     fclose( f );
+    do_popup( oric, "\x14\x15Save failed" );
+    return SDL_FALSE;
+  }
     
-    // If we are not just overwriting the original file, remember the new filename
-    if( fname != oric->wddisk.disk[drive]->filename )
-    {
-      strncpy( oric->wddisk.disk[drive]->filename, fname, 4096+512 );
-      oric->wddisk.disk[drive]->filename[4096+511] = 0;
-    }
+  // All done!
+  fclose( f );
+    
+  // If we are not just overwriting the original file, remember the new filename
+  if( fname != oric->wddisk.disk[drive]->filename )
+  {
+    strncpy( oric->wddisk.disk[drive]->filename, fname, 4096+512 );
+    oric->wddisk.disk[drive]->filename[4096+511] = 0;
   }
 
   // The image in memory is no longer different to the last saved version
@@ -308,21 +323,50 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
   
   if( oric->drivetype == DRV_PRAVETZ )
   {
-    if( drive < 2 )
-    {
-      if( !disk_pravetz_load( fname, drive, SDL_FALSE ) )
-      {
-        disk_eject( oric, drive );
-        do_popup( oric, "\x14\x15""Invalid disk image" );
-        return SDL_FALSE;
-      }
-    }
-    else
+    Uint16  t_idx;
+    Uint16  s_idx;
+    Uint16  sb_idx;
+    Uint16  tb_idx;
+
+    oric->pravetz.drv[drive].pimg = oric->wddisk.disk[drive];
+
+    if( drive >= 2 )
     {
       disk_eject( oric, drive );
       do_popup( oric, "\x14\x15""Invalid drive number" );
       return SDL_FALSE;
     }
+
+    if( len != 143360 )
+    {
+      disk_eject( oric, drive );
+      do_popup( oric, "\x14\x15""Invalid pravetz disk image" );
+      return SDL_FALSE;
+    }
+
+    // Get some basic image info
+    for (t_idx = 0; t_idx < PRAV_TRACKS_PER_DISK; t_idx++)
+    {
+      tb_idx = 0;
+
+      for (s_idx = 0; s_idx < PRAV_SECTORS_PER_TRACK; s_idx++)
+      {
+        for (sb_idx = 0; sb_idx < PRAV_RAW_BYTES_PER_SECTOR; sb_idx++, tb_idx++)
+        {
+          oric->pravetz.drv[drive].image[t_idx][tb_idx] =
+            disk_pravetz_image_raw_byte(oric, drive, t_idx, s_idx, sb_idx);
+        }
+      }
+
+      while (tb_idx < PRAV_RAW_TRACK_SIZE)
+      {
+        oric->pravetz.drv[drive].image[t_idx][tb_idx] = 0xFF;
+        tb_idx++;
+      }
+    }
+
+    oric->pravetz.drv[drive].byte       = 0;
+    oric->pravetz.drv[drive].half_track = 0;
   }
   else
   {
@@ -1303,37 +1347,41 @@ void jasmin_write( struct jasmin *j, unsigned short addr, unsigned char data )
 // Pravetz
 void pravetz_init( struct pravetz *p, struct machine *oric )
 {
+  int i;
+
   p->olay = 0;
   p->romdis = 1;
   p->extension = 0;
   p->oric = oric;
-  disk_pravetz_init();
+
+  for( i=0; i<MAX_DRIVES; i++)
+  {
+      p->drv[i].write_ready = 0x80;
+      p->drv[i].volume      = 254;
+      p->drv[i].select      = 0;
+      p->drv[i].motor_on    = 0;
+      p->drv[i].pimg        = NULL;
+  }
 }
 
 void pravetz_free( struct pravetz *p )
 {
   int i;
   for( i=0; i<MAX_DRIVES; i++ )
-  {
     disk_eject( p->oric, i );
-    disk_pravetz_free(i);
-  }
 }
 
 unsigned char pravetz_read( struct pravetz *p, unsigned short addr )
 {
   unsigned char data = 0;
-  p->oric->wddisk.c_drive = disk_pravetz_drive();
-  p->oric->wddisk.currentop = disk_pravetz_active() ? COP_READ_SECTOR : COP_NUFFINK;
-  data = disk_pravetz_read( addr );
-  p->oric->wddisk.currentop = disk_pravetz_active() ? COP_READ_SECTOR : COP_NUFFINK;
+  data = disk_pravetz_read( p->oric, addr );
+  p->oric->wddisk.currentop = p->drv[p->oric->wddisk.c_drive].motor_on ? COP_READ_SECTOR : COP_NUFFINK;
   return data;
 }
 
 void pravetz_write( struct pravetz *p, unsigned short addr, unsigned char data )
 {
-  p->oric->wddisk.c_drive = disk_pravetz_drive();
-  p->oric->wddisk.currentop = disk_pravetz_active() ? COP_WRITE_SECTOR : COP_NUFFINK;
-  disk_pravetz_write( addr, data );
-  p->oric->wddisk.currentop = disk_pravetz_active() ? COP_WRITE_SECTOR : COP_NUFFINK;
+  disk_pravetz_write( p->oric, addr, data );
+  p->oric->wddisk.currentop = p->drv[p->oric->wddisk.c_drive].motor_on ? COP_READ_SECTOR : COP_NUFFINK;
 }
+
