@@ -332,6 +332,54 @@ SDL_bool save_snapshot(struct machine *oric, char *filename)
       PUTU8(oric->md.diskrom);
       do_wd17xx = SDL_TRUE;
       break;
+	
+    case DRV_PRAVETZ:
+    {
+      Uint8 tmp[PRAV_TRACKS_PER_DISK*PRAV_RAW_TRACK_SIZE*2];
+      NEWBLOCK("PRV\x00");
+      PUTU8(oric->pravetz.olay); // 1
+      PUTU8(oric->pravetz.romdis); // 2
+      PUTU16(oric->pravetz.extension); // 4
+      PUTU8(oric->wddisk.c_drive); // 5
+      PUTU32(oric->wddisk.currentop); // 9
+
+      for (i=0; i<2; i++)
+      {
+        PUTU8(oric->pravetz.drv[i].volume); // +1
+        PUTU8(oric->pravetz.drv[i].select); // +2
+        PUTU8(oric->pravetz.drv[i].motor_on); // +3
+        PUTU8(oric->pravetz.drv[i].write_ready); // +4
+        PUTU16(oric->pravetz.drv[i].byte); // +6
+        PUTU16(oric->pravetz.drv[i].half_track); // +8
+        PUTU8(oric->pravetz.drv[i].dirty); // +9
+        PUTU8(oric->pravetz.drv[i].prot); // +10
+      }
+
+      /* Snapshot format is limited to one datablock per block, */
+      /* concatenate these into a temporary one... */
+      memcpy(tmp, &oric->pravetz.drv[0].image[0][0], PRAV_TRACKS_PER_DISK*PRAV_RAW_TRACK_SIZE);
+      memcpy(&tmp[PRAV_TRACKS_PER_DISK*PRAV_RAW_TRACK_SIZE], &oric->pravetz.drv[1].image[0][0], PRAV_TRACKS_PER_DISK*PRAV_RAW_TRACK_SIZE);
+      DATABLOCK(tmp, PRAV_TRACKS_PER_DISK*PRAV_RAW_TRACK_SIZE*2);
+
+      for (i=0; i<2; i++)
+      {
+        if ((oric->pravetz.drv[i].pimg == NULL) ||
+            (oric->pravetz.drv[i].pimg->rawimage == NULL))
+          break;
+
+        NEWBLOCK("PVD\x00");
+        PUTU16(i);
+        PUTU32(oric->wddisk.disk[i]->rawimagelen);
+        /* Convert sector_ptr to an offset */
+        if ((oric->pravetz.drv[i].sector_ptr == NULL) ||
+            (oric->pravetz.drv[i].pimg == NULL) ||
+            (oric->pravetz.drv[i].pimg->rawimage == NULL))
+          PUTU32(0xffffffff);
+        else
+          PUTU32((Uint32)(oric->pravetz.drv[i].sector_ptr - oric->pravetz.drv[i].pimg->rawimage));
+        DATABLOCK(oric->wddisk.disk[i]->rawimage, oric->wddisk.disk[i]->rawimagelen);
+      }
+    }
   }
 
   if( do_wd17xx )
@@ -1091,6 +1139,130 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
 
       do_wd17xx = SDL_TRUE;
       break;
+    
+    case DRV_PRAVETZ:
+    {
+      Uint8 tmp[PRAV_TRACKS_PER_DISK*PRAV_RAW_TRACK_SIZE*2];
+      Uint32 offs;
+
+      /* Get the pravetz block */
+      blk = load_block(oric, "PRV\x00", f, SDL_TRUE, 9+2*10, SDL_TRUE);
+      if (!blk)
+      {
+        free_blockheaders();
+        fclose(f);
+        setmenutoggles( oric );
+        if (back2mon) setemumode(oric, NULL, EM_DEBUG);
+        return SDL_FALSE;
+      }
+
+      oric->pravetz.olay        = getu8(blk);
+      oric->pravetz.romdis      = getu8(blk);
+      oric->pravetz.extension   = getu16(blk);
+      oric->wddisk.c_drive      = getu8(blk);
+      oric->wddisk.currentop    = getu32(blk);
+
+      for (i=0; i<2; i++)
+      {
+        oric->pravetz.drv[i].volume      = getu8(blk);
+        oric->pravetz.drv[i].select      = getu8(blk);
+        oric->pravetz.drv[i].motor_on    = getu8(blk);
+        oric->pravetz.drv[i].write_ready = getu8(blk);
+        oric->pravetz.drv[i].byte        = getu16(blk);
+        oric->pravetz.drv[i].half_track  = getu16(blk);
+        oric->pravetz.drv[i].dirty       = getu8(blk);
+        oric->pravetz.drv[i].prot        = getu8(blk);
+      }
+
+      if (!read_block(oric, blk->datablock, f, SDL_TRUE, tmp))
+      {
+        free_blockheaders();
+        fclose(f);
+        setmenutoggles( oric );
+        if (back2mon) setemumode(oric, NULL, EM_DEBUG);
+        return SDL_FALSE;
+      }
+
+      memcpy(&oric->pravetz.drv[0].image[0][0], tmp, PRAV_TRACKS_PER_DISK*PRAV_RAW_TRACK_SIZE);
+      memcpy(&oric->pravetz.drv[1].image[0][0], &tmp[PRAV_TRACKS_PER_DISK*PRAV_RAW_TRACK_SIZE], PRAV_TRACKS_PER_DISK*PRAV_RAW_TRACK_SIZE);
+
+      free_block(blk);
+
+      // Get the disk images
+      while ((blk = load_block(oric, "PVD\x00", f, SDL_FALSE, -1, SDL_FALSE)))
+      {
+        // Get the drive associated with this disk image
+        i = getu16(blk);
+        if ((i<0) || (i>1) || (oric->wddisk.disk[i] != NULL) || (!blk->datablock) || (blk->size != 10))
+        {
+          msgbox(oric, MSGBOX_OK, "Snapshot load failed: Invalid file (PVD1)");
+          free_blockheaders();
+          fclose(f);
+          setmenutoggles( oric );
+          if (back2mon) setemumode(oric, NULL, EM_DEBUG);
+          return SDL_FALSE;
+        }
+
+        // Allocate a diskimage header
+        oric->wddisk.disk[i] = (struct diskimage *)malloc(sizeof(struct diskimage));
+        if (!oric->wddisk.disk[i])
+        {
+          msgbox(oric, MSGBOX_OK, "Snapshot load failed: Out of memory (PVD2)");
+          free_blockheaders();
+          fclose(f);
+          setmenutoggles( oric );
+          if (back2mon) setemumode(oric, NULL, EM_DEBUG);
+          return SDL_FALSE;
+        }
+        memset(oric->wddisk.disk[i], 0, sizeof(struct diskimage));
+
+        // Allocate space for the disk image
+        oric->wddisk.disk[i]->rawimage = malloc(blk->datablock->size);
+        if (!oric->wddisk.disk[i])
+        {
+          free(oric->wddisk.disk[i]);
+          oric->wddisk.disk[i] = NULL;
+          msgbox(oric, MSGBOX_OK, "Snapshot load failed: Out of memory (PVD3)");
+          free_blockheaders();
+          fclose(f);
+          setmenutoggles( oric );
+          if (back2mon) setemumode(oric, NULL, EM_DEBUG);
+          return SDL_FALSE;
+        }
+
+        // Read in the disk image
+        if (!read_block(oric, blk->datablock, f, SDL_TRUE, oric->wddisk.disk[i]->rawimage))
+        {
+          free(oric->wddisk.disk[i]->rawimage);
+          free(oric->wddisk.disk[i]);
+          oric->wddisk.disk[i] = NULL;
+          free_blockheaders();
+          fclose(f);
+          setmenutoggles( oric );
+          if (back2mon) setemumode(oric, NULL, EM_DEBUG);
+          return SDL_FALSE;
+        }
+
+        oric->wddisk.disk[i]->cachedtrack = -1;
+        oric->wddisk.disk[i]->cachedside  = -1;
+
+        // Fill out the disk image header
+        oric->wddisk.disk[i]->drivenum    = i;
+        oric->wddisk.disk[i]->rawimagelen = getu32(blk);
+      
+        sprintf(oric->wddisk.disk[i]->filename, "%s%cSNAPDISK%d.DSK", diskpath, PATHSEP, i);
+
+        offs = getu32(blk);
+        oric->pravetz.drv[i].pimg = oric->wddisk.disk[i];
+        if (offs == 0xffffffff)
+          oric->pravetz.drv[i].sector_ptr = NULL;
+        else
+          oric->pravetz.drv[i].sector_ptr = &oric->pravetz.drv[i].pimg->rawimage[offs];
+
+        blk->id[0] = 0; // Don't find this one again
+        free_block(blk);
+      }
+    }
   }
 
   if (do_wd17xx)
