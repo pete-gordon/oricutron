@@ -689,6 +689,26 @@ SDL_bool alloc_textzone( struct machine *oric, int i, int x, int y, int w, int h
   return SDL_TRUE;
 }
 
+void clear_textzone( struct machine *oric, int i )
+{
+  int x, y;
+  struct textzone *ptz = tz[i];
+
+  if (!ptz) return;
+
+  for( y=1; y<(ptz->h-1); y++ )
+  {
+    for( x=1; x<(ptz->w-1); x++ )
+    {
+      ptz->tx[y*ptz->w+x] = ' ';
+      ptz->fc[y*ptz->w+x] = 2;
+      ptz->bc[y*ptz->w+x] = 3;
+    }
+  }
+
+  ptz->modified = SDL_TRUE;
+}
+
 // Free a textzone structure
 void free_textzone( struct machine *oric, int i )
 {

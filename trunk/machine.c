@@ -1530,6 +1530,10 @@ void swapmach( struct machine *oric, struct osdmenuitem *mitem, int which )
 
   oric->drivetype = curr_drivetype;
 
+  /* The contents of the disk panel depend on the disk type. */
+  /* Wipe it to prevent garbage. */
+  clear_textzone( oric, TZ_DISK );
+
   mon_state_reset( oric );
   if( !init_machine( oric, which, which!=oric->type ) )
   {

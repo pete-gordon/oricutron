@@ -1548,6 +1548,22 @@ void mon_update_disk( struct machine *oric )
   if( oric->drivetype == DRV_NONE )
     return;
 
+  if( oric->drivetype == DRV_PRAVETZ )
+  {
+    int i = oric->wddisk.c_drive;
+    tzprintfpos( tz[TZ_DISK], 2, 2, "DRIVE=%02X  EXT=%04X",
+      oric->wddisk.c_drive,
+      oric->pravetz.extension );
+    tzprintfpos( tz[TZ_DISK], 2, 3, "VOL=%02X  SEL=%02X",
+      oric->pravetz.drv[i].volume,
+      oric->pravetz.drv[i].select );
+    tzprintfpos( tz[TZ_DISK], 2, 4, "MOTOR=%01X WRRDY=%01X",
+      oric->pravetz.drv[i].motor_on,
+      oric->pravetz.drv[i].write_ready );
+    tzprintfpos( tz[TZ_DISK], 2, 5, "OVRAM=%s", oric->pravetz.olay ? "ON " : "OFF" );
+    return;
+  }
+
   opname = "Unknown      ";
   switch( oric->wddisk.currentop )
   {
@@ -1586,10 +1602,6 @@ void mon_update_disk( struct machine *oric )
     
     case DRV_JASMIN:
       tzprintfpos( tz[TZ_DISK], 2, 8, "OVRAM=%s", oric->jasmin.olay ? "ON " : "OFF" );
-      break;
-
-    case DRV_PRAVETZ:
-      tzprintfpos( tz[TZ_DISK], 2, 8, "OVRAM=%s", oric->pravetz.olay ? "ON " : "OFF" );
       break;
   }
 }
