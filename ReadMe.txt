@@ -37,6 +37,7 @@ Credits
   Stefan Haubenthal
   Ibisum
   Kamel Biskri
+  Iss
 
 
   Amiga & Windows ports
@@ -70,6 +71,12 @@ Credits
   ------------
 
   Ibisum
+
+  
+  Pravetz disk support
+  --------------------
+
+  Iss
   
 
 Thanks
