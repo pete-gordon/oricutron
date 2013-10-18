@@ -8,4 +8,4 @@
 ; the hardware the ROM expects to be present.
 
 ; ROM expects a special keyboard layout?
-keymap = azerty
+keymap = qwerty
