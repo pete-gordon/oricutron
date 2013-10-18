@@ -228,7 +228,7 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
   if( !ay->newout ) return;
 
   // "Output" accumulates the audio data from all sources
-  output = -32768;
+  output = 0;// -32768;
 
   // Loop through the channels
   for( i=0; i<3; i++ )
