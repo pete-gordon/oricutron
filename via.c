@@ -403,6 +403,8 @@ void via_init( struct via *v, struct machine *oric, int viatype )
       v->read_port_b  = via_read_portb;
       v->write_port_a = via_tele_write_porta;
       v->write_port_b = via_write_portb;
+      v->ora = 7;
+      v->ddra = 7;
       break;
   }
 }
