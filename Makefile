@@ -30,7 +30,7 @@ VPATH ?= .
 ### extract svn revision
 SVNREVISON := $(shell svn info $(VPATH)|grep 'Revision: '|sed -e 's:.* ::')
 
-DEFINES = -DAPP_NAME_FULL='"$(APP_NAME) WIP $$Rev$(SVNREVISON)$$"'
+DEFINES =  -DAPP_NAME_FULL='"$(APP_NAME) WIP Rev: $(SVNREVISON)"'
 #DEFINES = -DAPP_NAME_FULL='"$(APP_NAME) $(VERSION_MAJ).$(VERSION_MIN)"'
 #DEFINES += -DAPP_WVER='$(VERSION_MAJ),$(VERSION_MIN),$(VERSION_REV),0'
 #DEFINES += -DAPP_COPYRIGHTS='"$(COPYRIGHTS)"'
