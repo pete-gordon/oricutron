@@ -90,7 +90,11 @@ enum
   COP_WRITE_TRACK,    // Writing a track
   COP_WRITE_SECTOR,   // Writing a sector
   COP_WRITE_SECTORS,  // Writing multiple sectors
-  COP_READ_ADDRESS    // Reading a sector header
+  COP_READ_ADDRESS,   // Reading a sector header
+#ifdef MICRODISC_FUDGE
+  COP_READ_SECTOR_FUDGE,
+  COP_READ_SECTORS_FUDGE
+#endif
 };
 
 // This is just a convenient structure in which to

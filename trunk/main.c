@@ -859,6 +859,9 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 void shut( struct machine *oric )
 {
   if( vidcap ) avi_close( &vidcap );
+#if defined(DEBUG_CPU_TRACE) && DEBUG_CPU_TRACE > 0
+  dump_cputrace(oric);
+#endif
   if( oric )
   {
     shut_machine( oric );
