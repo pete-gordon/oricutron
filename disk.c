@@ -19,6 +19,17 @@
 **  WD17xx, Microdisc and Jasmin emulation
 */
 
+/* The microdisc ROM has a bug where if no disk */
+/* is inserted at boot, the disk detection routine */
+/* has an unbalanced stack and there is a chance */
+/* that it will end up executing garbage when you */
+/* insert a disk. Euphoric has a fudge to work */
+/* around this. It pretends a disk is in the drive */
+/* but leaves the "read sector" command lingering */
+/* until you insert a disk. Set this define to */
+/* do the same fudge */
+#define MICRODISC_FUDGE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,6 +59,10 @@ extern SDL_bool refreshdisks;
 #if DEBUG_SECTOR_DUMP
 static char sectordumpstr[64];
 static int sectordumpcount;
+#endif
+
+#ifdef MICRODISC_FUDGE
+void microdisc_setintrq( void *md );
 #endif
 
 static Uint16 calc_crc( Uint16 crc, Uint8 value)
@@ -455,6 +470,42 @@ void wd17xx_init( struct wd17xx *wd )
 // This routine emulates some cycles of disk activity.
 void wd17xx_ticktock( struct wd17xx *wd, int cycles )
 {
+#ifdef MICRODISC_FUDGE
+  if ((wd->currentop == COP_READ_SECTORS_FUDGE) ||
+      (wd->currentop == COP_READ_SECTOR_FUDGE))
+  {
+    if (wd->disk[wd->c_drive])
+    {
+      wd->curroffs   = 0;
+      wd->currsector = wd17xx_find_sector( wd, wd->r_sector );
+      if( !wd->currsector )
+      {
+        wd->r_status = WSF_RNF;
+        wd->clrdrq( wd->drqarg );
+        wd->setintrq( wd->intrqarg );
+        wd->currentop = COP_NUFFINK;
+        refreshdisks = SDL_TRUE;
+#if GENERAL_DISK_DEBUG
+        dbg_printf( "DISK: Sector %d not found.", wd->r_sector );
+#endif
+      }
+      else
+      {
+        wd->currseclen = 1<<(wd->currsector->id_ptr[4]+7);
+        wd->r_status   = WSF_BUSY|WSF_NOTREADY;
+        wd->delayeddrq = 60;
+        wd->currentop  = (wd->currentop == COP_READ_SECTORS_FUDGE) ? COP_READ_SECTORS : COP_READ_SECTOR;
+        wd->crc        = 0xe295;
+        refreshdisks = SDL_TRUE;
+#if DEBUG_SECTOR_DUMP
+        sectordumpcount = 0;
+        sectordumpstr[0] = 0;
+#endif
+      }
+    }
+  }
+#endif
+
   // Is there a pending INTRQ?
   if( wd->delayedint > 0 )
   {
@@ -511,14 +562,21 @@ void wd17xx_ticktock( struct wd17xx *wd, int cycles )
 }
 
 // This routine seeks to the specified track. It is used by the SEEK and STEP commands.
-void wd17xx_seek_track( struct wd17xx *wd, Uint8 track )
+void wd17xx_seek_track( struct wd17xx *wd, Uint8 track, SDL_bool dofudge )
 {
   // Is there a disk in the drive?
   if( wd->disk[wd->c_drive] )
   {
     // Yes. If we are trying to seek to a non-existant track, just seek as far as we can
     if( track >= wd->disk[wd->c_drive]->numtracks )
+    {
       track = (wd->disk[wd->c_drive]->numtracks>0)?wd->disk[wd->c_drive]->numtracks-1:0;
+      wd->distatus = WSFI_HEADL|WSFI_SEEKERR;
+    }
+    else
+    {
+      wd->distatus = WSFI_HEADL|WSFI_PULSE;
+    }
 
     // Cache the new track
     diskimage_cachetrack( wd->disk[wd->c_drive], track, wd->c_side );
@@ -533,7 +591,6 @@ void wd17xx_seek_track( struct wd17xx *wd, Uint8 track )
     // delay would depend how far the head had to seek, and what stepping speed was
     // currently set).
     wd->delayedint = 20;
-    wd->distatus = WSFI_HEADL|WSFI_PULSE;
     if( wd->c_track == 0 ) wd->distatus |= WSFI_TRK0;
 #if GENERAL_DISK_DEBUG
     dbg_printf( "DISK: At track %u (%u sectors)", track, wd->disk[wd->c_drive]->numsectors );
@@ -544,13 +601,23 @@ void wd17xx_seek_track( struct wd17xx *wd, Uint8 track )
   // No disk in drive
   // Set INTRQ because the operation has finished.
   wd->setintrq( wd->intrqarg );
-
-  // Set error state
-  wd->r_status = WSF_NOTREADY|WSFI_SEEKERR;
   wd->r_track = 0;
+
 #if GENERAL_DISK_DEBUG
   dbg_printf( "DISK: Seek fail" );
 #endif
+
+#ifdef MICRODISC_FUDGE
+  // Euphoric style workaround for the sedoric bug...
+  if ((dofudge) && (wd->setintrq == microdisc_setintrq))
+  {
+      wd->r_status = 0x44;
+      return;
+  }
+#endif
+
+  // Set error state
+  wd->r_status = WSF_NOTREADY|WSFI_SEEKERR;
 }
 
 // This routine looks for the sector with the specified ID in the current track.
@@ -674,6 +741,12 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
       // What are we currently doing?
       switch( wd->currentop )
       {
+#ifdef MICRODISC_FUDGE
+        case COP_READ_SECTOR_FUDGE:
+        case COP_READ_SECTORS_FUDGE:
+          return 0;
+#endif
+
         case COP_READ_SECTOR:
         case COP_READ_SECTORS:
           // We somehow started a sector read operation without a valid sector.
@@ -825,7 +898,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
 #endif
               wd->r_status = WSF_BUSY;
               if( data & 8 ) wd->r_status |= WSFI_HEADL;
-              wd17xx_seek_track( wd, 0 );
+              wd17xx_seek_track( wd, 0, oric->cpu.calcpc == 0xe3a1 );
               wd->currentop = COP_NUFFINK;
               refreshdisks = SDL_TRUE;
               break;
@@ -836,7 +909,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
 #endif
               wd->r_status = WSF_BUSY;
               if( data & 8 ) wd->r_status |= WSFI_HEADL;
-              wd17xx_seek_track( wd, wd->r_data );
+              wd17xx_seek_track( wd, wd->r_data, SDL_FALSE );
               wd->currentop = COP_NUFFINK;
               refreshdisks = SDL_TRUE;
               break;
@@ -850,9 +923,9 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           wd->r_status = WSF_BUSY;
           if( data & 8 ) wd->r_status |= WSFI_HEADL;
           if( last_step_in )
-            wd17xx_seek_track( wd, wd->c_track+1 );
+            wd17xx_seek_track( wd, wd->c_track+1, SDL_FALSE );
           else
-            wd17xx_seek_track( wd, wd->c_track > 0 ? wd->c_track-1 : 0 );
+            wd17xx_seek_track( wd, wd->c_track > 0 ? wd->c_track-1 : 0, SDL_FALSE );
           wd->currentop = COP_NUFFINK;
           refreshdisks = SDL_TRUE;
           break;
@@ -863,7 +936,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
 #endif
           wd->r_status = WSF_BUSY;
           if( data & 8 ) wd->r_status |= WSFI_HEADL;
-          wd17xx_seek_track( wd, wd->c_track+1 );
+          wd17xx_seek_track( wd, wd->c_track+1, SDL_FALSE );
           last_step_in = SDL_TRUE;
           wd->currentop = COP_NUFFINK;
           refreshdisks = SDL_TRUE;
@@ -876,12 +949,12 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           wd->r_status = WSF_BUSY;
           if( data & 8 ) wd->r_status |= WSFI_HEADL;
           if( wd->c_track > 0 )
-            wd17xx_seek_track( wd, wd->c_track-1 );
+            wd17xx_seek_track( wd, wd->c_track-1, SDL_FALSE );
           last_step_in = SDL_FALSE;
           wd->currentop = COP_NUFFINK;
           refreshdisks = SDL_TRUE;
           break;
-        
+
         case 0x80:  // Read sector (Type II)
 #if GENERAL_DISK_DEBUG
           switch( oric->drivetype )
@@ -895,6 +968,14 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
               break;
           }
 #endif
+#ifdef MICRODISC_FUDGE
+          if (!wd->disk[wd->c_drive])
+          {
+            wd->currentop = (data&0x10) ? COP_READ_SECTORS_FUDGE : COP_READ_SECTOR_FUDGE;
+            break;
+          }
+#endif
+
           wd->curroffs   = 0;
           wd->currsector = wd17xx_find_sector( wd, wd->r_sector );
           if( !wd->currsector )

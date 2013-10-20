@@ -30,6 +30,9 @@
 
 void dbg_printf( char *fmt, ... );
 
+#if defined(DEBUG_CPU_TRACE) && DEBUG_CPU_TRACE > 0
+void mon_traceinst(struct m6502 *cpu);
+#endif
 
 // These are the default read/write routines.
 // You need to overwrite these with your own ones if you want
@@ -994,6 +997,10 @@ SDL_bool m6502_inst( struct m6502 *cpu )
       cpu->f_i = 1;
     }
   }
+
+#if defined(DEBUG_CPU_TRACE) && DEBUG_CPU_TRACE > 0
+  mon_traceinst(cpu);
+#endif
 
   cpu->lastpc = cpu->pc = cpu->calcpc;
   cpu->pc++;
