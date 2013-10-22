@@ -1,5 +1,40 @@
 Oricutron ChangeLog
 
+1.0 (22-Oct-2013)
+-----------------
+
+All:
+
+* Pravetz Dos-8D disk support <iss>
+* Better Pravetz emulation <iss>
+* Telestrat now basically working
+* Fixed some rendering issues in the debugger
+* Now defaults to no joystick instead of IJK
+* Some minor fixes in the joystick code
+* Support for .ort files from commandline <stefan h>
+* Commandline options for turbotape, lightpen and
+  scanlines
+* On windows, error messages now pop up in a message
+  box
+* Textattrs are now properly reset at the start of each
+  line again
+* Better telestrat VIA display in the debugger <stefan h>
+* Fixed backslash key <stefan h>
+* Various improvements to the build system <stefan h/revolf/iss>
+* 8-bit display mode for low-end systems
+* Various optimisations
+
+
+Amiga/MorphOS/AROS:
+
+* Added version tag in guide <stefan h>
+
+
+BeOS:
+
+* Various fixes and tweaks <revolf>
+
+
 0.9 (02-Mar-2012)
 -----------------
 
