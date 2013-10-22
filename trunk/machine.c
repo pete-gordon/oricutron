@@ -1346,6 +1346,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       break;
 
     case MACH_TELESTRAT:
+      oric->drivetype = DRV_MICRODISC;
       oric->memsize = 65536 + 16384*7;
       oric->mem = malloc( oric->memsize );
       if( !oric->mem )
