@@ -1,7 +1,7 @@
-Oricutron 0.9
+Oricutron 1.0
 -------------
 
-(c)2009-2012 Peter Gordon (pete@petergordon.org.uk)
+(c)2009-2013 Peter Gordon (pete@petergordon.org.uk)
 
 This is a work in progress.
 
@@ -16,8 +16,6 @@ Current status
   Tape:  99% done (.TAP, .ORT and .WAV supported)
   Disk:  Reading/Writing sectors works. No track read/write.
 
-Telestrat emulation is included, but is far from finished and doesn't currently
-work well enough to be useful.
 
 
 Credits
@@ -72,12 +70,14 @@ Credits
 
   Ibisum
 
-  
+
   Pravetz disk support
   --------------------
 
   Iss
-  
+
+
+
 
 Thanks
 ======
