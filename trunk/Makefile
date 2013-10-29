@@ -28,7 +28,7 @@ VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) $(COPYRIGHTS)"
 VPATH ?= .
 
 ### extract svn revision
-SVNREVISION := $(shell svnversion -n)
+SVNREVISION := $(shell svnversion -n $(VPATH))
 
 #DEFINES =  -DAPP_NAME_FULL='"$(APP_NAME) WIP Rev: $(SVNREVISION)"'
 DEFINES = -DAPP_NAME_FULL='"$(APP_NAME) $(VERSION_MAJ).$(VERSION_MIN)"'
