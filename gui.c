@@ -105,6 +105,11 @@ struct guiimg gimgs[NUM_GIMG]  = { { IMAGEPREFIX"statusbar.bmp",              64
                                    { IMAGEPREFIX"avirec.bmp",         GIMG_W_AVIR, 16, NULL } };
 
 SDL_bool soundavailable, soundon;
+#if defined(__linux__)
+Sint16 soundsilence = 0;
+#else
+Sint16 soundsilence = -32768;
+#endif
 extern SDL_bool microdiscrom_valid, jasminrom_valid, pravetzrom_valid;
 
 // GUI image locations
@@ -550,7 +555,7 @@ void tzstr( struct textzone *ptz, char *text )
   int i, o;
 
   o = ptz->py*ptz->w+ptz->px;
-  for( i=0; text[i]; i++ )
+  for( i=0; text && text[i]; i++ )
   {
     switch( text[i] )
     {
@@ -1313,7 +1318,7 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           drawitems();
           *needrender = SDL_TRUE;
           break;
-        
+
         default:
           break;
       }
@@ -1660,6 +1665,7 @@ SDL_bool init_gui( struct machine *oric, Sint32 rendermode )
 {
   int i;
   SDL_AudioSpec wanted;
+  SDL_AudioSpec obtained;
 
   for( i=0; i<NUM_GIMG; i++ )
   {
@@ -1690,14 +1696,19 @@ SDL_bool init_gui( struct machine *oric, Sint32 rendermode )
 
   soundavailable = SDL_FALSE;
   soundon = SDL_FALSE;
-  if( SDL_OpenAudio( &wanted, NULL ) >= 0 )
+  if( SDL_OpenAudio( &wanted, &obtained ) >= 0 )
   {
     soundon = SDL_TRUE;
     soundavailable = SDL_TRUE;
+    soundsilence = obtained.silence * 8192;
   }
 
   setmenutoggles( oric );
 #if defined(__APPLE__) || defined(__BEOS__) || defined(__HAIKU__)
+  init_gui_native( oric );
+#elif defined(__WIN32__) || defined(__CYGWIN__)
+  init_gui_native( oric );
+#elif defined(__linux__)
   init_gui_native( oric );
 #endif
   return SDL_TRUE;
@@ -1712,4 +1723,12 @@ void shut_gui( struct machine *oric )
 
   for( i=0; i<NUM_TZ; i++ )
     free_textzone( oric, i );
+  
+#if defined(__APPLE__) || defined(__BEOS__) || defined(__HAIKU__)
+    shut_gui_native( oric );
+#elif defined(__WIN32__) || defined(__CYGWIN__)
+    shut_gui_native( oric );
+#elif defined(__linux__)
+    shut_gui_native( oric );
+#endif
 }

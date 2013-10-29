@@ -48,6 +48,7 @@ extern uint32 timersig;
 static Sint16 audiocapbuf[AUDIO_BUFLEN];
 extern struct avi_handle *vidcap;
 
+extern Sint16 soundsilence;
 extern SDL_bool soundavailable, soundon, warpspeed;
 
 // Variables used by the queuekeys function
@@ -228,11 +229,7 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
   if( !ay->newout ) return;
 
   // "Output" accumulates the audio data from all sources
-#if defined(__linux__)
-  output = 0;
-#else
-  output = -32768;
-#endif
+  output = soundsilence;
 
   // Loop through the channels
   for( i=0; i<3; i++ )
@@ -346,7 +343,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
   logc    = 0;
   tlogc   = 0;
   dcadjustave = 0;
-  dcadjustmax = -32768;
+  dcadjustmax = soundsilence;
 
   tapenoise = ay->oric->tapenoise && ((!ay->oric->tapeturbo)||(ay->oric->rawtape));
   if( !tapenoise ) ay->tapeout = 0;
@@ -551,7 +548,7 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
   ay->logged  = 0;
   ay->logcycle = 0;
   ay->do_logcycle_reset = SDL_FALSE;
-  ay->output  = -32768;
+  ay->output  = soundsilence;
   ay->lastcyc = 0;
   ay->ccyc    = 0;
   ay->ccycle  = 0;

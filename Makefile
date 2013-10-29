@@ -47,12 +47,13 @@ CC = gcc
 CXX = g++
 AR = ar
 RANLIB = ranlib
+STRIP = strip
 DEBUGLIB =
 TARGET = oricutron
 FILEREQ_OBJ = filereq_sdl.o
 MSGBOX_OBJ = msgbox_sdl.o
 EXTRAOBJS =
-CUSTOMBJS =
+CUSTOMOBJS =
 PKGDIR = Oricutron_$(PLATFORM)_v$(VERSION_MAJ)$(VERSION_MIN)
 DOCFILES = ReadMe.txt oricutron.cfg ChangeLog.txt
 
@@ -133,6 +134,7 @@ CXX := $(CROSS_COMPILE)$(CXX)
 AR :=  $(CROSS_COMPILE)$(AR)
 RANLIB :=  $(CROSS_COMPILE)$(RANLIB)
 WINDRES := $(CROSS_COMPILE)windres
+STRIP :=  $(CROSS_COMPILE)$(STRIP)
 ifneq ($(SDL_PREFIX),)
 CFLAGS += -I$(SDL_PREFIX)/include
 LFLAGS += -L$(SDL_PREFIX)/lib
@@ -146,7 +148,7 @@ endif
 TARGET = oricutron.exe
 FILEREQ_OBJ = filereq_win32.o
 MSGBOX_OBJ = msgbox_win32.o
-CUSTOMOBJS = winicon.o
+CUSTOMOBJS = gui_win.o winicon.o
 endif
 
 # Windows 32bit GCC
@@ -161,6 +163,7 @@ CXX := $(CROSS_COMPILE)$(CXX)
 AR :=  $(CROSS_COMPILE)$(AR)
 RANLIB :=  $(CROSS_COMPILE)$(RANLIB)
 WINDRES := $(CROSS_COMPILE)windres
+STRIP :=  $(CROSS_COMPILE)$(STRIP)
 ifneq ($(SDL_PREFIX),)
 CFLAGS += -I$(SDL_PREFIX)/include
 LFLAGS += -L$(SDL_PREFIX)/lib
@@ -177,7 +180,7 @@ endif
 TARGET = oricutron.exe
 FILEREQ_OBJ = filereq_win32.o
 MSGBOX_OBJ = msgbox_win32.o
-CUSTOMOBJS = winicon.o
+CUSTOMOBJS = gui_win.o winicon.o
 endif
 
 # Windows 64bit GCC
@@ -192,6 +195,7 @@ CXX := $(CROSS_COMPILE)$(CXX)
 AR :=  $(CROSS_COMPILE)$(AR)
 RANLIB :=  $(CROSS_COMPILE)$(RANLIB)
 WINDRES := $(CROSS_COMPILE)windres
+STRIP :=  $(CROSS_COMPILE)$(STRIP)
 ifneq ($(SDL_PREFIX),)
 CFLAGS += -I$(SDL_PREFIX)/include
 LFLAGS += -L$(SDL_PREFIX)/lib
@@ -208,7 +212,7 @@ endif
 TARGET = oricutron-64.exe
 FILEREQ_OBJ = filereq_win32.o
 MSGBOX_OBJ = msgbox_win32.o
-CUSTOMOBJS = winicon.o
+CUSTOMOBJS = gui_win.o winicon.o
 endif
 
 # BeOS / Haiku
@@ -254,8 +258,10 @@ endif
 
 # Linux
 ifeq ($(PLATFORM),linux)
+STRIP :=  $(CROSS_COMPILE)$(STRIP)
 CFLAGS += -g $(shell sdl-config --cflags)
 LFLAGS += -lm $(shell sdl-config --libs)
+CUSTOMOBJS = gui_x11.o
 TARGET = oricutron
 INSTALLDIR = /usr/local
 endif
@@ -271,8 +277,10 @@ BASELIBDIR := lib
 CFLAGS += -m32
 LFLAGS += -m32
 endif
+STRIP :=  $(CROSS_COMPILE)$(STRIP)
 CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) -D__OPENGL_AVAILABLE__
 LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --libs) -lGL
+CUSTOMOBJS = gui_x11.o
 TARGET = oricutron
 INSTALLDIR = /usr/local
 endif
@@ -385,6 +393,8 @@ clean:
 	rm -f $(TARGET) *.bak *.o *.d $(RESOURCES) printer_out.txt debug_log.txt
 	rm -rf "$(PKGDIR)"
 
+release: $(TARGET)
+	$(STRIP) $(TARGET)
 
 install-beos install-haiku:
 	mkdir -p $(INSTALLDIR)
