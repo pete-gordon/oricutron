@@ -1354,13 +1354,13 @@ void mon_update_via( struct machine *oric, struct textzone *vtz, struct via *v, 
   for( i=0; i<16; i++ )
   {
     val = via_mon_read( v, v == &oric->via ? 0x300+i : 0x320+i );
-    tzprintfpos( vtz, 2, i+1, "%04X:  %s $%02X %", v == &oric->via ? 0x300+i : 0x320+i, names[i], val );
+    tzprintfpos( vtz, 2, i+1, "%04X:  %s $%02X %%", (v == &oric->via) ? 0x300+i : 0x320+i, names[i], val );
     for( j=128; j; j>>=1 )
       tzputc(vtz, (val&j)?'1':'0');
     
     if( *oldvalid )
     {
-      unsigned char oval = via_mon_read(old, v == &oric->via ? 0x300+i : 0x320+i );
+      unsigned char oval = via_mon_read(old, (v == &oric->via) ? 0x300+i : 0x320+i );
       if( val != oval ) mon_viamod( 16, i+1, 2, vtz );
       for( j=128, o=19; j; j>>=1, o++ )
       {
@@ -1486,24 +1486,24 @@ void mon_update_ay( struct machine *oric )
     if( ay_old.creg != oric->ay.creg ) mon_aymod( 21, 1, 2 );
   }
 
-  printayregbits( oric, "R0 Pitch A L $%02X \%", 2, 2, AY_CHA_PER_L, 8 );
-  printayregbits( oric, "R1 Pitch A H $%02X \%", 2, 3, AY_CHA_PER_H, 4 );
-  printayregbits( oric, "R2 Pitch B L $%02X \%", 2, 4, AY_CHB_PER_L, 8 );
-  printayregbits( oric, "R3 Pitch B H $%02X \%", 2, 5, AY_CHB_PER_H, 4 );
-  printayregbits( oric, "R4 Pitch C L $%02X \%", 2, 6, AY_CHC_PER_L, 8 );
-  printayregbits( oric, "R5 Pitch C H $%02X \%", 2, 7, AY_CHC_PER_H, 4 );
+  printayregbits( oric, "R0 Pitch A L $%02X %%", 2, 2, AY_CHA_PER_L, 8 );
+  printayregbits( oric, "R1 Pitch A H $%02X %%", 2, 3, AY_CHA_PER_H, 4 );
+  printayregbits( oric, "R2 Pitch B L $%02X %%", 2, 4, AY_CHB_PER_L, 8 );
+  printayregbits( oric, "R3 Pitch B H $%02X %%", 2, 5, AY_CHB_PER_H, 4 );
+  printayregbits( oric, "R4 Pitch C L $%02X %%", 2, 6, AY_CHC_PER_L, 8 );
+  printayregbits( oric, "R5 Pitch C H $%02X %%", 2, 7, AY_CHC_PER_H, 4 );
 
-  printayregbits( oric, "R6 Noise     $%02X \%", 2, 9, AY_NOISE_PER, 5 );
-  printayregbits( oric, "R7 Status    $%02X \%", 2,10, AY_STATUS,    7 );
+  printayregbits( oric, "R6 Noise     $%02X %%", 2, 9, AY_NOISE_PER, 5 );
+  printayregbits( oric, "R7 Status    $%02X %%", 2,10, AY_STATUS,    7 );
 
-  printayregbits( oric, "R8 Volume A  $%02X \%", 2,12, AY_CHA_AMP,   5 );
-  printayregbits( oric, "R9 Volume B  $%02X \%", 2,13, AY_CHB_AMP,   5 );
-  printayregbits( oric, "RA Volume C  $%02X \%", 2,14, AY_CHC_AMP,   5 );
+  printayregbits( oric, "R8 Volume A  $%02X %%", 2,12, AY_CHA_AMP,   5 );
+  printayregbits( oric, "R9 Volume B  $%02X %%", 2,13, AY_CHB_AMP,   5 );
+  printayregbits( oric, "RA Volume C  $%02X %%", 2,14, AY_CHC_AMP,   5 );
 
-  printayregbits( oric, "RB Env Per L $%02X \%", 2,16, AY_ENV_PER_L, 8 );
-  printayregbits( oric, "RC Env Per H $%02X \%", 2,17, AY_ENV_PER_H, 8 );
-  printayregbits( oric, "RD Env Cycle $%02X \%", 2,18, AY_ENV_CYCLE, 4 );
-  printayregbits( oric, "RE Key Col   $%02X \%", 2,19, AY_PORT_A,    8 );
+  printayregbits( oric, "RB Env Per L $%02X %%", 2,16, AY_ENV_PER_L, 8 );
+  printayregbits( oric, "RC Env Per H $%02X %%", 2,17, AY_ENV_PER_H, 8 );
+  printayregbits( oric, "RD Env Cycle $%02X %%", 2,18, AY_ENV_CYCLE, 4 );
+  printayregbits( oric, "RE Key Col   $%02X %%", 2,19, AY_PORT_A,    8 );
 
 /*
   tzprintfpos( tz[TZ_AY], 2, 4, "A:P=%04X A=%02X   N:PER=%02X",
@@ -1947,6 +1947,7 @@ void mon_enter( struct machine *oric )
     case MACH_ORIC1:
     case MACH_ORIC1_16K:
     case MACH_ATMOS:
+    case MACH_PRAVETZ:
       defaultsyms.syms    = defsym_atmos;
       defaultsyms.numsyms = sizeof( defsym_atmos ) / sizeof( struct msym );
       break;
@@ -3868,8 +3869,7 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
       *needrender = SDL_TRUE;
       break;
     
-    case 's':
-    case 'S':
+    case SDLK_s:
       if( mw_mode != 0 ) break;
       mw_split = !mw_split;
       if( ( !mw_split ) && ( mw_which != 0 ) )
