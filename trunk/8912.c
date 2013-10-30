@@ -126,9 +126,22 @@ static unsigned short qzktab[] = { '7'        , 'n'        , '5'        , 'v'   
 // are only detected by the standard ROM routines.
 void queuekeys( char *str )
 {
-  keyqueue   = str;
-  keysqueued = strlen( str );
-  kqoffs     = 0;
+  if( str )
+  {
+    int len = strlen( str );
+    if( keyqueue )
+    {
+      keyqueue = realloc(keyqueue, strlen(keyqueue) + len + 1);
+      strcat(keyqueue, str);
+      keysqueued += len;
+    }
+    else
+    {
+      keyqueue   = strdup( str );
+      keysqueued = len;
+      kqoffs     = 0;
+    }
+  }
 }
 
 /*
@@ -431,6 +444,7 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
   {
     if( kqoffs >= keysqueued )
     {
+      free(keyqueue);
       keyqueue = NULL;
       keysqueued = 0;
       kqoffs = 0;
