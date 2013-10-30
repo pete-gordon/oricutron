@@ -125,7 +125,6 @@ SDL_bool clipboard_paste( struct machine *oric )
             }
             p++;
         }
-        printf(">> %s\n",text);
         queuekeys(text);
         return SDL_TRUE;
     }
