@@ -178,6 +178,7 @@ CFLAGS += -pg
 LFLAGS += -pg
 endif
 TARGET = oricutron.exe
+TARGET_DEPS = /usr/$(CROSS_PREFIX)/sys-root/mingw/bin/SDL.dll
 FILEREQ_OBJ = filereq_win32.o
 MSGBOX_OBJ = msgbox_win32.o
 CUSTOMOBJS = gui_win.o winicon.o
@@ -209,7 +210,8 @@ ifneq ($(PROFILING),)
 CFLAGS += -pg
 LFLAGS += -pg
 endif
-TARGET = oricutron-64.exe
+TARGET = oricutron.exe
+TARGET_DEPS = /usr/$(CROSS_PREFIX)/sys-root/mingw/bin/SDL.dll
 FILEREQ_OBJ = filereq_win32.o
 MSGBOX_OBJ = msgbox_win32.o
 CUSTOMOBJS = gui_win.o winicon.o
@@ -279,7 +281,7 @@ LFLAGS += -m32
 endif
 STRIP :=  $(CROSS_COMPILE)$(STRIP)
 CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) -D__OPENGL_AVAILABLE__
-LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --libs) -lGL
+LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --libs) -lGL -lX11
 CUSTOMOBJS = gui_x11.o
 TARGET = oricutron
 INSTALLDIR = /usr/local
@@ -465,3 +467,24 @@ package-win32:
 	sed -i "s/$$/\r/g" $(PKGDIR)/ReadMe.txt
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
 
+package-win-gcc: clean release
+	mkdir -p $(PKGDIR)/images
+	mkdir -p $(PKGDIR)/disks
+	mkdir -p $(PKGDIR)/teledisks
+	mkdir -p $(PKGDIR)/pravdisks
+	mkdir -p $(PKGDIR)/tapes
+	mkdir -p $(PKGDIR)/roms
+	install -m 755 $(TARGET) $(TARGET_DEPS) $(PKGDIR)/
+	install -m 644 $(VPATH)/images/* $(PKGDIR)/images/
+	#install -m 644 $(VPATH)/disks/* $(PKGDIR)/disks/
+	#install -m 644 $(VPATH)/tapes/* $(PKGDIR)/tapes/
+	install -m 644 $(VPATH)/roms/* $(PKGDIR)/roms/
+	install -m 644 $(addprefix $(VPATH)/,$(DOCFILES)) $(PKGDIR)/
+	# unix2dos is not always installed
+	sed -i "s/$$/\r/g" $(PKGDIR)/ReadMe.txt
+	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
+
+.PHONY: mrproper
+PLATFORMS := os4 morphos win32 win32-gcc win64-gcc beos haiku osx linux linux-opengl gphwiz aitouchbook aros
+mrproper:
+	@for plat in $(PLATFORMS); do $(MAKE) -f $(VPATH)/Makefile clean PLATFORM=$${plat} ; done
