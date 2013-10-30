@@ -262,7 +262,7 @@ endif
 ifeq ($(PLATFORM),linux)
 STRIP :=  $(CROSS_COMPILE)$(STRIP)
 CFLAGS += -g $(shell sdl-config --cflags)
-LFLAGS += -lm $(shell sdl-config --libs)
+LFLAGS += -lm $(shell sdl-config --libs) -lX11
 CUSTOMOBJS = gui_x11.o
 TARGET = oricutron
 INSTALLDIR = /usr/local
