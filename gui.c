@@ -1076,7 +1076,7 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
       if (oric->drivetype != DRV_JASMIN)
       {
         if (msgbox(oric, MSGBOX_YES_NO,
-          "The file you selected appears to be for a use with the Microdisc controller.\n"
+          "The file you selected appears to be for a use with the Jasmin controller.\n"
           "Would you like to switch to that configuration?"))
         {
           swapmach( oric, NULL, (DRV_JASMIN<<16)|oric->type );
