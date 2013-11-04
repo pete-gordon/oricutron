@@ -76,6 +76,140 @@ Uint8 oricpalette[] = { 0x00, 0x00, 0x00,
                         0x00, 0xff, 0xff,
                         0xff, 0xff, 0xff };
 
+static Uint8 sedoric_detect[] =
+  {
+    0xfb, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 
+    0x20, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0x00, 0x53, 0x45, 0x44, 0x4f, 0x52, 0x49, 0x43, 
+    0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 
+  };
+
+static Uint8 stratsed_detect[] =
+  {
+    0xfb, 0x00, 0x11, 0x2c, 0x00, 0xd4, 0xa9, 0x00, 0x00, 0x52, 0xa9, 0x00, 0x8d, 0x0f, 0x05, 0x8d, 
+    0x49, 0x05, 0xa9, 0x4c, 0xa0, 0x00, 0xa2, 0xd4, 0x8d, 0x4f, 0x05, 0x8c, 0x50, 0x05, 0x8e, 0x51, 
+    0x05, 0xa2, 0x03, 0xec, 0x0c, 0x02, 0xd0, 0x03, 0xa9, 0x02, 0x2c, 0xa9, 0x00, 0x9d, 0x09, 0x05, 
+  };
+
+static Uint8 ftdos_detect[] =
+  {
+    0xfb, 0x78, 0xa9, 0x7f, 0x8d, 0x0e, 0x03, 0xa9, 0x01, 0x8d, 0xfa, 0x03, 0xa9, 0x00, 0x8d, 0xfb, 
+    0x03, 0x85, 0x04, 0x8d, 0xf4, 0x03, 0xa2, 0x02, 0xac, 0x30, 0x02, 0xc0, 0x40, 0xd0, 0x04, 0xa9, 
+    0x04, 0xa2, 0x06, 0x85, 0x01, 0x8e, 0x53, 0x04, 0xa9, 0xac, 0x8d, 0xfe, 0xff, 0xa9, 0x04, 0x8d, 
+  };
+
+int detect_image_type(char *filename)
+{
+  FILE *f;
+  size_t size;
+  unsigned char tmp[6400];
+
+  f = fopen(filename, "rb");
+  if (!f)
+    return IMG_I_DUNNO;
+
+  fseek(f, 0, SEEK_END);
+  size = ftell(f);
+  fseek(f, 0, SEEK_SET);
+
+  if (1 != fread(tmp, 8, 1, f))
+  {
+    fclose(f);
+    return IMG_I_DUNNO;
+  }
+
+  /* Look for tape tmps */
+  if ((memcmp(tmp, "\x16\x16\x16\x16", 4) == 0) ||
+      (memcmp(tmp, "\x16\x16\x16\x24", 4) == 0) ||
+      (memcmp(tmp, "\x16\x16\x24", 3) == 0) ||
+      (memcmp(tmp, "RIFF", 4) == 0) ||
+      (memcmp(tmp, "ORT\x00", 4) == 0))
+  {
+    fclose(f);
+    return IMG_TAPE;
+  }
+
+  /* Look for a microdisc or jasmin disk image */
+  if ((size > 20) && (memcmp(tmp, "MFM_DISK", 8)==0))
+  {
+    Uint8 *ptr, *eot;
+    int sectorlen;
+    SDL_bool gotsector = SDL_FALSE;
+
+    /* Read side 0, track 0 */
+    fseek(f, 256, SEEK_SET);
+    fread(tmp, 6400, 1, f);
+    fclose(f);
+
+    /* Find the first sector */
+    ptr = tmp;
+    eot = &tmp[6400];
+    while (1)
+    {
+      // Search for ID mark
+      while( (ptr<eot) && (ptr[0]!=0xfe) ) ptr++;
+
+      // No sector found?
+      if (ptr >= eot)
+      {
+        printf("%s: couldn't find track 0 sector 1 in %s\n", __func__, filename);
+        return IMG_I_DUNNO;
+      }
+
+      // Get N value
+      sectorlen = (1<<(ptr[4]+7));
+      gotsector = (ptr[3] == 1);
+
+      // Skip ID field and CRC
+      ptr+=7;
+
+      // Search for data ID
+      while( (ptr<eot) && (ptr[0]!=0xfb) && (ptr[0]!=0xf8) ) ptr++;
+      if (ptr >= eot)
+      {
+        printf("%s: couldn't find track 0 sector 1 in %s (2)\n", __func__, filename);
+        return IMG_I_DUNNO;
+      }
+
+      // ptr now points to the sector data
+      if (gotsector)
+        break;
+
+      // Skip this sector
+      ptr += sectorlen+3;
+      if (ptr >= eot)
+      {
+        printf("%s: couldn't find track 0 sector 1 in %s (3)\n", __func__, filename);
+        return IMG_I_DUNNO;
+      }
+    }
+
+    /* Got track 0, sector 1 */
+    /* See if we recognise it .. */
+    if (sectorlen == 256)
+    {
+      if (memcmp(ptr, sedoric_detect, sizeof(sedoric_detect))==0)
+        return IMG_ATMOS_MICRODISC;
+
+      if (memcmp(ptr, stratsed_detect, sizeof(stratsed_detect))==0)
+        return IMG_TELESTRAT_DISK;
+
+      if (memcmp(ptr, ftdos_detect, sizeof(stratsed_detect))==0)
+        return IMG_ATMOS_JASMIN;
+    }
+
+    /* No.. best guess is some sort of microdisc image */
+    return IMG_GUESS_MICRODISC;
+  }
+
+  fclose(f);
+
+  /* Maybe its a pravetz disk... */
+  if (size == 143360)
+    return IMG_PRAVETZ_DISK;
+
+  return IMG_I_DUNNO;
+}
+
 // Switch between emulation/monitor/menus etc.
 void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode )
 {

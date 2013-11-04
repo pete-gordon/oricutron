@@ -60,6 +60,18 @@ enum
   KMAP_QWERTZ
 };
 
+/* Return values from detect_image_type */
+enum
+{
+  IMG_I_DUNNO = 0,
+  IMG_ATMOS_MICRODISC,
+  IMG_ATMOS_JASMIN,
+  IMG_TELESTRAT_DISK,
+  IMG_PRAVETZ_DISK,
+  IMG_GUESS_MICRODISC,
+  IMG_TAPE
+};
+
 struct telebankinfo
 {
   unsigned char type;
@@ -242,3 +254,5 @@ SDL_bool isram( struct machine *oric, unsigned short addr );
 void clear_patches( struct machine *oric );
 
 unsigned char lightpen_read( struct m6502 *cpu, unsigned short addr );
+
+int detect_image_type(char *filename);
