@@ -64,6 +64,7 @@
 #include "tape.h"
 #include "joystick.h"
 #include "snapshot.h"
+#include "msgbox.h"
 
 extern SDL_bool fullscreen;
 
@@ -813,6 +814,184 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   if( !filerequester( oric, "Insert tape", tapepath, tapefile, FR_TAPELOAD ) ) return;
   oric->lasttapefile[0] = 0;
   joinpath( tapepath, tapefile );
+
+  switch (detect_image_type(filetmp))
+  {
+    case IMG_ATMOS_MICRODISC:
+      if ((oric->type != MACH_ATMOS) &&
+          (oric->type != MACH_ORIC1) &&
+          (oric->type != MACH_PRAVETZ))
+      {
+        if (msgbox(oric, MSGBOX_YES_NO,
+          "The file you selected appears to be a disk for an Oric Atmos with Microdisc.\n"
+          "Would you like to switch to that configuration and insert it as a disk?"))
+        {
+          swapmach( oric, NULL, (DRV_MICRODISC<<16)|MACH_ATMOS );
+          joinpath( tapepath, tapefile );
+          diskimage_load( oric, filetmp, 0 );
+        }
+        setemumode( oric, NULL, EM_RUNNING );
+        return;
+      }
+
+      if (oric->drivetype != DRV_MICRODISC)
+      {
+        if (msgbox(oric, MSGBOX_YES_NO,
+          "The file you selected appears to be a disk for a use with the Microdisc controller.\n"
+          "Would you like to switch to that configuration and insert it as a disk?"))
+        {
+          swapmach( oric, NULL, (DRV_MICRODISC<<16)|oric->type );
+          joinpath( tapepath, tapefile );
+          diskimage_load( oric, filetmp, 0 );
+        }
+        setemumode( oric, NULL, EM_RUNNING );
+        return;
+      }
+
+      if (msgbox(oric, MSGBOX_YES_NO,
+        "The file you selected appears to be a disk.\n"
+        "Would you like to insert it in drive 0?"))
+      {
+        joinpath( tapepath, tapefile );
+        diskimage_load( oric, filetmp, 0 );
+      }
+      setemumode( oric, NULL, EM_RUNNING );
+      return;
+
+    case IMG_ATMOS_JASMIN:
+      if ((oric->type != MACH_ATMOS) &&
+          (oric->type != MACH_ORIC1) &&
+          (oric->type != MACH_PRAVETZ))
+      {
+        if (msgbox(oric, MSGBOX_YES_NO,
+          "The file you selected appears to be a disk for an Oric Atmos with Jasmin.\n"
+          "Would you like to switch to that configuration and insert it as a disk?"))
+        {
+          swapmach( oric, NULL, (DRV_JASMIN<<16)|MACH_ATMOS );
+          joinpath( tapepath, tapefile );
+          diskimage_load( oric, filetmp, 0 );
+        }
+        setemumode( oric, NULL, EM_RUNNING );
+        return;
+      }
+
+      if (oric->drivetype != DRV_JASMIN)
+      {
+        if (msgbox(oric, MSGBOX_YES_NO,
+          "The file you selected appears to be a disk for a use with the Jasmin controller.\n"
+          "Would you like to switch to that configuration and insert it as a disk?"))
+        {
+          swapmach( oric, NULL, (DRV_MICRODISC<<16)|oric->type );
+          joinpath( tapepath, tapefile );
+          diskimage_load( oric, filetmp, 0 );
+        }
+        setemumode( oric, NULL, EM_RUNNING );
+        return;
+      }
+
+      if (msgbox(oric, MSGBOX_YES_NO,
+        "The file you selected appears to be a disk.\n"
+        "Would you like to insert it in drive 0?"))
+      {
+        joinpath( tapepath, tapefile );
+        diskimage_load( oric, filetmp, 0 );
+      }
+      setemumode( oric, NULL, EM_RUNNING );
+      return;
+
+    case IMG_TELESTRAT_DISK:
+      if (oric->type != MACH_TELESTRAT)
+      {
+        if (msgbox(oric, MSGBOX_YES_NO,
+          "The file you selected appears to be a disk for the Telestrat.\n"
+          "Would you like to switch to that configuration and insert it as a disk?"))
+        {
+          swapmach( oric, NULL, MACH_TELESTRAT );
+          joinpath( tapepath, tapefile );
+          diskimage_load( oric, filetmp, 0 );
+        }
+        setemumode( oric, NULL, EM_RUNNING );
+        return;
+      }
+
+      if (msgbox(oric, MSGBOX_YES_NO,
+        "The file you selected appears to be a disk.\n"
+        "Would you like to insert it in drive 0?"))
+      {
+        joinpath( tapepath, tapefile );
+        diskimage_load( oric, filetmp, 0 );
+      }
+      setemumode( oric, NULL, EM_RUNNING );
+      return;
+
+    case IMG_PRAVETZ_DISK:
+      if (oric->type != MACH_PRAVETZ)
+      {
+        if (msgbox(oric, MSGBOX_YES_NO,
+          "The file you selected appears to be a disk for the Pravetz 8D disk controller.\n"
+          "Would you like to switch to that configuration and insert it as a disk?"))
+        {
+          swapmach( oric, NULL, (DRV_PRAVETZ<<16)|MACH_PRAVETZ );
+          joinpath( tapepath, tapefile );
+          diskimage_load( oric, filetmp, 0 );
+          queuekeys("CALL#320\x0d");
+        }
+        setemumode( oric, NULL, EM_RUNNING );
+        return;
+      }
+
+      if (oric->drivetype != DRV_PRAVETZ)
+      {
+        if (msgbox(oric, MSGBOX_YES_NO,
+          "The file you selected appears to be a disk for the Pravetz disk controller.\n"
+          "Would you like to switch to that configuration and insert it as a disk?"))
+        {
+          swapmach( oric, NULL, (DRV_PRAVETZ<<16)|MACH_PRAVETZ );
+          joinpath( tapepath, tapefile );
+          diskimage_load( oric, filetmp, 0 );
+          queuekeys("CALL#320\x0d");
+        }
+        setemumode( oric, NULL, EM_RUNNING );
+        return;
+      }
+
+      if (msgbox(oric, MSGBOX_YES_NO,
+        "The file you selected appears to be a disk.\n"
+        "Would you like to insert it in drive 0?"))
+      {
+        joinpath( tapepath, tapefile );
+        diskimage_load( oric, filetmp, 0 );
+      }
+      setemumode( oric, NULL, EM_RUNNING );
+      return;
+
+    case IMG_GUESS_MICRODISC:
+      if ((oric->drivetype == DRV_PRAVETZ) ||
+          (oric->drivetype == DRV_NONE))
+      {
+        if (msgbox(oric, MSGBOX_YES_NO,
+          "The file you selected appears to be a disk for a Microdisc or Jasmin system.\n"
+          "Would you like to switch to Microdisc and insert it as a disk?"))
+        {
+          swapmach( oric, NULL, (DRV_MICRODISC<<16)|oric->type );
+          joinpath( tapepath, tapefile );
+          diskimage_load( oric, filetmp, 0 );
+        }
+        setemumode( oric, NULL, EM_RUNNING );
+        return;
+      }
+
+      if (msgbox(oric, MSGBOX_YES_NO,
+        "The file you selected appears to be a disk.\n"
+        "Would you like to insert it in drive 0?"))
+      {
+        joinpath( tapepath, tapefile );
+        diskimage_load( oric, filetmp, 0 );
+      }
+      setemumode( oric, NULL, EM_RUNNING );
+      return;
+  }
+
   tape_load_tap( oric, filetmp );
   if( oric->symbolsautoload ) mon_new_symbols( &oric->usersyms, oric, "symbols", SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
   setemumode( oric, NULL, EM_RUNNING );
@@ -843,6 +1022,141 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
   }
 
   if( !filerequester( oric, "Insert disk", dpath, dfile, FR_DISKLOAD ) ) return;
+  joinpath( dpath, dfile );
+
+  switch (detect_image_type(filetmp))
+  {
+    case IMG_ATMOS_MICRODISC:
+      if ((oric->type != MACH_ATMOS) &&
+          (oric->type != MACH_ORIC1) &&
+          (oric->type != MACH_PRAVETZ))
+      {
+        if (msgbox(oric, MSGBOX_YES_NO,
+          "The file you selected appears to be for an Oric Atmos with Microdisc.\n"
+          "Would you like to switch to that configuration?"))
+        {
+          swapmach( oric, NULL, (DRV_MICRODISC<<16)|MACH_ATMOS );
+        }
+        break;
+      }
+
+      if ((oric->drivetype != DRV_MICRODISC) &&
+          (oric->drivetype != DRV_NONE))
+      {
+        if (msgbox(oric, MSGBOX_YES_NO,
+          "The file you selected appears to be for a use with the Microdisc controller.\n"
+          "Would you like to switch to that configuration?"))
+        {
+          swapmach( oric, NULL, (DRV_MICRODISC<<16)|oric->type );
+        }
+        break;
+      }
+      break;
+
+    case IMG_ATMOS_JASMIN:
+      if ((oric->type != MACH_ATMOS) &&
+          (oric->type != MACH_ORIC1) &&
+          (oric->type != MACH_PRAVETZ))
+      {
+        if (msgbox(oric, MSGBOX_YES_NO,
+          "The file you selected appears to be for an Oric Atmos with Jasmin.\n"
+          "Would you like to switch to that configuration?"))
+        {
+          swapmach( oric, NULL, (DRV_JASMIN<<16)|MACH_ATMOS );
+        }
+        break;
+      }
+
+      if (oric->drivetype == DRV_NONE)
+      {
+        swapmach( oric, NULL, (DRV_JASMIN<<16)|oric->type);
+        break;
+      }
+
+      if (oric->drivetype != DRV_JASMIN)
+      {
+        if (msgbox(oric, MSGBOX_YES_NO,
+          "The file you selected appears to be for a use with the Microdisc controller.\n"
+          "Would you like to switch to that configuration?"))
+        {
+          swapmach( oric, NULL, (DRV_MICRODISC<<16)|oric->type );
+        }
+        break;
+      }
+      break;
+
+    case IMG_TELESTRAT_DISK:
+      if (oric->type != MACH_TELESTRAT)
+      {
+        if (msgbox(oric, MSGBOX_YES_NO,
+          "The file you selected appears to be for a Telestrat.\n"
+          "Would you like to switch to that configuration?"))
+        {
+          swapmach( oric, NULL, MACH_TELESTRAT );
+        }
+        break;
+      }
+      break;
+
+    case IMG_PRAVETZ_DISK:
+      if (oric->type != MACH_PRAVETZ)
+      {
+        if (msgbox(oric, MSGBOX_YES_NO,
+          "The file you selected appears to be for a Pravetz 8D disk controller.\n"
+          "Would you like to switch to that configuration?"))
+        {
+          swapmach( oric, NULL, (DRV_PRAVETZ<<16)|MACH_PRAVETZ );
+          queuekeys("CALL#320\x0d");
+        }
+        break;
+      }
+
+      if (oric->drivetype == DRV_NONE)
+      {
+        swapmach( oric, NULL, (DRV_PRAVETZ<<16)|MACH_PRAVETZ );
+        queuekeys("CALL#320\x0d");
+        break;
+      }
+
+      if (oric->drivetype != DRV_PRAVETZ)
+      {
+        if (msgbox(oric, MSGBOX_YES_NO,
+          "The file you selected appears to be for a use with the Pravetz disk controller.\n"
+          "Would you like to switch to that configuration?"))
+        {
+          swapmach( oric, NULL, (DRV_PRAVETZ<<16)|MACH_PRAVETZ );
+          queuekeys("CALL#320\x0d");
+        }
+        break;
+      }
+      break;
+
+    case IMG_GUESS_MICRODISC:
+      if (oric->drivetype == DRV_PRAVETZ)
+      {
+        if (msgbox(oric, MSGBOX_YES_NO,
+          "The file you selected appears to be for a Microdisc or Jasmin system.\n"
+          "Would you like to switch to Microdisc?"))
+        {
+          swapmach( oric, NULL, (DRV_MICRODISC<<16)|oric->type );
+        }
+        break;
+      }
+      break;
+
+    case IMG_TAPE:
+      if (msgbox(oric, MSGBOX_YES_NO,
+        "This appears to be a tape image...\n"
+        "Would you like to insert it as a tape?"))
+      {
+        oric->lasttapefile[0] = 0;
+        tape_load_tap( oric, filetmp );
+        if( oric->symbolsautoload ) mon_new_symbols( &oric->usersyms, oric, "symbols", SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
+      }
+      setemumode( oric, NULL, EM_RUNNING );
+      return;
+  }
+
   joinpath( dpath, dfile );
   diskimage_load( oric, filetmp, drive );
 
@@ -1557,15 +1871,9 @@ void setmenutoggles( struct machine *oric )
       break;
 
     case DRV_PRAVETZ:
+    default:
       mainitems[2].func = insertdisk;
       mainitems[3].func = insertdisk;
-      mainitems[4].func = NULL;
-      mainitems[5].func = NULL;
-      break;
-
-    default:
-      mainitems[2].func = NULL;
-      mainitems[3].func = NULL;
       mainitems[4].func = NULL;
       mainitems[5].func = NULL;
       break;
