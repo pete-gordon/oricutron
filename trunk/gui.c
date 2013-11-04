@@ -881,7 +881,7 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
           "The file you selected appears to be a disk for a use with the Jasmin controller.\n"
           "Would you like to switch to that configuration and insert it as a disk?"))
         {
-          swapmach( oric, NULL, (DRV_MICRODISC<<16)|oric->type );
+          swapmach( oric, NULL, (DRV_JASMIN<<16)|oric->type );
           joinpath( tapepath, tapefile );
           diskimage_load( oric, filetmp, 0 );
         }
@@ -1079,7 +1079,7 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
           "The file you selected appears to be for a use with the Microdisc controller.\n"
           "Would you like to switch to that configuration?"))
         {
-          swapmach( oric, NULL, (DRV_MICRODISC<<16)|oric->type );
+          swapmach( oric, NULL, (DRV_JASMIN<<16)|oric->type );
         }
         break;
       }
