@@ -140,7 +140,7 @@ CFLAGS += -I$(SDL_PREFIX)/include
 LFLAGS += -L$(SDL_PREFIX)/lib
 endif
 CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -g
-LFLAGS += -g -lm -mwindows -lmingw32 -lSDLmain -lSDL -lopengl32
+LFLAGS += -g -lm -mwindows -lmingw32 -lSDLmain -lSDL -lopengl32 -static-libgcc
 ifneq ($(PROFILING),)
 CFLAGS += -pg
 LFLAGS += -pg
