@@ -199,7 +199,7 @@ struct osdmenuitem hwopitems[] = { { " Oric-1",                "1",    SDLK_1,  
                                    { " Oric-1 16K",            "2",    SDLK_2,   swapmach,        (0xffff<<16)|MACH_ORIC1_16K, 0 },
                                    { " Atmos",                 "3",    SDLK_3,   swapmach,        (0xffff<<16)|MACH_ATMOS, 0 },
                                    { " Telestrat",             "4",    SDLK_4,   swapmach,        (DRV_NONE<<16)|MACH_TELESTRAT, 0 },
-                                   { " Pravetz 8D",            "5",    SDLK_5,   swapmach,        (DRV_NONE<<16)|MACH_PRAVETZ, 0 },
+                                   { " Pravetz 8D",            "5",    SDLK_5,   swapmach,        (0xffff<<16)|MACH_PRAVETZ, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { " No disk",               "X",    'x',      setdrivetype,    DRV_NONE, 0 },
                                    { " Microdisc",             "M",    'm',      setdrivetype,    DRV_MICRODISC, 0 },
@@ -1218,6 +1218,42 @@ void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   setemumode( oric, NULL, EM_RUNNING );  
 }
 
+struct osdmenuitem *find_item_by_function(struct osdmenuitem *menu, void *function)
+{
+  int i;
+  static struct osdmenuitem dummyitem; /* So we can always return non-NULL */
+
+  for (i=0; menu[i].name; i++)
+    if (menu[i].func == function)
+      return &menu[i];
+
+  return &dummyitem;
+}
+
+struct osdmenuitem *find_item_by_function_and_arg(struct osdmenuitem *menu, void *function, int arg)
+{
+  int i;
+  static struct osdmenuitem dummyitem; /* So we can always return non-NULL */
+
+  for (i=0; menu[i].name; i++)
+    if ((menu[i].func == function) && (menu[i].arg == arg))
+      return &menu[i];
+
+  return &dummyitem;
+}
+
+struct osdmenuitem *find_item_by_key(struct osdmenuitem *menu, int sdlkey)
+{
+  int i;
+  static struct osdmenuitem dummyitem; /* So we can always return non-NULL */
+
+  for (i=0; menu[i].name; i++)
+    if (menu[i].sdlkey == sdlkey)
+      return &menu[i];
+
+  return &dummyitem;
+}
+
 // Turn tape noise on/off
 void toggletapenoise( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
@@ -1360,13 +1396,13 @@ void togglefullscreen( struct machine *oric, struct osdmenuitem *mitem, int dumm
 
   if( fullscreen )
   {
-    vdopitems[3].name = "\x0e""Fullscreen";
-    glopitems[3].name = "\x0e""Fullscreen";
+    find_item_by_function(vdopitems, togglefullscreen)->name = "\x0e""Fullscreen";
+    find_item_by_function(glopitems, togglefullscreen)->name = "\x0e""Fullscreen";
     return;
   }
 
-  vdopitems[3].name = " Fullscreen";
-  glopitems[3].name = " Fullscreen";
+  find_item_by_function(vdopitems, togglefullscreen)->name = " Fullscreen";
+  find_item_by_function(glopitems, togglefullscreen)->name = " Fullscreen";
 }
 
 // Toggle hstretch on/off
@@ -1403,14 +1439,14 @@ void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy
   if( oric->scanlines )
   {
     oric->scanlines = SDL_FALSE;
-    vdopitems[4].name = " Scanlines";
-    glopitems[5].name = " Scanlines";
+    find_item_by_function(vdopitems, togglescanlines)->name = " Scanlines";
+    find_item_by_function(glopitems, togglescanlines)->name = " Scanlines";
     return;
   }
 
   oric->scanlines = SDL_TRUE;
-  vdopitems[4].name = "\x0e""Scanlines";
-  glopitems[5].name = "\x0e""Scanlines";
+  find_item_by_function(vdopitems, togglescanlines)->name = "\x0e""Scanlines";
+  find_item_by_function(glopitems, togglescanlines)->name = "\x0e""Scanlines";
 }
 
 void setoverclock( struct machine *oric, struct osdmenuitem *mitem, int value )
@@ -1702,10 +1738,10 @@ void set_render_mode( struct machine *oric, int whichrendermode )
         oric->render_togglefullscreen = render_togglefullscreen_sw8;
         oric->init_render           = init_render_sw8;
         oric->shut_render           = shut_render_sw8;
-        vdopitems[0].name = " OpenGL rendering";
-        vdopitems[1].name = "\x0e""Software rendering";
-        glopitems[0].name = " OpenGL rendering";
-        glopitems[1].name = "\x0e""Software rendering";
+        find_item_by_function_and_arg(vdopitems, swap_render_mode, RENDERMODE_GL)->name = " OpenGL rendering";
+        find_item_by_function_and_arg(glopitems, swap_render_mode, RENDERMODE_GL)->name = " OpenGL rendering";
+        find_item_by_function_and_arg(vdopitems, swap_render_mode, RENDERMODE_SW)->name = "\x0e""Software rendering";
+        find_item_by_function_and_arg(glopitems, swap_render_mode, RENDERMODE_SW)->name = "\x0e""Software rendering";
         menus[4].items = vdopitems;
         break;
       }
@@ -1732,10 +1768,10 @@ void set_render_mode( struct machine *oric, int whichrendermode )
       oric->render_togglefullscreen = render_togglefullscreen_sw;
       oric->init_render           = init_render_sw;
       oric->shut_render           = shut_render_sw;
-      vdopitems[0].name = " OpenGL rendering";
-      vdopitems[1].name = "\x0e""Software rendering";
-      glopitems[0].name = " OpenGL rendering";
-      glopitems[1].name = "\x0e""Software rendering";
+      find_item_by_function_and_arg(vdopitems, swap_render_mode, RENDERMODE_GL)->name = " OpenGL rendering";
+      find_item_by_function_and_arg(glopitems, swap_render_mode, RENDERMODE_GL)->name = " OpenGL rendering";
+      find_item_by_function_and_arg(vdopitems, swap_render_mode, RENDERMODE_SW)->name = "\x0e""Software rendering";
+      find_item_by_function_and_arg(glopitems, swap_render_mode, RENDERMODE_SW)->name = "\x0e""Software rendering";
       menus[4].items = vdopitems;
       break;
 
@@ -1752,10 +1788,10 @@ void set_render_mode( struct machine *oric, int whichrendermode )
       oric->render_togglefullscreen = render_togglefullscreen_gl;
       oric->init_render           = init_render_gl;
       oric->shut_render           = shut_render_gl;
-      vdopitems[0].name = "\x0e""OpenGL rendering";
-      vdopitems[1].name = " Software rendering";
-      glopitems[0].name = "\x0e""OpenGL rendering";
-      glopitems[1].name = " Software rendering";
+      find_item_by_function_and_arg(vdopitems, swap_render_mode, RENDERMODE_GL)->name = "\x0e""OpenGL rendering";
+      find_item_by_function_and_arg(glopitems, swap_render_mode, RENDERMODE_GL)->name = "\x0e""OpenGL rendering";
+      find_item_by_function_and_arg(vdopitems, swap_render_mode, RENDERMODE_SW)->name = " Software rendering";
+      find_item_by_function_and_arg(glopitems, swap_render_mode, RENDERMODE_SW)->name = " Software rendering";
       menus[4].items = glopitems;
       break;
 #endif
@@ -1772,10 +1808,10 @@ void set_render_mode( struct machine *oric, int whichrendermode )
       oric->render_togglefullscreen = render_togglefullscreen_null;
       oric->init_render           = init_render_null;
       oric->shut_render           = shut_render_null;
-      vdopitems[0].name = " OpenGL rendering";
-      vdopitems[1].name = " Software rendering";
-      glopitems[0].name = " OpenGL rendering";
-      glopitems[1].name = " Software rendering";
+      find_item_by_function_and_arg(vdopitems, swap_render_mode, RENDERMODE_GL)->name = " OpenGL rendering";
+      find_item_by_function_and_arg(glopitems, swap_render_mode, RENDERMODE_GL)->name = " OpenGL rendering";
+      find_item_by_function_and_arg(vdopitems, swap_render_mode, RENDERMODE_SW)->name = " Software rendering";
+      find_item_by_function_and_arg(glopitems, swap_render_mode, RENDERMODE_SW)->name = " Software rendering";
       menus[4].items = vdopitems;
       break;
   }
@@ -1882,108 +1918,109 @@ void setmenutoggles( struct machine *oric )
   {
     case DRV_JASMIN:
     case DRV_MICRODISC:
-      mainitems[2].func = insertdisk;
-      mainitems[3].func = insertdisk;
-      mainitems[4].func = insertdisk;
-      mainitems[5].func = insertdisk;
+      find_item_by_key(mainitems, SDLK_0)->func = insertdisk;
+      find_item_by_key(mainitems, SDLK_1)->func = insertdisk;
+      find_item_by_key(mainitems, SDLK_2)->func = insertdisk;
+      find_item_by_key(mainitems, SDLK_3)->func = insertdisk;
       break;
 
     case DRV_PRAVETZ:
     default:
-      mainitems[2].func = insertdisk;
-      mainitems[3].func = insertdisk;
-      mainitems[4].func = NULL;
-      mainitems[5].func = NULL;
+      find_item_by_key(mainitems, SDLK_0)->func = insertdisk;
+      find_item_by_key(mainitems, SDLK_1)->func = insertdisk;
+      find_item_by_key(mainitems, SDLK_2)->func = NULL;
+      find_item_by_key(mainitems, SDLK_3)->func = NULL;
       break;
   }
 
   if( soundavailable && soundon )
-    auopitems[0].name = "\x0e""Sound enabled";
+    find_item_by_function(auopitems, togglesound)->name = "\x0e""Sound enabled";
   else
-    auopitems[0].name = " Sound enabled";
+    find_item_by_function(auopitems, togglesound)->name = " Sound enabled";
 
   if( oric->tapenoise )
-    auopitems[1].name = "\x0e""Tape noise";
+    find_item_by_function(auopitems, toggletapenoise)->name = "\x0e""Tape noise";
   else
-    auopitems[1].name = " Tape noise";
+    find_item_by_function(auopitems, toggletapenoise)->name = " Tape noise";
 
   if( oric->tapeturbo )
-    hwopitems[11].name = "\x0e""Turbo tape";
+    find_item_by_function(auopitems, toggletapeturbo)->name = "\x0e""Turbo tape";
   else
-    hwopitems[11].name = " Turbo tape";
+    find_item_by_function(auopitems, toggletapeturbo)->name = " Turbo tape";
 
   if( oric->autoinsert )
-    hwopitems[12].name = "\x0e""Autoinsert tape";
+    find_item_by_function(hwopitems, toggleautoinsrt)->name = "\x0e""Autoinsert tape";
   else
-    hwopitems[12].name = " Autoinsert tape";
+    find_item_by_function(hwopitems, toggleautoinsrt)->name = " Autoinsert tape";
 
   if( oric->autorewind )
-    hwopitems[13].name = "\x0e""Autorewind tape";
+    find_item_by_function(hwopitems, toggleautowind)->name = "\x0e""Autorewind tape";
   else
-    hwopitems[13].name = " Autorewind tape";
+    find_item_by_function(hwopitems, toggleautowind)->name = " Autorewind tape";
 
   if( oric->vsynchack )
-    hwopitems[15].name = "\x0e""VSync hack";
+    find_item_by_function(hwopitems, togglevsynchack)->name = "\x0e""VSync hack";
   else
-    hwopitems[15].name = " VSync hack";
+    find_item_by_function(hwopitems, togglevsynchack)->name = " VSync hack";
 
   if( oric->lightpen )
-    hwopitems[16].name = "\x0e""Lightpen";
+    find_item_by_function(hwopitems, togglelightpen)->name = "\x0e""Lightpen";
   else
-    hwopitems[16].name = " Lightpen";
+    find_item_by_function(hwopitems, togglelightpen)->name = " Lightpen";
 
   if( oric->symbolsautoload )
-    dbopitems[0].name = "\x0e""Autoload symbols file";
+    find_item_by_function(dbopitems, togglesymbolsauto)->name = "\x0e""Autoload symbols file";
   else
-    dbopitems[0].name = " Autoload symbols file";
+    find_item_by_function(dbopitems, togglesymbolsauto)->name = " Autoload symbols file";
 
   if( oric->symbolscase )
-    dbopitems[1].name = "\x0e""Case-sensitive symbols";
+    find_item_by_function(dbopitems, togglecasesyms)->name = "\x0e""Case-sensitive symbols";
   else
-    dbopitems[1].name = " Case-sensitive symbols";
+    find_item_by_function(dbopitems, togglecasesyms)->name = " Case-sensitive symbols";
 
   if( fullscreen )
   {
-    vdopitems[3].name = "\x0e""Fullscreen";
-    glopitems[3].name = "\x0e""Fullscreen";
+    find_item_by_function(vdopitems, togglefullscreen)->name = "\x0e""Fullscreen";
+    find_item_by_function(glopitems, togglefullscreen)->name = "\x0e""Fullscreen";
   } else {
-    vdopitems[3].name = " Fullscreen";
-    glopitems[3].name = " Fullscreen";
+    find_item_by_function(vdopitems, togglefullscreen)->name = " Fullscreen";
+    find_item_by_function(glopitems, togglefullscreen)->name = " Fullscreen";
   }
 
   if( oric->hstretch )
-    glopitems[4].name = "\x0e""Horizontal stretch";
+    find_item_by_function(glopitems, togglehstretch)->name = "\x0e""Horizontal stretch";
   else
-    glopitems[4].name = " Horizontal stretch";
+    find_item_by_function(glopitems, togglehstretch)->name = " Horizontal stretch";
 
   if( oric->scanlines )
   {
-    vdopitems[4].name = "\x0e""Scanlines";
-    glopitems[5].name = "\x0e""Scanlines";
+    find_item_by_function(vdopitems, togglescanlines)->name = "\x0e""Scanlines";
+    find_item_by_function(glopitems, togglescanlines)->name = "\x0e""Scanlines";
   } else {
-    vdopitems[4].name = " Scanlines";
-    glopitems[5].name = " Scanlines";
+    find_item_by_function(vdopitems, togglescanlines)->name = " Scanlines";
+    find_item_by_function(glopitems, togglescanlines)->name = " Scanlines";
   }
 
   if( oric->palghost )
-    glopitems[6].name = "\x0e""PAL ghosting";
+    find_item_by_function(glopitems, togglepalghost)->name = "\x0e""PAL ghosting";
   else
-    glopitems[6].name = " PAL ghosting";
+    find_item_by_function(glopitems, togglepalghost)->name = " PAL ghosting";
 
-  hwopitems[0].name = oric->type==MACH_ORIC1     ? "\x0e""Oric-1"     : " Oric-1";
-  hwopitems[1].name = oric->type==MACH_ORIC1_16K ? "\x0e""Oric-1 16K" : " Oric-1 16K";
-  hwopitems[2].name = oric->type==MACH_ATMOS     ? "\x0e""Atmos"      : " Atmos";
-  hwopitems[3].name = oric->type==MACH_TELESTRAT ? "\x0e""Telestrat"  : " Telestrat";
-  hwopitems[4].name = oric->type==MACH_PRAVETZ   ? "\x0e""Pravetz 8D" : " Pravetz 8D";
 
-  hwopitems[7].func = microdiscrom_valid ? setdrivetype : NULL;
-  hwopitems[8].func = jasminrom_valid ? setdrivetype : NULL;
-  hwopitems[9].func = pravetzrom_valid ? setdrivetype : NULL;
+  find_item_by_function_and_arg(hwopitems, swapmach, (0xffff<<16)|MACH_ORIC1      )->name = oric->type==MACH_ORIC1     ? "\x0e""Oric-1"     : " Oric-1";
+  find_item_by_function_and_arg(hwopitems, swapmach, (0xffff<<16)|MACH_ORIC1_16K  )->name = oric->type==MACH_ORIC1_16K ? "\x0e""Oric-1 16K" : " Oric-1 16K";
+  find_item_by_function_and_arg(hwopitems, swapmach, (0xffff<<16)|MACH_ATMOS      )->name = oric->type==MACH_ATMOS     ? "\x0e""Atmos"      : " Atmos";
+  find_item_by_function_and_arg(hwopitems, swapmach, (DRV_NONE<<16)|MACH_TELESTRAT)->name = oric->type==MACH_TELESTRAT ? "\x0e""Telestrat"  : " Telestrat";
+  find_item_by_function_and_arg(hwopitems, swapmach, (0xffff<<16)|MACH_PRAVETZ    )->name = oric->type==MACH_PRAVETZ   ? "\x0e""Pravetz 8D" : " Pravetz 8D";
 
-  hwopitems[6].name = oric->drivetype==DRV_NONE      ? "\x0e""No disk"   : " No disk";
-  hwopitems[7].name = oric->drivetype==DRV_MICRODISC ? "\x0e""Microdisc" : " Microdisc";
-  hwopitems[8].name = oric->drivetype==DRV_JASMIN    ? "\x0e""Jasmin"    : " Jasmin";
-  hwopitems[9].name = oric->drivetype==DRV_PRAVETZ   ? "\x0e""Pravetz 8D": " Pravetz 8D";
+  find_item_by_key(hwopitems, 'm')->func = microdiscrom_valid ? setdrivetype : NULL;
+  find_item_by_key(hwopitems, 'j')->func = jasminrom_valid ? setdrivetype : NULL;
+  find_item_by_key(hwopitems, 'p')->func = pravetzrom_valid ? setdrivetype : NULL;
+
+  find_item_by_key(hwopitems, 'x')->name = oric->drivetype==DRV_NONE      ? "\x0e""No disk"   : " No disk";
+  find_item_by_key(hwopitems, 'm')->name = oric->drivetype==DRV_MICRODISC ? "\x0e""Microdisc" : " Microdisc";
+  find_item_by_key(hwopitems, 'j')->name = oric->drivetype==DRV_JASMIN    ? "\x0e""Jasmin"    : " Jasmin";
+  find_item_by_key(hwopitems, 'p')->name = oric->drivetype==DRV_PRAVETZ   ? "\x0e""Pravetz 8D": " Pravetz 8D";
 }
 
 // Initialise the GUI
