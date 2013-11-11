@@ -182,9 +182,7 @@ struct osdmenuitem mainitems[] = { { "Insert tape...",         "T",    't',     
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Hardware options...",    "H",    'h',      gotomenu,        1, 0 },
                                    { "Audio options...",       "A",    'a',      gotomenu,        2, 0 },
-#ifdef __OPENGL_AVAILABLE__
                                    { "Video options...",       "V",    'v',      gotomenu,        4, 0 },
-#endif
                                    { "Debug options...",       "D",    'd',      gotomenu,        3, 0 },
                                    { "Overclock options...",   "C",    'c',      gotomenu,        6, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
@@ -232,6 +230,7 @@ struct osdmenuitem dbopitems[] = { { " Autoload symbols file", NULL,   0,       
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },
                                    { NULL, } };
 
+#ifdef __OPENGL_AVAILABLE__
 struct osdmenuitem vdopitems[] = { { " OpenGL rendering",      "O",    'o',      swap_render_mode, RENDERMODE_GL, 0 },
                                    { " Software rendering",    "S",    's',      swap_render_mode, RENDERMODE_SW, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
@@ -240,6 +239,13 @@ struct osdmenuitem vdopitems[] = { { " OpenGL rendering",      "O",    'o',     
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },
                                    { NULL, } };
+#else
+struct osdmenuitem vdopitems[] = { { " Fullscreen",            "F",    'f',      togglefullscreen, 0, 0 },
+                                   { " Scanlines",             "C",    'c',      togglescanlines, 0, 0 },
+                                   { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
+                                   { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },
+                                   { NULL, } };
+#endif
 
 struct osdmenuitem glopitems[] = { { " OpenGL rendering",      "O",    'o',      swap_render_mode, RENDERMODE_GL, 0 },
                                    { " Software rendering",    "S",    's',      swap_render_mode, RENDERMODE_SW, 0 },
@@ -1810,6 +1816,18 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
   }
 
   if( !ay_init( &oric->ay, oric ) )
+  {
+    oric->emu_mode = EM_PLEASEQUIT;
+    return;
+  }
+
+  if( !init_filerequester( oric ) )
+  {
+    oric->emu_mode = EM_PLEASEQUIT;
+    return;
+  }
+
+  if( !init_msgbox( oric ) )
   {
     oric->emu_mode = EM_PLEASEQUIT;
     return;
