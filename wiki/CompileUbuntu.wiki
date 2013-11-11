@@ -1,0 +1,13 @@
+#summary How to compile Oricutron for Ubuntu
+
+= Introduction =
+
+This page describes how to compile Oricutron for Ubuntu (instructions correct for Ubuntu 12.04)
+
+  * Install SDL devloper files with "sudo apt-get install libsdl-dev"
+  * Make sure you have the GNU C++ compiler support installed: "sudo apt-get install g++"
+  * Either download and extract a source package from the [http://code.google.com/p/oriculator/downloads/list download page], or [http://code.google.com/p/oriculator/source/checkout check out] the current subversion trunk.
+  * Open a shell, and navigate to the Oricutron sourcecode
+  * Type "make".
+
+Hopefully, an Oricutron executable should come out the other end.
