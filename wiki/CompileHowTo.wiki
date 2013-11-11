@@ -10,3 +10,4 @@ Here are some guides for compiling Oricutron for various environments:
   * [CompileMOS MorphOS]
   * [CompileAROS AROS]
   * [CompileOSX Mac OS X]
+  * [CompileUbuntu Ubuntu]
