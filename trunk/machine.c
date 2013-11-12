@@ -193,7 +193,7 @@ int detect_image_type(char *filename)
       if (memcmp(ptr, stratsed_detect, sizeof(stratsed_detect))==0)
         return IMG_TELESTRAT_DISK;
 
-      if (memcmp(ptr, ftdos_detect, sizeof(stratsed_detect))==0)
+      if (memcmp(ptr, ftdos_detect, sizeof(ftdos_detect))==0)
         return IMG_ATMOS_JASMIN;
     }
 
@@ -1091,7 +1091,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           break;
 
         case SDLK_F9:
-          toggletapecap( oric, &mainitems[1], 0 );
+          toggletapecap( oric, find_item_by_function(mainitems, toggletapecap), 0 );
           break;
 
         case SDLK_F10:
@@ -1631,7 +1631,7 @@ void shut_machine( struct machine *oric )
   if( oric->mem ) { free( oric->mem ); oric->mem = NULL; oric->rom = NULL; }
   if( oric->prf ) { fclose( oric->prf ); oric->prf = NULL; }
   if( oric->tsavf ) tape_stop_savepatch( oric );
-  if( oric->tapecap ) toggletapecap( oric, &mainitems[1], 0 );
+  if( oric->tapecap ) toggletapecap( oric, find_item_by_function(mainitems, toggletapecap), 0 );
   mon_freesyms( &sym_microdisc );
   mon_freesyms( &sym_jasmin );
   mon_freesyms( &sym_pravetz );
