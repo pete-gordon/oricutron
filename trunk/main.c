@@ -716,7 +716,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
                 printf("'%s' seems to be a disk image.\n", opt_arg);
                 break;
 
-              case IMG_TAPE
+              case IMG_TAPE:
               default:
                 strncpy( sto->start_tape, opt_arg, 1024 );
                 sto->start_tape[1023] = 0;
@@ -756,7 +756,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
               
               case IMG_PRAVETZ_DISK:
                 if (!sto->start_machine_set)  sto->start_machine = MACH_PRAVETZ;
-                if (!sto->start_disktype_set) sto->start_disktype = DRV_PRAVETZ
+                if (!sto->start_disktype_set) sto->start_disktype = DRV_PRAVETZ;
                 break;
               
               case IMG_GUESS_MICRODISC:
@@ -891,7 +891,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
               
         case IMG_PRAVETZ_DISK:
           if (!sto->start_machine_set)  sto->start_machine = MACH_PRAVETZ;
-          if (!sto->start_disktype_set) sto->start_disktype = DRV_PRAVETZ
+          if (!sto->start_disktype_set) sto->start_disktype = DRV_PRAVETZ;
           strncpy( sto->start_disk, argv[i], 1024 );
           sto->start_disk[1023] = 0;
           break;
@@ -903,8 +903,8 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           break;
 
         case IMG_TAPE:
-          strcpy(sto->start_tape, sto->start_disk);
-          sto->start_disk[0] = 0;
+          strncpy(sto->start_tape, argv[i], 1024);
+          sto->start_tape[1023] = 0;
           break;
 
         default:
