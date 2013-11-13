@@ -940,7 +940,20 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   if( !init_joy( oric ) ) { free( sto ); return SDL_FALSE; }
   if( !init_machine( oric, sto->start_machine, SDL_TRUE ) ) { free( sto ); return SDL_FALSE; }
 
-  if( sto->start_disk[0] ) diskimage_load( oric, sto->start_disk, 0 );
+  if( sto->start_disk[0] )
+  {
+    diskimage_load( oric, sto->start_disk, 0 );
+    switch (oric->drivetype)
+    {
+      case DRV_PRAVETZ:
+        queuekeys( "CALL#320\x0d" );
+        break;
+      
+      case DRV_JASMIN:
+        oric->auto_jasmin_reset = SDL_TRUE;
+        break;
+    }
+  }
   if( sto->start_tape[0] )
   {
     if( tape_load_tap( oric, sto->start_tape ) )
