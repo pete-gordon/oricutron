@@ -82,7 +82,9 @@ char __attribute__((used)) versiontag[] = "$VER: " APP_NAME_FULL " (2.3.2012)";
 struct start_opts
 {
   char     lctmp[2048];
+  SDL_bool start_machine_set;
   Sint32   start_machine;
+  SDL_bool start_disktype_set;
   Sint32   start_disktype;
   Sint32   start_rendermode;
   SDL_bool start_debug;
@@ -529,7 +531,9 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 
   // Defaults
   sto->start_machine  = MACH_ATMOS;
+  sto->start_machine_set = SDL_FALSE;
   sto->start_disktype = DRV_NONE;
+  sto->start_disktype_set = SDL_FALSE;
   sto->start_debug    = SDL_FALSE;
   sto->start_rendermode = RENDERMODE_SW;
   sto->start_disk[0]  = 0;
@@ -656,27 +660,115 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           if( opt_arg )
           {
             if(( strcasecmp( opt_arg, "atmos"     ) == 0 ) ||
-               ( strcasecmp( opt_arg, "a"         ) == 0 )) { sto->start_machine = MACH_ATMOS;     break; }
+               ( strcasecmp( opt_arg, "a"         ) == 0 ))
+            {
+              sto->start_machine = MACH_ATMOS;
+              sto->start_machine_set = SDL_TRUE;
+              break;
+            }
             if(( strcasecmp( opt_arg, "oric1"     ) == 0 ) ||
-               ( strcasecmp( opt_arg, "1"         ) == 0 )) { sto->start_machine = MACH_ORIC1;     break; }
-            if(  strcasecmp( opt_arg, "o16k"      ) == 0 )  { sto->start_machine = MACH_ORIC1_16K; break; }
+               ( strcasecmp( opt_arg, "1"         ) == 0 ))
+            {
+              sto->start_machine = MACH_ORIC1;
+              sto->start_machine_set = SDL_TRUE;
+              break;
+            }
+            if(  strcasecmp( opt_arg, "o16k"      ) == 0 )
+            {
+              sto->start_machine = MACH_ORIC1_16K;
+              sto->start_machine_set = SDL_TRUE;
+              break;
+            }
             if(( strcasecmp( opt_arg, "telestrat" ) == 0 ) ||
-               ( strcasecmp( opt_arg, "t"         ) == 0 )) { sto->start_machine = MACH_TELESTRAT; break; }
+               ( strcasecmp( opt_arg, "t"         ) == 0 ))
+            {
+              sto->start_machine = MACH_TELESTRAT;
+              sto->start_machine_set = SDL_TRUE;
+              break;
+            }
             if(( strcasecmp( opt_arg, "pravetz"   ) == 0 ) ||
                ( strcasecmp( opt_arg, "pravetz8d" ) == 0 ) ||
-               ( strcasecmp( opt_arg, "p"         ) == 0 )) { sto->start_machine = MACH_PRAVETZ;   break; }
+               ( strcasecmp( opt_arg, "p"         ) == 0 ))
+            {
+              sto->start_machine = MACH_PRAVETZ;
+              sto->start_machine_set = SDL_TRUE;
+              break;
+            }
           }
           
           error_printf( "Invalid machine type" );
           free( sto );
           exit( EXIT_FAILURE );
           break;
-        
+
+        case 't':  // Tape image
+        {
+          SDL_bool drop_through = SDL_FALSE;
+          if( opt_arg )
+          {
+            switch (detect_image_type(opt_arg))
+            {
+              case IMG_ATMOS_MICRODISC:
+              case IMG_ATMOS_JASMIN:
+              case IMG_TELESTRAT_DISK:
+              case IMG_PRAVETZ_DISK:
+              case IMG_GUESS_MICRODISC:
+                printf("'%s' seems to be a disk image.\n", opt_arg);
+                break;
+
+              case IMG_TAPE
+              default:
+                strncpy( sto->start_tape, opt_arg, 1024 );
+                sto->start_tape[1023] = 0;
+                break;
+            }
+          } else {
+            error_printf( "No tape image specified" );
+            free( sto );
+            exit( EXIT_FAILURE );
+          }
+          
+          if (!drop_through)
+            break;
+        }
+
         case 'd':  // Disk image
           if( opt_arg )
           {
             strncpy( sto->start_disk, opt_arg, 1024 );
             sto->start_disk[1023] = 0;
+            switch (detect_image_type(sto->start_disk))
+            {
+              case IMG_ATMOS_MICRODISC:
+                if (!sto->start_machine_set)  sto->start_machine = MACH_ATMOS;
+                if (!sto->start_disktype_set) sto->start_disktype = DRV_MICRODISC;
+                break;
+
+              case IMG_ATMOS_JASMIN:
+                if (!sto->start_machine_set)  sto->start_machine = MACH_ATMOS;
+                if (!sto->start_disktype_set) sto->start_disktype = DRV_JASMIN;
+                break;
+              
+              case IMG_TELESTRAT_DISK:
+                if (!sto->start_machine_set)  sto->start_machine = MACH_TELESTRAT;
+                if (!sto->start_disktype_set) sto->start_disktype = DRV_MICRODISC;
+                break;
+              
+              case IMG_PRAVETZ_DISK:
+                if (!sto->start_machine_set)  sto->start_machine = MACH_PRAVETZ;
+                if (!sto->start_disktype_set) sto->start_disktype = DRV_PRAVETZ
+                break;
+              
+              case IMG_GUESS_MICRODISC:
+                if (!sto->start_disktype_set) sto->start_disktype = DRV_MICRODISC;
+                break;
+
+              case IMG_TAPE:
+                printf("'%s' seems to be a tape image.\n", sto->start_disk);
+                strcpy(sto->start_tape, sto->start_disk);
+                sto->start_disk[0] = 0;
+                break;
+            }
           } else {
             error_printf( "No disk image specified" );
             free( sto );
@@ -684,27 +776,30 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           }
           break;
         
-        case 't':  // Tape image
-          if( opt_arg )
-          {
-            strncpy( sto->start_tape, opt_arg, 1024 );
-            sto->start_tape[1023] = 0;
-          } else {
-            error_printf( "No tape image specified" );
-            free( sto );
-            exit( EXIT_FAILURE );
-          }          
-          break;
-   
         case 'k':  // Drive controller type
           if( opt_arg )
           {
             if(( strcasecmp( opt_arg, "microdisc" ) == 0 ) ||
-               ( strcasecmp( opt_arg, "m"         ) == 0 )) { sto->start_disktype = DRV_MICRODISC; break; }
+               ( strcasecmp( opt_arg, "m"         ) == 0 ))
+            {
+              sto->start_disktype = DRV_MICRODISC;
+              sto->start_disktype_set = SDL_TRUE;
+              break;
+            }
             if(( strcasecmp( opt_arg, "jasmin"    ) == 0 ) ||
-               ( strcasecmp( opt_arg, "j"         ) == 0 )) { sto->start_disktype = DRV_JASMIN;    break; }
+               ( strcasecmp( opt_arg, "j"         ) == 0 ))
+            {
+              sto->start_disktype = DRV_JASMIN;
+              sto->start_disktype_set = SDL_TRUE;
+              break;
+            }
             if(( strcasecmp( opt_arg, "pravetz"   ) == 0 ) ||
-               ( strcasecmp( opt_arg, "p"         ) == 0 )) { sto->start_disktype = DRV_PRAVETZ;   break; }
+               ( strcasecmp( opt_arg, "p"         ) == 0 ))
+            {
+              sto->start_disktype = DRV_PRAVETZ;
+              sto->start_disktype_set = SDL_TRUE;
+              break;
+            }
           }
 
           error_printf( "Invalid drive type" );
@@ -771,26 +866,50 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
     }
     else
     {
-      char *p = strrchr(argv[i], '.');
-      if( p && ( strcasecmp(p, ".dsk") == 0 ) )
+      switch (detect_image_type(argv[i]))
       {
-        strncpy( sto->start_disk, argv[i], 1024 );
-        sto->start_disk[1023] = 0;
-      }
-      else if( p && ( strcasecmp(p, ".tap") == 0 || strcasecmp(p, ".ort") == 0 || strcasecmp(p, ".wav") == 0 ) )
-      {
-        strncpy( sto->start_tape, argv[i], 1024 );
-        sto->start_tape[1023] = 0;
-      }
-      else if( p && ( strcasecmp(p, ".sna") == 0 ) )
-      {
-        strncpy( sto->start_snapshot, argv[i], 1024 );
-        sto->start_snapshot[1023] = 0;
-      }
-      else
-      {
-        free( sto );
-        usage( EXIT_FAILURE );
+        case IMG_ATMOS_MICRODISC:
+          if (!sto->start_machine_set)  sto->start_machine = MACH_ATMOS;
+          if (!sto->start_disktype_set) sto->start_disktype = DRV_MICRODISC;
+          strncpy( sto->start_disk, argv[i], 1024 );
+          sto->start_disk[1023] = 0;
+          break;
+
+        case IMG_ATMOS_JASMIN:
+          if (!sto->start_machine_set)  sto->start_machine = MACH_ATMOS;
+          if (!sto->start_disktype_set) sto->start_disktype = DRV_JASMIN;
+          strncpy( sto->start_disk, argv[i], 1024 );
+          sto->start_disk[1023] = 0;
+          break;
+              
+        case IMG_TELESTRAT_DISK:
+          if (!sto->start_machine_set)  sto->start_machine = MACH_TELESTRAT;
+          if (!sto->start_disktype_set) sto->start_disktype = DRV_MICRODISC;
+          strncpy( sto->start_disk, argv[i], 1024 );
+          sto->start_disk[1023] = 0;
+          break;
+              
+        case IMG_PRAVETZ_DISK:
+          if (!sto->start_machine_set)  sto->start_machine = MACH_PRAVETZ;
+          if (!sto->start_disktype_set) sto->start_disktype = DRV_PRAVETZ
+          strncpy( sto->start_disk, argv[i], 1024 );
+          sto->start_disk[1023] = 0;
+          break;
+              
+        case IMG_GUESS_MICRODISC:
+          if (!sto->start_disktype_set) sto->start_disktype = DRV_MICRODISC;
+          strncpy( sto->start_disk, argv[i], 1024 );
+          sto->start_disk[1023] = 0;
+          break;
+
+        case IMG_TAPE:
+          strcpy(sto->start_tape, sto->start_disk);
+          sto->start_disk[0] = 0;
+          break;
+
+        default:
+          free( sto );
+          usage( EXIT_FAILURE );
       }
     }
   }
