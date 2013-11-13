@@ -714,6 +714,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
               case IMG_PRAVETZ_DISK:
               case IMG_GUESS_MICRODISC:
                 printf("'%s' seems to be a disk image.\n", opt_arg);
+                drop_through = SDL_TRUE;
                 break;
 
               case IMG_TAPE:
