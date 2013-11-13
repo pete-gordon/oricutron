@@ -875,6 +875,7 @@ void preinit_machine( struct machine *oric )
     oric->diskname[i][0] = 0;
   }
   oric->diskautosave = SDL_FALSE;
+  oric->auto_jasmin_reset = SDL_TRUE;
   
   oric->lightpen  = SDL_FALSE;
   oric->lightpenx = 0;

@@ -478,6 +478,44 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
     }
   }
 
+  // Also use the queuekey location to do the jasmin auto reset
+  if( ay->oric->auto_jasmin_reset )
+  {
+    if (ay->oric->drivetype == DRV_JASMIN)
+    {
+      switch( ay->oric->type )
+      {
+        case MACH_ATMOS:
+        case MACH_PRAVETZ:
+          if( ( ay->oric->cpu.pc == 0xeb78 ) && ( ay->oric->romon ) )
+          {
+            ay->oric->cpu.write( &ay->oric->cpu, 0x3fb, 1 ); // ROMDIS
+            setromon( ay->oric );
+            m6502_reset( &ay->oric->cpu );
+            via_init( &ay->oric->via, ay->oric, VIA_MAIN );
+            ay->oric->auto_jasmin_reset = SDL_FALSE;
+          }
+          break;
+        
+        case MACH_ORIC1:
+        case MACH_ORIC1_16K:
+          if( ( ay->oric->cpu.pc == 0xe905 ) && ( ay->oric->romon ) )
+          {
+            ay->oric->cpu.write( &ay->oric->cpu, 0x3fb, 1 ); // ROMDIS
+            setromon( ay->oric );
+            m6502_reset( &ay->oric->cpu );
+            via_init( &ay->oric->via, ay->oric, VIA_MAIN );
+            ay->oric->auto_jasmin_reset = SDL_FALSE;
+          }
+          break;
+      }
+    }
+    else
+    {
+      ay->oric->auto_jasmin_reset = SDL_FALSE;
+    }
+  }
+
   if( ay->keybitdelay > 0 )
   {
     if( cycles >= ay->keybitdelay )
