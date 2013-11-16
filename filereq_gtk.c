@@ -16,7 +16,7 @@
 **  along with this program; if not, write to the Free Software
 **  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 **
-**  SDL based file requester
+**  GTK based file requester
 */
 
 #include <stdlib.h>
@@ -26,7 +26,6 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-#include <pthread.h>
 #include <gtk/gtk.h>
 
 #include "system.h"
