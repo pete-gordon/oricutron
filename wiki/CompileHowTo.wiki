@@ -6,6 +6,7 @@
 Here are some guides for compiling Oricutron for various environments:
 
   * [CompileMinGW Windows / MinGW]
+  * [CompileDebianMinGW Windows / MinGW from Debian]
   * [CompileAOS4 AmigaOS 4.x]
   * [CompileMOS MorphOS]
   * [CompileAROS AROS]
