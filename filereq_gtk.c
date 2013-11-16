@@ -39,6 +39,9 @@
 #include "machine.h"
 #include "filereq.h"
 
+extern SDL_bool fullscreen;
+void togglefullscreen( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+
 SDL_bool init_filerequester( struct machine *oric )
 {
   gtk_init(0, NULL);
@@ -61,6 +64,10 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   SDL_bool result = SDL_FALSE;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
   GtkFileFilter *filter = NULL, *allfilter = gtk_file_filter_new();
+  SDL_bool was_fullscreen = fullscreen;
+
+  if (fullscreen)
+    togglefullscreen(oric, NULL, 0);
 
   gtk_file_filter_set_name(allfilter, "All files");
   gtk_file_filter_add_pattern(allfilter, "*");
@@ -152,5 +159,8 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   while (gtk_events_pending())
     gtk_main_iteration();
 
+  if (was_fullscreen)
+    togglefullscreen(oric, NULL, 0);
+    
   return result;
 }
