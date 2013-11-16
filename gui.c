@@ -876,6 +876,7 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
           swapmach( oric, NULL, (DRV_JASMIN<<16)|MACH_ATMOS );
           joinpath( tapepath, tapefile );
           diskimage_load( oric, filetmp, 0 );
+          oric->auto_jasmin_reset = SDL_TRUE;
         }
         setemumode( oric, NULL, EM_RUNNING );
         return;
@@ -890,6 +891,7 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
           swapmach( oric, NULL, (DRV_JASMIN<<16)|oric->type );
           joinpath( tapepath, tapefile );
           diskimage_load( oric, filetmp, 0 );
+          oric->auto_jasmin_reset = SDL_TRUE;
         }
         setemumode( oric, NULL, EM_RUNNING );
         return;
@@ -1069,6 +1071,7 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
           "Would you like to switch to that configuration?"))
         {
           swapmach( oric, NULL, (DRV_JASMIN<<16)|MACH_ATMOS );
+          oric->auto_jasmin_reset = SDL_TRUE;
         }
         break;
       }
@@ -1076,6 +1079,7 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
       if (oric->drivetype == DRV_NONE)
       {
         swapmach( oric, NULL, (DRV_JASMIN<<16)|oric->type);
+        oric->auto_jasmin_reset = SDL_TRUE;
         break;
       }
 
@@ -1086,6 +1090,7 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
           "Would you like to switch to that configuration?"))
         {
           swapmach( oric, NULL, (DRV_JASMIN<<16)|oric->type );
+          oric->auto_jasmin_reset = SDL_TRUE;
         }
         break;
       }
