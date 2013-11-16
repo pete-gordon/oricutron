@@ -8,7 +8,7 @@
 # PLATFORM = haiku
 # PLATFORM = osx
 # PLATFORM = linux
-# PLATFORM = linux-opengl
+# PLATFORM = linux-nogl
 # PLATFORM = gphwiz
 # PLATFORM = aitouchbook
 # PLATFORM = aros
@@ -260,18 +260,6 @@ endif
 
 # Linux
 ifeq ($(PLATFORM),linux)
-STRIP :=  $(CROSS_COMPILE)$(STRIP)
-CFLAGS += -g $(shell sdl-config --cflags) $(shell pkg-config --cflags gtk+-3.0) -D__OPENGL_AVAILABLE__
-LFLAGS += -lm $(shell sdl-config --libs) $(shell pkg-config --libs gtk+-3.0) -lX11 -lGL
-CUSTOMOBJS = gui_x11.o
-FILEREQ_OBJ = filereq_gtk.o
-MSGBOX_OBJ = msgbox_gtk.o
-TARGET = oricutron
-INSTALLDIR = /usr/local
-endif
-
-# Linux OpenGL
-ifeq ($(PLATFORM),linux-opengl)
 ifeq (x86_64,$(shell uname -m))
 BASELIBDIR := lib64
 CFLAGS += -m64
@@ -282,9 +270,32 @@ CFLAGS += -m32
 LFLAGS += -m32
 endif
 STRIP :=  $(CROSS_COMPILE)$(STRIP)
-CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) -D__OPENGL_AVAILABLE__
-LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --libs) -lGL -lX11
+CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --cflags) -D__OPENGL_AVAILABLE__
+LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --libs) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --libs) -lGL -lX11
 CUSTOMOBJS = gui_x11.o
+FILEREQ_OBJ = filereq_gtk.o
+MSGBOX_OBJ = msgbox_gtk.o
+TARGET = oricutron
+INSTALLDIR = /usr/local
+endif
+
+# Linux no-OpenGL
+ifeq ($(PLATFORM),linux-nogl)
+ifeq (x86_64,$(shell uname -m))
+BASELIBDIR := lib64
+CFLAGS += -m64
+LFLAGS += -m64
+else
+BASELIBDIR := lib
+CFLAGS += -m32
+LFLAGS += -m32
+endif
+STRIP :=  $(CROSS_COMPILE)$(STRIP)
+CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --cflags)
+LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --libs) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --libs) -lX11
+CUSTOMOBJS = gui_x11.o
+FILEREQ_OBJ = filereq_gtk.o
+MSGBOX_OBJ = msgbox_gtk.o
 TARGET = oricutron
 INSTALLDIR = /usr/local
 endif
@@ -487,6 +498,6 @@ package-win-gcc: clean release
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
 
 .PHONY: mrproper
-PLATFORMS := os4 morphos win32 win32-gcc win64-gcc beos haiku osx linux linux-opengl gphwiz aitouchbook aros
+PLATFORMS := os4 morphos win32 win32-gcc win64-gcc beos haiku osx linux linux-nogl gphwiz aitouchbook aros
 mrproper:
 	@for plat in $(PLATFORMS); do $(MAKE) -f $(VPATH)/Makefile clean PLATFORM=$${plat} ; done
