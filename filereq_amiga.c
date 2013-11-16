@@ -128,7 +128,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
     return SDL_FALSE;
   
   strncpy( path,  req->fr_Drawer, 4096 ); path[4095] = 0;
-  strncpy( fname, req->fr_File,   512  ); path[511]  = 0;
+  strncpy( fname, req->fr_File,   512  ); fname[511]  = 0;
   
   return SDL_TRUE;
 }
