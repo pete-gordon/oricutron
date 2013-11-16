@@ -1,0 +1,14 @@
+#summary How to cross-compile Oricutron with MinGW under Debian
+
+= Introduction =
+
+This page describes how to cross-compile Oricutron for Windows with [http://www.mingw.org/ MinGW] under Debian (instructions correct for Debian unstable).
+
+  * Install MinGW cross-compiler with (as root) "apt-get install mingw32"
+  * Download the latest SDL development libraries for MinGW from [http://www.libsdl.org/download-1.2.php the libSDL 1.2 download page].
+  * Install the SDL development libraries to /usr/local/i586-mingw32msvc/SDL-1.2.15 FIXME!
+  * Either download and extract a source package from the [https://bintray.com/pete/generic/Oricutron download page], or [http://code.google.com/p/oriculator/source/checkout check out] the current subversion trunk.
+  * Open a shell, and navigate to the Oricutron sourcecode
+  * Type "make PLATFORM=win32 SDL_PREFIX=/usr/local/i586-mingw32msvc/SDL-1.2.15" to override the platform autodetection.
+
+Hopefully, an Oricutron executable should come out the other end.
