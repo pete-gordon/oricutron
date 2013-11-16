@@ -39,6 +39,9 @@
 #include "machine.h"
 #include "msgbox.h"
 
+extern SDL_bool fullscreen;
+void togglefullscreen( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+
 SDL_bool init_msgbox( struct machine *oric )
 {
   // We rely on init_filerequester to call gtk_init()
@@ -56,6 +59,10 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
   GtkMessageType mtyp = GTK_MESSAGE_INFO;
   SDL_bool result = SDL_FALSE;
   gint res;
+  SDL_bool was_fullscreen = fullscreen;
+
+  if (fullscreen)
+    togglefullscreen(oric, NULL, 0);
 
   switch( type )
   {
@@ -80,6 +87,9 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
   gtk_widget_destroy(dialog);
   while (gtk_events_pending())
     gtk_main_iteration();
+
+  if (was_fullscreen)
+    togglefullscreen(oric, NULL, 0);
 
   return result;
 }
