@@ -261,9 +261,10 @@ endif
 # Linux
 ifeq ($(PLATFORM),linux)
 STRIP :=  $(CROSS_COMPILE)$(STRIP)
-CFLAGS += -g $(shell sdl-config --cflags) -D__OPENGL_AVAILABLE__
-LFLAGS += -lm $(shell sdl-config --libs) -lX11 -lGL
+CFLAGS += -g $(shell sdl-config --cflags) $(shell pkg-config --cflags gtk+-3.0) -D__OPENGL_AVAILABLE__
+LFLAGS += -lm $(shell sdl-config --libs) $(shell pkg-config --libs gtk+-3.0) -lX11 -lGL
 CUSTOMOBJS = gui_x11.o
+FILEREQ_OBJ = filereq_gtk.o
 TARGET = oricutron
 INSTALLDIR = /usr/local
 endif
