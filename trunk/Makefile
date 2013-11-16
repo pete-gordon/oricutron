@@ -265,6 +265,7 @@ CFLAGS += -g $(shell sdl-config --cflags) $(shell pkg-config --cflags gtk+-3.0) 
 LFLAGS += -lm $(shell sdl-config --libs) $(shell pkg-config --libs gtk+-3.0) -lX11 -lGL
 CUSTOMOBJS = gui_x11.o
 FILEREQ_OBJ = filereq_gtk.o
+MSGBOX_OBJ = msgbox_gtk.o
 TARGET = oricutron
 INSTALLDIR = /usr/local
 endif
