@@ -395,7 +395,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
     ay->ccycle += cyclespersample;
   }
 
-  dcadjustave /= AUDIO_BUFLEN;
+  dcadjustave /= length;
 
   if( (dcadjustmax-dcadjustave) > 32767 )
     dcadjustave = -(32767-dcadjustmax);
@@ -413,10 +413,10 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
   if( vidcap )
   {
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
-    for( i=0; i<AUDIO_BUFLEN; i++ )
+    for( i=0; i<(length/4); i++ )
       audiocapbuf[i] = SDL_Swap16( audiocapbuf[i] );
 #endif
-    avi_addaudio( &vidcap, audiocapbuf, AUDIO_BUFLEN*2 );
+    avi_addaudio( &vidcap, audiocapbuf, length/2 );
   }
 
   while( logc < ay->logged )
