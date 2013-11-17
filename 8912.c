@@ -45,6 +45,9 @@ extern struct Task *maintask;
 extern uint32 timersig;
 #endif
 
+SDL_AudioSpec obtained;
+Uint32 cyclespersample;
+
 static Sint16 audiocapbuf[AUDIO_BUFLEN];
 extern struct avi_handle *vidcap;
 
@@ -389,7 +392,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
     if( fout > dcadjustmax ) dcadjustmax = fout;
     dcadjustave += fout;
 
-    ay->ccycle += CYCLESPERSAMPLE;
+    ay->ccycle += cyclespersample;
   }
 
   dcadjustave /= AUDIO_BUFLEN;
