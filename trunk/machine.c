@@ -962,11 +962,6 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 //  char stmp[32];
   switch( ev->type )
   {
-/*
-    case SDL_USEREVENT:
-      *needrender = SDL_TRUE;
-      break;
-*/
     case SDL_MOUSEBUTTONDOWN:
       switch (ev->button.button)
       {

@@ -52,7 +52,7 @@
 #include "tape.h"
 #include "snapshot.h"
 
-#define FRAMES_TO_AVERAGE 15
+#define FRAMES_TO_AVERAGE 8
 
 SDL_bool need_sdl_quit = SDL_FALSE;
 SDL_bool fullscreen, hwsurface;
@@ -69,9 +69,6 @@ extern char pravetzromfile[2][1024];
 extern char telebankfiles[8][1024];
 
 #ifdef __amigaos4__
-int32 timersigbit = -1;
-uint32 timersig;
-struct Task *maintask;
 char __attribute__((used)) stackcookie[] = "$STACK: 1000000";
 #endif
 
@@ -558,7 +555,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   preinit_gui( oric );
 
   // Go SDL!
-  if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO ) < 0 )
+  if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
   {
     error_printf( "SDL init failed" );
     return SDL_FALSE;
@@ -923,14 +920,6 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   for( i=0; i<8; i++ ) lastframetimes[i] = 0;
   frametimeave = 0;
 
-#ifdef __amigaos4__
-  timersigbit = IExec->AllocSignal( -1 );
-  if( timersigbit == -1 ) { free( sto ); return SDL_FALSE; }
-  timersig = 1L<<timersigbit;
-  
-  maintask = IExec->FindTask( NULL );
-#endif
-
   setoverclock( oric, NULL, 0 );
   if( !init_gui( oric, sto->start_rendermode ) ) { free( sto ); return SDL_FALSE; }
   if( !init_filerequester( oric ) ) { free( sto ); return SDL_FALSE; }
@@ -1006,41 +995,6 @@ void shut( struct machine *oric )
     shut_gui( oric );
   }
   if( need_sdl_quit ) SDL_Quit();
-#ifdef __amigaos4__
-  IExec->FreeSignal( timersigbit );
-#endif
-}
-
-// Stupid 10ms granularity bastard.
-static Uint32 time50[] = { 20, 20, 20 };
-static Uint32 time60[] = { 20, 20, 10 };
-static int tmoffs = 0;
-
-Uint32 systemtiming( Uint32 interval, void *userdata )
-{
-  struct machine *oric = (struct machine *)userdata;
-  if( oric->emu_mode == EM_RUNNING )
-  {
-#if __amigaos4__
-    IExec->Signal( maintask, timersig );
-#else
-    SDL_Event     event;
-    SDL_UserEvent userevent;
-
-    userevent.type  = SDL_USEREVENT;
-    userevent.code  = 0;
-    userevent.data1 = NULL;
-    userevent.data2 = NULL;
-    
-    event.type = SDL_USEREVENT;
-    event.user = userevent;
-    
-    SDL_PushEvent( &event );
-#endif
-  }
-
-  tmoffs = (tmoffs+1)%3;
-  return oric->vid_freq ? time50[tmoffs] : time60[tmoffs];
 }
 
 void frameloop_overclock( struct machine *oric, SDL_bool *framedone, SDL_bool *needrender )
@@ -1176,14 +1130,16 @@ int main( int argc, char *argv[] )
   SDL_bool isinit;
   Sint32 i;
   struct machine oric;
-  Uint32 framestart;
+  Uint32 nextframe_ms, now=0, then;
+  Uint64 nextframe_us;
 
   if( ( isinit = init( &oric, argc, argv ) ) )
   {
     SDL_bool done, needrender, framedone;
 
-    SDL_AddTimer( 1000/50, (SDL_NewTimerCallback)systemtiming, (void *)&oric );
-    framestart = 0;
+    now = SDL_GetTicks();
+    nextframe_ms = now;
+    nextframe_us = ((Uint64)nextframe_ms)*1000;
 
     done = SDL_FALSE;
     needrender = SDL_TRUE;
@@ -1194,85 +1150,88 @@ int main( int argc, char *argv[] )
 
       if( oric.emu_mode == EM_PLEASEQUIT )
         break;
-
-      if( needrender )      {
-        render( &oric );
-        needrender = SDL_FALSE;
-      }
       
       if( oric.emu_mode == EM_RUNNING )
       {
-        if( !framedone )
-        {
-          if( framestart != 0 )
-          {
-            frametimeave = 0;
-            for( i=(FRAMES_TO_AVERAGE-1); i>0; i-- )
-            {
-              lastframetimes[i] = lastframetimes[i-1];
-              frametimeave += lastframetimes[i];
-            }
-            lastframetimes[0] = SDL_GetTicks() - framestart;
-            frametimeave = (frametimeave+lastframetimes[0])/FRAMES_TO_AVERAGE;
-          }
-
-          once_per_frame( &oric );
-          framestart = SDL_GetTicks();
-          if( oric.overclockmult==1 )
-            frameloop_normal( &oric, &framedone, &needrender );
-          else
-            frameloop_overclock( &oric, &framedone, &needrender );
-        }
+        if( oric.overclockmult==1 )
+          frameloop_normal( &oric, &framedone, &needrender );
+        else
+          frameloop_overclock( &oric, &framedone, &needrender );
 
         ay_unlockaudio( &oric.ay );
 
-        if( warpspeed )
+        if( framedone )
         {
-          if( framedone )
-          {
-            if( (oric.emu_mode == EM_RUNNING) && ((oric.frames&3)!=0) )
-            {
-              framedone = SDL_FALSE;
-              continue;
-            }
-            needrender = SDL_TRUE;
-            framedone  = SDL_FALSE;
-          }
-          if( !SDL_PollEvent( &event ) ) continue;
-        } else {
-          if( needrender )
-          {
-            if( !SDL_PollEvent( &event ) ) continue;
-          } else {
-#ifdef __amigaos4__
-            uint32 gotsigs;
+          nextframe_us += oric.vid_freq ? 20000LL : 16667LL;
+          nextframe_ms = (Uint32)(nextframe_us/1000LL);
 
-            gotsigs = IExec->Wait( timersig | SIGBREAKF_CTRL_C );
-            if( gotsigs & SIGBREAKF_CTRL_C ) done = TRUE;
-            if( gotsigs & timersig )
-            {
+          if (warpspeed)
+          {
+            if ((oric.frames&3)==0)
               needrender = SDL_TRUE;
-              framedone  = SDL_FALSE;
-              if( !SDL_PollEvent( &event ) ) continue;
-            }
-#else
-            if( !SDL_WaitEvent( &event ) ) break;
-#endif
+          }
+          else
+          {
+            needrender = SDL_TRUE;
           }
         }
+
+        if( needrender )
+        {
+          render( &oric );
+          needrender = SDL_FALSE;
+        }
+
+        if( framedone )
+        {
+          once_per_frame( &oric );
+
+          then = now;
+          now = SDL_GetTicks();
+
+          frametimeave = 0;
+          for( i=(FRAMES_TO_AVERAGE-1); i>0; i-- )
+          {
+            lastframetimes[i] = lastframetimes[i-1];
+            frametimeave += lastframetimes[i];
+          }
+          lastframetimes[0] = now-then;
+          frametimeave = (frametimeave+lastframetimes[0])/FRAMES_TO_AVERAGE;
+
+          if (warpspeed)
+          {
+            nextframe_ms = now;
+            nextframe_us = ((Uint64)nextframe_ms)*1000;
+          }
+          else
+          {
+            if (now > nextframe_ms)
+            {
+              nextframe_ms = now;
+              nextframe_us = ((Uint64)nextframe_ms)*1000;
+            }
+            else
+            {
+              SDL_Delay(nextframe_ms-now);
+            }
+          }
+          framedone = SDL_FALSE;
+        }
+
+        if( !SDL_PollEvent( &event ) ) continue;
       } else {
         ay_unlockaudio( &oric.ay );
+        if( needrender )
+        {
+          render( &oric );
+          needrender = SDL_FALSE;
+        }
         if( !SDL_WaitEvent( &event ) ) break;
       }
 
       do {
         switch( event.type )
         {
-          case SDL_USEREVENT:
-            needrender = SDL_TRUE;
-            framedone  = SDL_FALSE;
-            break;
-
           case SDL_QUIT:
             done = SDL_TRUE;
             break;
