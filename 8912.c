@@ -40,9 +40,6 @@
 
 #ifdef __amigaos4__
 #include <proto/exec.h>
-
-extern struct Task *maintask;
-extern uint32 timersig;
 #endif
 
 SDL_AudioSpec obtained;

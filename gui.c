@@ -1824,8 +1824,6 @@ void set_render_mode( struct machine *oric, int whichrendermode )
   }
 }
 
-Uint32 systemtiming( Uint32 interval, void *userdata );
-
 void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newrendermode )
 {
   if( oric->rendermode == newrendermode ) return;
@@ -1836,7 +1834,7 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
   need_sdl_quit = SDL_FALSE;
 
   // Go SDL!
-  if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO ) < 0 )
+  if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
   {
     printf( "SDL init failed\n" );
     oric->emu_mode = EM_PLEASEQUIT;
@@ -1878,8 +1876,6 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
 
   joy_setup( oric );
   mon_warminit( oric );
-
-  SDL_AddTimer( 1000/50, (SDL_NewTimerCallback)systemtiming, (void *)oric );
 
   setemumode( oric, NULL, EM_RUNNING );
 }
