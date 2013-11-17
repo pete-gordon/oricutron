@@ -29,6 +29,8 @@
 #include "avi.h"
 
 
+extern SDL_AudioSpec obtained;
+
 // Write a 32bit value to a stream in little-endian format
 static SDL_bool write32l( SDL_bool stillok, struct avi_handle *ah, Uint32 val, Uint32 *rem )
 {
@@ -191,7 +193,7 @@ struct avi_handle *avi_open( char *filename, Uint8 *pal, SDL_bool dosound, int i
     ok &= write32l( ok, ah,            0, NULL               );   // Reserved
     ok &= write32l( ok, ah,            0, NULL               );   // Initial frames
     ok &= write32l( ok, ah,            1, NULL               );   // Scale
-    ok &= write32l( ok, ah,   AUDIO_FREQ, NULL               );   // Rate
+    ok &= write32l( ok, ah,obtained.freq, NULL               );   // Rate
     ok &= write32l( ok, ah,            0, NULL               );   // Start
     ok &= write32l( ok, ah,            0, &ah->offs_audiolen );   // Length
     ok &= write32l( ok, ah,            0, NULL               );   // Suggested buffer size
@@ -204,8 +206,8 @@ struct avi_handle *avi_open( char *filename, Uint8 *pal, SDL_bool dosound, int i
     ok &= write32l( ok, ah,           16, NULL               );   // Chunk size
     ok &= write16l( ok, ah,            1, NULL               );   // Format (PCM)
     ok &= write16l( ok, ah,            1, NULL               );   // Channels
-    ok &= write32l( ok, ah,   AUDIO_FREQ, NULL               );   // Samples per second
-    ok &= write32l( ok, ah, AUDIO_FREQ*2, NULL               );   // Bytes per second
+    ok &= write32l( ok, ah,obtained.freq, NULL               );   // Samples per second
+    ok &= write32l( ok, ah,obtained.freq*2, NULL             );   // Bytes per second
     ok &= write16l( ok, ah,            2, NULL               );   // BlockAlign
     ok &= write16l( ok, ah,           16, NULL               );   // BitsPerSample
   }

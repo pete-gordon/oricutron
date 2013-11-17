@@ -85,6 +85,8 @@ SDL_bool refreshstatus = SDL_TRUE, refreshdisks = SDL_TRUE, refreshavi = SDL_TRU
 extern struct avi_handle *vidcap;
 
 extern SDL_bool need_sdl_quit;
+extern SDL_AudioSpec obtained;
+extern Uint32 cyclespersample;
 
 
 #define GIMG_W_DISK 18
@@ -2033,7 +2035,6 @@ SDL_bool init_gui( struct machine *oric, Sint32 rendermode )
 {
   int i;
   SDL_AudioSpec wanted;
-  SDL_AudioSpec obtained;
 
   for( i=0; i<NUM_GIMG; i++ )
   {
@@ -2069,6 +2070,7 @@ SDL_bool init_gui( struct machine *oric, Sint32 rendermode )
     soundon = SDL_TRUE;
     soundavailable = SDL_TRUE;
     soundsilence = obtained.silence * 8192;
+    cyclespersample = ((CYCLESPERSECOND<<FPBITS)/obtained.freq);
   }
 
   setmenutoggles( oric );

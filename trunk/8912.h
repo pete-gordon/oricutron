@@ -30,7 +30,8 @@
 #define TAPELOG_SIZE (AUDIO_BUFLEN)
 
 #define CYCLESPERSECOND (312*64*50)
-#define CYCLESPERSAMPLE ((CYCLESPERSECOND<<FPBITS)/AUDIO_FREQ)
+// We now calculate this using the actual obtained frequency
+//#define CYCLESPERSAMPLE ((CYCLESPERSECOND<<FPBITS)/AUDIO_FREQ)
 
 // GI addressing
 #define AYBMB_BC1  0
