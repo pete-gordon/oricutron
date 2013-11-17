@@ -395,7 +395,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
     ay->ccycle += cyclespersample;
   }
 
-  dcadjustave /= length;
+  dcadjustave /= (length/4);
 
   if( (dcadjustmax-dcadjustave) > 32767 )
     dcadjustave = -(32767-dcadjustmax);
