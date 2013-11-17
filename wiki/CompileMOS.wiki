@@ -1,4 +1,5 @@
 #summary How to compile Oricutron for MorphOS
+#labels Compiling
 
 = Introduction =
 
@@ -6,6 +7,7 @@ This page describes how to compile Oricutron
 
   * Install [http://www.morphos.de/downloads SDK] and PowerSDL
   * Either download and extract a source package from the [https://bintray.com/pete/generic/Oricutron download page], or [http://code.google.com/p/oriculator/source/checkout check out] the current subversion trunk.
+  * You may download [http://aminet.net/package/util/arc/unzip-morphos unzip] for end of line convertion
   * Open a shell, and navigate to the Oricutron archive
   * For example type:
 {{{unzip -a Downloads:Oricutron_src_v09.zip -d oricutron}}}
