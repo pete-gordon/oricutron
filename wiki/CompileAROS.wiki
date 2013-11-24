@@ -9,6 +9,8 @@ This page describes how to compile Oricutron for "icaros desktop"
   * Open a shell, and navigate to the Oricutron archive
   * For example type:
 {{{unzip -a Downloads:Oricutron_src_v09.zip -d oricutron}}}
+
+{{{cd oricutron}}}
   * Type:
 {{{make}}}
 
