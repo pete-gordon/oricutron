@@ -416,14 +416,18 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
     avi_addaudio( &vidcap, audiocapbuf, length/2 );
   }
 
-//  while( logc < ay->logged )
-//    ay_dowrite( ay, &ay->writelog[logc++] );
   if (ay->logged > logc)
   {
+//  while( logc < ay->logged )
+//    ay_dowrite( ay, &ay->writelog[logc++] );
     memmove(&ay->writelog[0], &ay->writelog[logc], (ay->logged-logc) * sizeof(ay->writelog[0]));
     ay->logged -= logc;
     for (i=0; i<ay->logged; i++)
       ay->writelog[i].cycle -= ay->lastcyc;
+
+    /* Got out of sync? */
+    if (ay->logged > 150)
+      ay->logged = 0;
   }
   else
   {
