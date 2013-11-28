@@ -24,7 +24,9 @@
 #define FPBITS 10
 
 // Audio buffer size
-#define AUDIO_BUFLEN 4096
+#ifndef AUDIO_BUFLEN
+#define AUDIO_BUFLEN 2048
+#endif
 
 #define WRITELOG_SIZE (AUDIO_BUFLEN*12)
 #define TAPELOG_SIZE (AUDIO_BUFLEN)
