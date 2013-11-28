@@ -416,8 +416,19 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
     avi_addaudio( &vidcap, audiocapbuf, length/2 );
   }
 
-  while( logc < ay->logged )
-    ay_dowrite( ay, &ay->writelog[logc++] );
+//  while( logc < ay->logged )
+//    ay_dowrite( ay, &ay->writelog[logc++] );
+  if (ay->logged > logc)
+  {
+    memmove(&ay->writelog[0], &ay->writelog[logc], (ay->logged-logc) * sizeof(ay->writelog[0]));
+    ay->logged -= logc;
+    for (i=0; i<ay->logged; i++)
+      ay->writelog[i].cycle -= ay->lastcyc;
+  }
+  else
+  {
+    ay->logged = 0;
+  }
 
   if( tapenoise )
   {
@@ -429,7 +440,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
   ay->lastcyc = 0;
   ay->newlogcycle = ay->ccycle>>FPBITS;
   ay->do_logcycle_reset = SDL_TRUE;
-  ay->logged   = 0;
+//  ay->logged   = 0;
   ay->tlogged  = 0;
 }
 

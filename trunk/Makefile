@@ -270,7 +270,7 @@ CFLAGS += -m32
 LFLAGS += -m32
 endif
 STRIP :=  $(CROSS_COMPILE)$(STRIP)
-CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --cflags) -D__OPENGL_AVAILABLE__
+CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --cflags) -D__OPENGL_AVAILABLE__ -DAUDIO_BUFLEN=1024
 LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --libs) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --libs) -lGL -lX11
 CUSTOMOBJS = gui_x11.o
 FILEREQ_OBJ = filereq_gtk.o
