@@ -222,7 +222,10 @@ void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode )
       SDL_EnableUNICODE( SDL_FALSE );
       oric->ay.soundon = soundavailable && soundon && (!warpspeed);
       if( oric->ay.soundon )
+      {
+        ay_flushlog( &oric->ay );
         SDL_PauseAudio( 0 );
+      }
       ula_set_dirty( oric );
       break;
 
@@ -1035,8 +1038,10 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           {
             warpspeed = warpspeed ? SDL_FALSE : SDL_TRUE;
           }
+
           if( soundavailable && soundon )
           {
+            ay_flushlog( &oric->ay );
             oric->ay.soundon = !warpspeed;
             SDL_PauseAudio( warpspeed );
           }
