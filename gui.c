@@ -1947,9 +1947,9 @@ void setmenutoggles( struct machine *oric )
     find_item_by_function(auopitems, toggletapenoise)->name = " Tape noise";
 
   if( oric->tapeturbo )
-    find_item_by_function(auopitems, toggletapeturbo)->name = "\x0e""Turbo tape";
+    find_item_by_function(hwopitems, toggletapeturbo)->name = "\x0e""Turbo tape";
   else
-    find_item_by_function(auopitems, toggletapeturbo)->name = " Turbo tape";
+    find_item_by_function(hwopitems, toggletapeturbo)->name = " Turbo tape";
 
   if( oric->autoinsert )
     find_item_by_function(hwopitems, toggleautoinsrt)->name = "\x0e""Autoinsert tape";
