@@ -11,6 +11,9 @@ All:
 * Disk and tape image autodetection. Oricutron will now attempt
   to detect the configuration required for any disk or tape
   inserted via commandline or menu.
+* "Insert disk 0/1" menu items enabled even when no disk drive is
+  enabled. Inserting a disk will use the autodetection routines
+  to determine which drive type to enable.
 * Autorun for Jasmin and Pravetz disks
 * Fixed crash bug when switching between software and GL rendering
   on builds using SDL requesters.
