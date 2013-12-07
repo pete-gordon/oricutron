@@ -1,4 +1,4 @@
-Oricutron 1.0
+Oricutron 1.1
 -------------
 
 (c)2009-2013 Peter Gordon (pete@petergordon.org.uk)

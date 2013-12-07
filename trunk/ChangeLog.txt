@@ -1,5 +1,36 @@
 Oricutron ChangeLog
 
+1.1 (07-Dec-2013)
+-----------------
+
+All:
+
+* Now possible to set scanline and fullscreen options when built
+  without OpenGL support
+* Includes patches and symbols for Pravetz 8D rom
+* Disk and tape image autodetection. Oricutron will now attempt
+  to detect the configuration required for any disk or tape
+  inserted via commandline or menu.
+* Autorun for Jasmin and Pravetz disks
+* Fixed crash bug when switching between software and GL rendering
+  on builds using SDL requesters.
+* Various AY emulation improvements
+* Simplified system timing
+
+
+Windows:
+
+* Clipboard paste support
+
+
+Linux:
+
+* Now defaults to building with OpenGL support
+* Clipboard paste support
+* GTK filerequester and messagebox
+* Fixed audio click on startup
+
+
 1.0 (22-Oct-2013)
 -----------------
 
