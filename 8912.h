@@ -118,3 +118,4 @@ void ay_modeset( struct ay8912 *ay );
 
 void ay_lockaudio( struct ay8912 *ay );
 void ay_unlockaudio( struct ay8912 *ay );
+void ay_flushlog( struct ay8912 *ay );

@@ -340,6 +340,15 @@ void ay_dowrite( struct ay8912 *ay, struct aywrite *aw )
   }
 }
 
+void ay_flushlog( struct ay8912 *ay )
+{
+  int i;
+
+  for (i=0; i<ay->logged; i++)
+    ay_dowrite( ay, &ay->writelog[i] );
+  ay->logged = 0;
+}
+
 /*
 ** This is the SDL audio callback. It is called by SDL
 ** when it needs a sound buffer to be filled.
@@ -418,8 +427,6 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
 
   if (ay->logged > logc)
   {
-//  while( logc < ay->logged )
-//    ay_dowrite( ay, &ay->writelog[logc++] );
     memmove(&ay->writelog[0], &ay->writelog[logc], (ay->logged-logc) * sizeof(ay->writelog[0]));
     ay->logged -= logc;
     for (i=0; i<ay->logged; i++)
@@ -427,7 +434,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
 
     /* Got out of sync? */
     if (ay->logged > 150)
-      ay->logged = 0;
+      ay_flushlog( ay );
   }
   else
   {
@@ -736,26 +743,26 @@ void ay_modeset( struct ay8912 *ay )
         case AY_ENV_CYCLE:
           if( ( !soundon ) || ( warpspeed ) )
           {
-            int i;
-            for( i=0; i<ay->logged; i++ )
-              ay_dowrite( ay, &ay->writelog[i] );
-            ay->logged = 0;
-            if( ( ay->creg != AY_ENV_CYCLE ) || ( v != 0xff ) )
-              ay->regs[ay->creg] = v;
+            struct aywrite writenow;
+
+            ay_flushlog( ay );
+            writenow.cycle = 0;
+            writenow.reg   = ay->creg;
+            writenow.val   = v;
+            ay_dowrite( ay, &writenow );
             break;
           }
 
-          if( ay->logged >= WRITELOG_SIZE )
-          {
-            SDL_WM_SetCaption( "AUDIO BASTARD", "AUDIO BASTARD" ); // Debug
-            break;
-          }
           ay_lockaudio( ay );  // Gets unlocked at the end of each frame
+
           if( ay->do_logcycle_reset )
           {
             ay->logcycle = ay->newlogcycle;
             ay->do_logcycle_reset = SDL_FALSE;
           }
+
+          if( ay->logged >= WRITELOG_SIZE )
+            ay_flushlog( ay );
 
           ay->writelog[ay->logged  ].cycle = ay->logcycle;
           ay->writelog[ay->logged  ].reg   = ay->creg;
