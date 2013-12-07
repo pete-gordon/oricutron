@@ -152,8 +152,15 @@ Here are all the options:
   --vsynchack on|off = Enable or disable VSync hack
   --scanlines on|off = Enable or disable scanline simulation
 
+NOTE: If you are not sure what machine or drive type is required for a disk or
+tape image, just pass the filename without any options and Oricutron will
+try and autodetect for you.
+
+
 Examples:
 
+oricutron tapes/tape_image.tap
+oricutron disks/disk_image.dsk
 oricutron --machine atmos --tape "tape files/foo.tap" --symbols "my files/symbols"
 oricutron -m1 -tBUILD/foo.tap -sBUILD/symbols -b
 oricutron --drive microdisc --disk demos/barbitoric.dsk --fullscreen
