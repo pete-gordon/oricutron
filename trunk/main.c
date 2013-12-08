@@ -73,7 +73,7 @@ char __attribute__((used)) stackcookie[] = "$STACK: 1000000";
 #endif
 
 #if defined(__amigaos4__) || defined(__MORPHOS__) || defined(__AROS__)
-char __attribute__((used)) versiontag[] = "$VER: " APP_NAME_FULL " (2.3.2012)";
+char __attribute__((used)) versiontag[] = "$VER: " APP_NAME_FULL " (8.12.2013)";
 #endif
 
 struct start_opts
@@ -1127,15 +1127,17 @@ void once_per_frame( struct machine *oric )
 
 int main( int argc, char *argv[] )
 {
+  static struct machine oric;
   SDL_bool isinit;
-  Sint32 i;
-  struct machine oric;
-  Uint32 nextframe_ms, now=0, then;
-  Uint64 nextframe_us;
+
+  memset(&oric, 0, sizeof(oric));
 
   if( ( isinit = init( &oric, argc, argv ) ) )
   {
+    Uint64 nextframe_us;
+    Uint32 nextframe_ms, now=0, then;
     SDL_bool done, needrender, framedone;
+    Sint32 i;
 
     now = SDL_GetTicks();
     nextframe_ms = now;
