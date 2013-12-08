@@ -904,13 +904,13 @@ int mapkey( int key )
   switch( key )
   {
 #if defined(__amigaos4__) || defined(__MORPHOS__) || defined(__AROS__)
-    case '@': return '#';
     case '\xF6':
     case ':': return ';';
     case '<': return ',';
     case '>': return '.';
     case '\xDF':
     case '?': return '/';
+    case '@':
     case '#':
     case '~': return '\'';
     case '_': return '-';
