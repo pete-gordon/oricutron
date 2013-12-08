@@ -76,6 +76,7 @@ static struct click leftclick[2];
 extern struct textzone *tz[];
 extern char vsptmp[];
 extern char snappath[], filetmp[];
+extern SDL_bool refreshstatus;
 
 static char distmp[128];
 static unsigned short disaddrs[10];
@@ -4014,6 +4015,14 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
         case SDLK_LSHIFT:
         case SDLK_RSHIFT:
           kshifted = SDL_FALSE;
+          break;
+
+        case SDLK_F1:
+          refreshstatus = SDL_TRUE;
+          *needrender = SDL_TRUE;
+          mon_store_state( oric );
+          ula_set_dirty( oric );
+          setemumode( oric, NULL, EM_MENU );
           break;
 
         case SDLK_F2:

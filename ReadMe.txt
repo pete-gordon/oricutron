@@ -186,7 +186,9 @@ Keys
   Shift+F7 - Save all modified disks to new disk images
   F9       - Save tape output
   F10      - Start/Stop AVI capture
-  Help     - Show guide
+  F11      - Copy text screen to clipboard (only BeOS)
+  F12      - Paste (only BeOS, Linux & Windows)
+  Help     - Show guide (Amiga, MorphOS and AROS)
 
 
   In menus
@@ -202,6 +204,7 @@ Keys
   In Debugger/Monitor
   -------------------
 
+  F1      - Go to the menu
   F2      - Return to the emulator
   F3      - Toggle console/debug output/memwatch
   F4      - Toggle VIA/AY/disk information
