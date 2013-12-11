@@ -5,7 +5,7 @@
 
 This page describes how to compile Oricutron for "icaros desktop"
 
-  * Either download and extract a source package from the [https://bintray.com/pete/generic/Oricutron download page], or [http://code.google.com/p/oriculator/source/checkout check out] the current subversion trunk.
+  * Either download and extract a source package from the [http://www.petergordon.org.uk/oricutron/ download page], or [http://code.google.com/p/oriculator/source/checkout check out] the current subversion trunk.
   * Open a shell, and navigate to the Oricutron archive
   * For example type:
 {{{unzip -a Downloads:Oricutron_src_v09.zip -d oricutron}}}
