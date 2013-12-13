@@ -8,7 +8,7 @@ This page describes how to compile Oricutron for AmigaOS 4.x
   * Download and install the [http://hyperion-entertainment.biz/index.php?option=com_registration&view=files&parent=30&Itemid=63 latest AmigaOS 4.x SDK]
   * Download and install the [http://code.google.com/p/os4sdl/ latest SDL for OS4 SDK]
   * If you want to check out the source with subversion, grab the latest subversion package from [http://www.os4depot.net OS4depot] (search for 'subversion').
-  * Either download and extract a source package from the [https://bintray.com/pete/generic/Oricutron download page], or [http://code.google.com/p/oriculator/source/checkout check out] the current subversion trunk.
+  * Either download and extract a source package from the [http://www.petergordon.org.uk/oricutron/ download page], or [http://code.google.com/p/oriculator/source/checkout check out] the current subversion trunk.
   * Open a shell, and navigate to the Oricutron sourcecode
   * Type "{{{gmake}}}".
 
