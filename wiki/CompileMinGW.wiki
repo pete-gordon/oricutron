@@ -19,7 +19,7 @@ Note that this method involves just lazily copying the libSDL files right into y
     * For Windows XP, hit Windows+Break, select the advanced tab, and click "Environment Variables"
     * For Windows 7, hit Windows+Break, click "Advanced system settings", then click "Environment variables"
     * Add the MinGW bin directory to your path variable (defaults to "C:\MinGW\bin")
-  * Either download and extract a source package from the [https://bintray.com/pete/generic/Oricutron download page], or [http://code.google.com/p/oriculator/source/checkout check out] the current subversion trunk.
+  * Either download and extract a source package from the [http://www.petergordon.org.uk/oricutron/ download page], or [http://code.google.com/p/oriculator/source/checkout check out] the current subversion trunk.
   * Open a command prompt, and navigate to the Oricutron sourcecode
   * Type "{{{mingw32-make}}}". On Windows XP, you will probably have to type "{{{mingw32-make PLATFORM=win32}}}" to override the platform autodetection.
 
