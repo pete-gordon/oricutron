@@ -2020,10 +2020,10 @@ void setmenutoggles( struct machine *oric )
   find_item_by_key(hwopitems, 'j')->func = jasminrom_valid ? setdrivetype : NULL;
   find_item_by_key(hwopitems, 'p')->func = pravetzrom_valid ? setdrivetype : NULL;
 
-  find_item_by_key(hwopitems, 'x')->name = oric->drivetype==DRV_NONE      ? "\x0e""No disk"   : " No disk";
-  find_item_by_key(hwopitems, 'm')->name = oric->drivetype==DRV_MICRODISC ? "\x0e""Microdisc" : " Microdisc";
-  find_item_by_key(hwopitems, 'j')->name = oric->drivetype==DRV_JASMIN    ? "\x0e""Jasmin"    : " Jasmin";
-  find_item_by_key(hwopitems, 'p')->name = oric->drivetype==DRV_PRAVETZ   ? "\x0e""Pravetz 8D": " Pravetz 8D";
+  find_item_by_key(hwopitems, 'x')->name = oric->drivetype==DRV_NONE      ? "\x0e""No disk"        : " No disk";
+  find_item_by_key(hwopitems, 'm')->name = oric->drivetype==DRV_MICRODISC ? "\x0e""Microdisc"      : " Microdisc";
+  find_item_by_key(hwopitems, 'j')->name = oric->drivetype==DRV_JASMIN    ? "\x0e""Jasmin"         : " Jasmin";
+  find_item_by_key(hwopitems, 'p')->name = oric->drivetype==DRV_PRAVETZ   ? "\x0e""Pravetz 8D disk": " Pravetz 8D disk";
 }
 
 // Initialise the GUI
