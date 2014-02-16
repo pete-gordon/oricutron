@@ -112,6 +112,7 @@ ifeq ($(PLATFORM),morphos)
 CFLAGS += `sdl-config --cflags` -D__OPENGL_AVAILABLE__
 LFLAGS += `sdl-config --libs` -s
 FILEREQ_OBJ = filereq_amiga.o
+MSGBOX_OBJ = msgbox_os2.o
 AMIGA_ICONS = pngicon
 endif
 

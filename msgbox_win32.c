@@ -69,7 +69,6 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
     
     case MSGBOX_OK:
       MessageBoxA( hwnd, msg, "Oricutron Request", MB_OK );
-      return SDL_TRUE;
   }
 
   return SDL_TRUE;
