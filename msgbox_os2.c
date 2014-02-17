@@ -43,7 +43,7 @@ void shut_msgbox( struct machine *oric )
 
 SDL_bool msgbox( struct machine *oric, int type, char *msg )
 {
-  STRPTR btns = "OK|Cancel";
+  char *btns = "OK|Cancel";
   struct EasyStruct myES =
     {
     sizeof(struct EasyStruct),
@@ -64,6 +64,7 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
       break;
 
     case MSGBOX_OK_CANCEL:
+      break;
   }
 
   return EasyRequest(NULL, &myES, NULL);
