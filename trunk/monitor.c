@@ -672,11 +672,15 @@ static int bp_at( struct machine *oric, unsigned short addr, int *xbp, int *mbp 
   oric->cpu.anymbp = SDL_FALSE;
   for( i=0; i<16; i++ )
   {
-    if( oric->cpu.membreakpoints[i].addr == addr )
+    if( oric->cpu.membreakpoints[i].flags )
     {
-      bpmask |= oric->cpu.membreakpoints[i].flags;
-      if( mbp ) *mbp = i;
-      break;
+      oric->cpu.anymbp = SDL_TRUE;
+      if( oric->cpu.membreakpoints[i].addr == addr )
+      {
+        bpmask |= oric->cpu.membreakpoints[i].flags;
+        if( mbp ) *mbp = i;
+        break;
+      }
     }
   }
   

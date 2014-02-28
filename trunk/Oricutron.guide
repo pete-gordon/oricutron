@@ -314,10 +314,10 @@ value at the address changes for any reason (c).
 You specify which ways you'd like the breakpoint to trigger when you set the memory
 breakpoint:
 
-bsm r $0c00        <-- Break when the CPU is about to read from $0c00
-bsm rw $0c00       <-- Break when the CPU is about to access $0c00
-bsm c $0c00        <-- Break after then contents of $0c00 change
-bsm rwc $0c00      <-- Break just before the CPU accesses $0c00, or just after it
+bsm $0c00 r        <-- Break when the CPU is about to read from $0c00
+bsm $0c00 rw       <-- Break when the CPU is about to access $0c00
+bsm $0c00 c        <-- Break after then contents of $0c00 change
+bsm $0c00 rwc      <-- Break just before the CPU accesses $0c00, or just after it
                        changes for any reason.
 @endnode
 @node Contents
