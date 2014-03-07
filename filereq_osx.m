@@ -108,15 +108,15 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   if (pat)
     [sp setAllowedFileTypes:[NSArray arrayWithObjects:pat,nil]];
 
-  ret = [op runModal] == NSAlertDefaultReturn;
+  ret = [sp runModal] == NSAlertDefaultReturn;
   if (!ret)
     return ret;
 
-  if (![[op URL] isFileURL])
+  if (![[sp URL] isFileURL])
     return SDL_FALSE;
 
-  strncpy( path,  [[[op directoryURL] path] UTF8String], 4096 ); path[4095] = 0;
-  strncpy( fname, [[[op URL] lastPathComponent] UTF8String],   512  ); path[511]  = 0;
+  strncpy( path,  [[[sp directoryURL] path] UTF8String], 4096 ); path[4095] = 0;
+  strncpy( fname, [[[sp URL] lastPathComponent] UTF8String],   512  ); path[511]  = 0;
 
   return ret;
 }
