@@ -825,6 +825,16 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 
   switch (detect_image_type(filetmp))
   {
+    case IMG_SNAPSHOT:
+      if (msgbox(oric, MSGBOX_YES_NO,
+        "The file you selected appears to be a snapshot file.\n"
+        "Would you like to load it? (All RAM and machine state will be lost)"))
+      {
+        load_snapshot(oric, filetmp);
+        return;
+      }
+      break;
+      
     case IMG_ATMOS_MICRODISC:
       if ((oric->type != MACH_ATMOS) &&
           (oric->type != MACH_ORIC1) &&
@@ -1036,6 +1046,16 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
 
   switch (detect_image_type(filetmp))
   {
+    case IMG_SNAPSHOT:
+      if (msgbox(oric, MSGBOX_YES_NO,
+        "The file you selected appears to be a snapshot file.\n"
+        "Would you like to load it? (All RAM and machine state will be lost)"))
+      {
+        load_snapshot(oric, filetmp);
+        return;
+      }
+      break;
+
     case IMG_ATMOS_MICRODISC:
       if ((oric->type != MACH_ATMOS) &&
           (oric->type != MACH_ORIC1) &&

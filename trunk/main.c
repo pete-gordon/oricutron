@@ -714,6 +714,12 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
                 drop_through = SDL_TRUE;
                 break;
 
+              case IMG_SNAPSHOT:
+                printf("'%s' seems to be a snapshot file.\n", opt_arg);
+                strncpy( sto->start_snapshot, opt_arg, 1024);
+                sto->start_snapshot[1023] = 0;
+                break;
+
               case IMG_TAPE:
               default:
                 strncpy( sto->start_tape, opt_arg, 1024 );
@@ -765,6 +771,12 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
                 printf("'%s' seems to be a tape image.\n", sto->start_disk);
                 strcpy(sto->start_tape, sto->start_disk);
                 sto->start_disk[0] = 0;
+                break;
+
+              case IMG_SNAPSHOT:
+                printf("'%s' seems to be a snapshot file.\n", opt_arg);
+                strncpy( sto->start_snapshot, opt_arg, 1024);
+                sto->start_snapshot[1023] = 0;
                 break;
             }
           } else {
@@ -866,6 +878,11 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
     {
       switch (detect_image_type(argv[i]))
       {
+        case IMG_SNAPSHOT:
+          strncpy( sto->start_snapshot, argv[i], 1024);
+          sto->start_snapshot[1023] = 0;
+          break;
+
         case IMG_ATMOS_MICRODISC:
           if (!sto->start_machine_set)  sto->start_machine = MACH_ATMOS;
           if (!sto->start_disktype_set) sto->start_disktype = DRV_MICRODISC;
