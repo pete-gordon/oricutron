@@ -117,7 +117,7 @@ int detect_image_type(char *filename)
     return IMG_I_DUNNO;
   }
 
-  /* Look for tape tmps */
+  /* Look for tape header */
   if ((memcmp(tmp, "\x16\x16\x16\x16", 4) == 0) ||
       (memcmp(tmp, "\x16\x16\x16\x24", 4) == 0) ||
       (memcmp(tmp, "\x16\x16\x24", 3) == 0) ||
@@ -126,6 +126,13 @@ int detect_image_type(char *filename)
   {
     fclose(f);
     return IMG_TAPE;
+  }
+
+  /* Look for snapshot header */
+  if (memcmp(tmp, "OSN\x00", 4)==0)
+  {
+    fclose(f);
+    return IMG_SNAPSHOT;
   }
 
   /* Look for a microdisc or jasmin disk image */
