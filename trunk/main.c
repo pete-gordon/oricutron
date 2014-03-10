@@ -18,6 +18,11 @@
 **
 */
 
+#ifdef __APPLE__
+#include "CoreFoundation/CoreFoundation.h"
+#endif
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -561,7 +566,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
     return SDL_FALSE;
   }
   need_sdl_quit = SDL_TRUE;
-
+  
   SDL_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
 
   render_sw_detectvideo( oric );
@@ -923,8 +928,12 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           break;
 
         default:
+#ifdef __APPLE__
+              ; // we may have additional parameters given when launching the .app therefore we can't stop here
+#else
           free( sto );
           usage( EXIT_FAILURE );
+#endif
       }
     }
   }
@@ -1148,6 +1157,24 @@ int main( int argc, char *argv[] )
   SDL_bool isinit;
 
   memset(&oric, 0, sizeof(oric));
+    
+    // ----------------------------------------------------------------------------
+    // This makes relative paths work in C++ in Xcode by changing directory to the Resources folder inside the .app bundle
+#ifdef __APPLE__
+    CFBundleRef mainBundle = CFBundleGetMainBundle();
+    CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
+    char path[PATH_MAX];
+    if (!CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8 *)path, PATH_MAX))
+    {
+        // error!
+    }
+    CFRelease(resourcesURL);
+    // this directory is something/Oricutron.app/Contents/Resources
+    // go down 3 times to find the app containing directory
+    strcat(path, "/../../..");
+    chdir(path);
+    //printf("Current Path: %s\n", path);
+#endif
 
   if( ( isinit = init( &oric, argc, argv ) ) )
   {
