@@ -49,6 +49,7 @@ Credits
 
   Francois Revol
   Kamel Biskri
+  Patrice Torguet
 
 
   MorphOS & AROS ports
@@ -293,3 +294,16 @@ bsm $0c00 rw       <-- Break when the CPU is about to access $0c00
 bsm $0c00 c        <-- Break after then contents of $0c00 change
 bsm $0c00 rwc      <-- Break just before the CPU accesses $0c00, or just after it
                        changes for any reason.
+                       
+International Keyboards under Linux and Mac OS X
+================================================
+
+There are lots of problems with some international keyboards under Linux and Mac OS X.
+The best way to cope with them is to install an UK or US keyboard definition and to
+switch to it *before* starting oricutron.
+
+Under Mac OS X you can do that in the "System Preferences", "Keyboard", "Input sources".
+Click on the + and search for the UK or US keyboard.
+
+Under Ubuntu you can do that in the System menu, select Preferences, and then select
+Keyboard. In the Keyboard Preferences dialog, select the Layouts tab, and click Add.
