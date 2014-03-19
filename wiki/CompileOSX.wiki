@@ -3,7 +3,15 @@
 
 = Introduction =
 
-This page describes how to compile Oricutron for 10.3 without Xcode
+We now have an Xcode 5 project compiling Oricutron for 10.9.
+
+Logically you should only modify the link to the SDL framework and it should work directly.
+
+If it doesn't please post a bug report and I'll work on it.
+
+If you need to compile for older versions of OS X please read further:
+
+How to compile Oricutron for 10.3 without Xcode:
 
   * Install the [http://www.libsdl.org/release/ SDL framework]
 *sdl-config:*
