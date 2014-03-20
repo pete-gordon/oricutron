@@ -19,6 +19,8 @@
 **  Oric machine stuff
 */
 
+#include "keyboard.h"
+
 enum
 {
   DRV_NONE = 0,
@@ -238,6 +240,12 @@ struct machine
   SDL_bool porta_is_ay;
 
   SDL_Joystick *sdljoy_a, *sdljoy_b;
+    
+  struct keyboard_mapping keyboard_mapping;
+  SDL_bool show_keyboard;
+  SDL_bool define_mapping;
+  SDL_bool sticky_mod_keys;
+
 };
 
 void setromon( struct machine *oric );

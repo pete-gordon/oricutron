@@ -539,7 +539,12 @@ SDL_bool init_render_sw( struct machine *oric )
   if( hwsurface ) { surfacemode &= ~SDL_SWSURFACE; surfacemode |= SDL_HWSURFACE; }
 
   // Try to setup the video display
-  screen = SDL_SetVideoMode( 640, 480, oric->sw_depth, surfacemode );
+  if (oric->show_keyboard) {
+      screen = SDL_SetVideoMode( 640, 480+240, oric->sw_depth, surfacemode );
+  } else {
+      screen = SDL_SetVideoMode( 640, 480, oric->sw_depth, surfacemode );
+  }
+    
   if( !screen )
   {
     printf( "SDL video failed\n" );

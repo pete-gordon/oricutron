@@ -56,6 +56,7 @@
 #include "joystick.h"
 #include "tape.h"
 #include "snapshot.h"
+#include "keyboard.h"
 
 #define FRAMES_TO_AVERAGE 8
 
@@ -362,6 +363,8 @@ static void load_config( struct start_opts *sto, struct machine *oric )
   FILE *f;
   Sint32 i, j;
   char tbtmp[32];
+  char keymap_file[4096];
+  char keymap_path[4096+32];
 
   f = fopen( FILEPREFIX"oricutron.cfg", "r" );
   if( !f ) return;
@@ -437,6 +440,13 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_joykey( &sto->lctmp[i], "kbjoy2_fire1", &oric->kbjoy2[4] ) ) continue;
     if( read_config_joykey( &sto->lctmp[i], "kbjoy2_fire2", &oric->kbjoy2[5] ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "diskautosave", &oric->diskautosave ) ) continue;
+    if( read_config_string( &sto->lctmp[i], "autoload_keyboard_mapping", keymap_file, 4096 ) )
+    {
+        strcpy(keymap_path, FILEPREFIX"");
+        strcat(keymap_path, keymap_file);
+        load_keyboard_mapping( oric, keymap_path );
+        continue;
+    }
   }
 
   fclose( f );
@@ -1176,6 +1186,8 @@ int main( int argc, char *argv[] )
     //printf("Current Path: %s\n", path);
 #endif
 
+  kbd_init(&oric);
+    
   if( ( isinit = init( &oric, argc, argv ) ) )
   {
     Uint64 nextframe_us;
@@ -1190,6 +1202,7 @@ int main( int argc, char *argv[] )
     done = SDL_FALSE;
     needrender = SDL_TRUE;
     framedone = SDL_FALSE;
+      
     while( !done )
     {
       SDL_Event event;
@@ -1278,6 +1291,16 @@ int main( int argc, char *argv[] )
       do {
         switch( event.type )
         {
+          case SDL_ACTIVEEVENT:
+            {
+                SDL_ActiveEvent *act_ev = (SDL_ActiveEvent*)&event;
+                if(act_ev->state == SDL_APPACTIVE && act_ev->gain == 1) {
+                    oric.shut_render(&oric);
+                    oric.init_render(&oric);
+                    needrender = SDL_TRUE;
+                }
+            }
+            break;
           case SDL_QUIT:
             done = SDL_TRUE;
             break;
@@ -1298,6 +1321,8 @@ int main( int argc, char *argv[] )
                 break;
             }
         }
+        if (oric.show_keyboard)
+            keyboard_event( &event, &oric, &needrender );
       } while( SDL_PollEvent( &event ) );
     }
     ay_unlockaudio( &oric.ay );

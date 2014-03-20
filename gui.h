@@ -102,6 +102,9 @@ enum
   GIMG_TAPE_STOP,
   GIMG_TAPE_RECORD,
   GIMG_AVI_RECORD,
+  GIMG_ORIC1_KEYBOARD,
+  GIMG_ATMOS_KEYBOARD,
+  GIMG_PRAVETZ_KEYBOARD,
   NUM_GIMG
 };
 
@@ -137,6 +140,10 @@ void draw_statusbar( struct machine *oric );
 void draw_disks( struct machine *oric );
 void draw_avirec( struct machine *oric, SDL_bool recording );
 void draw_tape( struct machine *oric );
+
+void draw_keyboard( struct machine *oric );
+
+
 void statusprintstr( int x, Uint32 fc, char *str );
 void joinpath( char *path, char *file );
 

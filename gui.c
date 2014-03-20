@@ -65,6 +65,7 @@
 #include "joystick.h"
 #include "snapshot.h"
 #include "msgbox.h"
+#include "keyboard.h"
 
 extern SDL_bool fullscreen;
 
@@ -79,9 +80,11 @@ extern char jasmnromfile[];
 extern char pravetzromfile[2][1024];
 extern char telebankfiles[8][1024];
 char snappath[4096], snapfile[512];
+char mappingpath[4096], mappingfile[512];
 char filetmp[4096+512];
 
-SDL_bool refreshstatus = SDL_TRUE, refreshdisks = SDL_TRUE, refreshavi = SDL_TRUE, refreshtape = SDL_TRUE;
+SDL_bool refreshstatus = SDL_TRUE, refreshdisks = SDL_TRUE, refreshavi = SDL_TRUE, refreshtape = SDL_TRUE,
+    refreshkeyboard = SDL_TRUE;
 extern struct avi_handle *vidcap;
 
 extern SDL_bool need_sdl_quit;
@@ -105,7 +108,10 @@ struct guiimg gimgs[NUM_GIMG]  = { { IMAGEPREFIX"statusbar.bmp",              64
                                    { IMAGEPREFIX"tape_play.bmp",      GIMG_W_TAPE, 16, NULL },
                                    { IMAGEPREFIX"tape_stop.bmp",      GIMG_W_TAPE, 16, NULL },
                                    { IMAGEPREFIX"tape_record.bmp",    GIMG_W_TAPE, 16, NULL },
-                                   { IMAGEPREFIX"avirec.bmp",         GIMG_W_AVIR, 16, NULL } };
+                                   { IMAGEPREFIX"avirec.bmp",         GIMG_W_AVIR, 16, NULL },
+                                   { IMAGEPREFIX"gfx_oric1kbd.bmp",   640, 240, NULL },
+                                   { IMAGEPREFIX"gfx_atmoskbd.bmp",   640, 240, NULL },
+                                   { IMAGEPREFIX"gfx_pravetzkbd.bmp", 640, 240, NULL }};
 
 SDL_bool soundavailable, soundon;
 #if defined(__linux__)
@@ -168,6 +174,13 @@ void togglelightpen( struct machine *oric, struct osdmenuitem *mitem, int dummy 
 void setoverclock( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void savesnap( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void loadsnap( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void togglekeyboard( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void definemapping( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void togglestickykeys( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void savemapping( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void loadmapping( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void resetmapping( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+
 
 // Menu definitions. Name, key name, SDL key code, function, parameter
 // Keys that are also available while emulating should be marked with
@@ -185,6 +198,7 @@ struct osdmenuitem mainitems[] = { { "Insert tape...",         "T",    't',     
                                    { "Hardware options...",    "H",    'h',      gotomenu,        1, 0 },
                                    { "Audio options...",       "A",    'a',      gotomenu,        2, 0 },
                                    { "Video options...",       "V",    'v',      gotomenu,        4, 0 },
+                                   { "Keyboard options...",    "K",    'k',      gotomenu,        7, 0 },
                                    { "Debug options...",       "D",    'd',      gotomenu,        3, 0 },
                                    { "Overclock options...",   "C",    'c',      gotomenu,        6, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
@@ -226,6 +240,18 @@ struct osdmenuitem auopitems[] = { { " Sound enabled",         NULL,   0,       
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },
                                    { NULL, } };
                                   
+struct osdmenuitem keopitems[] = { { " Show keyboard",         NULL,   0,        togglekeyboard,  0, 0 },
+                                   { " Define mapping",        NULL,   0,        definemapping,   0, 0 },
+                                   { " Sticky mod keys",       NULL,   0,        togglestickykeys,0, 0 },
+                                   { "Save mapping...",        NULL,   0,        savemapping,     0, 0 },
+                                   { "Load mapping...",        NULL,   0,        loadmapping,     0, 0 },
+                                   { "Reset mapping",          NULL,   0,        resetmapping,    0, 0 },
+                                   { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
+                                   { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },
+                                   { NULL, } };
+
+
+
 struct osdmenuitem dbopitems[] = { { " Autoload symbols file", NULL,   0,        togglesymbolsauto, 0, 0 },
                                    { " Case-sensitive symbols",NULL,   0,        togglecasesyms,  0, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
@@ -274,6 +300,7 @@ struct osdmenuitem aboutitems[] = { { "",                                  NULL,
                                     { "Ibisum",                            NULL,   0, NULL, 0, OMIF_CENTRED },
                                     { "Kamel Biskri",                      NULL,   0, NULL, 0, OMIF_CENTRED },
                                     { "Iss",                               NULL,   0, NULL, 0, OMIF_CENTRED },
+                                    { "Patrice Torguet",                   NULL,   0, NULL, 0, OMIF_CENTRED },
                                     { "",                                  NULL,   0, NULL, 0, 0 },
                                     { OSDMENUBAR,                          NULL,   0, NULL, 0, 0 },
                                     { "Back", "\x17", SDLK_BACKSPACE, gotomenu, 0, 0 },
@@ -298,7 +325,8 @@ struct osdmenu menus[] = { { "Main Menu",        LAST_ITEM(mainitems)-4, mainite
                            { "Debug options",    LAST_ITEM(dbopitems),  dbopitems },
                            { "Video options",    LAST_ITEM(vdopitems),  vdopitems },
                            { "About Oricutron",  LAST_ITEM(aboutitems), aboutitems },
-                           { "Overclock",        LAST_ITEM(ovopitems),  ovopitems } };
+                           { "Overclock",        LAST_ITEM(ovopitems),  ovopitems },
+                           { "Keyboard options", LAST_ITEM(keopitems),  keopitems }};
 
 // Load a 24bit BMP for the GUI
 SDL_bool gimg_load( struct guiimg *gi )
@@ -370,7 +398,25 @@ SDL_bool gimg_load( struct guiimg *gi )
 // Draw the statusbar at the bottom
 void draw_statusbar( struct machine *oric )
 {
-  oric->render_gimg( GIMG_STATUSBAR, 0, GIMG_POS_SBARY );
+   oric->render_gimg( GIMG_STATUSBAR, 0, GIMG_POS_SBARY );
+}
+
+void draw_keyboard( struct machine *oric ) {
+  if (oric->show_keyboard) {
+    switch( oric->type )
+    {
+       case MACH_PRAVETZ:
+            oric->render_gimg( GIMG_PRAVETZ_KEYBOARD, 0, 480);
+            break;
+       case MACH_ORIC1:
+       case MACH_ORIC1_16K:
+            oric->render_gimg( GIMG_ORIC1_KEYBOARD, 0, 480);
+            break;
+       default:
+           oric->render_gimg( GIMG_ATMOS_KEYBOARD, 0, 480);
+           break;
+    }
+  }
 }
 
 // Overlay the disk icons onto the status bar
@@ -468,6 +514,11 @@ void render_status( struct machine *oric )
     draw_tape( oric );
     refreshtape = SDL_FALSE;
   }
+   
+    if(refreshkeyboard  || refreshstatus) {
+        draw_keyboard( oric );
+        refreshkeyboard = SDL_FALSE;
+    }
 
   refreshstatus = SDL_FALSE;
 }
@@ -1570,6 +1621,81 @@ void gotomenu( struct machine *oric, struct osdmenuitem *mitem, int menunum )
   drawitems();
 }
 
+void togglekeyboard( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+    if( oric->show_keyboard )
+    {
+        oric->show_keyboard = SDL_FALSE;
+        mitem->name = " Show keyboard";
+        oric->shut_render(oric);
+        oric->init_render(oric);
+        return;
+    }
+    
+    oric->show_keyboard = SDL_TRUE;
+    mitem->name = "\x0e""Show keyboard";
+    oric->shut_render(oric);
+    oric->init_render(oric);
+}
+
+void definemapping( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+    if( oric->define_mapping )
+    {
+        oric->define_mapping = SDL_FALSE;
+        mitem->name = " Define mapping";
+        return;
+    }
+    
+    oric->define_mapping = SDL_TRUE;
+    mitem->name = "\x0e""Define mapping";
+    if(!oric->show_keyboard) {
+        find_item_by_function(keopitems, togglekeyboard)->name = "\x0e""Show keyboard";
+        oric->show_keyboard = SDL_TRUE;
+        oric->shut_render(oric);
+        oric->init_render(oric);
+    }
+    cmenu = NULL;
+    oric->emu_mode = EM_RUNNING;
+    do_popup( oric, "Click on an Oric key." );
+}
+
+void togglestickykeys( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+    if( oric->sticky_mod_keys )
+    {
+        oric->sticky_mod_keys = SDL_FALSE;
+        mitem->name = " Sticky mod keys";
+        release_sticky_keys();
+        return;
+    }
+    
+    oric->sticky_mod_keys = SDL_TRUE;
+    mitem->name = "\x0e""Sticky mod keys";
+}
+
+
+void savemapping( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+    if( !filerequester( oric, "Save Keyboard Mapping", mappingpath, mappingfile, FR_KEYMAPPINGSAVE ) ) return;
+    joinpath( mappingpath, mappingfile );
+    save_keyboard_mapping(oric, filetmp);
+}
+
+void loadmapping( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+    if( !filerequester( oric, "Load Keyboard Mapping", mappingpath, mappingfile, FR_KEYMAPPINGLOAD ) ) return;
+    joinpath( mappingpath, mappingfile );
+    load_keyboard_mapping(oric, filetmp);
+}
+
+void resetmapping( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+    reset_keyboard_mapping(&(oric->keyboard_mapping));
+}
+
+
+
 /************************* End of menu callable funcs *******************************/
 
 // This is the event handler for when you are in the menus
@@ -1932,6 +2058,8 @@ void preinit_gui( struct machine *oric )
   set_render_mode( oric, RENDERMODE_NULL );
   strcpy( snappath, FILEPREFIX"snapshots" );
   strcpy( snapfile, "" );
+  strcpy( mappingpath, FILEPREFIX"keymap" );
+  strcpy( mappingfile, "" );
 }
 
 // Ensure the sanity of toggle menuitems
