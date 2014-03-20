@@ -44,6 +44,7 @@
 #include "ula.h"
 #include "joystick.h"
 #include "tape.h"
+#include "keyboard.h"
 
 extern SDL_bool warpspeed, soundavailable, soundon;
 extern char diskpath[], diskfile[], filetmp[];
@@ -893,6 +894,11 @@ void preinit_machine( struct machine *oric )
   oric->read_not_lightpen = NULL;
 
   oric->tsavf = NULL;
+    
+  oric->keyboard_mapping.nb_map = 0;
+  oric->show_keyboard = SDL_FALSE;
+  oric->define_mapping = SDL_FALSE;
+  oric->sticky_mod_keys = SDL_FALSE;
 }
 
 void load_diskroms( struct machine *oric )
@@ -906,7 +912,7 @@ void load_diskroms( struct machine *oric )
 // on OS4, but in future it would be a handy place to fix keyboard layout
 // issues, such as the problems with a non-uk keymap on linux.
 // Also helps German keymap on MorphOS.
-int mapkey( int key )
+int mapkey( struct machine *oric, int key )
 {
   switch( key )
   {
@@ -930,6 +936,14 @@ int mapkey( int key )
 #elif defined(WIN32)
 	case '<': return '\\';
 #endif
+  }
+    
+  if (oric->keyboard_mapping.nb_map != 0) {
+    int i;
+    for(i=0; i < oric->keyboard_mapping.nb_map; i++) {
+       if (key == oric->keyboard_mapping.host_keys[i])
+           return oric->keyboard_mapping.oric_keys[i];
+    }
   }
 
   return key;
@@ -1192,7 +1206,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           shifted = SDL_FALSE;
 
         default:
-          ay_keypress( &oric->ay, mapkey( ev->key.keysym.sym ), SDL_FALSE );
+          ay_keypress( &oric->ay, mapkey( oric, ev->key.keysym.sym ), SDL_FALSE );
           break;
       }
       break;
@@ -1205,7 +1219,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           shifted = SDL_TRUE;
         
         default:
-          ay_keypress( &oric->ay, mapkey( ev->key.keysym.sym ), SDL_TRUE );
+          ay_keypress( &oric->ay, mapkey( oric, ev->key.keysym.sym ), SDL_TRUE );
           break;
       }
       break;

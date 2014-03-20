@@ -503,7 +503,12 @@ SDL_bool init_render_gl( struct machine *oric )
   if( (info = SDL_GetVideoInfo()) )
     depth = info->vfmt->BitsPerPixel;
 
-  screen = SDL_SetVideoMode( 640, 480, depth, fullscreen ? SDL_OPENGL|SDL_FULLSCREEN : SDL_OPENGL );
+  if (oric->show_keyboard) {
+      screen = SDL_SetVideoMode( 640, 480+240, depth, fullscreen ? SDL_OPENGL|SDL_FULLSCREEN : SDL_OPENGL );
+  } else {
+      screen = SDL_SetVideoMode( 640, 480, depth, fullscreen ? SDL_OPENGL|SDL_FULLSCREEN : SDL_OPENGL );
+  }
+    
   if( !screen )
   {
     printf( "SDL video failed\n" );
@@ -511,7 +516,11 @@ SDL_bool init_render_gl( struct machine *oric )
   }
 
   glMatrixMode( GL_PROJECTION );
-  glOrtho( 0.0f, 640.0f, 480.0f, 0.0f, 0.0f, 1.0f );
+  if (oric->show_keyboard) {
+    glOrtho( 0.0f, 640.0f, 480.0f+240.0f, 0.0f, 0.0f, 1.0f );
+  } else {
+    glOrtho( 0.0f, 640.0f, 480.0f, 0.0f, 0.0f, 1.0f );
+  }
   glMatrixMode( GL_MODELVIEW );
   glLoadIdentity();
   glDisable( GL_DEPTH_TEST );

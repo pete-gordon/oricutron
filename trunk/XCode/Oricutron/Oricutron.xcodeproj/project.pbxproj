@@ -40,6 +40,7 @@
 		181F131918CA6378009690E0 /* msgbox_osx.m in Sources */ = {isa = PBXBuildFile; fileRef = 181F131618CA6378009690E0 /* msgbox_osx.m */; };
 		181F131B18CA63F0009690E0 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 181F131A18CA63F0009690E0 /* OpenGL.framework */; };
 		181F131D18CA6505009690E0 /* SDL.framework in Resources */ = {isa = PBXBuildFile; fileRef = 181F131118CA6219009690E0 /* SDL.framework */; };
+		18D270CA18D7346600467488 /* keyboard.c in Sources */ = {isa = PBXBuildFile; fileRef = 18D270C818D7346600467488 /* keyboard.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -114,6 +115,8 @@
 		181F131518CA6378009690E0 /* gui_osx.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = gui_osx.m; path = ../../../gui_osx.m; sourceTree = "<group>"; };
 		181F131618CA6378009690E0 /* msgbox_osx.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = msgbox_osx.m; path = ../../../msgbox_osx.m; sourceTree = "<group>"; };
 		181F131A18CA63F0009690E0 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = ../../../../../../../System/Library/Frameworks/OpenGL.framework; sourceTree = "<group>"; };
+		18D270C818D7346600467488 /* keyboard.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = keyboard.c; path = ../../../keyboard.c; sourceTree = "<group>"; };
+		18D270C918D7346600467488 /* keyboard.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = keyboard.h; path = ../../../keyboard.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -182,6 +185,8 @@
 		181F128B18CA616A009690E0 /* Oricutron */ = {
 			isa = PBXGroup;
 			children = (
+				18D270C818D7346600467488 /* keyboard.c */,
+				18D270C918D7346600467488 /* keyboard.h */,
 				181F131418CA6378009690E0 /* filereq_osx.m */,
 				181F131518CA6378009690E0 /* gui_osx.m */,
 				181F131618CA6378009690E0 /* msgbox_osx.m */,
@@ -363,6 +368,7 @@
 				181F130718CA61C6009690E0 /* render_sw.c in Sources */,
 				181F131818CA6378009690E0 /* gui_osx.m in Sources */,
 				181F130918CA61C6009690E0 /* snapshot.c in Sources */,
+				18D270CA18D7346600467488 /* keyboard.c in Sources */,
 				181F12F318CA61C6009690E0 /* disk.c in Sources */,
 				181F12F018CA61C6009690E0 /* 8912.c in Sources */,
 				181F12FB18CA61C6009690E0 /* gui.c in Sources */,

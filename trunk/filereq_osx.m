@@ -87,6 +87,12 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
     case FR_SNAPSHOTLOAD:
       pat = @"sna";
       break;
+          
+    case FR_KEYMAPPINGSAVE:
+          dosavemode = true;
+    case FR_KEYMAPPINGLOAD:
+          pat = @"kma";
+          break;
  
     default:
       pat = NULL;
@@ -115,7 +121,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   if (![[sp URL] isFileURL])
     return SDL_FALSE;
 
-  strncpy( path,  [[[sp directoryURL] path] UTF8String], 4096 ); path[4095] = 0;
+  strncpy( path,  [[[[sp URL] URLByDeletingLastPathComponent] path] UTF8String], 4096 ); path[4095] = 0;
   strncpy( fname, [[[sp URL] lastPathComponent] UTF8String],   512  ); path[511]  = 0;
 
   return ret;

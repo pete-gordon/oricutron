@@ -400,6 +400,12 @@ SDL_bool init_render_sw8( struct machine *oric )
 
   // Try to setup the video display
   screen = SDL_SetVideoMode( 640, 480, 8, surfacemode );
+  if (oric->show_keyboard) {
+     screen = SDL_SetVideoMode( 640, 480+240, 8, surfacemode );
+  } else {
+     screen = SDL_SetVideoMode( 640, 480, 8, surfacemode );
+  }
+    
   if( !screen )
   {
     printf( "SDL video failed\n" );
