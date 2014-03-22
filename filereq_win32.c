@@ -106,6 +106,13 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       ofn.lpstrFilter = "All Files\0*.*\0Snapshot files (*.sna)\0*.SNA\0";
       ofn.nFilterIndex = 2;
       break;
+      
+    case FR_KEYMAPPINGSAVE:
+       ofn.Flags = OFN_PATHMUSTEXIST;
+    case FR_KEYMAPPINGLOAD:
+      ofn.lpstrFilter = "All Files\0*.*\0Keyboard Mapping files (*.kma)\0*.KMA\0";
+      ofn.nFilterIndex = 2;
+      break;
 
     default:
       ofn.lpstrFilter = "All Files\0*.*";
