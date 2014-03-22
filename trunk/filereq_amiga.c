@@ -107,6 +107,12 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
     case FR_SNAPSHOTLOAD:
       pat = "#?.sna";
       break;
+      
+    case FR_KEYMAPPINGSAVE:
+    	dosavemode = true;
+    case FR_KEYMAPPINGLOAD:
+    	pat = "#?.kma";
+        break;
  
     default:
       pat = NULL;
