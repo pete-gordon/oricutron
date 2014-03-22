@@ -74,6 +74,9 @@ extern char jasmnromfile[];
 extern char pravetzromfile[2][1024];
 extern char telebankfiles[8][1024];
 
+static char keymap_path[4096+32];
+static int  load_keymap = SDL_FALSE;
+
 #ifdef __amigaos4__
 char __attribute__((used)) stackcookie[] = "$STACK: 1000000";
 #endif
@@ -364,7 +367,6 @@ static void load_config( struct start_opts *sto, struct machine *oric )
   Sint32 i, j;
   char tbtmp[32];
   char keymap_file[4096];
-  char keymap_path[4096+32];
 
   f = fopen( FILEPREFIX"oricutron.cfg", "r" );
   if( !f ) return;
@@ -444,7 +446,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     {
         strcpy(keymap_path, FILEPREFIX"");
         strcat(keymap_path, keymap_file);
-        load_keyboard_mapping( oric, keymap_path );
+        load_keymap = SDL_TRUE;
         continue;
     }
   }
@@ -1202,6 +1204,12 @@ int main( int argc, char *argv[] )
     done = SDL_FALSE;
     needrender = SDL_TRUE;
     framedone = SDL_FALSE;
+      
+      if(load_keymap) {
+          load_keyboard_mapping( &oric, keymap_path );
+          load_keymap = SDL_FALSE;
+      }
+        
       
     while( !done )
     {
