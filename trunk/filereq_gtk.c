@@ -117,6 +117,14 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       gtk_file_filter_set_name(filter, "Snapshot files");
       gtk_file_filter_add_pattern(filter, "*.sna");
       break;
+      
+    case FR_KEYMAPPINGSAVE:
+       action = GTK_FILE_CHOOSER_ACTION_SAVE;
+    case FR_KEYMAPPINGLOAD:
+      filter = gtk_file_filter_new();
+      gtk_file_filter_set_name(filter, "Keyboard Mapping files");
+      gtk_file_filter_add_pattern(filter, "*.kma");
+      break;
  
     default:
       break;
