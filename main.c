@@ -571,6 +571,8 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 #endif
   preinit_gui( oric );
 
+  kbd_init(oric);
+
   // Go SDL!
   if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
   {
@@ -1188,8 +1190,6 @@ int main( int argc, char *argv[] )
     //printf("Current Path: %s\n", path);
 #endif
 
-  kbd_init(&oric);
-    
   if( ( isinit = init( &oric, argc, argv ) ) )
   {
     Uint64 nextframe_us;
