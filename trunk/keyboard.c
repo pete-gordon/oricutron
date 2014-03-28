@@ -87,12 +87,12 @@ static unsigned short keyMapPravetz[] = {
     SDLK_BACKSPACE, SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_RALT, ' ', ' ', ' ', ' ', ' ', ' ' };
 
 static unsigned short modKeys[] = { SDLK_LCTRL, SDLK_LSHIFT, SDLK_RSHIFT, SDLK_RALT };
-static int modKeyMax = 5;
+static int modKeyMax = sizeof(modKeys) / sizeof(modKeys[0]);
 
 int kbd_init( struct machine *oric )
 {
   int i, j;
-    
+
   oric->keyboard_mapping.nb_map = 0;
     
   for( i=0; i<62; i++ )
@@ -292,10 +292,9 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
     switch( ev->type )
     {
         case SDL_MOUSEBUTTONDOWN:
-        case SDL_MOUSEBUTTONUP:
             x = ev->button.x;
             y = ev->button.y - 480;
-            
+
             struct kbdkey * kbd;
             
             switch( oric->type )
@@ -318,11 +317,6 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
                 if ((x > kbd[i].x) && (x < kbd[i].x + kbd[i].w) &&
                     (y > kbd[i].y) && (y < kbd[i].y + kbd[i].h)) {
                     current_key = &(kbd[i]);
-                    SDL_Rect rect;
-                    rect.x = kbd[i].x;
-                    rect.y = kbd[i].y;
-                    rect.h = kbd[i].h;
-                    rect.w = kbd[i].w;
                     //if (ev->type == SDL_MOUSEBUTTONDOWN)
                     //    printf("Key %d pressed : keysim %d (%c)\n",
                     //           i, current_key->keysim, (char)(current_key->keysim));
@@ -381,13 +375,8 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
                                 return done;
                         }
                         
-                        // normal behavior
-                        if(ev->type == SDL_MOUSEBUTTONDOWN)
-                            keyDown = SDL_TRUE;
-                        else
-                            keyDown = SDL_FALSE;
                         // send the key to the Oric
-                        ay_keypress( &oric->ay, current_key->keysim, keyDown );
+                        ay_keypress( &oric->ay, current_key->keysim, SDL_TRUE );
                         
                         // start releasing mod keys if need be
                         release_keys = SDL_TRUE;
@@ -395,12 +384,21 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
                 }
             }
             break;
+
+        case SDL_MOUSEBUTTONUP:
+            if ((current_key == NULL) || (defining_key_map))
+                break;
+            ay_keypress( &oric->ay, current_key->keysim, SDL_FALSE );
+            current_key = NULL;
+            break;
+
         case SDL_KEYUP:
             if (defining_key_map) {
                 SDL_KeyboardEvent *kbd_evt = (SDL_KeyboardEvent *) ev;
                 add_to_keyboard_mapping( &(oric->keyboard_mapping), kbd_evt->keysym.sym, current_key->keysim );
                 do_popup( oric, "Key mapping done.");
                 defining_key_map = SDL_FALSE;
+                current_key = NULL;
             }
             break;
             
