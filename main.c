@@ -580,9 +580,11 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
     return SDL_FALSE;
   }
   need_sdl_quit = SDL_TRUE;
-  
-  SDL_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
 
+#ifndef __APPLE__
+  SDL_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
+#endif
+    
   render_sw_detectvideo( oric );
 
   load_config( sto, oric );
