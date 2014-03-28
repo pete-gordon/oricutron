@@ -180,6 +180,8 @@ void togglestickykeys( struct machine *oric, struct osdmenuitem *mitem, int dumm
 void savemapping( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void loadmapping( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void resetmapping( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void clipbd_copy_gui( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void clipbd_paste_gui( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 
 
 // Menu definitions. Name, key name, SDL key code, function, parameter
@@ -194,6 +196,9 @@ struct osdmenuitem mainitems[] = { { "Insert tape...",         "T",    't',     
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Save snapshot...",       NULL,   0,        savesnap,        0, 0 },
                                    { "Load snapshot...",       NULL,   0,        loadsnap,        0, 0 },
+                                   { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
+                                   { "Copy to clipboard",      "[F11]",SDLK_F11, clipbd_copy_gui, 0, 0 },
+                                   { "Paste from clipboard",   "[F12]",SDLK_F12, clipbd_paste_gui,0, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Hardware options...",    "H",    'h',      gotomenu,        1, 0 },
                                    { "Audio options...",       "A",    'a',      gotomenu,        2, 0 },
@@ -1636,6 +1641,7 @@ void togglekeyboard( struct machine *oric, struct osdmenuitem *mitem, int dummy 
     mitem->name = "\x0e""Show keyboard";
     oric->shut_render(oric);
     oric->init_render(oric);
+    setemumode( oric, NULL, EM_RUNNING );
 }
 
 void definemapping( struct machine *oric, struct osdmenuitem *mitem, int dummy )
@@ -1658,6 +1664,7 @@ void definemapping( struct machine *oric, struct osdmenuitem *mitem, int dummy )
     cmenu = NULL;
     oric->emu_mode = EM_RUNNING;
     do_popup( oric, "Click on an Oric key." );
+    setemumode( oric, NULL, EM_RUNNING );
 }
 
 void togglestickykeys( struct machine *oric, struct osdmenuitem *mitem, int dummy )
@@ -1672,6 +1679,7 @@ void togglestickykeys( struct machine *oric, struct osdmenuitem *mitem, int dumm
     
     oric->sticky_mod_keys = SDL_TRUE;
     mitem->name = "\x0e""Sticky mod keys";
+    setemumode( oric, NULL, EM_RUNNING );
 }
 
 
@@ -1680,6 +1688,7 @@ void savemapping( struct machine *oric, struct osdmenuitem *mitem, int dummy )
     if( !filerequester( oric, "Save Keyboard Mapping", mappingpath, mappingfile, FR_KEYMAPPINGSAVE ) ) return;
     joinpath( mappingpath, mappingfile );
     save_keyboard_mapping(oric, filetmp);
+    setemumode( oric, NULL, EM_RUNNING );
 }
 
 void loadmapping( struct machine *oric, struct osdmenuitem *mitem, int dummy )
@@ -1687,13 +1696,26 @@ void loadmapping( struct machine *oric, struct osdmenuitem *mitem, int dummy )
     if( !filerequester( oric, "Load Keyboard Mapping", mappingpath, mappingfile, FR_KEYMAPPINGLOAD ) ) return;
     joinpath( mappingpath, mappingfile );
     load_keyboard_mapping(oric, filetmp);
+    setemumode( oric, NULL, EM_RUNNING );
 }
 
 void resetmapping( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
     reset_keyboard_mapping(&(oric->keyboard_mapping));
+    setemumode( oric, NULL, EM_RUNNING );
 }
 
+void clipbd_copy_gui( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+    clipboard_copy(oric);
+    setemumode( oric, NULL, EM_RUNNING );
+}
+
+void clipbd_paste_gui( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+    clipboard_paste(oric);
+    setemumode( oric, NULL, EM_RUNNING );
+}
 
 
 /************************* End of menu callable funcs *******************************/
@@ -1988,8 +2010,10 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
   }
   need_sdl_quit = SDL_TRUE;
 
+#ifndef __APPLE__
   SDL_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
-
+#endif
+    
   if( !init_joy( oric ) )
   {
     oric->emu_mode = EM_PLEASEQUIT;
