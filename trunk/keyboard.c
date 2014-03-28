@@ -334,44 +334,42 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
                         SDL_bool keyDown = SDL_FALSE;
                         // manage mod keys
                         if (current_key->is_mod_key && oric->sticky_mod_keys) {
-                                // only generate key press/release on button down
-                                if (ev->type == SDL_MOUSEBUTTONDOWN) {
-                                    if (current_key->keysim == SDLK_LSHIFT) {
-                                        if (left_shifted) {
-                                            left_shifted = keyDown = SDL_FALSE;
-                                            do_popup( oric, "left shift released.");
-                                        } else {
-                                            left_shifted = keyDown = SDL_TRUE;
-                                            do_popup( oric, "left shift pressed.");
-                                        }
-                                    } else if (current_key->keysim == SDLK_RSHIFT) {
-                                        if (right_shifted) {
-                                            right_shifted = keyDown = SDL_FALSE;
-                                            do_popup( oric, "right shift released.");
-                                        } else {
-                                            right_shifted = keyDown = SDL_TRUE;
-                                            do_popup( oric, "right shift pressed.");
-                                        }
-                                    } else if (current_key->keysim == SDLK_LCTRL) {
-                                        if (ctrl_pressed) {
-                                            ctrl_pressed = keyDown = SDL_FALSE;
-                                            do_popup( oric, "ctrl released.");
-                                        } else {
-                                            ctrl_pressed = keyDown = SDL_TRUE;
-                                            do_popup( oric, "ctrl pressed.");
-                                        }
-                                    } else if (current_key->keysim == SDLK_RALT) {
-                                        if (funct_pressed) {
-                                            funct_pressed = keyDown = SDL_FALSE;
-                                            do_popup( oric, "funct released.");
-                                        } else {
-                                            funct_pressed = keyDown = SDL_TRUE;
-                                            do_popup( oric, "funct pressed.");
-                                        }
+                                if (current_key->keysim == SDLK_LSHIFT) {
+                                    if (left_shifted) {
+                                        left_shifted = keyDown = SDL_FALSE;
+                                        do_popup( oric, "left shift released.");
+                                    } else {
+                                        left_shifted = keyDown = SDL_TRUE;
+                                        do_popup( oric, "left shift pressed.");
                                     }
-                                    // send the mod key to the Oric
-                                    ay_keypress( &oric->ay, current_key->keysim, keyDown );
+                                } else if (current_key->keysim == SDLK_RSHIFT) {
+                                    if (right_shifted) {
+                                        right_shifted = keyDown = SDL_FALSE;
+                                        do_popup( oric, "right shift released.");
+                                    } else {
+                                        right_shifted = keyDown = SDL_TRUE;
+                                        do_popup( oric, "right shift pressed.");
+                                    }
+                                } else if (current_key->keysim == SDLK_LCTRL) {
+                                    if (ctrl_pressed) {
+                                        ctrl_pressed = keyDown = SDL_FALSE;
+                                        do_popup( oric, "ctrl released.");
+                                    } else {
+                                        ctrl_pressed = keyDown = SDL_TRUE;
+                                        do_popup( oric, "ctrl pressed.");
+                                    }
+                                } else if (current_key->keysim == SDLK_RALT) {
+                                    if (funct_pressed) {
+                                        funct_pressed = keyDown = SDL_FALSE;
+                                        do_popup( oric, "funct released.");
+                                    } else {
+                                        funct_pressed = keyDown = SDL_TRUE;
+                                        do_popup( oric, "funct pressed.");
+                                    }
                                 }
+                                // send the mod key to the Oric
+                                ay_keypress( &oric->ay, current_key->keysim, keyDown );
+                                current_key = NULL;
                                 return done;
                         }
                         
