@@ -140,7 +140,7 @@ ifneq ($(SDL_PREFIX),)
 CFLAGS += -I$(SDL_PREFIX)/include
 LFLAGS += -L$(SDL_PREFIX)/lib
 endif
-CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -g
+CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -D__CBPASTE__ -g
 LFLAGS += -g -lm -mwindows -lmingw32 -lSDLmain -lSDL -lopengl32 -static-libgcc
 ifneq ($(PROFILING),)
 CFLAGS += -pg
@@ -172,7 +172,7 @@ else
 CFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config sdl --cflags)
 LFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config sdl --libs)
 endif
-CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -g
+CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -D__CBPASTE__ -g
 LFLAGS += -g -static-libgcc -static-libstdc++ -mwindows -lopengl32
 ifneq ($(PROFILING),)
 CFLAGS += -pg
@@ -205,7 +205,7 @@ else
 CFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config sdl --cflags)
 LFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config sdl --libs)
 endif
-CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -g
+CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -D__CBPASTE__ -g
 LFLAGS += -g -static-libgcc -static-libstdc++ -mwindows -lopengl32
 ifneq ($(PROFILING),)
 CFLAGS += -pg
@@ -232,7 +232,7 @@ ifeq ($(PLATFORMTYPE),beos)
 CFLAGS += $(shell sdl-config --cflags)
 LFLAGS += $(shell sdl-config --libs)
 CFLAGS += -Wno-multichar
-CFLAGS += -g
+CFLAGS += -g -D__CBCOPY__ -D__CBPASTE__
 LFLAGS += -lbe -ltracker -lGL
 TARGET = oricutron
 INSTALLDIR = /boot/apps/Oricutron
@@ -250,7 +250,7 @@ endif
 
 # Mac OS X
 ifeq ($(PLATFORM),osx)
-CFLAGS += -D__OPENGL_AVAILABLE__ $(shell sdl-config --cflags)
+CFLAGS += -D__OPENGL_AVAILABLE__ -D__CBCOPY__ -D__CBPASTE__ $(shell sdl-config --cflags)
 LFLAGS += $(shell sdl-config --libs) -s
 LFLAGS += -lm -Wl,-framework,OpenGL
 TARGET = oricutron
@@ -271,7 +271,7 @@ CFLAGS += -m32
 LFLAGS += -m32
 endif
 STRIP :=  $(CROSS_COMPILE)$(STRIP)
-CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --cflags) -D__OPENGL_AVAILABLE__ -DAUDIO_BUFLEN=1024
+CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --cflags) -D__OPENGL_AVAILABLE__ -DAUDIO_BUFLEN=1024 -D__CBCOPY__ -D__CBPASTE__
 LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --libs) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --libs) -lGL -lX11
 CUSTOMOBJS = gui_x11.o
 FILEREQ_OBJ = filereq_gtk.o
@@ -292,7 +292,7 @@ CFLAGS += -m32
 LFLAGS += -m32
 endif
 STRIP :=  $(CROSS_COMPILE)$(STRIP)
-CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --cflags)
+CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --cflags) -D__CBCOPY__ -D__CBPASTE__
 LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --libs) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --libs) -lX11
 CUSTOMOBJS = gui_x11.o
 FILEREQ_OBJ = filereq_gtk.o

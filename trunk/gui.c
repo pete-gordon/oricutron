@@ -180,9 +180,12 @@ void togglestickykeys( struct machine *oric, struct osdmenuitem *mitem, int dumm
 void savemapping( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void loadmapping( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void resetmapping( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+#ifdef __CBCOPY__
 void clipbd_copy_gui( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+#endif
+#ifdef __CBPASTE__
 void clipbd_paste_gui( struct machine *oric, struct osdmenuitem *mitem, int dummy );
-
+#endif
 
 // Menu definitions. Name, key name, SDL key code, function, parameter
 // Keys that are also available while emulating should be marked with
@@ -196,9 +199,15 @@ struct osdmenuitem mainitems[] = { { "Insert tape...",         "T",    't',     
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Save snapshot...",       NULL,   0,        savesnap,        0, 0 },
                                    { "Load snapshot...",       NULL,   0,        loadsnap,        0, 0 },
+#if defined(__CBCOPY__) || defined(__CBPASTE__)
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
+#endif
+#if defined(__CBCOPY__)
                                    { "Copy to clipboard",      "[F11]",SDLK_F11, clipbd_copy_gui, 0, 0 },
+#endif
+#if defined(__CBPASTE__)
                                    { "Paste from clipboard",   "[F12]",SDLK_F12, clipbd_paste_gui,0, 0 },
+#endif
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Hardware options...",    "H",    'h',      gotomenu,        1, 0 },
                                    { "Audio options...",       "A",    'a',      gotomenu,        2, 0 },
@@ -1705,17 +1714,20 @@ void resetmapping( struct machine *oric, struct osdmenuitem *mitem, int dummy )
     setemumode( oric, NULL, EM_RUNNING );
 }
 
+#ifdef __CBCOPY__
 void clipbd_copy_gui( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
     clipboard_copy(oric);
     setemumode( oric, NULL, EM_RUNNING );
 }
-
+#endif
+#ifdef __CBPASTE__
 void clipbd_paste_gui( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
     clipboard_paste(oric);
     setemumode( oric, NULL, EM_RUNNING );
 }
+#endif
 
 
 /************************* End of menu callable funcs *******************************/
