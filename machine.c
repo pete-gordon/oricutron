@@ -1139,32 +1139,15 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
            }
            refreshavi = SDL_TRUE;
            break;
-
-#if defined(__BEOS__) || defined(__HAIKU__) || defined(__APPLE__)
+#ifdef __CBCOPY__
         case SDLK_F11:
           clipboard_copy( oric );
           break;
+#endif
+#ifdef __CBPASTE__
         case SDLK_F12:
           clipboard_paste( oric );
           break;
-#elif defined(__WIN32__) || defined(__CYGWIN__)
-        case SDLK_F11:
-            clipboard_copy( oric );
-            break;
-        case SDLK_F12:
-            clipboard_paste( oric );
-            break;
-#elif defined(__linux__)
-        case SDLK_F11:
-            clipboard_copy( oric );
-            break;
-        case SDLK_F12:
-            clipboard_paste( oric );
-            break;
-#else
-        case SDLK_F11:
-        case SDLK_F12:
-            break;
 #endif
 
 #ifdef __amigaos4__
