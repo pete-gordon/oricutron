@@ -87,11 +87,15 @@ static unsigned short keyMapPravetz[] = {
     SDLK_BACKSPACE, SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_RALT, ' ', ' ', ' ', ' ', ' ', ' ' };
 
 static unsigned short modKeys[] = { SDLK_LCTRL, SDLK_LSHIFT, SDLK_RSHIFT, SDLK_RALT };
-static int modKeyMax = sizeof(modKeys) / sizeof(modKeys[0]);
+static char *modKeyNames[] = { "Ctrl", "Left shift", "Right shift", "Funct" };
+static const int modKeyMax = sizeof(modKeys) / sizeof(modKeys[0]);
+static SDL_bool modKeyPressed[sizeof(modKeys) / sizeof(modKeys[0])];
 
 int kbd_init( struct machine *oric )
 {
   int i, j;
+
+  memset(&modKeyPressed[0], 0, sizeof(modKeyPressed));
 
   oric->keyboard_mapping.nb_map = 0;
     
@@ -251,10 +255,6 @@ int kbd_init( struct machine *oric )
 
 static SDL_bool defining_key_map = SDL_FALSE;
 static struct kbdkey * current_key = NULL;
-static SDL_bool left_shifted = SDL_FALSE;
-static SDL_bool right_shifted = SDL_FALSE;
-static SDL_bool ctrl_pressed = SDL_FALSE;
-static SDL_bool funct_pressed = SDL_FALSE;
 static SDL_bool release_keys = SDL_FALSE;
 
 
@@ -263,28 +263,27 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
 {
     SDL_bool done = SDL_FALSE;
     int i, x, y;
+    static char tmp[64];
     
-    if (release_keys) {
-        // automatically release all mod keys one at a time
-        if (left_shifted) {
-            left_shifted = SDL_FALSE;
-            ay_keypress( &oric->ay, SDLK_LSHIFT, SDL_FALSE );
-            do_popup( oric, "left shift released.");
-        } else if (right_shifted) {
-            right_shifted = SDL_FALSE;
-            ay_keypress( &oric->ay, SDLK_RSHIFT, SDL_FALSE );
-            do_popup( oric, "right shift released.");
-        } else if (ctrl_pressed) {
-            ctrl_pressed = SDL_FALSE;
-            ay_keypress( &oric->ay, SDLK_LCTRL, SDL_FALSE );
-            do_popup( oric, "ctrl released.");
-        } else if (funct_pressed) {
-            funct_pressed = SDL_FALSE;
-            ay_keypress( &oric->ay, SDLK_RALT, SDL_FALSE );
-            do_popup( oric, "funct released.");
-        } else {
-            release_keys = SDL_FALSE;
+    if (release_keys)
+    {
+      x = 0;
+      for (i=0; i<modKeyMax; i++)
+      {
+        if (modKeyPressed[i])
+        {
+          modKeyPressed[i] = SDL_FALSE;
+          ay_keypress( &oric->ay, modKeys[i], SDL_FALSE );
+          snprintf(tmp, sizeof(tmp), "%s released.", modKeyNames[i]);
+          do_popup(oric, tmp);
+          x++;
         }
+      }
+
+      if (x > 1)
+        do_popup(oric, "All keys released");
+
+      release_keys = SDL_FALSE;
     }
     
     x = -1;
@@ -331,46 +330,26 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
                         do_popup( oric, "Press the key you want to use." );
                         defining_key_map = SDL_TRUE;
                     } else {
-                        SDL_bool keyDown = SDL_FALSE;
                         // manage mod keys
                         if (current_key->is_mod_key && oric->sticky_mod_keys) {
-                                if (current_key->keysim == SDLK_LSHIFT) {
-                                    if (left_shifted) {
-                                        left_shifted = keyDown = SDL_FALSE;
-                                        do_popup( oric, "left shift released.");
-                                    } else {
-                                        left_shifted = keyDown = SDL_TRUE;
-                                        do_popup( oric, "left shift pressed.");
-                                    }
-                                } else if (current_key->keysim == SDLK_RSHIFT) {
-                                    if (right_shifted) {
-                                        right_shifted = keyDown = SDL_FALSE;
-                                        do_popup( oric, "right shift released.");
-                                    } else {
-                                        right_shifted = keyDown = SDL_TRUE;
-                                        do_popup( oric, "right shift pressed.");
-                                    }
-                                } else if (current_key->keysim == SDLK_LCTRL) {
-                                    if (ctrl_pressed) {
-                                        ctrl_pressed = keyDown = SDL_FALSE;
-                                        do_popup( oric, "ctrl released.");
-                                    } else {
-                                        ctrl_pressed = keyDown = SDL_TRUE;
-                                        do_popup( oric, "ctrl pressed.");
-                                    }
-                                } else if (current_key->keysim == SDLK_RALT) {
-                                    if (funct_pressed) {
-                                        funct_pressed = keyDown = SDL_FALSE;
-                                        do_popup( oric, "funct released.");
-                                    } else {
-                                        funct_pressed = keyDown = SDL_TRUE;
-                                        do_popup( oric, "funct pressed.");
-                                    }
-                                }
-                                // send the mod key to the Oric
-                                ay_keypress( &oric->ay, current_key->keysim, keyDown );
-                                current_key = NULL;
-                                return done;
+                          for (i=0; i<modKeyMax; i++) {
+                            if (current_key->keysim == modKeys[i])
+                              break;
+                          }
+                          
+                          if (i < modKeyMax) {
+                            if (modKeyPressed[i]) {
+                              modKeyPressed[i] = SDL_TRUE;
+                              snprintf(tmp, sizeof(tmp), "%s released.", modKeyNames[i]);
+                            } else {
+                              modKeyPressed[i] = SDL_TRUE;
+                              snprintf(tmp, sizeof(tmp), "%s pressed.", modKeyNames[i]);
+                            }
+                            do_popup(oric, tmp);
+                            ay_keypress( &oric->ay, current_key->keysim, modKeyPressed[i] );
+                            current_key = NULL;
+                            return done;
+                          }
                         }
                         
                         // send the key to the Oric
