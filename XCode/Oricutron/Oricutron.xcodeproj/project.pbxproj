@@ -497,6 +497,8 @@
 				INFOPLIST_FILE = "Oricutron/Oricutron-Info.plist";
 				OTHER_CFLAGS = "";
 				"OTHER_CFLAGS[arch=*]" = (
+					"-D__CBCOPY__",
+					"-D__CBPASTE__",
 					"-D__SPECIFY_SDL_DIR__",
 					"-DAPP_NAME_FULL='\"Oricutron WIP Rev: 585:586M\"'",
 					"-DAPP_YEAR='\"2013\"'",
@@ -523,6 +525,8 @@
 				INFOPLIST_FILE = "Oricutron/Oricutron-Info.plist";
 				OTHER_CFLAGS = "";
 				"OTHER_CFLAGS[arch=*]" = (
+					"-D__CBCOPY__",
+					"-D__CBPASTE__",
 					"-D__SPECIFY_SDL_DIR__",
 					"-DAPP_NAME_FULL='\"Oricutron WIP Rev: 585:586M\"'",
 					"-DAPP_YEAR='\"2013\"'",
