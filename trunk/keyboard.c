@@ -72,6 +72,9 @@ SDL_Surface* CreateSurface( int width , int height )
 	return surface ;
 }
 
+#define KEYSIM_FLAG ((unsigned short)0x8000)
+#define KEYSIM_MASK ((unsigned short)0x7FFF)
+
 static unsigned short keyMap[] = {
     '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\\',
     SDLK_ESCAPE, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', SDLK_BACKSPACE,
@@ -80,23 +83,40 @@ static unsigned short keyMap[] = {
     SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_RALT, ' ', ' ', ' ', ' ', ' ', ' ' };
 
 static unsigned short keyMapPravetz[] = {
-    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', ':', '-', ';',
-    SDLK_ESCAPE, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '@', '\\', '^',
+    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', KEYSIM_FLAG|';', '-', ';',
+    SDLK_ESCAPE, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', KEYSIM_FLAG|'2', '\\', SDLK_BACKSPACE,
     SDLK_LCTRL, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', '[', ']', SDLK_RETURN,
     SDLK_LSHIFT, 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', SDLK_RSHIFT,
-    SDLK_BACKSPACE, SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_RALT, ' ', ' ', ' ', ' ', ' ', ' ' };
+    SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_RALT, KEYSIM_FLAG|'6', ' ', ' ', ' ', ' ', ' ' };
 
-static unsigned short modKeys[] = { SDLK_LCTRL, SDLK_LSHIFT, SDLK_RSHIFT, SDLK_RALT };
-static char *modKeyNames[] = { "Ctrl", "Left shift", "Right shift", "Funct" };
-static const int modKeyMax = sizeof(modKeys) / sizeof(modKeys[0]);
-static SDL_bool modKeyPressed[sizeof(modKeys) / sizeof(modKeys[0])];
+static unsigned short keyMapShiftedPravetz[] = {
+    '1', '\'', '3', '4', '5', '7', KEYSIM_FLAG|'\'', '9', '0', '-', '8', KEYSIM_FLAG|'=', '=',
+    SDLK_ESCAPE, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '~', '\\', SDLK_BACKSPACE,
+    SDLK_LCTRL, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', '[', ']', SDLK_RETURN,
+    SDLK_LSHIFT, 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', SDLK_RSHIFT,
+    SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_RALT, '`', ' ', ' ', ' ', ' ', ' ' };
+
+enum {
+    MOD_CTRL = 0,
+    MOD_LSHIFT,
+    MOD_RSHIFT,
+    MOD_FUNCT,
+    MODKEY_MAX    
+};
+    
+static unsigned short modKeys[MODKEY_MAX] = { SDLK_LCTRL, SDLK_LSHIFT, SDLK_RSHIFT, SDLK_RALT };
+static char *modKeyNames[MODKEY_MAX] = { "Ctrl", "Left shift", "Right shift", "Funct" };
+static const int modKeyMax = MODKEY_MAX;
+static SDL_bool modKeyPressed[MODKEY_MAX];
+static SDL_bool modKeyFakePressed[MODKEY_MAX];
 
 int kbd_init( struct machine *oric )
 {
   int i, j;
 
   memset(&modKeyPressed[0], 0, sizeof(modKeyPressed));
-
+  memset(&modKeyFakePressed[0], 0, sizeof(modKeyFakePressed));
+  
   oric->keyboard_mapping.nb_map = 0;
     
   for( i=0; i<62; i++ )
@@ -121,7 +141,8 @@ int kbd_init( struct machine *oric )
     kbd_pravetz[i].highlightfade = 0;
     kbd_pravetz[i].is_mod_key = 0;
     kbd_pravetz[i].keysim = keyMapPravetz[i];
-      
+    kbd_pravetz[i].keysimshifted = keyMapShiftedPravetz[i];
+    
     
     // mod keys
       for (j = 0; j < modKeyMax; j++) {
@@ -174,6 +195,7 @@ int kbd_init( struct machine *oric )
   kbd_atmos[40].x = 38;
   kbd_atmos[40].y = 139;
   kbd_atmos[40].w = 65;
+
   for( i=41; i<52; i++ )
   {
     kbd_atmos[i].x = (i-41)*43+103;
@@ -241,14 +263,11 @@ int kbd_init( struct machine *oric )
   kbd_pravetz[55].y = 180;
   kbd_pravetz[56].x = 479+40;
   kbd_pravetz[56].y = 180;
-  /* kbd_pravetz[58].x = 500+44; */
-  /* kbd_pravetz[58].y = 90; */
   kbd_pravetz[58].x = (13)*42+25;
   kbd_pravetz[58].y = 51;
   kbd_pravetz[59].x = 479+40 +42;
   kbd_pravetz[59].y = 180;
   kbd_pravetz[60].x = -1;
-    
 
   return 1;
 }
@@ -262,7 +281,10 @@ static SDL_bool release_keys = SDL_FALSE;
 SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 {
     SDL_bool done = SDL_FALSE;
-    int i, x, y;
+    SDL_bool lshifted = modKeyPressed[MOD_LSHIFT];
+    SDL_bool rshifted = modKeyPressed[MOD_RSHIFT];
+  
+    int i, x, y, current_key_num = -1;
     static char tmp[64];
     
     if (release_keys)
@@ -277,6 +299,9 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
           snprintf(tmp, sizeof(tmp), "%s released.", modKeyNames[i]);
           do_popup(oric, tmp);
           x++;
+        } else if (modKeyFakePressed[i]) {
+          modKeyFakePressed[i] = SDL_FALSE;
+          ay_keypress( &oric->ay, modKeys[i], SDL_FALSE );
         }
       }
 
@@ -316,9 +341,11 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
                 if ((x > kbd[i].x) && (x < kbd[i].x + kbd[i].w) &&
                     (y > kbd[i].y) && (y < kbd[i].y + kbd[i].h)) {
                     current_key = &(kbd[i]);
+                    current_key_num = i;
                     //if (ev->type == SDL_MOUSEBUTTONDOWN)
-                    //    printf("Key %d pressed : keysim %d (%c)\n",
-                    //           i, current_key->keysim, (char)(current_key->keysim));
+                    //   printf("Key %d pressed : keysim %d (%c)\n",
+                    //          i, current_key->keysim, (char)(current_key->keysim));
+                    break;
                 }
             }
             
@@ -353,7 +380,40 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
                         }
                         
                         // send the key to the Oric
-                        ay_keypress( &oric->ay, current_key->keysim, SDL_TRUE );
+                        switch( oric->type )
+                        {
+                            case MACH_PRAVETZ:
+                                if (lshifted) {
+                                    if (current_key_num == 24)
+                                        queuekeys("\x60");
+                                    if (KEYSIM_FLAG & current_key->keysimshifted)
+                                        ay_keypress( &oric->ay, modKeys[MOD_LSHIFT], SDL_FALSE );
+                                    ay_keypress( &oric->ay, KEYSIM_MASK & current_key->keysimshifted, SDL_TRUE );
+                                } else if (rshifted) {
+                                    if (current_key_num == 24)
+                                        queuekeys("\x60");
+                                    if (KEYSIM_FLAG & current_key->keysimshifted)
+                                        ay_keypress( &oric->ay, modKeys[MOD_RSHIFT], SDL_FALSE );
+                                    ay_keypress( &oric->ay, KEYSIM_MASK & current_key->keysimshifted, SDL_TRUE );
+                                } else {
+                                    if (current_key_num == 59) {
+                                        queuekeys("\x14");
+                                    } else if (KEYSIM_FLAG & current_key->keysim) {
+                                        ay_keypress( &oric->ay, modKeys[MOD_LSHIFT], SDL_TRUE );
+                                        ay_keypress( &oric->ay, KEYSIM_MASK & current_key->keysim, SDL_TRUE );
+                                        modKeyFakePressed[MOD_LSHIFT] = SDL_TRUE;
+                                    } else {
+                                        ay_keypress( &oric->ay, KEYSIM_MASK & current_key->keysim, SDL_TRUE );
+                                    }
+                                }
+                                break;
+                            case MACH_ORIC1:
+                            case MACH_ORIC1_16K:
+                            case MACH_ATMOS:
+                            default:
+                                ay_keypress( &oric->ay, current_key->keysim, SDL_TRUE );
+                                break;
+                        }
                         
                         // start releasing mod keys if need be
                         release_keys = SDL_TRUE;
@@ -365,7 +425,25 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
         case SDL_MOUSEBUTTONUP:
             if ((current_key == NULL) || (defining_key_map))
                 break;
-            ay_keypress( &oric->ay, current_key->keysim, SDL_FALSE );
+            
+            // send the key to the Oric
+            switch( oric->type )
+            {
+                case MACH_PRAVETZ:
+                    if (lshifted || rshifted) {
+                        ay_keypress( &oric->ay, KEYSIM_MASK & current_key->keysimshifted, SDL_FALSE );
+                    } else {
+                        ay_keypress( &oric->ay, KEYSIM_MASK & current_key->keysim, SDL_FALSE );
+                    }
+                    break;
+                case MACH_ORIC1:
+                case MACH_ORIC1_16K:
+                case MACH_ATMOS:
+                default:
+                    ay_keypress( &oric->ay, current_key->keysim, SDL_FALSE );
+                    break;
+            }
+
             current_key = NULL;
             break;
 

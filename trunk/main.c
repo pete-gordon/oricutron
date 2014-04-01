@@ -442,6 +442,8 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_joykey( &sto->lctmp[i], "kbjoy2_fire1", &oric->kbjoy2[4] ) ) continue;
     if( read_config_joykey( &sto->lctmp[i], "kbjoy2_fire2", &oric->kbjoy2[5] ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "diskautosave", &oric->diskautosave ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "show_keyboard", &oric->show_keyboard ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "sticky_mod_keys", &oric->sticky_mod_keys ) )continue;
     if( read_config_string( &sto->lctmp[i], "autoload_keyboard_mapping", keymap_file, 4096 ) )
     {
         strcpy(keymap_path, FILEPREFIX"");

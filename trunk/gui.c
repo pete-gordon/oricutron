@@ -255,8 +255,8 @@ struct osdmenuitem auopitems[] = { { " Sound enabled",         NULL,   0,       
                                    { NULL, } };
                                   
 struct osdmenuitem keopitems[] = { { " Show keyboard",         NULL,   0,        togglekeyboard,  0, 0 },
-                                   { " Define mapping",        NULL,   0,        definemapping,   0, 0 },
                                    { " Sticky mod keys",       NULL,   0,        togglestickykeys,0, 0 },
+                                   { " Define mapping",        NULL,   0,        definemapping,   0, 0 },
                                    { "Save mapping...",        NULL,   0,        savemapping,     0, 0 },
                                    { "Load mapping...",        NULL,   0,        loadmapping,     0, 0 },
                                    { "Reset mapping",          NULL,   0,        resetmapping,    0, 0 },

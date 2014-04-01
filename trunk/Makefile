@@ -140,7 +140,7 @@ ifneq ($(SDL_PREFIX),)
 CFLAGS += -I$(SDL_PREFIX)/include
 LFLAGS += -L$(SDL_PREFIX)/lib
 endif
-CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -D__CBPASTE__ -g
+CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -D__CBCOPY__ -D__CBPASTE__ -g
 LFLAGS += -g -lm -mwindows -lmingw32 -lSDLmain -lSDL -lopengl32 -static-libgcc
 ifneq ($(PROFILING),)
 CFLAGS += -pg
@@ -172,7 +172,7 @@ else
 CFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config sdl --cflags)
 LFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config sdl --libs)
 endif
-CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -D__CBPASTE__ -g
+CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -D__CBCOPY__ -D__CBPASTE__ -g
 LFLAGS += -g -static-libgcc -static-libstdc++ -mwindows -lopengl32
 ifneq ($(PROFILING),)
 CFLAGS += -pg
@@ -205,7 +205,7 @@ else
 CFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config sdl --cflags)
 LFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config sdl --libs)
 endif
-CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -D__CBPASTE__ -g
+CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -D__CBCOPY__ -D__CBPASTE__ -g
 LFLAGS += -g -static-libgcc -static-libstdc++ -mwindows -lopengl32
 ifneq ($(PROFILING),)
 CFLAGS += -pg

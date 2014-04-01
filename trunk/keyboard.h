@@ -27,6 +27,7 @@ struct kbdkey
   int highlight;
   int highlightfade;
   unsigned short keysim;
+  unsigned short keysimshifted;
   int is_mod_key;
 };
 
