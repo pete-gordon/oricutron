@@ -307,3 +307,29 @@ Click on the + and search for the UK or US keyboard.
 
 Under Ubuntu you can do that in the System menu, select Preferences, and then select
 Keyboard. In the Keyboard Preferences dialog, select the Layouts tab, and click Add.
+
+Bor a better solution look under "Visual Keyboard" down here.
+
+Visual Keyboard
+===============
+
+Oricutron can display a visual keyboard which also adds a keyboard mapping redefinition feature.
+
+It's accessible through a submenu called "Keyboard options".
+
+In the submenu you can find:
+- a toggle that shows/hides the visual keyboard (you can click on the keyboard keys to enter key presses/releases) ;
+- a toggle that gets you in the key mapping definition mode (you can then click on a visual keyboard key ; press a real key on your keyboard and the mapping will work) ;
+- a toggle that allows mod keys (ctrl, shift, funct) to be sticky (ie you first click on a key to press it and then either re-click it to release it or click on another key and it will generate a modded key press - e.g. a Ctrl-T instead of T - and then auto release the key) ;
+- an option to save a keyboard mapping (.kma file) ;
+- an option to load a keyboard mapping ;
+- an option that resets the keyboard mapping to the default one.
+
+You can also add the following in your oricutron.cfg to autoload a keyboard mapping (here Test.kma in the keymap directory found in Oricutron's directory):
+
+; automatically load a keyboard mapping file
+autoload_keyboard_mapping = 'keymap/Test.kma'
+
+Other options let's you display the keyboard and activate sticky mod keys automatically :
+show_keyboard = yes
+sticky_mod_keys = yes
