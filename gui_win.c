@@ -57,8 +57,8 @@ static void init_clipboard(void)
   {
     /* Save the information for later use */
     SDL_Window = info.window;
-    initialized = SDL_TRUE;
-  }
+      initialized = SDL_TRUE;
+    }
 }
 
 char* get_clipboard_text_win(void)
@@ -82,6 +82,28 @@ char* get_clipboard_text_win(void)
   return text;
 }
 
+static void set_clipboard_text_win(const char* text)
+{
+    if (!initialized)
+        return;
+    
+    if ( text != NULL )
+    {
+        if ( OpenClipboard(SDL_Window) )
+        {
+            HANDLE hMem = GlobalAlloc((GMEM_MOVEABLE|GMEM_DDESHARE), strlen(text)+1);
+            if ( hMem != NULL )
+            {
+                char* dst = (char*)GlobalLock(hMem);
+                memcpy(dst, text, strlen(text)+1);
+                GlobalUnlock(hMem);
+                EmptyClipboard();
+                SetClipboardData(CF_TEXT, hMem);
+            }
+            CloseClipboard();
+        }
+    }
+}
 
 SDL_bool init_gui_native( struct machine *oric )
 {
@@ -105,7 +127,34 @@ void gui_open_url( const char *url )
 
 SDL_bool clipboard_copy( struct machine *oric )
 {
-  return SDL_FALSE;
+    // HIRES
+    if (oric->vid_addr != oric->vidbases[2])
+        return SDL_FALSE;
+        
+    int line, col, i;
+    char text[40 * 28 + 28 + 1];
+    unsigned char *vidmem = (&oric->mem[oric->vid_addr]);
+
+    for (i = 0, line = 0; line < 28; line++) {
+        for (col = 0; col < 40; col++) {
+            unsigned char c = vidmem[line * 40 + col];
+            
+            if (c > 127) {
+                c -= 128;
+            }
+            
+            if (c < ' ' || c == 127) {
+                text[i++] = ' ';
+            } else
+                text[i++] = (char)c;
+        }
+        text[i++] = '\n';
+    }
+    text[i++] = '\0';
+    //printf("%s\n", text);
+    
+    set_clipboard_text_win(text);
+    return SDL_TRUE;
 }
 
 SDL_bool clipboard_paste( struct machine *oric )
@@ -126,7 +175,6 @@ SDL_bool clipboard_paste( struct machine *oric )
       p++;
     }
     queuekeys(text);
-    return SDL_TRUE;
   }
-  return SDL_FALSE;
+  return SDL_TRUE;
 }
