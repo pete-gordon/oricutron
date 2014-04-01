@@ -2208,6 +2208,16 @@ void setmenutoggles( struct machine *oric )
   find_item_by_key(hwopitems, 'm')->name = oric->drivetype==DRV_MICRODISC ? "\x0e""Microdisc"      : " Microdisc";
   find_item_by_key(hwopitems, 'j')->name = oric->drivetype==DRV_JASMIN    ? "\x0e""Jasmin"         : " Jasmin";
   find_item_by_key(hwopitems, 'p')->name = oric->drivetype==DRV_PRAVETZ   ? "\x0e""Pravetz 8D disk": " Pravetz 8D disk";
+    
+  if(oric->show_keyboard)
+     find_item_by_function(keopitems, togglekeyboard)->name = "\x0e""Show keyboard";
+  else
+     find_item_by_function(keopitems, togglekeyboard)->name = " Show keyboard";
+ 
+  if(oric->show_keyboard)
+     find_item_by_function(keopitems, togglestickykeys)->name = "\x0e""Sticky mod keys";
+  else
+     find_item_by_function(keopitems, togglestickykeys)->name = " Sticky mod keys";
 }
 
 // Initialise the GUI
