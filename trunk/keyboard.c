@@ -46,7 +46,8 @@ static struct kbdkey kbd_atmos[65], kbd_oric1[65], kbd_pravetz[65];
 
 SDL_Surface* CreateSurface( int width , int height )
 {
-    uint32_t rmask , gmask , bmask , amask ;
+    uint32_t rmask , gmask , bmask , amask;
+    SDL_Surface* surface;
     
     /* SDL interprets each pixel as a 32-bit number, so our masks must depend
      on the endianness (byte order) of the machine */
@@ -62,14 +63,14 @@ SDL_Surface* CreateSurface( int width , int height )
     amask = 0xff000000;
 #endif
     
-    SDL_Surface* surface = SDL_CreateRGBSurface( 0 , width , height , 32 , rmask , gmask , bmask , amask ) ;
+    surface = SDL_CreateRGBSurface( 0 , width , height , 32 , rmask , gmask , bmask , amask );
     if( surface == NULL )
     {
         ( void )fprintf(stderr, "CreateRGBSurface failed: %s\n", SDL_GetError() );
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     
-	return surface ;
+	return surface;
 }
 
 #define KEYSIM_FLAG ((unsigned short)0x8000)
@@ -286,6 +287,7 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
   
     int i, x, y, current_key_num = -1;
     static char tmp[64];
+    struct kbdkey * kbd;
     
     if (release_keys)
     {
@@ -319,8 +321,6 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
             x = ev->button.x;
             y = ev->button.y - 480;
 
-            struct kbdkey * kbd;
-            
             switch( oric->type )
             {
                 case MACH_PRAVETZ:
@@ -583,5 +583,3 @@ SDL_bool load_keyboard_mapping( struct machine *oric, char *filename )
     
     return ok;
 }
-
-
