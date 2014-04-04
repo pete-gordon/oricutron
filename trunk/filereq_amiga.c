@@ -109,7 +109,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       break;
       
     case FR_KEYMAPPINGSAVE:
-    	dosavemode = true;
+    	dosavemode = TRUE;
     case FR_KEYMAPPINGLOAD:
     	pat = "#?.kma";
         break;
