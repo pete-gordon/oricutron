@@ -308,7 +308,7 @@ Click on the + and search for the UK or US keyboard.
 Under Ubuntu you can do that in the System menu, select Preferences, and then select
 Keyboard. In the Keyboard Preferences dialog, select the Layouts tab, and click Add.
 
-Bor a better solution look under "Visual Keyboard" down here.
+For a better solution look under "Visual Keyboard" down here.
 
 Visual Keyboard
 ===============
@@ -330,6 +330,6 @@ You can also add the following in your oricutron.cfg to autoload a keyboard mapp
 ; automatically load a keyboard mapping file
 autoload_keyboard_mapping = 'keymap/Test.kma'
 
-Other options let's you display the keyboard and activate sticky mod keys automatically :
+Other options let you display the keyboard and activate sticky mod keys automatically:
 show_keyboard = yes
 sticky_mod_keys = yes
