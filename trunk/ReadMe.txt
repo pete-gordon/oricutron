@@ -190,6 +190,7 @@ Keys
   F11      - Copy text screen to clipboard (only BeOS)
   F12      - Paste (only BeOS, Linux & Windows)
   Help     - Show guide (Amiga, MorphOS and AROS)
+  AltGr    - Additional modifier
 
 
   In menus

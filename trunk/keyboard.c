@@ -105,7 +105,7 @@ enum {
     MODKEY_MAX    
 };
     
-static unsigned short modKeys[MODKEY_MAX] = { SDLK_LCTRL, SDLK_LSHIFT, SDLK_RSHIFT, SDLK_RALT };
+static unsigned short modKeys[MODKEY_MAX] = { SDLK_LCTRL, SDLK_LSHIFT, SDLK_RSHIFT, SDLK_LALT };
 static char *modKeyNames[MODKEY_MAX] = { "Ctrl", "Left shift", "Right shift", "Funct" };
 static const int modKeyMax = MODKEY_MAX;
 static SDL_bool modKeyPressed[MODKEY_MAX];
