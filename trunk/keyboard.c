@@ -366,7 +366,7 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
                           
                           if (i < modKeyMax) {
                             if (modKeyPressed[i]) {
-                              modKeyPressed[i] = SDL_TRUE;
+                              modKeyPressed[i] = SDL_FALSE;
                               snprintf(tmp, sizeof(tmp), "%s released.", modKeyNames[i]);
                             } else {
                               modKeyPressed[i] = SDL_TRUE;
