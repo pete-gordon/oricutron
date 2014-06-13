@@ -13,3 +13,4 @@ Here are some guides for compiling Oricutron for various environments:
   * [CompileOSX Mac OS X]
   * [CompileDebian Debian]
   * [CompileUbuntu Ubuntu]
+  * [CompileHaiku Haiku]
