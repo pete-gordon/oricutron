@@ -514,6 +514,7 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
             ay->oric->cpu.write( &ay->oric->cpu, 0x3fb, 1 ); // ROMDIS
             setromon( ay->oric );
             m6502_reset( &ay->oric->cpu );
+            m6502_set_icycles( &ay->oric->cpu, SDL_FALSE, NULL );
             via_init( &ay->oric->via, ay->oric, VIA_MAIN );
             ay->oric->auto_jasmin_reset = SDL_FALSE;
           }
@@ -526,6 +527,7 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
             ay->oric->cpu.write( &ay->oric->cpu, 0x3fb, 1 ); // ROMDIS
             setromon( ay->oric );
             m6502_reset( &ay->oric->cpu );
+            m6502_set_icycles( &ay->oric->cpu, SDL_FALSE, NULL );
             via_init( &ay->oric->via, ay->oric, VIA_MAIN );
             ay->oric->auto_jasmin_reset = SDL_FALSE;
           }
