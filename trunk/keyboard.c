@@ -48,7 +48,7 @@ SDL_Surface* CreateSurface( int width , int height )
 {
     uint32_t rmask , gmask , bmask , amask;
     SDL_Surface* surface;
-    
+
     /* SDL interprets each pixel as a 32-bit number, so our masks must depend
      on the endianness (byte order) of the machine */
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
@@ -62,14 +62,14 @@ SDL_Surface* CreateSurface( int width , int height )
     bmask = 0x00ff0000;
     amask = 0xff000000;
 #endif
-    
+
     surface = SDL_CreateRGBSurface( 0 , width , height , 32 , rmask , gmask , bmask , amask );
     if( surface == NULL )
     {
         ( void )fprintf(stderr, "CreateRGBSurface failed: %s\n", SDL_GetError() );
         exit(EXIT_FAILURE);
     }
-    
+
 	return surface;
 }
 
@@ -81,30 +81,30 @@ static unsigned short keyMap[] = {
     SDLK_ESCAPE, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', SDLK_BACKSPACE,
     SDLK_LCTRL, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', SDLK_RETURN,
     SDLK_LSHIFT, 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', SDLK_RSHIFT,
-    SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_RALT, ' ', ' ', ' ', ' ', ' ', ' ' };
+    SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_LALT, ' ', ' ', ' ', ' ', ' ', ' ' };
 
 static unsigned short keyMapPravetz[] = {
     '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', KEYSIM_FLAG|';', '-', ';',
     SDLK_ESCAPE, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', KEYSIM_FLAG|'2', '\\', SDLK_BACKSPACE,
     SDLK_LCTRL, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', '[', ']', SDLK_RETURN,
     SDLK_LSHIFT, 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', SDLK_RSHIFT,
-    SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_RALT, KEYSIM_FLAG|'6', ' ', ' ', ' ', ' ', ' ' };
+    SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_LALT, KEYSIM_FLAG|'6', ' ', ' ', ' ', ' ', ' ' };
 
 static unsigned short keyMapShiftedPravetz[] = {
     '1', '\'', '3', '4', '5', '7', KEYSIM_FLAG|'\'', '9', '0', '-', '8', KEYSIM_FLAG|'=', '=',
     SDLK_ESCAPE, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '~', '\\', SDLK_BACKSPACE,
     SDLK_LCTRL, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', '[', ']', SDLK_RETURN,
     SDLK_LSHIFT, 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', SDLK_RSHIFT,
-    SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_RALT, '`', ' ', ' ', ' ', ' ', ' ' };
+    SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_LALT, '`', ' ', ' ', ' ', ' ', ' ' };
 
 enum {
     MOD_CTRL = 0,
     MOD_LSHIFT,
     MOD_RSHIFT,
     MOD_FUNCT,
-    MODKEY_MAX    
+    MODKEY_MAX
 };
-    
+
 static unsigned short modKeys[MODKEY_MAX] = { SDLK_LCTRL, SDLK_LSHIFT, SDLK_RSHIFT, SDLK_LALT };
 static char *modKeyNames[MODKEY_MAX] = { "Ctrl", "Left shift", "Right shift", "Funct" };
 static const int modKeyMax = MODKEY_MAX;
@@ -117,9 +117,9 @@ int kbd_init( struct machine *oric )
 
   memset(&modKeyPressed[0], 0, sizeof(modKeyPressed));
   memset(&modKeyFakePressed[0], 0, sizeof(modKeyFakePressed));
-  
+
   oric->keyboard_mapping.nb_map = 0;
-    
+
   for( i=0; i<62; i++ )
   {
     kbd_atmos[i].w = 43;
@@ -128,7 +128,7 @@ int kbd_init( struct machine *oric )
     kbd_atmos[i].highlightfade = 0;
     kbd_atmos[i].is_mod_key = 0;
     kbd_atmos[i].keysim = keyMap[i];
-    
+
     kbd_oric1[i].w = 43;
     kbd_oric1[i].h = 43;
     kbd_oric1[i].highlight = 0;
@@ -143,8 +143,8 @@ int kbd_init( struct machine *oric )
     kbd_pravetz[i].is_mod_key = 0;
     kbd_pravetz[i].keysim = keyMapPravetz[i];
     kbd_pravetz[i].keysimshifted = keyMapShiftedPravetz[i];
-    
-    
+
+
     // mod keys
       for (j = 0; j < modKeyMax; j++) {
           if (kbd_atmos[i].keysim == modKeys[j]) {
@@ -154,8 +154,8 @@ int kbd_init( struct machine *oric )
           }
       }
   }
-    
-  
+
+
 
   for( i=0; i<13; i++ )
   {
@@ -284,11 +284,11 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
     SDL_bool done = SDL_FALSE;
     SDL_bool lshifted = modKeyPressed[MOD_LSHIFT];
     SDL_bool rshifted = modKeyPressed[MOD_RSHIFT];
-  
+
     int i, x, y, current_key_num = -1;
     static char tmp[64];
     struct kbdkey * kbd;
-    
+
     if (release_keys)
     {
       x = 0;
@@ -312,7 +312,7 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
 
       release_keys = SDL_FALSE;
     }
-    
+
     x = -1;
     y = -1;
     switch( ev->type )
@@ -334,7 +334,7 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
                     kbd = kbd_atmos;
                     break;
             }
-            
+
             // find the visual key under the mouse pointer
             current_key = NULL;
             for(i=0; i<62; i++) {
@@ -348,7 +348,7 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
                     break;
                 }
             }
-            
+
             if (current_key != NULL) {
                 // check which button was pressed
                 if( ev->button.button == SDL_BUTTON_LEFT )
@@ -363,7 +363,7 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
                             if (current_key->keysim == modKeys[i])
                               break;
                           }
-                          
+
                           if (i < modKeyMax) {
                             if (modKeyPressed[i]) {
                               modKeyPressed[i] = SDL_FALSE;
@@ -378,7 +378,7 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
                             return done;
                           }
                         }
-                        
+
                         // send the key to the Oric
                         switch( oric->type )
                         {
@@ -414,7 +414,7 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
                                 ay_keypress( &oric->ay, current_key->keysim, SDL_TRUE );
                                 break;
                         }
-                        
+
                         // start releasing mod keys if need be
                         release_keys = SDL_TRUE;
                     }
@@ -425,7 +425,7 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
         case SDL_MOUSEBUTTONUP:
             if ((current_key == NULL) || (defining_key_map))
                 break;
-            
+
             // send the key to the Oric
             switch( oric->type )
             {
@@ -456,7 +456,7 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
                 current_key = NULL;
             }
             break;
-            
+
     }
     return done;
 }
@@ -495,14 +495,14 @@ SDL_bool save_keyboard_mapping( struct machine *oric, char *filename )
 {
     SDL_bool ok = SDL_TRUE;
     FILE *f = NULL;
-    
+
     f = fopen(filename, "wt");
     if (!f)
     {
         msgbox(oric, MSGBOX_OK, "Unable to create keyboard mapping file (1)");
         return SDL_FALSE;
     }
-    
+
     if (fputs("# SDL_key_symbol_for_host : SDL_key_symbol_for_oric\n", f) < 0)
     {
         msgbox(oric, MSGBOX_OK, "Unable to write to keyboard mapping file (2)");
@@ -513,7 +513,7 @@ SDL_bool save_keyboard_mapping( struct machine *oric, char *filename )
         msgbox(oric, MSGBOX_OK, "Unable to write to keyboard mapping file (2)");
         return SDL_FALSE;
     }
-    
+
     // if we have any definition to save
     if (oric->keyboard_mapping.nb_map != 0) {
         int i;
@@ -527,12 +527,12 @@ SDL_bool save_keyboard_mapping( struct machine *oric, char *filename )
             }
         }
     }
-    
+
     if(fclose(f) == EOF) {
         msgbox(oric, MSGBOX_OK, "Unable to close keyboard mapping file (4)");
         return SDL_FALSE;
     }
-    
+
     return ok;
 }
 
@@ -542,17 +542,17 @@ SDL_bool load_keyboard_mapping( struct machine *oric, char *filename )
     FILE *f = NULL;
     char buf[4096];
     int host_key, oric_key;
-    
+
     f = fopen(filename, "rt");
     if (!f)
     {
         msgbox(oric, MSGBOX_OK, "Unable to read keyboard mapping file (1)");
         return SDL_FALSE;
     }
-    
+
     // first reset the mapping
     reset_keyboard_mapping(&(oric->keyboard_mapping));
-    
+
     // while we are not finished reading the file
     while (!feof(f) && !ferror(f)) {
         // if we can read something
@@ -567,19 +567,19 @@ SDL_bool load_keyboard_mapping( struct machine *oric, char *filename )
             }
         }
     }
-    
+
     if(ferror(f)) {
         msgbox(oric, MSGBOX_OK, "Problem while reading from keyboard mapping file (2)");
         return SDL_FALSE;
     }
-    
+
     if (sprintf(buf, "Read %d key mappings", oric->keyboard_mapping.nb_map) > 0)
         do_popup(oric, buf);
-    
+
     if(fclose(f) == EOF) {
         msgbox(oric, MSGBOX_OK, "Unable to close keyboard mapping file (3)");
         return SDL_FALSE;
     }
-    
+
     return ok;
 }
