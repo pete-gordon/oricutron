@@ -52,6 +52,9 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   SDL_bool ret;
 
   NSString *pat = nil;
+  NSString *pat2 = nil;
+  NSString *pat3 = nil;
+
   //NSString *msg = @"Select the file to open.";
   bool dosavemode = false;
 
@@ -73,9 +76,11 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       pat = @"ort";
       break;
 
-    // FIXME: Needs to be *.tap, *.ort, *.wav
+    // *.tap, *.ort, *.wav
     case FR_TAPELOAD:
       pat = @"tap";
+      pat2 = @"ort";
+      pat3 = @"wav";
       break;
     
     case FR_ROMS:
@@ -111,8 +116,17 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   if (path)
     [sp setDirectoryURL:[NSURL fileURLWithPath:[NSString stringWithUTF8String:path]]];
 
-  if (pat)
-    [sp setAllowedFileTypes:[NSArray arrayWithObjects:pat,nil]];
+  if (pat) {
+      if (pat2) {
+          if (pat3)
+              [sp setAllowedFileTypes:[NSArray arrayWithObjects:pat, [pat uppercaseString], pat2,
+                                        [pat2 uppercaseString], pat3, [pat3 uppercaseString], nil]];
+          else
+              [sp setAllowedFileTypes:[NSArray arrayWithObjects:pat, [pat uppercaseString], pat2, [pat2 uppercaseString], nil]];
+      } else {
+          [sp setAllowedFileTypes:[NSArray arrayWithObjects:pat, [pat uppercaseString], nil]];
+      }
+  }
 
   ret = [sp runModal] == NSAlertDefaultReturn;
   if (!ret)
