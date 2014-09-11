@@ -79,23 +79,23 @@ Uint8 oricpalette[] = { 0x00, 0x00, 0x00,
 
 static Uint8 sedoric_detect[] =
   {
-    0xfb, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 
-    0x20, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0x00, 0x53, 0x45, 0x44, 0x4f, 0x52, 0x49, 0x43, 
-    0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 
+    0xfb, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+    0x20, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0x00, 0x53, 0x45, 0x44, 0x4f, 0x52, 0x49, 0x43,
+    0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
   };
 
 static Uint8 stratsed_detect[] =
   {
-    0xfb, 0x00, 0x11, 0x2c, 0x00, 0xd4, 0xa9, 0x00, 0x00, 0x52, 0xa9, 0x00, 0x8d, 0x0f, 0x05, 0x8d, 
-    0x49, 0x05, 0xa9, 0x4c, 0xa0, 0x00, 0xa2, 0xd4, 0x8d, 0x4f, 0x05, 0x8c, 0x50, 0x05, 0x8e, 0x51, 
-    0x05, 0xa2, 0x03, 0xec, 0x0c, 0x02, 0xd0, 0x03, 0xa9, 0x02, 0x2c, 0xa9, 0x00, 0x9d, 0x09, 0x05, 
+    0xfb, 0x00, 0x11, 0x2c, 0x00, 0xd4, 0xa9, 0x00, 0x00, 0x52, 0xa9, 0x00, 0x8d, 0x0f, 0x05, 0x8d,
+    0x49, 0x05, 0xa9, 0x4c, 0xa0, 0x00, 0xa2, 0xd4, 0x8d, 0x4f, 0x05, 0x8c, 0x50, 0x05, 0x8e, 0x51,
+    0x05, 0xa2, 0x03, 0xec, 0x0c, 0x02, 0xd0, 0x03, 0xa9, 0x02, 0x2c, 0xa9, 0x00, 0x9d, 0x09, 0x05,
   };
 
 static Uint8 ftdos_detect[] =
   {
-    0xfb, 0x78, 0xa9, 0x7f, 0x8d, 0x0e, 0x03, 0xa9, 0x01, 0x8d, 0xfa, 0x03, 0xa9, 0x00, 0x8d, 0xfb, 
-    0x03, 0x85, 0x04, 0x8d, 0xf4, 0x03, 0xa2, 0x02, 0xac, 0x30, 0x02, 0xc0, 0x40, 0xd0, 0x04, 0xa9, 
-    0x04, 0xa2, 0x06, 0x85, 0x01, 0x8e, 0x53, 0x04, 0xa9, 0xac, 0x8d, 0xfe, 0xff, 0xa9, 0x04, 0x8d, 
+    0xfb, 0x78, 0xa9, 0x7f, 0x8d, 0x0e, 0x03, 0xa9, 0x01, 0x8d, 0xfa, 0x03, 0xa9, 0x00, 0x8d, 0xfb,
+    0x03, 0x85, 0x04, 0x8d, 0xf4, 0x03, 0xa2, 0x02, 0xac, 0x30, 0x02, 0xc0, 0x40, 0xd0, 0x04, 0xa9,
+    0x04, 0xa2, 0x06, 0x85, 0x01, 0x8e, 0x53, 0x04, 0xa9, 0xac, 0x8d, 0xfe, 0xff, 0xa9, 0x04, 0x8d,
   };
 
 int detect_image_type(char *filename)
@@ -271,7 +271,7 @@ void setromon( struct machine *oric )
     } else {
       oric->romon = SDL_FALSE;
     }
-  } 
+  }
   else if( oric->drivetype == DRV_PRAVETZ )
   {
     oric->romon = !oric->pravetz.olay;
@@ -287,7 +287,10 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
   if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
   if( ( addr & 0xff00 ) == 0x0300 )
   {
-    via_write( &oric->via, addr, data );
+    if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
+      acia_write( &oric->aux_acia, addr, data );
+    else
+      via_write( &oric->via, addr, data );
     return;
   }
   oric->mem[addr] = data;
@@ -300,7 +303,10 @@ void o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
   if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
   if( ( addr & 0xff00 ) == 0x0300 )
   {
-    via_write( &oric->via, addr, data );
+    if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
+      acia_write( &oric->aux_acia, addr, data );
+    else
+      via_write( &oric->via, addr, data );
     return;
   }
 
@@ -337,14 +343,14 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
       case 0x20:
         via_write( &oric->tele_via, addr, data );
         break;
-      
+
       case 0x10:
         if( addr >= 0x31c )
           acia_write( &oric->tele_acia, addr, data );
         else
           microdisc_write( &oric->md, addr, data );
         break;
-      
+
       default:
         via_write( &oric->via, addr, data );
         break;
@@ -369,7 +375,7 @@ void jasmin_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char da
       if( addr >= 0xc000 ) return; // Can't write to BASIC rom
     }
   }
-  
+
   if( ( addr & 0xff00 ) == 0x0300 )
   {
     if( ( addr >= 0x3f4 ) && ( addr < 0x400 ) )
@@ -378,7 +384,10 @@ void jasmin_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char da
       return;
     }
 
-    via_write( &oric->via, addr, data );
+    if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
+      acia_write( &oric->aux_acia, addr, data );
+    else
+      via_write( &oric->via, addr, data );
     return;
   }
   oric->mem[addr] = data;
@@ -407,7 +416,10 @@ void jasmin_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char dat
       return;
     }
 
-    via_write( &oric->via, addr, data );
+    if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
+      acia_write( &oric->aux_acia, addr, data );
+    else
+      via_write( &oric->via, addr, data );
     return;
   }
 
@@ -431,7 +443,10 @@ void microdisc_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char
     {
       microdisc_write( &oric->md, addr, data );
     } else {
-      via_write( &oric->via, addr, data );
+      if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
+        acia_write( &oric->aux_acia, addr, data );
+      else
+        via_write( &oric->via, addr, data );
     }
     return;
   }
@@ -455,7 +470,10 @@ void microdisc_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char 
     {
       microdisc_write( &oric->md, addr, data );
     } else {
-      via_write( &oric->via, addr, data );
+      if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
+        acia_write( &oric->aux_acia, addr, data );
+      else
+        via_write( &oric->via, addr, data );
     }
     return;
   }
@@ -466,7 +484,7 @@ void microdisc_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char 
 void pravetz_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
-  
+
   oric->mem[addr] = data;
 
   if( 0x300 <= addr && addr <= 0x30f )
@@ -475,7 +493,10 @@ void pravetz_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char d
   }
   else if( 0x310 <= addr && addr <= 0x31f )
   {
-    pravetz_write( &oric->pravetz, addr, data );
+    if( oric->aciabackend && oric->pravetz.extension == 0x100 )
+      acia_write( &oric->aux_acia, addr, data );
+    else
+      pravetz_write( &oric->pravetz, addr, data );
   }
   else if( 0x320 <= addr && addr <= 0x3ff )
   {
@@ -518,14 +539,14 @@ SDL_bool isram( struct machine *oric, unsigned short addr )
   }
 
   if( !oric->romdis ) return SDL_FALSE;
-  
+
   switch( oric->drivetype )
   {
     case DRV_MICRODISC:
       if( !oric->md.diskrom ) return SDL_TRUE;
       if( addr >= 0xe000 ) return SDL_FALSE;
       break;
-    
+
     case DRV_JASMIN:
       if( oric->jasmin.olay ) return SDL_TRUE;
       if( addr >= 0xf800 ) return SDL_FALSE;
@@ -536,7 +557,7 @@ SDL_bool isram( struct machine *oric, unsigned short addr )
       if( addr >= 0xc000 ) return SDL_FALSE;
       break;
   }
-  
+
   return SDL_TRUE;
 }
 
@@ -546,7 +567,12 @@ unsigned char atmosread( struct m6502 *cpu, unsigned short addr )
   struct machine *oric = (struct machine *)cpu->userdata;
 
   if( ( addr & 0xff00 ) == 0x0300 )
+  {
+    if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
+      return acia_read( &oric->aux_acia, addr );
+
     return via_read( &oric->via, addr );
+  }
 
   if( ( !oric->romdis ) && ( addr >= 0xc000 ) )
     return oric->rom[addr-0xc000];
@@ -560,7 +586,12 @@ unsigned char o16kread( struct m6502 *cpu, unsigned short addr )
   struct machine *oric = (struct machine *)cpu->userdata;
 
   if( ( addr & 0xff00 ) == 0x0300 )
+  {
+    if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
+      return acia_read( &oric->aux_acia, addr );
+
     return via_read( &oric->via, addr );
+  }
 
   if( ( !oric->romdis ) && ( addr >= 0xc000 ) )
     return oric->rom[addr-0xc000];
@@ -620,11 +651,14 @@ unsigned char jasmin_atmosread( struct m6502 *cpu, unsigned short addr )
       if( addr >= 0xc000 ) return oric->rom[addr-0xc000];
     }
   }
-  
+
   if( ( addr & 0xff00 ) == 0x0300 )
   {
     if( ( addr >= 0x3f4 ) && ( addr < 0x400 ) )
       return jasmin_read( &oric->jasmin, addr );
+
+    if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
+      return acia_read( &oric->aux_acia, addr );
 
     return via_read( &oric->via, addr );
   }
@@ -652,6 +686,9 @@ unsigned char jasmin_o16kread( struct m6502 *cpu, unsigned short addr )
     if( ( addr >= 0x3f4 ) && ( addr < 0x400 ) )
       return jasmin_read( &oric->jasmin, addr );
 
+    if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
+      return acia_read( &oric->aux_acia, addr );
+
     return via_read( &oric->via, addr );
   }
 
@@ -676,6 +713,9 @@ unsigned char microdisc_atmosread( struct m6502 *cpu, unsigned short addr )
   {
     if( ( addr >= 0x310 ) && ( addr < 0x31c ) )
       return microdisc_read( &oric->md, addr );
+
+    if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
+      return acia_read( &oric->aux_acia, addr );
 
     return via_read( &oric->via, addr );
   }
@@ -702,6 +742,9 @@ unsigned char microdisc_o16kread( struct m6502 *cpu, unsigned short addr )
     if( ( addr >= 0x310 ) && ( addr < 0x31c ) )
       return microdisc_read( &oric->md, addr );
 
+    if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
+      return acia_read( &oric->aux_acia, addr );
+
     return via_read( &oric->via, addr );
   }
 
@@ -717,12 +760,15 @@ unsigned char pravetz_atmosread( struct m6502 *cpu, unsigned short addr )
   {
     return via_read( &oric->via, addr );
   }
-  
+
   if( 0x310 == ( addr & 0xfff0 ) )
   {
-    return pravetz_read( &oric->pravetz, addr );
+    if( oric->aciabackend && oric->pravetz.extension == 0x100 )
+      return acia_read( &oric->aux_acia, addr );
+    else
+      return pravetz_read( &oric->pravetz, addr );
   }
-  
+
   if( 0x320 <= addr && addr <= 0x3ff )
   {
     if( pravetzrom_valid )
@@ -887,14 +933,14 @@ void preinit_machine( struct machine *oric )
   }
   oric->diskautosave = SDL_FALSE;
   oric->auto_jasmin_reset = SDL_TRUE;
-  
+
   oric->lightpen  = SDL_FALSE;
   oric->lightpenx = 0;
   oric->lightpeny = 0;
   oric->read_not_lightpen = NULL;
 
   oric->tsavf = NULL;
-    
+
   oric->keyboard_mapping.nb_map = 0;
   oric->show_keyboard = SDL_FALSE;
   oric->define_mapping = SDL_FALSE;
@@ -937,7 +983,7 @@ int mapkey( struct machine *oric, int key )
 	case '<': return '\\';
 #endif
   }
-    
+
   if (oric->keyboard_mapping.nb_map != 0) {
     int i;
     for(i=0; i < oric->keyboard_mapping.nb_map; i++) {
@@ -1009,7 +1055,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
     case SDL_MOUSEMOTION:
       move_lightpen( oric, ev->motion.x, ev->motion.y );
       break;
-      
+
     case SDL_KEYUP:
       switch( ev->key.keysym.sym )
       {
@@ -1017,17 +1063,17 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           setemumode( oric, NULL, EM_MENU );
           *needrender = SDL_TRUE;
           break;
- 
+
         case SDLK_F2:
           setemumode( oric, NULL, EM_DEBUG );
           *needrender = SDL_TRUE;
           break;
-        
+
         case SDLK_F3:
           oric->cpu.nmi = SDL_TRUE;
           oric->cpu.nmicount = 2;
           break;
-        
+
         case SDLK_F4:
           if( ( shifted ) && ( oric->drivetype == DRV_JASMIN ) )
             oric->cpu.write( &oric->cpu, 0x3fb, 1 ); // ROMDIS
@@ -1041,8 +1087,10 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           via_init( &oric->via, oric, VIA_MAIN );
           via_init( &oric->tele_via, oric, VIA_TELESTRAT );
           acia_init( &oric->tele_acia, oric );
+          if( oric->aciabackend )
+            acia_init( &oric->aux_acia, oric );
           break;
-        
+
         case SDLK_F5:
           oric->showfps = oric->showfps ? SDL_FALSE : SDL_TRUE;
           refreshstatus = SDL_TRUE;
@@ -1067,7 +1115,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             SDL_PauseAudio( warpspeed );
           }
           break;
-        
+
         case SDLK_F7:
           if( oric->drivetype == DRV_NONE ) break;
 
@@ -1200,7 +1248,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
         case SDLK_LSHIFT:
         case SDLK_RSHIFT:
           shifted = SDL_TRUE;
-        
+
         default:
           ay_keypress( &oric->ay, mapkey( oric, ev->key.keysym.sym ), SDL_TRUE );
           break;
@@ -1227,7 +1275,7 @@ void blank_ram( Sint32 how, Uint8 *mem, Uint32 size )
         }
       }
       break;
-    
+
     default:
       for( i=0; i<size; i+=2 )
       {
@@ -1310,7 +1358,7 @@ void load_patches( struct machine *oric, char *fname )
     if( read_config_int(    &filetmp[i], "tt_store_end_pc",            &oric->pch_tt_store_end_pc, 0, 65535 ) )            continue;
     if( read_config_int(    &filetmp[i], "tt_writeleader_pc",          &oric->pch_tt_writeleader_pc, 0, 65535 ) )          continue;
     if( read_config_int(    &filetmp[i], "tt_writeleader_end_pc",      &oric->pch_tt_writeleader_end_pc, 0, 65535 ) )      continue;
-    if( read_config_option( &filetmp[i], "keymap",                     &oric->keymap, keymapnames ) )                      continue; 
+    if( read_config_option( &filetmp[i], "keymap",                     &oric->keymap, keymapnames ) )                      continue;
   }
 
   fclose( f );
@@ -1412,7 +1460,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         return SDL_FALSE;
       }
 
-      blank_ram( oric->rampattern, oric->mem, 16384+16384 );      
+      blank_ram( oric->rampattern, oric->mem, 16384+16384 );
 
       oric->rom = &oric->mem[16384];
 
@@ -1421,7 +1469,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         case DRV_MICRODISC:
           setup_for_microdisc( oric, microdisc_o16kread, microdisc_o16kwrite);
           break;
-        
+
         case DRV_JASMIN:
           setup_for_jasmin( oric, jasmin_o16kread, jasmin_o16kwrite);
           break;
@@ -1435,7 +1483,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       if( !load_rom( oric, oric1romfile, -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) ) return SDL_FALSE;
       load_patches( oric, oric1romfile );
       break;
-    
+
     case MACH_ORIC1:
       oric->memsize = 65536 + 16384;
       oric->mem = malloc( oric->memsize );
@@ -1445,7 +1493,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         return SDL_FALSE;
       }
 
-      blank_ram( oric->rampattern, oric->mem, 65536+16384 );      
+      blank_ram( oric->rampattern, oric->mem, 65536+16384 );
 
       oric->rom = &oric->mem[65536];
 
@@ -1454,7 +1502,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         case DRV_MICRODISC:
           setup_for_microdisc( oric, microdisc_atmosread, microdisc_atmoswrite);
           break;
-        
+
         case DRV_JASMIN:
           setup_for_jasmin( oric, jasmin_atmosread, jasmin_atmoswrite);
           break;
@@ -1468,7 +1516,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       if( !load_rom( oric, oric1romfile, -16384, &oric->rom[0], &oric->romsyms, SYMF_ROMDIS0 ) ) return SDL_FALSE;
       load_patches( oric, oric1romfile );
       break;
-    
+
     case MACH_ATMOS:
       oric->memsize = 65536 + 16384;
       oric->mem = malloc( oric->memsize );
@@ -1478,7 +1526,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         return SDL_FALSE;
       }
 
-      blank_ram( oric->rampattern, oric->mem, 65536+16384 );      
+      blank_ram( oric->rampattern, oric->mem, 65536+16384 );
 
       oric->rom = &oric->mem[65536];
 
@@ -1487,7 +1535,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         case DRV_MICRODISC:
           setup_for_microdisc( oric, microdisc_atmosread, microdisc_atmoswrite);
           break;
-        
+
         case DRV_JASMIN:
           setup_for_jasmin( oric, jasmin_atmosread, jasmin_atmoswrite);
           break;
@@ -1512,7 +1560,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         return SDL_FALSE;
       }
 
-      blank_ram( oric->rampattern, oric->mem, 65536+16384*7 );      
+      blank_ram( oric->rampattern, oric->mem, 65536+16384*7 );
 
       clear_patches( oric );
 
@@ -1546,7 +1594,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         return SDL_FALSE;
       }
 
-      blank_ram( oric->rampattern, oric->mem, 65536+16384 );      
+      blank_ram( oric->rampattern, oric->mem, 65536+16384 );
 
       oric->rom = &oric->mem[65536];
 
@@ -1555,7 +1603,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
         case DRV_MICRODISC:
           setup_for_microdisc( oric, microdisc_atmosread, microdisc_atmoswrite);
           break;
-        
+
         case DRV_JASMIN:
           setup_for_jasmin( oric, jasmin_atmosread, jasmin_atmoswrite);
           break;
@@ -1588,7 +1636,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       }
       load_patches( oric, pravetzromfile[0] );
       break;
-    
+
     default:
       // Huh?!
       return SDL_FALSE;
@@ -1602,7 +1650,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   ula_powerup_default( oric );
 
   oric->read_not_lightpen  = oric->cpu.read;
- 
+
   if (oric->lightpen)
     oric->cpu.read  = lightpen_read;
 
@@ -1612,7 +1660,10 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   m6502_reset( &oric->cpu );
   via_init( &oric->via, oric, VIA_MAIN );
   via_init( &oric->tele_via, oric, VIA_TELESTRAT );
-  acia_init( &oric->tele_acia, oric );
+  if( oric->type == MACH_TELESTRAT )
+    acia_init( &oric->tele_acia, oric );
+  else
+    acia_init( &oric->aux_acia, oric );
   ay_init( &oric->ay, oric );
   joy_setup( oric );
   oric->cpu.rastercycles = oric->cyclesperraster;
@@ -1673,7 +1724,7 @@ void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
     case DRV_PRAVETZ:
         oric->drivetype = type;
       break;
-    
+
     default:
       oric->drivetype = DRV_NONE;
       break;
@@ -1692,7 +1743,7 @@ void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
 void swapmach( struct machine *oric, struct osdmenuitem *mitem, int which )
 {
   int curr_drivetype;
-  
+
   curr_drivetype = oric->drivetype;
 
   shut_machine( oric );

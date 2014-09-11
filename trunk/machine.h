@@ -148,7 +148,7 @@ struct machine
   char diskname[MAX_DRIVES][32];
   SDL_bool diskautosave;
   SDL_bool auto_jasmin_reset;
-  
+
   FILE *prf;
   int prclose, prclock;
 
@@ -215,18 +215,18 @@ struct machine
   SDL_bool (*render_togglefullscreen)(struct machine *oric);
   SDL_bool (*init_render)(struct machine *);
   void (*shut_render)(struct machine *);
-  
+
   char popupstr[40];
   int popuptime;
   SDL_bool newpopupstr;
-  
+
   char statusstr[40];
   SDL_bool newstatusstr;
-  
+
   SDL_bool showfps;
 
   int rampattern;
-  
+
   Sint32 joy_iface;
   Sint32 joymode_a, joymode_b;
   Sint32 telejoymode_a, telejoymode_b;
@@ -240,12 +240,17 @@ struct machine
   SDL_bool porta_is_ay;
 
   SDL_Joystick *sdljoy_a, *sdljoy_b;
-    
+
   struct keyboard_mapping keyboard_mapping;
   SDL_bool show_keyboard;
   SDL_bool define_mapping;
   SDL_bool sticky_mod_keys;
 
+  int aciabackend;
+  int aciabackendcfg;
+  int aciabackendcfgport;
+  char aciabackendname[ACIA_BACKEND_NAME_LEN];
+  struct acia aux_acia;
 };
 
 void setromon( struct machine *oric );

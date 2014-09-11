@@ -332,7 +332,7 @@ SDL_bool save_snapshot(struct machine *oric, char *filename)
       PUTU8(oric->md.diskrom);
       do_wd17xx = SDL_TRUE;
       break;
-	
+
     case DRV_PRAVETZ:
     {
       Uint8 tmp[PRAV_TRACKS_PER_DISK*PRAV_RAW_TRACK_SIZE*2];
@@ -431,6 +431,10 @@ SDL_bool save_snapshot(struct machine *oric, char *filename)
     // ACIA
     NEWBLOCK("ACI\x00");
     PUTDATA(&oric->tele_acia.regs[0], ACIA_LAST);
+
+    // AUX ACIA
+    NEWBLOCK("AUX\x00");
+    PUTDATA(&oric->aux_acia.regs[0], ACIA_LAST);
 
     // VIA
     NEWBLOCK("TVA\x00");
@@ -580,7 +584,7 @@ static SDL_bool getheaders(struct machine *oric, FILE *f)
       numhdrs = 0;
       return SDL_FALSE;
     }
-    
+
     numhdrs++;
     fseek(f, size, SEEK_CUR);
     offset += size+8;
@@ -625,7 +629,7 @@ static SDL_bool getheaders(struct machine *oric, FILE *f)
     memcpy(bkh[i].id, hdr, 4);
     bkh[i].offset = offset;
     bkh[i].size   = size;
-    
+
     //printf("Block: %c%c%c%c (@ %d, size %d)\n", bkh[i].id[0], bkh[i].id[1], (bkh[i].id[2]>31)?bkh[i].id[2]:'.', (bkh[i].id[3]>31)?bkh[i].id[3]:'.', bkh[i].offset, bkh[i].size);
     if ((i>0) && (memcmp(bkh[i].id, "DATA", 4)==0))
     {
@@ -826,7 +830,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
   swapmach(oric, NULL, (drivetype<<16)|type);
 
   /* Perform some validation */
-  if((oric->drivetype != drivetype) ||             // Unrecognised or invalid drive type 
+  if((oric->drivetype != drivetype) ||             // Unrecognised or invalid drive type
      (oric->memsize   != blk->datablock->size))    // Memsize incorrect for type
   {
     msgbox(oric, MSGBOX_OK, "Snapshot load failed: Invalid file (18)");
@@ -1139,7 +1143,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
 
       do_wd17xx = SDL_TRUE;
       break;
-    
+
     case DRV_PRAVETZ:
     {
       Uint8 tmp[PRAV_TRACKS_PER_DISK*PRAV_RAW_TRACK_SIZE*2];
@@ -1249,7 +1253,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
         // Fill out the disk image header
         oric->wddisk.disk[i]->drivenum    = i;
         oric->wddisk.disk[i]->rawimagelen = getu32(blk);
-      
+
         sprintf(oric->wddisk.disk[i]->filename, "%s%cSNAPDISK%d.DSK", diskpath, PATHSEP, i);
 
         offs = getu32(blk);
@@ -1279,7 +1283,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
       if (back2mon) setemumode(oric, NULL, EM_DEBUG);
       return SDL_FALSE;
     }
-    
+
     oric->wddisk.r_status     = getu8 (blk);
     oric->wddisk.r_track      = getu8 (blk);
     oric->wddisk.r_sector     = getu8 (blk);
@@ -1370,7 +1374,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
       track_to_cache                    = gets16(blk);
       side_to_cache                     = gets16(blk);
       oric->wddisk.disk[i]->rawimagelen = getu32(blk);
-      
+
       if ((track_to_cache != -1) && (side_to_cache != -1))
         diskimage_cachetrack(oric->wddisk.disk[i], track_to_cache, side_to_cache);
 
@@ -1414,8 +1418,24 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
       if (back2mon) setemumode(oric, NULL, EM_DEBUG);
       return SDL_FALSE;
     }
-    
+
     getdata(blk, &oric->tele_acia.regs[0], ACIA_LAST);
+
+    // Finished with this one
+    free_block(blk);
+
+    /* Get the AUX ACIA block */
+    blk = load_block(oric, "AUX\x00", f, SDL_TRUE, ACIA_LAST, SDL_FALSE);
+    if (!blk)
+    {
+      free_blockheaders();
+      fclose(f);
+      setmenutoggles( oric );
+      if (back2mon) setemumode(oric, NULL, EM_DEBUG);
+      return SDL_FALSE;
+    }
+
+    getdata(blk, &oric->aux_acia.regs[0], ACIA_LAST);
 
     // Finished with this one
     free_block(blk);
@@ -1430,7 +1450,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
       if (back2mon) setemumode(oric, NULL, EM_DEBUG);
       return SDL_FALSE;
     }
-  
+
     oric->tele_via.ifr      = getu8 (blk);
     oric->tele_via.irb      = getu8 (blk);
     oric->tele_via.orb      = getu8 (blk);
@@ -1494,7 +1514,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
         mon_symsfromsnapshot(&oric->tele_banksyms[i], blk->buf, blk->size);
         free_block(blk);
       }
-    } 
+    }
   }
 
   /* ... and finally, breakpoints! */
@@ -1519,7 +1539,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
 
     free_block(blk);
   }
-    
+
   free_blockheaders();
   fclose(f);
   setmenutoggles( oric );

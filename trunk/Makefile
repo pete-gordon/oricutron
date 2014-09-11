@@ -142,7 +142,7 @@ CFLAGS += -I$(SDL_PREFIX)/include
 LFLAGS += -L$(SDL_PREFIX)/lib
 endif
 CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -D__CBCOPY__ -D__CBPASTE__ -g
-LFLAGS += -g -lm -mwindows -lmingw32 -lSDLmain -lSDL -lopengl32 -static-libgcc
+LFLAGS += -g -lm -mwindows -lmingw32 -lSDLmain -lSDL -lopengl32 -lws2_32 -static-libgcc
 ifneq ($(PROFILING),)
 CFLAGS += -pg
 LFLAGS += -pg
@@ -174,7 +174,7 @@ CFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgcon
 LFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config sdl --libs)
 endif
 CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -D__CBCOPY__ -D__CBPASTE__ -g
-LFLAGS += -g -static-libgcc -static-libstdc++ -mwindows -lopengl32
+LFLAGS += -g -static-libgcc -static-libstdc++ -mwindows -lopengl32 -lws2_32
 ifneq ($(PROFILING),)
 CFLAGS += -pg
 LFLAGS += -pg
@@ -207,7 +207,7 @@ CFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgcon
 LFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config sdl --libs)
 endif
 CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -D__CBCOPY__ -D__CBPASTE__ -g
-LFLAGS += -g -static-libgcc -static-libstdc++ -mwindows -lopengl32
+LFLAGS += -g -static-libgcc -static-libstdc++ -mwindows -lopengl32 -lws2_32
 ifneq ($(PROFILING),)
 CFLAGS += -pg
 LFLAGS += -pg
@@ -238,7 +238,7 @@ LFLAGS += -lbe -ltracker -lGL
 TARGET = oricutron
 INSTALLDIR = /boot/apps/Oricutron
 FILEREQ_OBJ =
-MSGBOX_OBJ = 
+MSGBOX_OBJ =
 CUSTOMOBJS = gui_beos.o msgbox_beos.o filereq_beos.o
 BEOS_BERES := beres
 BEOS_RC := rc
@@ -328,7 +328,7 @@ RANLIB = $(AITB_PREFIX)-ranlib
 TARGET = oricutron_AITB
 endif
 
- 
+
 ####### SHOULDN'T HAVE TO CHANGE THIS STUFF #######
 
 OBJECTS = \
@@ -343,6 +343,9 @@ OBJECTS = \
 	tape.o \
 	8912.o \
 	6551.o \
+	6551_loopback.o \
+	6551_modem.o \
+	6551_com.o \
 	disk.o \
 	disk_pravetz.o \
 	avi.o \

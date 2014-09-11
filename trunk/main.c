@@ -34,7 +34,7 @@
 
 #ifdef WIN32
 #include <windows.h>
-#endif  
+#endif
 
 #include "system.h"
 #include "6502.h"
@@ -424,6 +424,28 @@ static void load_config( struct start_opts *sto, struct machine *oric )
       if( read_config_string( &sto->lctmp[i], tbtmp, telebankfiles[j], 1024 ) ) break;
     }
     if( read_config_bool(   &sto->lctmp[i], "lightpen",     &oric->lightpen ) ) continue;
+    if( read_config_string( &sto->lctmp[i], "serial",       oric->aciabackendname, ACIA_BACKEND_NAME_LEN ) )
+    {
+      if(!strcasecmp("none", oric->aciabackendname))
+        oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_NONE;
+      else if(!strcasecmp("loopback", oric->aciabackendname))
+        oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_LOOPBACK;
+      else if(!strncasecmp("modem", oric->aciabackendname, 5))
+      {
+        char* p = strrchr(oric->aciabackendname, ':');
+        oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_MODEM;
+        oric->aciabackendcfgport = 0;
+        if(p)
+          oric->aciabackendcfgport = atoi(p+1);
+        if(oric->aciabackendcfgport <= 0)
+          oric->aciabackendcfgport = ACIA_TYPE_MODEM_DEFAULT_PORT;
+      }
+      else
+      {
+        oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_COM;
+      }
+      continue;
+    }
     if( read_config_option( &sto->lctmp[i], "joyinterface", &oric->joy_iface, joyifacetypes ) ) continue;
     if( read_config_option( &sto->lctmp[i], "joystick_a",   &oric->joymode_a,     joymodes ) ) continue;
     if( read_config_option( &sto->lctmp[i], "joystick_b",   &oric->joymode_b,     joymodes ) ) continue;
@@ -492,7 +514,24 @@ static void usage( int ret )
           "  --turbotape on|off = Enable or disable turbotape\n"
           "  --lightpen on|off  = Enable or disable lightpen\n"
           "  --vsynchack on|off = Enable or disable VSync hack\n"
-          "  --scanlines on|off = Enable or disable scanline simulation\n");
+          "  --scanlines on|off = Enable or disable scanline simulation\n"
+          "\n"
+          "  --serial <type>    = Set serial card back-end emulation:\n"
+          "                        'none' - no serial\n"
+          "                        'loopback' - for testing - all TX data is returned to RX\n"
+#ifdef BACKEND_MODEM
+          "                        'modem[:port]' - emulates com port with attached modem,\n"
+          "                                         only minimat AT command set is supported and\n"
+          "                                         data is redirected to TCP. Default port is 23 (telnet)\n"
+#endif
+#ifdef BACKEND_COM
+          "                        'com:115200,8,N,1,<device>' - use real or virtual <device> on host as emulated ACIA.\n"
+          "                                         Baudrate, data bits, parity and stop bits can be set as needed\n"
+          "                                   ex.:  Windows: 'com:115200,8,N,1,COM1'\n"
+          "                                         Linux:   'com:19200,8,N,1,/dev/ttyS0'\n"
+          "                                                  'com:115200,8,N,1,/dev/ttyUSB0'\n"
+#endif
+          "\n");
   exit(ret);
 }
 
@@ -586,7 +625,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 #ifndef __APPLE__
   SDL_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
 #endif
-    
+
   render_sw_detectvideo( oric );
 
   load_config( sto, oric );
@@ -628,27 +667,50 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           {
             if( !on_or_off( argv[i-1], opt_arg, &oric->tapeturbo ) ) exit( EXIT_FAILURE );
             continue;
-          }          
+          }
 
           if( strcasecmp( tmp, "lightpen" ) == 0 )
           {
             if( !on_or_off( argv[i-1], opt_arg, &oric->lightpen ) ) exit( EXIT_FAILURE );
             continue;
-          }          
+          }
+
+          if( strcasecmp( tmp, "serial" ) == 0 )
+          {
+            if(!strcasecmp("none", opt_arg))
+              oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_NONE;
+            else if(!strcasecmp("loopback", opt_arg))
+              oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_LOOPBACK;
+            else if(!strncasecmp("modem", opt_arg, 5))
+            {
+              char* p = strrchr(opt_arg, ':');
+              oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_MODEM;
+              oric->aciabackendcfgport = 0;
+              if(p)
+                oric->aciabackendcfgport = atoi(p+1);
+              if(oric->aciabackendcfgport <= 0)
+                oric->aciabackendcfgport = ACIA_TYPE_MODEM_DEFAULT_PORT;
+            }
+            else
+            {
+              strncpy(oric->aciabackendname, opt_arg, ACIA_BACKEND_NAME_LEN);
+              oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_COM;
+            }
+          }
 
           if( strcasecmp( tmp, "vsynchack" ) == 0 )
           {
             if( !on_or_off( argv[i-1], opt_arg, &oric->vsynchack ) ) exit( EXIT_FAILURE );
             continue;
-          }          
+          }
 
           if( strcasecmp( tmp, "scanlines" ) == 0 )
           {
             if( !on_or_off( argv[i-1], opt_arg, &oric->scanlines ) ) exit( EXIT_FAILURE );
             continue;
-          }          
+          }
           break;
-        
+
         default:
           opt_type = argv[i][1];
           opt_arg = NULL;
@@ -715,7 +777,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
               break;
             }
           }
-          
+
           error_printf( "Invalid machine type" );
           free( sto );
           exit( EXIT_FAILURE );
@@ -754,7 +816,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
             free( sto );
             exit( EXIT_FAILURE );
           }
-          
+
           if (!drop_through)
             break;
         }
@@ -775,17 +837,17 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
                 if (!sto->start_machine_set)  sto->start_machine = MACH_ATMOS;
                 if (!sto->start_disktype_set) sto->start_disktype = DRV_JASMIN;
                 break;
-              
+
               case IMG_TELESTRAT_DISK:
                 if (!sto->start_machine_set)  sto->start_machine = MACH_TELESTRAT;
                 if (!sto->start_disktype_set) sto->start_disktype = DRV_MICRODISC;
                 break;
-              
+
               case IMG_PRAVETZ_DISK:
                 if (!sto->start_machine_set)  sto->start_machine = MACH_PRAVETZ;
                 if (!sto->start_disktype_set) sto->start_disktype = DRV_PRAVETZ;
                 break;
-              
+
               case IMG_GUESS_MICRODISC:
                 if (!sto->start_disktype_set) sto->start_disktype = DRV_MICRODISC;
                 break;
@@ -808,7 +870,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
             exit( EXIT_FAILURE );
           }
           break;
-        
+
         case 'k':  // Drive controller type
           if( opt_arg )
           {
@@ -839,7 +901,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           free( sto );
           exit( EXIT_FAILURE );
           break;
-        
+
         case 's':  // Pre-load symbols file
           if( opt_arg )
           {
@@ -849,21 +911,21 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
             error_printf( "No symbols file specified" );
             free( sto );
             exit( EXIT_FAILURE );
-          }          
+          }
           break;
-        
+
         case 'f':
           fullscreen = SDL_TRUE;
           break;
-        
+
         case 'w':
           fullscreen = SDL_FALSE;
           break;
-        
+
         case 'b':
           sto->start_debug = SDL_TRUE;
           break;
-        
+
         case 'r': // Breakpoint
           if( opt_arg )
           {
@@ -895,7 +957,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           free( sto );
           usage( EXIT_SUCCESS );
           break;
-      }        
+      }
     }
     else
     {
@@ -919,21 +981,21 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           strncpy( sto->start_disk, argv[i], 1024 );
           sto->start_disk[1023] = 0;
           break;
-              
+
         case IMG_TELESTRAT_DISK:
           if (!sto->start_machine_set)  sto->start_machine = MACH_TELESTRAT;
           if (!sto->start_disktype_set) sto->start_disktype = DRV_MICRODISC;
           strncpy( sto->start_disk, argv[i], 1024 );
           sto->start_disk[1023] = 0;
           break;
-              
+
         case IMG_PRAVETZ_DISK:
           if (!sto->start_machine_set)  sto->start_machine = MACH_PRAVETZ;
           if (!sto->start_disktype_set) sto->start_disktype = DRV_PRAVETZ;
           strncpy( sto->start_disk, argv[i], 1024 );
           sto->start_disk[1023] = 0;
           break;
-              
+
         case IMG_GUESS_MICRODISC:
           if (!sto->start_disktype_set) sto->start_disktype = DRV_MICRODISC;
           strncpy( sto->start_disk, argv[i], 1024 );
@@ -981,7 +1043,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
       case DRV_PRAVETZ:
         queuekeys( "CALL#320\x0d" );
         break;
-      
+
       case DRV_JASMIN:
         oric->auto_jasmin_reset = SDL_TRUE;
         break;
@@ -1007,7 +1069,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
       free( sto );
       return SDL_FALSE;
     }
-    
+
     oric->cpu.breakpoints[0] = addr;
     oric->cpu.anybp = SDL_TRUE;
   }
@@ -1082,6 +1144,8 @@ void frameloop_overclock( struct machine *oric, SDL_bool *framedone, SDL_bool *n
         via_clock( &oric->tele_via, instcycles );
         acia_clock( &oric->tele_acia, instcycles );
       }
+      if( oric->aciabackend )
+        acia_clock( &oric->aux_acia, instcycles );
 
       oric->cpu.rastercycles -= instcycles;
 
@@ -1129,6 +1193,9 @@ void frameloop_normal( struct machine *oric, SDL_bool *framedone, SDL_bool *need
         via_clock( &oric->tele_via, oric->cpu.icycles );
         acia_clock( &oric->tele_acia, oric->cpu.icycles );
       }
+      if( oric->aciabackend )
+        acia_clock( &oric->aux_acia, oric->cpu.icycles );
+
       oric->cpu.rastercycles -= oric->cpu.icycles;
       if( m6502_inst( &oric->cpu ) )
       {
@@ -1161,7 +1228,7 @@ void once_per_frame( struct machine *oric )
       {
         oric->wddisk.disk[i]->modified_time++;
         if( oric->wddisk.disk[i]->modified_time >= 20 )
-        {        
+        {
           diskimage_save( oric, oric->wddisk.disk[i]->filename, i );
         }
       }
@@ -1174,8 +1241,11 @@ int main( int argc, char *argv[] )
   static struct machine oric;
   SDL_bool isinit;
 
+  // This should center SDL window
+  putenv("SDL_VIDEO_CENTERED=center");
+
   memset(&oric, 0, sizeof(oric));
-    
+
     // ----------------------------------------------------------------------------
     // This makes relative paths work in C++ in Xcode by changing directory to the Resources folder inside the .app bundle
 #ifdef __APPLE__
@@ -1208,20 +1278,20 @@ int main( int argc, char *argv[] )
     done = SDL_FALSE;
     needrender = SDL_TRUE;
     framedone = SDL_FALSE;
-      
+
       if(load_keymap) {
           load_keyboard_mapping( &oric, keymap_path );
           load_keymap = SDL_FALSE;
       }
-        
-      
+
+
     while( !done )
     {
       SDL_Event event;
 
       if( oric.emu_mode == EM_PLEASEQUIT )
         break;
-      
+
       if( oric.emu_mode == EM_RUNNING )
       {
         if( oric.overclockmult==1 )
@@ -1316,14 +1386,14 @@ int main( int argc, char *argv[] )
           case SDL_QUIT:
             done = SDL_TRUE;
             break;
-          
+
           default:
             switch( oric.emu_mode )
             {
               case EM_MENU:
                 done |= menu_event( &event, &oric, &needrender );
                 break;
-   
+
               case EM_RUNNING:
                 done |= emu_event( &event, &oric, &needrender );
                 break;

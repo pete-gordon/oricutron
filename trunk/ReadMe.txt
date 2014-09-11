@@ -295,7 +295,7 @@ bsm $0c00 rw       <-- Break when the CPU is about to access $0c00
 bsm $0c00 c        <-- Break after then contents of $0c00 change
 bsm $0c00 rwc      <-- Break just before the CPU accesses $0c00, or just after it
                        changes for any reason.
-                       
+
 International Keyboards under Linux and Mac OS X
 ================================================
 
@@ -334,3 +334,34 @@ autoload_keyboard_mapping = 'keymap/Test.kma'
 Other options let you display the keyboard and activate sticky mod keys automatically:
 show_keyboard = yes
 sticky_mod_keys = yes
+
+
+Serial card (ACIA) emulation
+============================
+
+Oricutron can emulate ACIA at addres #31C (standard address for Telestrat).
+The emulation works for Oric, Atmos, Telestrat and Pravetz and can be used
+together with any disk type.
+
+The emulated ACIA communicates with the out-side world trough back-ends.
+Back-ends can be configured from 'oricutron.cfg' or from command line
+(see default 'oricutron.cfg' for usage).
+
+Back-ends are:
+- none      - disables ACIA support
+- loopback  - every transmitted byte is returned to receive buffer (for testing purposes)
+- com       - Oricutron uses any real or virtual COM port in the host machine and communicates with the hardware attached to this serial port
+- modem     - unites ACIA with attached modem linked to internet with server and client sockets
+
+In 'modem' mode are available folowing 'AT' commands:
+AT          - returns 'OK'
+ATZ         - initialize the modem
+AT&F        - initialize the modem
+ATS0=0      - disable autoa nswering (close sever socket)
+ATS0=1      - enable auto answering (open sever socket and start listening on selected port (default is telnet port 23))
+ATA         - same as 'ATS0=1'
+ATS0?       - returns 'AUTOANSWER OFF' or 'AUTOANSWER ON' depend on current sever socket state
+ATH0        - disconnect currently connected sockets
++++         - if connected switches to command mode
+ATO         - returns from command mode to online
+ATD ip:port - connects as client to ip:port. 'ip' can be any host name (ex.:localhost) or the real IP (ex.:127.0.0.1) on LAN or in Internet. ADTP and ATDT are alternative for compatibility.
