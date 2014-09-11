@@ -109,7 +109,7 @@ static struct via via2_old;
 static SDL_bool via2_oldvalid = SDL_FALSE;
 static SDL_bool modified = SDL_FALSE;
 
-//                                                             12345678901       12345678 
+//                                                             12345678901       12345678
 static struct msym defsym_tele[]  = { { 0x0300, 0,            "VIA_IORB"      , "VIA_IORB"   , "VIA_IORB" },
                                       { 0x0301, 0,            "VIA_IORA"      , "VIA_IORA"   , "VIA_IORA" },
                                       { 0x0302, 0,            "VIA_DDRB"      , "VIA_DDRB"   , "VIA_DDRB" },
@@ -154,7 +154,7 @@ static struct msym defsym_tele[]  = { { 0x0300, 0,            "VIA_IORB"      , 
                                       { 0x032F, 0,            "VIA2_IORA2"    , "VIA2_IO\x16", "VIA2_IORA2" },
                                       { 0xc000, 0,            "BankedArea"    , "BankedA\x16", "BankedArea" } };
 
-//                                                             12345678901       12345678 
+//                                                             12345678901       12345678
 static struct msym defsym_atmos[] = { { 0x0300, 0,            "VIA_IORB"      , "VIA_IORB"   , "VIA_IORB" },
                                       { 0x0301, 0,            "VIA_IORA"      , "VIA_IORA"   , "VIA_IORA" },
                                       { 0x0302, 0,            "VIA_DDRB"      , "VIA_DDRB"   , "VIA_DDRB" },
@@ -308,7 +308,7 @@ static struct asminf asmtab[] = { { "BRK", 0x00,   -1,   -1,   -1,   -1,   -1,  
                                   { "NOP", 0xea,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
                                   { "BEQ",   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1, 0xf0,   -1 },
                                   { "SED", 0xf8,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
-                                  
+
                                   // Illegal opcodes
 //                                          imp   imm    zp   zpx   zpy   abs   abx   aby   zix   ziy   rel   ind
                                   { "ANC",   -1, 0x0b,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
@@ -650,7 +650,7 @@ int hexit( char c )
 static int bp_at( struct machine *oric, unsigned short addr, int *xbp, int *mbp )
 {
   int bpmask = 0, i;
-  
+
   if( xbp ) *xbp = -1;
   if( mbp ) *mbp = -1;
 
@@ -683,7 +683,7 @@ static int bp_at( struct machine *oric, unsigned short addr, int *xbp, int *mbp 
       }
     }
   }
-  
+
   return bpmask;
 }
 
@@ -697,7 +697,7 @@ unsigned char mon_read( struct machine *oric, unsigned short addr )
     {
       case 0x310:
         return oric->wddisk.r_status;
-      
+
       case 0x311:
         return oric->wddisk.r_track;
 
@@ -706,12 +706,12 @@ unsigned char mon_read( struct machine *oric, unsigned short addr )
 
       case 0x313:
         return oric->wddisk.r_data;
-      
+
       case 0x314:
         return oric->md.intrq|0x7f;
 
       case 0x318:
-        return oric->md.drq|0x7f;    
+        return oric->md.drq|0x7f;
     }
   }
 
@@ -858,7 +858,7 @@ struct msym *mon_tab_find_sym_by_addr( struct symboltable *stab, struct machine 
 
       if( (stab->syms[i].flags&SYMF_JASMIN) && ( oric->drivetype != DRV_JASMIN ) )
         continue;
-    
+
       if( romdis )
       {
         if( (stab->syms[i].flags&SYMF_ROMDIS0) != 0 )
@@ -907,7 +907,7 @@ struct msym *mon_tab_find_sym_by_name( struct symboltable *stab, struct machine 
 
       if( (stab->syms[i].flags&SYMF_JASMIN) && ( oric->drivetype != DRV_JASMIN ) )
         continue;
-    
+
       if( romdis )
       {
         if( (stab->syms[i].flags&SYMF_ROMDIS0) != 0 )
@@ -1091,7 +1091,7 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *lo
     case AM_IMP:
       sprintf( disptr, "%s   %04X  %02X        %s", sname, iaddr, op, distab[op].name );
       break;
-    
+
     case AM_IMM:
       a1 = mon_read( oric, (*paddr)++ );
       sprintf( disptr, "%s   %04X  %02X %02X     %s #$%02X", sname, iaddr, op, a1, distab[op].name, a1 );
@@ -1109,7 +1109,7 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *lo
       if( distab[op].amode == AM_ZP ) break;
       strcat( disptr, distab[op].amode == AM_ZPX ? ",X" : ",Y" );
       break;
-    
+
     case AM_ABS:
     case AM_ABX:
     case AM_ABY:
@@ -1136,7 +1136,7 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *lo
     case AM_ZIY:
       a1 = mon_read( oric, (*paddr)++ );
       csym = mon_find_sym_by_addr( oric, a1, NULL );
-      if( csym )     
+      if( csym )
         sprintf( disptr, "%s   %04X  %02X %02X     %s (%s),Y", sname, iaddr, op, a1, distab[op].name, filemode ? csym->name : csym->ssname );
       else
         sprintf( disptr, "%s   %04X  %02X %02X     %s ($%02X),Y", sname, iaddr, op, a1, distab[op].name, a1 );
@@ -1161,7 +1161,7 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *lo
       else
         sprintf( disptr, "%s   %04X  %02X %02X %02X  %s ($%02X%02X)", sname, iaddr, op, a1, a2, distab[op].name, a2, a1 );
       break;
-    
+
     default:
       strcpy( disptr, "  WTF?" );
       break;
@@ -1219,7 +1219,7 @@ void mon_update_regs( struct machine *oric )
   char stmp[48];
 
   pc = oric->cpu.pc;
-  
+
   if( ( oric->cpu.irq ) && ( oric->cpu.f_i == 0 ) )
     pc = (mon_read( oric, 0xffff )<<8) | mon_read( oric, 0xfffe );
 
@@ -1322,7 +1322,7 @@ static void mon_click_regs( struct machine *oric, SDL_bool *needrender, int x, i
   if( ( dblclk ) && ( y >= 7 ) && ( y < 17 ) )
   {
     int i;
-    
+
     if( bp_at( oric, disaddrs[y-7], &i, NULL ) & 8 )
     {
       sprintf( cmdtmp, "bc %d", i );
@@ -1333,7 +1333,7 @@ static void mon_click_regs( struct machine *oric, SDL_bool *needrender, int x, i
       mon_do_cmd( cmdtmp, oric, needrender );
       *needrender = SDL_TRUE;
     }
-    
+
     return;
   }
 }
@@ -1362,7 +1362,7 @@ void mon_update_via( struct machine *oric, struct textzone *vtz, struct via *v, 
     tzprintfpos( vtz, 2, i+1, "%04X:  %s $%02X %%", (v == &oric->via) ? 0x300+i : 0x320+i, names[i], val );
     for( j=128; j; j>>=1 )
       tzputc(vtz, (val&j)?'1':'0');
-    
+
     if( *oldvalid )
     {
       unsigned char oval = via_mon_read(old, (v == &oric->via) ? 0x300+i : 0x320+i );
@@ -1526,7 +1526,7 @@ void mon_update_ay( struct machine *oric )
   tzprintfpos( tz[TZ_AY], 2, 8, "STATUS=%02X",
     oric->ay.regs[AY_STATUS] );
   tzprintfpos( tz[TZ_AY], 2, 9, "PORT=%02X",
-    oric->ay.regs[AY_PORT_A] );  
+    oric->ay.regs[AY_PORT_A] );
 */
 }
 
@@ -1608,7 +1608,7 @@ void mon_update_disk( struct machine *oric )
         oric->md.drq!=0 );
       tzprintfpos( tz[TZ_DISK], 2, 9, "EPROM=%1X", oric->md.diskrom );
       break;
-    
+
     case DRV_JASMIN:
       tzprintfpos( tz[TZ_DISK], 2, 8, "OVRAM=%s", oric->jasmin.olay ? "ON " : "OFF" );
       break;
@@ -1629,7 +1629,7 @@ void mon_update_mwatch( struct machine *oric )
   unsigned short addr;
   int j,k,l;
   unsigned int v;
-  
+
   if( mw_split )
   {
     tz[TZ_MEMWATCH]->tx[ 50] = mw_which==0 ? 14 : 5;
@@ -1640,7 +1640,7 @@ void mon_update_mwatch( struct machine *oric )
       tz[TZ_MEMWATCH]->tx[offs+k] = 32;
     tz[TZ_MEMWATCH]->tx[ 50] = 5;
     tz[TZ_MEMWATCH]->tx[550] = 5;
-    
+
   }
 
   addr = mw_addr[0];
@@ -1658,7 +1658,7 @@ void mon_update_mwatch( struct machine *oric )
       j++;
       addr = mw_addr[1];
     }
-        
+
     sprintf( vsptmp, "%04X  ", addr );
     for( k=0; k<8; k++ )
     {
@@ -1676,7 +1676,7 @@ void mon_update_mwatch( struct machine *oric )
     vsptmp[l++] = '\'';
     vsptmp[l++] = 0;
     tzstrpos( tz[TZ_MEMWATCH], 1, j+1, vsptmp );
-    
+
     if( mwatch_oldvalid )
     {
       for( k=0; k<8; k++ )
@@ -1694,7 +1694,7 @@ void mon_update_mwatch( struct machine *oric )
       }
     }
   }
-  
+
   if( mw_mode == 0 ) return;
 
   makebox( tz[TZ_MEMWATCH], 17, 8, 7, 3, 2, 3 );
@@ -1709,15 +1709,15 @@ void mon_update( struct machine *oric )
     case MSHOW_VIA:
       mon_update_via( oric, tz[TZ_VIA], &oric->via, &via_old, &via_oldvalid );
       break;
-    
+
     case MSHOW_VIA2:
       mon_update_via( oric, tz[TZ_VIA2], &oric->tele_via, &via2_old, &via2_oldvalid );
       break;
-    
+
     case MSHOW_AY:
       mon_update_ay( oric );
       break;
-    
+
     case MSHOW_DISK:
       mon_update_disk( oric );
       break;
@@ -1736,21 +1736,21 @@ void mon_render( struct machine *oric )
   if (updatepreview)
     ula_renderscreen( oric );
   oric->render_video( oric, SDL_FALSE );
-  
+
   switch( mshow )
   {
     case MSHOW_VIA:
       oric->render_textzone( oric, TZ_VIA );
       break;
-    
+
     case MSHOW_VIA2:
       oric->render_textzone( oric, TZ_VIA2 );
       break;
-    
+
     case MSHOW_AY:
       oric->render_textzone( oric, TZ_AY );
       break;
-    
+
     case MSHOW_DISK:
       oric->render_textzone( oric, TZ_DISK );
       break;
@@ -1761,7 +1761,7 @@ void mon_render( struct machine *oric )
     case CSHOW_CONSOLE:
       oric->render_textzone( oric, TZ_MONITOR );
       break;
-    
+
     case CSHOW_DEBUG:
       oric->render_textzone( oric, TZ_DEBUG );
       break;
@@ -1939,7 +1939,7 @@ void mon_start_input( void )
     return;
   }
   tzsetcol( tz[TZ_MONITOR], 1, 3 );
-  tzstrpos( tz[TZ_MONITOR], 1, 19, "]" ); 
+  tzstrpos( tz[TZ_MONITOR], 1, 19, "]" );
 }
 
 void mon_enter( struct machine *oric )
@@ -1956,7 +1956,7 @@ void mon_enter( struct machine *oric )
       defaultsyms.syms    = defsym_atmos;
       defaultsyms.numsyms = sizeof( defsym_atmos ) / sizeof( struct msym );
       break;
-    
+
     case MACH_TELESTRAT:
       defaultsyms.syms    = defsym_tele;
       defaultsyms.numsyms = sizeof( defsym_tele ) / sizeof( struct msym );
@@ -1968,7 +1968,7 @@ void mon_enter( struct machine *oric )
     mon_printf_above( mon_bpmsg );
     mon_bpmsg[0] = 0;
   }
-  
+
   modified = SDL_FALSE;
   updatepreview = SDL_TRUE;
 }
@@ -2362,7 +2362,7 @@ SDL_bool mon_getnum( struct machine *oric, unsigned int *num, char *buf, int *of
 
   *num = v;
   *off = i;
-  return SDL_TRUE;    
+  return SDL_TRUE;
 }
 
 Uint16 mon_sym_best_guess( struct machine *oric, Uint16 addr, char *symname, SDL_bool use_emu_state )
@@ -2374,7 +2374,7 @@ Uint16 mon_sym_best_guess( struct machine *oric, Uint16 addr, char *symname, SDL
     if( oric->type == MACH_TELESTRAT )
     {
       // Labels starting t0_ are assumed to be telestrat bank 0 (etc.)
-      if( ( symname[0] == 't' ) && 
+      if( ( symname[0] == 't' ) &&
           ( ( symname[1] >= '0' ) && ( symname[1] <= '7' ) ) &&
           ( symname[2] == '_' ) )
         return SYMF_TELEBANK0 << (symname[1]-'0');
@@ -2531,7 +2531,7 @@ SDL_bool mon_new_symbols( struct symboltable *stab, struct machine *oric, char *
   }
 
   fclose( f );
-  
+
   if( verbose )
   {
     if( above )
@@ -2553,7 +2553,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
   i=0;
   while( isws( cmd[i] ) ) i++;
-  
+
   if( cmd[i] != '?' )
     helpcount = 0;
 
@@ -2583,7 +2583,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           oric->symbolscase = SDL_TRUE;
           mon_str( "Symbols are case-sensitive" );
           break;
-        
+
         case 'a':  // add
           if( !isws( cmd[i+1] ) )
           {
@@ -2624,7 +2624,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
           mon_printf( "%s = %04X", tmpsym->name, tmpsym->addr );
           break;
-        
+
         case 'k':  // kill
           if( !isws( cmd[i+1] ) )
           {
@@ -2701,7 +2701,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
           mon_printf( "User symbols exported to '%s'", &cmd[i] );
           break;
-        
+
         default:
           mon_str( "???" );
           break;
@@ -2743,7 +2743,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
             }
           }
           break;
-        
+
         case 's':
           if( cmd[i+1] == 'm' )
           {
@@ -2876,7 +2876,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
             }
           }
           break;
-        
+
         case 'z':
           if( cmd[i+1] == 'm' )
           {
@@ -2890,7 +2890,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
             oric->cpu.breakpoints[i] = -1;
           oric->cpu.anybp = SDL_FALSE;
           break;
-        
+
         default:
           mon_str( "???" );
           break;
@@ -2933,7 +2933,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
             mon_str( "Bad address" );
             break;
           }
-        
+
           if( mw_split )
           {
             mw_addr[mw_which] = v;
@@ -2943,7 +2943,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           }
           cshow = CSHOW_MWATCH;
           break;
-        
+
         default:
           if( ( cmd[i] != 0 ) && ( !isws( cmd[i] ) ) )
           {
@@ -2978,7 +2978,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           break;
       }
       break;
-    
+
     case 'd':
       if( cmd[i+1] == 'f' )
       {
@@ -3041,7 +3041,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
         mon_str( "Register expected" );
         break;
       }
-      
+
       if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_TRUE, SDL_TRUE, SDL_TRUE ) )
       {
         mon_str( "Expression expected" );
@@ -3090,10 +3090,10 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
       *needrender = SDL_TRUE;
 	  updatepreview = SDL_TRUE;
       break;
-    
+
     case 0:
       return SDL_FALSE;
-    
+
     case 'q':
       lastcmd = cmd[i];
       switch( cmd[i+1] )
@@ -3104,22 +3104,22 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_store_state( oric );
           setemumode( oric, NULL, EM_RUNNING );
           break;
-        
+
         case 'e':
           done = SDL_TRUE;
           break;
-        
+
         default:
           mon_printf( "???" );
           break;
       }
       break;
-    
+
     case 'x':
       mon_store_state( oric );
       setemumode( oric, NULL, EM_RUNNING );
       break;
-    
+
     case 'w':
       lastcmd = 0;
       i++;
@@ -3237,7 +3237,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "---- MORE" );
           helpcount++;
           break;
-        
+
         case 1:
           mon_str( "  df <addr> <end> <file>- Disassemble to file" );
           mon_str( "  m <addr>              - Dump memory" );
@@ -3279,7 +3279,7 @@ SDL_bool mon_do_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
   mon_hide_curs();
   for(i=2; i<49; i++) tz[TZ_MONITOR]->tx[50*19+i] = 32;
   tzstrpos( tz[TZ_MONITOR], 2, 19, cmd );
-  tzsetcol( tz[TZ_MONITOR], 2, 3 ); 
+  tzsetcol( tz[TZ_MONITOR], 2, 3 );
   ret = mon_cmd( cmd, oric, needrender );
   mon_start_input();
   mon_show_curs();
@@ -3382,7 +3382,7 @@ static SDL_bool mon_decodeoperand( struct machine *oric, char *ptr, int *type, u
       (*val)  = v&0xff;
       return SDL_TRUE;
     }
-    
+
     if( strncasecmp( &ptr[i], "),Y", 3 ) == 0 )
     {
       (*type) = AM_ZIY;
@@ -3396,7 +3396,7 @@ static SDL_bool mon_decodeoperand( struct machine *oric, char *ptr, int *type, u
       (*val)  = v;
       return SDL_TRUE;
     }
-    
+
     return SDL_FALSE;
   }
 
@@ -3416,7 +3416,7 @@ static SDL_bool mon_decodeoperand( struct machine *oric, char *ptr, int *type, u
     (*val)  = v;
     return SDL_TRUE;
   }
- 
+
   (*type) = AM_ABS;
   (*val)  = v;
   return SDL_TRUE;
@@ -3472,14 +3472,14 @@ static SDL_bool mon_assemble_line( struct machine *oric )
       mon_set_modified( oric );
       oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].imp );
       break;
-    
+
     case AM_IMM:
       if( asmtab[j].imm == -1 ) { mon_str( "Illegal operand" ); return SDL_FALSE; }
       mon_set_modified( oric );
       oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].imm );
       oric->cpu.write( &oric->cpu, mon_addr+1, val );
       break;
-    
+
     case AM_ABS:
       if( asmtab[j].rel != -1 )
       {
@@ -3491,7 +3491,7 @@ static SDL_bool mon_assemble_line( struct machine *oric )
         }
         mon_set_modified( oric );
         oric->cpu.write( &oric->cpu, mon_addr, asmtab[j].rel );
-        oric->cpu.write( &oric->cpu, mon_addr+1, i&0xff );        
+        oric->cpu.write( &oric->cpu, mon_addr+1, i&0xff );
         break;
       }
 
@@ -3578,7 +3578,7 @@ static SDL_bool mon_assemble_line( struct machine *oric )
       oric->cpu.write( &oric->cpu, mon_addr+2, (val>>8)&0xff );
       break;
   }
-  
+
   if( addsym != -1 )
     mon_replace_or_add_symbol( &oric->usersyms, oric, &ibuf[addsym], SYM_BESTGUESS, mon_addr );
 
@@ -3618,7 +3618,7 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
           *needrender = SDL_TRUE;
         }
         break;
-      
+
       case SDLK_BACKSPACE:
         if( cursx > 0 )
         {
@@ -3633,7 +3633,7 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
           *needrender = SDL_TRUE;
         }
         break;
-      
+
       case SDLK_RETURN:
       case SDLK_KP_ENTER:
         mon_hide_curs();
@@ -3715,7 +3715,7 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
       mon_show_curs();
       *needrender = SDL_TRUE;
       break;
-    
+
     case SDLK_LEFT:
       if( cursx > 0 )
       {
@@ -3739,7 +3739,7 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
         *needrender = SDL_TRUE;
       }
       break;
-    
+
     default:
       break;
 
@@ -3757,7 +3757,7 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
         *needrender = SDL_TRUE;
       }
       break;
-    
+
     case SDLK_RETURN:
     case SDLK_KP_ENTER:
       mon_hide_curs();
@@ -3790,7 +3790,7 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
       }
       histp = -1;
 
-      tzsetcol( tz[TZ_MONITOR], 2, 3 ); 
+      tzsetcol( tz[TZ_MONITOR], 2, 3 );
       done |= mon_cmd( ibuf, oric, needrender );
       mon_start_input();
       mon_show_curs();
@@ -3851,7 +3851,7 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
       mw_addr[mw_which] += page;
       *needrender = SDL_TRUE;
       break;
-    
+
     case SDLK_RETURN:
     case SDLK_KP_ENTER:
       if( mw_mode != 1 ) break;
@@ -3862,18 +3862,18 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
         mw_addr[mw_which] = v;
       *needrender = SDL_TRUE;
       break;
-    
+
     case SDLK_ESCAPE:
       mw_mode = 0;
       break;
-     
+
     case SDLK_BACKSPACE:
       if( mw_mode != 1 ) break;
       if( mw_koffs <= 0 ) break;
       mw_ibuf[mw_koffs--] = 0;
       *needrender = SDL_TRUE;
       break;
-    
+
     case SDLK_s:
       if( mw_mode != 0 ) break;
       mw_split = !mw_split;
@@ -3881,7 +3881,7 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
         mw_which = 0;
       *needrender = SDL_TRUE;
       break;
-    
+
     case SDLK_TAB:
       if( !mw_split ) break;
       if( mw_mode != 0 ) mw_mode = 0;
@@ -3926,7 +3926,9 @@ static unsigned int steppy_step( struct machine *oric )
   {
     via_clock( &oric->tele_via, oric->cpu.icycles );
     acia_clock( &oric->tele_acia, oric->cpu.icycles );
-  }
+  } else if( oric->aciabackend )
+    acia_clock( &oric->aux_acia, oric->cpu.icycles );
+
   oric->cpu.rastercycles -= oric->cpu.icycles;
   m6502_inst( &oric->cpu );
 
@@ -3935,14 +3937,14 @@ static unsigned int steppy_step( struct machine *oric )
     ula_doraster( oric );
     oric->cpu.rastercycles += oric->cyclesperraster;
   }
-  
+
   if( mon_bpmsg[0] )
   {
     mon_printf_above( mon_bpmsg );
     mon_bpmsg[0] = 0;
   }
 
-  
+
   return oric->cpu.icycles;
 }
 
@@ -3962,7 +3964,7 @@ static SDL_bool clickzone( struct textzone *tz, int *tx, int *ty, SDL_bool *dblc
   if( ( (*tx) == dx ) && ( (*ty) == dy ) && ( (leftclick[0].time-leftclick[1].time) < 1000 ) )
   {
     *dblclk = SDL_TRUE;
-    
+
     // Reset double click timing after a successful double click
     leftclick[0].time = -1;
   } else {
@@ -4000,7 +4002,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
         leftclick[0].x    = ev->button.x;
         leftclick[0].y    = ev->button.y;
         leftclick[0].time = SDL_GetTicks();
-        
+
         if( clickzone( tz[TZ_REGS], &tx, &ty, &dblclk ) )
         {
           mon_click_regs( oric, needrender, tx, ty, dblclk );
@@ -4040,7 +4042,8 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           {
             via_clock( &oric->tele_via, oric->cpu.icycles );
             acia_clock( &oric->tele_acia, oric->cpu.icycles );
-          }
+          } else if( oric->aciabackend )
+            acia_clock( &oric->aux_acia, oric->cpu.icycles );
           oric->cpu.rastercycles -= oric->cpu.icycles;
           m6502_inst( &oric->cpu );
           if( oric->cpu.rastercycles <= 0 )
@@ -4090,7 +4093,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             donkey = SDL_TRUE;
             break;
           }
-        
+
         case SDLK_F11:
           if( mon_read( oric, oric->cpu.pc ) == 0x20 ) // JSR instruction?
           {
@@ -4098,7 +4101,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             unsigned int endticks;
 
             newpc = oric->cpu.pc+3;
-            
+
             mon_store_state( oric );
             endticks = SDL_GetTicks()+5000; // 5 seconds to comply
             while( ( oric->cpu.pc != newpc ) && ( SDL_GetTicks() < endticks ) )
@@ -4114,7 +4117,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           *needrender = SDL_TRUE;
           donkey = SDL_TRUE;
           break;
-        
+
         case SDLK_F12:
           switch( distab[mon_read( oric, oric->cpu.pc )].amode )
           {
@@ -4127,7 +4130,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             case AM_REL:
               oric->cpu.pc += 2;
               break;
-            
+
             case AM_ABS:
             case AM_ABX:
             case AM_ABY:
@@ -4143,7 +4146,7 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           *needrender = SDL_TRUE;
           donkey = SDL_TRUE;
           break;
-        
+
         default:
           break;
       }
@@ -4254,7 +4257,7 @@ char *cputrace_print( struct machine *oric, struct cpu_trace_entry *cte )
     case AM_IMP:
       sprintf( disptr, "%s   %04X  %02X        %s", sname, iaddr, op, distab[op].name );
       break;
-    
+
     case AM_IMM:
       sprintf( disptr, "%s   %04X  %02X %02X     %s #$%02X", sname, iaddr, op, a1, distab[op].name, a1 );
       break;
@@ -4270,7 +4273,7 @@ char *cputrace_print( struct machine *oric, struct cpu_trace_entry *cte )
       if( distab[op].amode == AM_ZP ) break;
       strcat( disptr, distab[op].amode == AM_ZPX ? ",X" : ",Y" );
       break;
-    
+
     case AM_ABS:
     case AM_ABX:
     case AM_ABY:
@@ -4293,7 +4296,7 @@ char *cputrace_print( struct machine *oric, struct cpu_trace_entry *cte )
 
     case AM_ZIY:
       csym = mon_find_sym_by_addr( oric, a1, &cte->romdis );
-      if( csym )     
+      if( csym )
         sprintf( disptr, "%s   %04X  %02X %02X     %s (%s),Y", sname, iaddr, op, a1, distab[op].name, csym->name );
       else
         sprintf( disptr, "%s   %04X  %02X %02X     %s ($%02X),Y", sname, iaddr, op, a1, distab[op].name, a1 );
@@ -4315,7 +4318,7 @@ char *cputrace_print( struct machine *oric, struct cpu_trace_entry *cte )
       else
         sprintf( disptr, "%s   %04X  %02X %02X %02X  %s ($%02X%02X)", sname, iaddr, op, a1, a2, distab[op].name, a2, a1 );
       break;
-    
+
     default:
       strcpy( disptr, "  WTF?" );
       break;

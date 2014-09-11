@@ -81,7 +81,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       gtk_file_filter_set_name(filter, "Disk images");
       gtk_file_filter_add_pattern(filter, "*.dsk");
       break;
-    
+
     case FR_TAPESAVETAP:
       action = GTK_FILE_CHOOSER_ACTION_SAVE;
       filter = gtk_file_filter_new();
@@ -103,7 +103,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       gtk_file_filter_add_pattern(filter, "*.wav");
       gtk_file_filter_add_pattern(filter, "*.ort");
       break;
-    
+
     case FR_ROMS:
       filter = gtk_file_filter_new();
       gtk_file_filter_set_name(filter, "ROM images");
@@ -117,7 +117,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       gtk_file_filter_set_name(filter, "Snapshot files");
       gtk_file_filter_add_pattern(filter, "*.sna");
       break;
-      
+
     case FR_KEYMAPPINGSAVE:
        action = GTK_FILE_CHOOSER_ACTION_SAVE;
     case FR_KEYMAPPINGLOAD:
@@ -125,17 +125,22 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       gtk_file_filter_set_name(filter, "Keyboard Mapping files");
       gtk_file_filter_add_pattern(filter, "*.kma");
       break;
- 
+
     default:
       break;
   }
 
   dialog = gtk_file_chooser_dialog_new(title,
-				       NULL,
-				       action,
-				       GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-				       GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
-				       NULL);
+                                       NULL,
+                                       action,
+#if GTK_MAJOR_VERSION <= 2
+                                       GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                       GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+#else
+                                       "_Cancel", GTK_RESPONSE_CANCEL,
+                                       "_Open", GTK_RESPONSE_ACCEPT,
+#endif
+                                       NULL);
 
   gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), path);
   if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
@@ -162,13 +167,13 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
     g_free(filename);
     result = SDL_TRUE;
   }
-  
+
   gtk_widget_destroy(dialog);
   while (gtk_events_pending())
     gtk_main_iteration();
 
   if (was_fullscreen)
     togglefullscreen(oric, NULL, 0);
-    
+
   return result;
 }

@@ -44,6 +44,8 @@
 #define IRQF_DISK (1<<IRQB_DISK)
 #define IRQB_VIA2 2
 #define IRQF_VIA2 (1<<IRQB_VIA2)
+#define IRQB_ACIA 3
+#define IRQF_ACIA (1<<IRQB_ACIA)
 
 // Memory access breakpoints
 #define MBPB_READ 0

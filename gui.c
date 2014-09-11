@@ -153,6 +153,13 @@ SDL_bool warpspeed=SDL_FALSE;
 struct osdmenu *cmenu = NULL;
 int cmenuitem = 0;
 
+static char* aciabackends[ACIA_TYPE_LAST] = {
+       " Serial none     ",
+  "\x0e""Serial loopback ",
+  "\x0e""Serial modem    ",
+  "\x0e""Serial com      ",
+};
+
 // Menufunctions
 void toggletapenoise( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglesound( struct machine *oric, struct osdmenuitem *mitem, int dummy );
@@ -171,6 +178,7 @@ void togglepalghost( struct machine *oric, struct osdmenuitem *mitem, int dummy 
 void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglefullscreen( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglelightpen( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void toggleaciabackend( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void setoverclock( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void savesnap( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void loadsnap( struct machine *oric, struct osdmenuitem *mitem, int dummy );
@@ -243,6 +251,7 @@ struct osdmenuitem hwopitems[] = { { " Oric-1",                "1",    SDLK_1,  
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { " VSync hack",            NULL,   0,        togglevsynchack, 0, 0 },
                                    { " Lightpen",              NULL,   0,        togglelightpen,  0, 0 },
+                                   { " Serial none     ",      NULL,   0,        toggleaciabackend,   0, 0 },
 //                                   { " Mouse",                 NULL,   0,        NULL,            0, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },
@@ -253,7 +262,7 @@ struct osdmenuitem auopitems[] = { { " Sound enabled",         NULL,   0,       
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },
                                    { NULL, } };
-                                  
+
 struct osdmenuitem keopitems[] = { { " Show keyboard",         NULL,   0,        togglekeyboard,  0, 0 },
                                    { " Sticky mod keys",       NULL,   0,        togglestickykeys,0, 0 },
                                    { " Define mapping",        NULL,   0,        definemapping,   0, 0 },
@@ -528,7 +537,7 @@ void render_status( struct machine *oric )
     draw_tape( oric );
     refreshtape = SDL_FALSE;
   }
-   
+
     if(refreshkeyboard  || refreshstatus) {
         draw_keyboard( oric );
         refreshkeyboard = SDL_FALSE;
@@ -638,10 +647,10 @@ void tzstr( struct textzone *ptz, char *text )
         ptz->py++;
         o = ptz->py*ptz->w+1;
         break;
-      
+
       case 13:
         break;
-      
+
       default:
         ptz->tx[o  ] = text[i];
         ptz->fc[o  ] = ptz->cfc;
@@ -735,7 +744,7 @@ SDL_bool in_textzone( struct textzone *tz, int x, int y )
   {
     return SDL_TRUE;
   }
-  
+
   return SDL_FALSE;
 }
 
@@ -836,7 +845,7 @@ void drawitems( void )
     // Fill the background colour all the way along
     for( j=1; j<tz[TZ_MENU]->w-1; j++, o++ )
       tz[TZ_MENU]->bc[o] = tz[TZ_MENU]->cbc;
-    
+
     // Write the text for the item
     if( cmenu->items[i].flags & OMIF_CENTRED )
       tzstrpos( tz[TZ_MENU], (tz[TZ_MENU]->w-strlen(cmenu->items[i].name))/2, i+1, cmenu->items[i].name );
@@ -899,7 +908,7 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
         return;
       }
       break;
-      
+
     case IMG_ATMOS_MICRODISC:
       if ((oric->type != MACH_ATMOS) &&
           (oric->type != MACH_ORIC1) &&
@@ -1290,11 +1299,11 @@ void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy )
       oric->romdis = SDL_TRUE;
       microdisc_init( &oric->md, &oric->wddisk, oric );
       break;
-    
+
     case DRV_JASMIN:
       oric->romdis = SDL_TRUE;
       break;
-    
+
     default:
       oric->romdis = SDL_FALSE;
       break;
@@ -1307,7 +1316,7 @@ void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   oric->cpu.rastercycles = oric->cyclesperraster;
   oric->frames = 0;
   if( oric->autorewind ) tape_rewind( oric );
-  setemumode( oric, NULL, EM_RUNNING );  
+  setemumode( oric, NULL, EM_RUNNING );
 }
 
 struct osdmenuitem *find_item_by_function(struct osdmenuitem *menu, void *function)
@@ -1423,6 +1432,22 @@ void togglelightpen( struct machine *oric, struct osdmenuitem *mitem, int dummy 
   oric->lightpen = SDL_TRUE;
   oric->cpu.read = lightpen_read;
   mitem->name = "\x0e""Lightpen";
+}
+
+// Toggle aux acia (Serial card)
+void toggleaciabackend( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+  if( oric->aciabackend )
+    oric->aciabackend = ACIA_TYPE_NONE;
+  else
+    oric->aciabackend = oric->aciabackendcfg;
+
+  mitem->name = aciabackends[oric->aciabackend];
+
+  if( oric->type==MACH_TELESTRAT )
+    acia_init( &oric->tele_acia, oric );
+  else
+    acia_init( &oric->aux_acia, oric );
 }
 
 // Toggle symbols autoload
@@ -1645,7 +1670,7 @@ void togglekeyboard( struct machine *oric, struct osdmenuitem *mitem, int dummy 
         oric->init_render(oric);
         return;
     }
-    
+
     oric->show_keyboard = SDL_TRUE;
     mitem->name = "\x0e""Show keyboard";
     oric->shut_render(oric);
@@ -1661,7 +1686,7 @@ void definemapping( struct machine *oric, struct osdmenuitem *mitem, int dummy )
         mitem->name = " Define mapping";
         return;
     }
-    
+
     oric->define_mapping = SDL_TRUE;
     mitem->name = "\x0e""Define mapping";
     if(!oric->show_keyboard) {
@@ -1685,7 +1710,7 @@ void togglestickykeys( struct machine *oric, struct osdmenuitem *mitem, int dumm
         release_sticky_keys();
         return;
     }
-    
+
     oric->sticky_mod_keys = SDL_TRUE;
     mitem->name = "\x0e""Sticky mod keys";
     setemumode( oric, NULL, EM_RUNNING );
@@ -1796,9 +1821,9 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
         cmenu->items[cmenu->citem].func( oric, &cmenu->items[cmenu->citem], cmenu->items[cmenu->citem].arg );
 
       drawitems();
-      *needrender = SDL_TRUE;    
+      *needrender = SDL_TRUE;
       break;
-    
+
     case SDL_KEYDOWN:
       switch( ev->key.keysym.sym )
       {
@@ -1832,7 +1857,7 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           drawitems();
           *needrender = SDL_TRUE;
           break;
-        
+
         case SDLK_DOWN:
           i = cmenu->citem+1;
           while( ( cmenu->items[i].name == OSDMENUBAR ) ||
@@ -1882,7 +1907,7 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           setemumode( oric, NULL, EM_RUNNING );
           *needrender = SDL_TRUE;
           break;
-        
+
         default:
           for( i=0; cmenu->items[i].name; i++ )
           {
@@ -2025,7 +2050,7 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
 #ifndef __APPLE__
   SDL_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
 #endif
-    
+
   if( !init_joy( oric ) )
   {
     oric->emu_mode = EM_PLEASEQUIT;
@@ -2155,6 +2180,8 @@ void setmenutoggles( struct machine *oric )
   else
     find_item_by_function(hwopitems, togglelightpen)->name = " Lightpen";
 
+  find_item_by_function(hwopitems, toggleaciabackend)->name = aciabackends[oric->aciabackend];
+
   if( oric->symbolsautoload )
     find_item_by_function(dbopitems, togglesymbolsauto)->name = "\x0e""Autoload symbols file";
   else
@@ -2208,12 +2235,12 @@ void setmenutoggles( struct machine *oric )
   find_item_by_key(hwopitems, 'm')->name = oric->drivetype==DRV_MICRODISC ? "\x0e""Microdisc"      : " Microdisc";
   find_item_by_key(hwopitems, 'j')->name = oric->drivetype==DRV_JASMIN    ? "\x0e""Jasmin"         : " Jasmin";
   find_item_by_key(hwopitems, 'p')->name = oric->drivetype==DRV_PRAVETZ   ? "\x0e""Pravetz 8D disk": " Pravetz 8D disk";
-    
+
   if(oric->show_keyboard)
      find_item_by_function(keopitems, togglekeyboard)->name = "\x0e""Show keyboard";
   else
      find_item_by_function(keopitems, togglekeyboard)->name = " Show keyboard";
- 
+
   if(oric->show_keyboard)
      find_item_by_function(keopitems, togglestickykeys)->name = "\x0e""Sticky mod keys";
   else
@@ -2245,8 +2272,8 @@ SDL_bool init_gui( struct machine *oric, Sint32 rendermode )
   if( !alloc_textzone( oric, TZ_DISK,     400, 228, 30, 21, "Disk Status"          ) ) return SDL_FALSE;
 
   // Set up SDL audio
-  wanted.freq     = AUDIO_FREQ; 
-  wanted.format   = AUDIO_S16SYS; 
+  wanted.freq     = AUDIO_FREQ;
+  wanted.format   = AUDIO_S16SYS;
   wanted.channels = 2; /* 1 = mono, 2 = stereo */
   wanted.samples  = AUDIO_BUFLEN;
 
@@ -2283,7 +2310,7 @@ void shut_gui( struct machine *oric )
 
   for( i=0; i<NUM_TZ; i++ )
     free_textzone( oric, i );
-  
+
 #if defined(__APPLE__) || defined(__BEOS__) || defined(__HAIKU__)
     shut_gui_native( oric );
 #elif defined(__WIN32__) || defined(__CYGWIN__)
