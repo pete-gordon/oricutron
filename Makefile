@@ -272,11 +272,15 @@ CFLAGS += -m32
 LFLAGS += -m32
 endif
 STRIP :=  $(CROSS_COMPILE)$(STRIP)
-CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --cflags) -D__OPENGL_AVAILABLE__ -DAUDIO_BUFLEN=1024 -D__CBCOPY__ -D__CBPASTE__
-LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --libs) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --libs) -lGL -lX11
-CUSTOMOBJS = gui_x11.o
+ifeq ($(NOGTK),)
+CFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --cflags)
+LFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --libs)
 FILEREQ_OBJ = filereq_gtk.o
 MSGBOX_OBJ = msgbox_gtk.o
+endif
+CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) -D__OPENGL_AVAILABLE__ -DAUDIO_BUFLEN=1024 -D__CBCOPY__ -D__CBPASTE__
+LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --libs) -lGL -lX11
+CUSTOMOBJS = gui_x11.o
 TARGET = oricutron
 INSTALLDIR = /usr/local
 endif
