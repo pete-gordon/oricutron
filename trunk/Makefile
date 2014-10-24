@@ -40,6 +40,10 @@ CFLAGS = -Wall -O3
 CFLAGS += $(DEFINES)
 LFLAGS =
 
+ifneq ($(NO_GETADDRINFO),)
+CFLAGS += -DNO_GETADDRINFO=1
+endif
+
 #CFLAGS += -DDEBUG_CPU_TRACE=1000
 #CFLAGS += -DDEBUG_CPU_TRACE=200000
 
@@ -100,7 +104,7 @@ $(info Target platform: $(PLATFORM))
 
 # Amiga OS4
 ifeq ($(PLATFORM),os4)
-CFLAGS += -mcrt=newlib -gstabs -I/SDK/Local/common/include/ -I/SDK/Local/common/include/SDL/ -I/SDK/Local/newlib/include/ -I/SDK/Local/newlib/include/SDL/ -D__OPENGL_AVAILABLE__
+CFLAGS += -mcrt=newlib -gstabs -I/SDK/Local/common/include/ -I/SDK/Local/common/include/SDL/ -I/SDK/Local/newlib/include/ -I/SDK/Local/newlib/include/SDL/ -D__OPENGL_AVAILABLE__ -DNO_GETADDRINFO=1
 LFLAGS += -lm `sdl-config --libs` -lGL -mcrt=newlib -gstabs
 FILEREQ_OBJ = filereq_amiga.o
 MSGBOX_OBJ = msgbox_os4.o
