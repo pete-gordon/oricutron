@@ -306,7 +306,7 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
 
   // Determine the size of the disk image
   fseek( f, 0, SEEK_END );
-  len = ftell( f );
+  len = (int)ftell( f );
   fseek( f, 0, SEEK_SET );
 
   // Empty file!?

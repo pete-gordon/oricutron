@@ -128,7 +128,7 @@ void queuekeys( char *str )
 {
   if( str )
   {
-    int len = strlen( str );
+    int len = (int)strlen( str );
     if( keyqueue )
     {
       keyqueue = realloc(keyqueue, strlen(keyqueue) + len + 1);

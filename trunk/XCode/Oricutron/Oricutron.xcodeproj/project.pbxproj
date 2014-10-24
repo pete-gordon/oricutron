@@ -41,6 +41,9 @@
 		181F131B18CA63F0009690E0 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 181F131A18CA63F0009690E0 /* OpenGL.framework */; };
 		181F131D18CA6505009690E0 /* SDL.framework in Resources */ = {isa = PBXBuildFile; fileRef = 181F131118CA6219009690E0 /* SDL.framework */; };
 		18D270CA18D7346600467488 /* keyboard.c in Sources */ = {isa = PBXBuildFile; fileRef = 18D270C818D7346600467488 /* keyboard.c */; };
+		18DC24B119D010EA00C6BCBE /* 6551_com.c in Sources */ = {isa = PBXBuildFile; fileRef = 18DC24AE19D010EA00C6BCBE /* 6551_com.c */; };
+		18DC24B219D010EA00C6BCBE /* 6551_loopback.c in Sources */ = {isa = PBXBuildFile; fileRef = 18DC24AF19D010EA00C6BCBE /* 6551_loopback.c */; };
+		18DC24B319D010EA00C6BCBE /* 6551_modem.c in Sources */ = {isa = PBXBuildFile; fileRef = 18DC24B019D010EA00C6BCBE /* 6551_modem.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -117,6 +120,9 @@
 		181F131A18CA63F0009690E0 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = ../../../../../../../System/Library/Frameworks/OpenGL.framework; sourceTree = "<group>"; };
 		18D270C818D7346600467488 /* keyboard.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = keyboard.c; path = ../../../keyboard.c; sourceTree = "<group>"; };
 		18D270C918D7346600467488 /* keyboard.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = keyboard.h; path = ../../../keyboard.h; sourceTree = "<group>"; };
+		18DC24AE19D010EA00C6BCBE /* 6551_com.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = 6551_com.c; path = ../../../6551_com.c; sourceTree = "<group>"; };
+		18DC24AF19D010EA00C6BCBE /* 6551_loopback.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = 6551_loopback.c; path = ../../../6551_loopback.c; sourceTree = "<group>"; };
+		18DC24B019D010EA00C6BCBE /* 6551_modem.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = 6551_modem.c; path = ../../../6551_modem.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -216,6 +222,9 @@
 				181F12CE18CA61C6009690E0 /* via.h */,
 				181F12CF18CA61C6009690E0 /* 6502.c */,
 				181F12D018CA61C6009690E0 /* 6551.c */,
+				18DC24B019D010EA00C6BCBE /* 6551_modem.c */,
+				18DC24AE19D010EA00C6BCBE /* 6551_com.c */,
+				18DC24AF19D010EA00C6BCBE /* 6551_loopback.c */,
 				181F12D118CA61C6009690E0 /* 8912.c */,
 				181F12D218CA61C6009690E0 /* avi.c */,
 				181F12D318CA61C6009690E0 /* disk_pravetz.c */,
@@ -361,7 +370,9 @@
 				181F130518CA61C6009690E0 /* render_gl.c in Sources */,
 				181F130F18CA6206009690E0 /* SDLMain.m in Sources */,
 				181F130A18CA61C6009690E0 /* tape.c in Sources */,
+				18DC24B219D010EA00C6BCBE /* 6551_loopback.c in Sources */,
 				181F12EE18CA61C6009690E0 /* 6502.c in Sources */,
+				18DC24B119D010EA00C6BCBE /* 6551_com.c in Sources */,
 				181F131918CA6378009690E0 /* msgbox_osx.m in Sources */,
 				181F12F118CA61C6009690E0 /* avi.c in Sources */,
 				181F12F818CA61C6009690E0 /* font.c in Sources */,
@@ -373,6 +384,7 @@
 				181F12F018CA61C6009690E0 /* 8912.c in Sources */,
 				181F12FB18CA61C6009690E0 /* gui.c in Sources */,
 				181F12FD18CA61C6009690E0 /* machine.c in Sources */,
+				18DC24B319D010EA00C6BCBE /* 6551_modem.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -503,6 +515,8 @@
 					"-DAPP_NAME_FULL='\"Oricutron WIP Rev: 585:586M\"'",
 					"-DAPP_YEAR='\"2013\"'",
 					"-DVERSION_COPYRIGHTS='\"Oricutron 1.1.0 (c)2013 Peter Gordon (pete@petergordon.org.uk)\"'",
+					"-DBACKEND_COM",
+					"-DBACKEND_MODEM",
 					"-D__OPENGL_AVAILABLE__",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -532,6 +546,8 @@
 					"-DAPP_YEAR='\"2013\"'",
 					"-DVERSION_COPYRIGHTS='\"Oricutron 1.1.0 (c)2013 Peter Gordon (pete@petergordon.org.uk)\"'",
 					"-D__OPENGL_AVAILABLE__",
+					"-DBACKEND_COM",
+					"-DBACKEND_MODEM",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;

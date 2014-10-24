@@ -44,6 +44,7 @@ extern struct osdmenu menus[];
 
 //static NSMenu *appMenu;
 
+/*
 static void build_native_menus( struct osdmenu *menu )
 {
 	struct osdmenuitem *item = menu->items;
@@ -59,6 +60,7 @@ static void build_native_menus( struct osdmenu *menu )
 	}
 	printf("}\n");
 }
+*/
 
 SDL_bool init_gui_native( struct machine *oric )
 {
@@ -121,7 +123,7 @@ SDL_bool clipboard_copy_text( struct machine *oric )
 
 SDL_bool clipboard_copy( struct machine *oric )
 {
-	unsigned char *vidmem = (&oric->mem[oric->vid_addr]);
+	// unsigned char *vidmem = (&oric->mem[oric->vid_addr]);
 	if (oric->vid_addr == oric->vidbases[0]) {
 		// HIRES
 	} else if (oric->vid_addr == oric->vidbases[2]) {

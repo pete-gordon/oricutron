@@ -53,11 +53,11 @@ static int cnt_sck = -1;
 /* Forward definitions */
 static SDL_bool socket_init(void);
 static void socket_done(void);
-static int socket_create(int* sock);
-static int socket_bind(int sock, int port);
+static int socket_create(int* sock, int domain);
+static int socket_bind(int sock, int port, int domain);
 static int socket_listen(int sock);
 static int socket_accept(int sock, int* sck);
-static int socket_connect(int sock, const char* ip, int port);
+static int socket_connect(int sock, const char* ip, int port, int domain);
 static int socket_write(int sock, const unsigned char* data, int len);
 static int socket_read(int sock, unsigned char* data, int* len);
 static int socket_close(int sock);
@@ -68,7 +68,7 @@ static char* trim(char* line)
 {
   if(line && *line)
   {
-    int l = strlen(line);
+    int l = (int)strlen(line);
     while(0 <= l && line[l-1] == ' ')
       line[--l] = '\0';
     while(0 <= l && line[0] == ' ')
@@ -133,8 +133,8 @@ static void mdm_answeron(void)
 {
   if( !listening )
   {
-    if(socket_create(&srv_sck) &&
-      socket_bind(srv_sck, oric->aciabackendcfgport) &&
+    if(socket_create(&srv_sck, oric->aciabackendcfgdomain) &&
+      socket_bind(srv_sck, oric->aciabackendcfgport, oric->aciabackendcfgdomain) &&
       socket_listen(srv_sck))
       listening = SDL_TRUE;
   }
@@ -142,21 +142,25 @@ static void mdm_answeron(void)
 
 static void mdm_connect(const char* s)
 {
-  char* ip = trim(strdup(s));
-  char* p = strchr(ip, ':');
+  char ip[1024];
+  char* p = NULL;
   int port = 0;
+
+  strcpy(ip, s);
+  trim(ip);
+  p = strrchr(ip, ':');
 
   if(p)
   {
-    *p++ = '\0';
-    port = atoi(p);
+    port = atoi(p+1);
+    p[0] = '\0';
   }
   // default telnet port
-  if(0 == port) port = ACIA_TYPE_MODEM_DEFAULT_PORT;
+  if(port == 0) port = ACIA_TYPE_MODEM_DEFAULT_PORT;
 
-  if( socket_create(&cnt_sck) )
+  if( socket_create(&cnt_sck, oric->aciabackendcfgdomain) )
   {
-    if(socket_connect(cnt_sck, ip, port))
+    if(socket_connect(cnt_sck, ip, port, oric->aciabackendcfgdomain))
     {
       send_responce("CONNECT");
       connected = SDL_TRUE;
@@ -169,7 +173,6 @@ static void mdm_connect(const char* s)
     send_responce("NO DIALTINE");
 
   mdm_hangup();
-  free(ip);
 }
 
 static void parse_command(const char* s)
@@ -280,7 +283,7 @@ static void modem_done( struct acia* acia )
   srv_sck = -1;
 
   socket_done();
-  acia_init_none( acia );
+  // acia_init_none( acia );
 }
 
 static Uint8 modem_stat(Uint8 stat)
@@ -461,7 +464,7 @@ SDL_bool acia_init_modem( struct acia* acia )
 #include <time.h>
 
 
-#ifdef __LINUX__
+#if defined(__LINUX__) || defined(__APPLE__)
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <arpa/inet.h>
@@ -469,6 +472,10 @@ SDL_bool acia_init_modem( struct acia* acia )
 #include <fcntl.h>
 #define _recvdata(a, b, c) read(a, b, c)
 #define _closesocket close
+#endif
+
+#ifdef __APPLE__
+#include <sys/time.h>
 #endif
 
 #ifdef WIN32
@@ -503,43 +510,86 @@ static void socket_done(void)
   #endif
 }
 
-static int socket_create(int* sock)
+static int socket_create(int* sock, int domain)
 {
   int on = 1;
-  *sock = socket(AF_INET, SOCK_STREAM, 0);
+  if (domain == 6)
+      domain = AF_INET6;
+  else
+      domain = AF_INET;
+  *sock = socket(domain, SOCK_STREAM, 0);
   if(*sock == -1)
     return 0;
 
   if(setsockopt(*sock, SOL_SOCKET, SO_REUSEADDR, (const char*) &on, sizeof(on)) == -1)
     return 0;
+#ifdef __APPLE__
+  if(setsockopt(*sock, SOL_SOCKET, SO_REUSEPORT, (const char*) &on, sizeof(on)) == -1)
+    return 0;
+#endif
 
   return 1;
 }
 
-static int socket_bind(int sock, int port)
+// Just in case AOS 4 and other OSes don't have the new getaddrinfo functions
+// #define NO_GETADDRINFO
+
+static int socket_bind(int sock, int port, int domain)
 {
-  int on = 1;
+
+#ifdef NO_GETADDRINFO
   struct sockaddr_in srv_addr;
   memset((void*)&srv_addr, 0, sizeof(srv_addr));
   srv_addr.sin_family = AF_INET;
   srv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
   srv_addr.sin_port = htons(port);
 
-  setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char*)&on, sizeof(on));
-
-  if(bind(sock, (struct sockaddr*) &srv_addr, sizeof(srv_addr)) == -1)
-    return 0;
-  else
-  {
-    #ifdef __LINUX__
+    if(bind(sock, (struct sockaddr*) &srv_addr, sizeof(srv_addr)) == -1) {
+        perror("socket_bind, bind error: ");
+        return 0;
+    }
+#else
+    struct addrinfo	hints, *res, *ressave;
+    char service[NI_MAXSERV];
+    int n;
+    
+    memset(&hints, 0, sizeof(hints));
+	hints.ai_flags = AI_PASSIVE;
+    if (domain == 6)
+        hints.ai_family = AF_INET6;
+    else
+        hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+    
+    sprintf(service, "%d", port);
+    
+	if ( (n = getaddrinfo(NULL, service, &hints, &res)) != 0)  {
+        printf("socket_bind, getaddrinfo error: %s", gai_strerror(n));
+        return 0;
+	}
+	ressave = res;
+    
+    // loop through all the addresses that we got
+	do {
+		if (bind(sock, res->ai_addr, res->ai_addrlen) == 0)
+			break;			/* success */
+	} while ( (res = res->ai_next) != NULL);
+    
+	if (res == NULL) {
+        perror("socket_bind, bind error: ");
+        return 0;
+	}
+#endif
+    
+    
+  #if defined(__LINUX__) || defined(__APPLE__)
     fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
-    #endif
+  #endif
 
-    #ifdef WIN32
+  #ifdef WIN32
     u_long imode = 1;
     ioctlsocket(sock, FIONBIO, &imode);
-    #endif
-  }
+  #endif
   return 1;
 }
 
@@ -553,7 +603,7 @@ static int socket_listen(int sock)
 
 static int socket_accept(int sock, int* sck)
 {
-  struct sockaddr_in cli_addr;
+  struct sockaddr_storage cli_addr;
   socklen_t cli_addr_len = sizeof(cli_addr);
 
   *sck = accept(sock, (struct sockaddr*) &cli_addr, &cli_addr_len);
@@ -583,7 +633,7 @@ static int socket_write(int sock, const unsigned char* data, int len)
 
 static int socket_read(int sock, unsigned char* data, int* len)
 {
-  int ret = _recvdata(sock, (char*)data, *len);
+  int ret = (int)_recvdata(sock, (char*)data, *len);
   *len = 0;
   if(0 == ret)
     return 0;
@@ -592,6 +642,7 @@ static int socket_read(int sock, unsigned char* data, int* len)
   return 1;
 }
 
+#ifdef NO_GETADDRINFO
 static void hostname_to_ip(const char * host, char* ip, int len)
 {
   struct hostent *he = gethostbyname( host );
@@ -606,9 +657,11 @@ static void hostname_to_ip(const char * host, char* ip, int len)
   }
   strncpy(ip, host, len);
 }
+#endif
 
-static int socket_connect(int sock, const char* host, int port)
+static int socket_connect(int sock, const char* host, int port, int domain)
 {
+#ifdef NO_GETADDRINFO
   char ip[64];
   struct sockaddr_in addr;
   addr.sin_family = AF_INET;
@@ -617,19 +670,50 @@ static int socket_connect(int sock, const char* host, int port)
   hostname_to_ip(host, ip, 64);
   addr.sin_addr.s_addr = inet_addr(ip);
 
-  if(connect(sock, (struct sockaddr*) &addr, sizeof(addr)) != 0)
+  if(connect(sock, (struct sockaddr*) &addr, sizeof(addr)) != 0) {
+    perror("socket_connect, connect error: ");
     return 0;
-  else
-  {
-    #ifdef __LINUX__
+  }
+#else
+    struct addrinfo	hints, *res, *ressave;
+    char service[NI_MAXSERV];
+    int n;
+    
+    memset(&hints, 0, sizeof(hints));
+    if (domain == 6)
+        hints.ai_family = AF_INET6;
+    else
+        hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+    
+    sprintf(service, "%d", port);
+    
+	if ( (n = getaddrinfo(host, service, &hints, &res)) != 0)  {
+        printf("socket_connect, getaddrinfo error: %s", gai_strerror(n));
+        return 0;
+	}
+	ressave = res;
+    
+    // loop through all the addresses that we got
+	do {
+		if (connect(sock, res->ai_addr, res->ai_addrlen) == 0)
+			break;			/* success */
+	} while ( (res = res->ai_next) != NULL);
+    
+	if (res == NULL) {
+        perror("socket_bind, connect error: ");
+        return 0;
+	}
+#endif
+  
+  #if defined(__LINUX__) || defined(__APPLE__)
     fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
-    #endif
+  #endif
 
-    #ifdef WIN32
+  #ifdef WIN32
     u_long imode = 1;
     ioctlsocket(sock, FIONBIO, &imode);
-    #endif
-  }
+  #endif
 
   return 1;
 }
@@ -648,6 +732,11 @@ static Uint64 time_getmillisec(void)
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
   return ((ts.tv_sec * 1000000000) + ts.tv_nsec)/1000;
+  #endif
+  #ifdef __APPLE__
+    struct timeval ts;
+    gettimeofday(&ts, NULL);
+    return ((ts.tv_sec * 1000000) + ts.tv_usec)/1000;
   #endif
   #ifdef WIN32
   return GetTickCount();

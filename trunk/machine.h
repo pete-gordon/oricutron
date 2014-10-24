@@ -249,6 +249,7 @@ struct machine
   int aciabackend;
   int aciabackendcfg;
   int aciabackendcfgport;
+  int aciabackendcfgdomain;
   char aciabackendname[ACIA_BACKEND_NAME_LEN];
   struct acia aux_acia;
 };
