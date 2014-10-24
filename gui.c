@@ -848,13 +848,13 @@ void drawitems( void )
 
     // Write the text for the item
     if( cmenu->items[i].flags & OMIF_CENTRED )
-      tzstrpos( tz[TZ_MENU], (tz[TZ_MENU]->w-strlen(cmenu->items[i].name))/2, i+1, cmenu->items[i].name );
+      tzstrpos( tz[TZ_MENU], (tz[TZ_MENU]->w-(int)strlen(cmenu->items[i].name))/2, i+1, cmenu->items[i].name );
     else
       tzstrpos( tz[TZ_MENU], 1, i+1, cmenu->items[i].name );
 
     // And the key (if there is one)
     if( cmenu->items[i].key )
-      tzstrpos( tz[TZ_MENU], tz[TZ_MENU]->w-(1+strlen(cmenu->items[i].key)), i+1, cmenu->items[i].key );
+      tzstrpos( tz[TZ_MENU], tz[TZ_MENU]->w-(1+(int)strlen(cmenu->items[i].key)), i+1, cmenu->items[i].key );
   }
 }
 
@@ -879,7 +879,7 @@ void joinpath( char *path, char *file )
 #else
   int i;
   strncpy( filetmp, path, 4096 ); filetmp[4095] = 0;
-  i = strlen( filetmp );
+  i = (int)strlen( filetmp );
   if( ( i > 0 ) && ( filetmp[i-1] != PATHSEP ) )
   {
     filetmp[i++] = PATHSEP;
@@ -1633,18 +1633,18 @@ void gotomenu( struct machine *oric, struct osdmenuitem *mitem, int menunum )
   if( tz[TZ_MENU] ) free_textzone( oric, TZ_MENU );
 
   cmenu = &menus[menunum];
-  w = strlen( cmenu->title )+8;
+  w = (int)strlen( cmenu->title )+8;
   keyw = 0;
   for( i=0; cmenu->items[i].name; i++ )
   {
     if( cmenu->items[i].name == OSDMENUBAR )
       continue;
     if( strlen( cmenu->items[i].name ) > w )
-      w = strlen( cmenu->items[i].name );
+      w = (int)strlen( cmenu->items[i].name );
     if( cmenu->items[i].key )
     {
       if( (strlen( cmenu->items[i].key )+1) > keyw )
-        keyw = strlen( cmenu->items[i].key )+1;
+        keyw = (int)strlen( cmenu->items[i].key )+1;
     }
   }
 

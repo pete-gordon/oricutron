@@ -989,7 +989,7 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
 
   // Get the image size
   fseek( f, 0, SEEK_END );
-  oric->tapelen = ftell( f );
+  oric->tapelen = (int)ftell( f );
   fseek( f, 0, SEEK_SET );
 
   if( oric->tapelen <= 4 )   // Even worth loading it?
@@ -1077,7 +1077,7 @@ void tape_autoinsert( struct machine *oric )
 
   // Try and load the tape image
   strcpy( tapefile, oric->lasttapefile );
-  i = strlen(tapefile);
+  i = (int)strlen(tapefile);
 
   odir = getcwd( NULL, 0 );
   chdir( tapepath );
@@ -1182,7 +1182,7 @@ void tape_patches( struct machine *oric )
           if( oric->tapecapcount < 0 )
             fputc( 0, oric->tapecap );
           fputc( 0xff, oric->tapecap );
-          oric->tapecapsavoffs = ftell(oric->tapecap);
+          oric->tapecapsavoffs = (int)ftell(oric->tapecap);
           fputc( 0x00, oric->tapecap );
           fputc( 0x00, oric->tapecap );
           oric->tapecapsavbytes = 0;
@@ -1212,7 +1212,8 @@ void tape_patches( struct machine *oric )
           {
             if( (strlen(tmptapename) < 4) || (strcasecmp(&tmptapename[strlen(tmptapename)-4], ".tap") != 0) )
             {
-              strncat(tmptapename, ".tap", sizeof(tmptapename));
+              if (strlen(tmptapename)+5<sizeof(tmptapename)) // if we have enough space to add the .tap
+                  strncat(tmptapename, ".tap", strlen(tmptapename)+5);
               tmptapename[sizeof(tmptapename)-1] = 0;
             }
           }

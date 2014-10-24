@@ -55,7 +55,7 @@ static SDL_bool write16l( SDL_bool stillok, struct avi_handle *ah, Uint16 val, U
 // Write a string to a stream
 static SDL_bool writestr( SDL_bool stillok, struct avi_handle *ah, char *str, Uint32 *rem )
 {
-  Sint32 i = strlen( str );
+  Sint32 i = (int)strlen( str );
   if( !stillok ) return SDL_FALSE; // Something failed earlier, so we're aborting
   if( rem ) (*rem) = ah->csize;
   ah->csize += i;

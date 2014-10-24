@@ -110,7 +110,7 @@ static int com_fifo = 0;
 static Uint8 com_fifo_buf[COM_FIFO_SIZE];
 
 
-#ifdef __LINUX__
+#if defined(__LINUX__) || defined(__APPLE__)
 #include <termios.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -234,7 +234,7 @@ static void com_fill_fifo(void)
     if( -1 != ioctl(com_fd, FIONREAD, &len) )
     {
       len = min(len, COM_FIFO_SIZE - com_fifo);
-      len = read( com_fd, com_fifo_buf + com_fifo, len);
+      len = (int)read( com_fd, com_fifo_buf + com_fifo, len);
       com_fifo += len;
     }
   }

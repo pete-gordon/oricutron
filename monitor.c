@@ -1081,7 +1081,7 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *lo
   }
 
   strcpy( sname, tmpsname );
-  for( i=strlen(sname); i<SNAME_LEN; i++ )
+  for( i=(int)strlen(sname); i<SNAME_LEN; i++ )
     sname[i] = 32;
   sname[i] = 0;
 
@@ -1167,7 +1167,7 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *lo
       break;
   }
 
-  for( i=strlen(disptr); i<47; i++ )
+  for( i=(int)strlen(disptr); i<47; i++ )
     disptr[i] = 32;
   disptr[i] = 0;
 
@@ -1665,7 +1665,7 @@ void mon_update_mwatch( struct machine *oric )
       sprintf( &vsptmp[128], "%02X ", mon_read( oric, addr+k ) );
       strcat( vsptmp, &vsptmp[128] );
     }
-    l = strlen( vsptmp );
+    l = (int)strlen( vsptmp );
     vsptmp[l++] = 32;
     vsptmp[l++] = '\'';
     for( k=0; k<8; k++ )
@@ -2963,7 +2963,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
               sprintf( &vsptmp[128], "%02X ", mon_read( oric, mon_addr+k ) );
               strcat( vsptmp, &vsptmp[128] );
             }
-            l = strlen( vsptmp );
+            l = (int)strlen( vsptmp );
             vsptmp[l++] = 32;
             vsptmp[l++] = '\'';
             for( k=0; k<8; k++ )
@@ -3626,7 +3626,7 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
           for( i=cursx-1; i<ilen; i++ )
             ibuf[i] = ibuf[i+1];
           cursx--;
-          ilen = strlen( ibuf );
+          ilen = (int)strlen( ibuf );
           mon_set_iloff();
           mon_write_ibuf_asm();
           mon_show_curs();
@@ -3687,7 +3687,7 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
       if( histp >= (histu-1) ) break;
       mon_hide_curs();
       strcpy( ibuf, &history[++histp][0] );
-      ilen = strlen( ibuf );
+      ilen = (int)strlen( ibuf );
       mon_set_curs_to_end();
       mon_set_iloff();
       tzstrpos( tz[TZ_MONITOR], 2, 19, "                                               " );
@@ -3750,7 +3750,7 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
         for( i=cursx-1; i<ilen; i++ )
           ibuf[i] = ibuf[i+1];
         cursx--;
-        ilen = strlen( ibuf );
+        ilen = (int)strlen( ibuf );
         mon_set_iloff();
         mon_write_ibuf();
         mon_show_curs();

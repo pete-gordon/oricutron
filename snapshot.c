@@ -92,8 +92,8 @@ static SDL_bool putdata(SDL_bool stillok, unsigned char *data, Uint32 size)
 static SDL_bool putstr(SDL_bool stillok, char *str)
 {
   if (!stillok) return SDL_FALSE;
-  stillok = putu32(stillok, strlen(str)+1);
-  return putdata(stillok, (unsigned char *)str, strlen(str)+1);
+  stillok = putu32(stillok, (int)strlen(str)+1);
+  return putdata(stillok, (unsigned char *)str, (int)strlen(str)+1);
 }
 
 #define WRITEBLOCK() ok=writeblock(ok, f)
@@ -561,7 +561,7 @@ static SDL_bool getheaders(struct machine *oric, FILE *f)
   unsigned char hdr[8];
 
   fseek(f, 0, SEEK_END);
-  filesize = ftell(f);
+  filesize = (int)ftell(f);
   fseek(f, 0, SEEK_SET);
 
   /* First, find all the blocks in the file */

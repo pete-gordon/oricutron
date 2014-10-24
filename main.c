@@ -154,7 +154,7 @@ SDL_bool read_config_string( char *buf, char *token, char *dest, Sint32 maxlen )
   Sint32 i, toklen, d;
 
   // Get the token length
-  toklen = strlen( token );
+  toklen = (int)strlen( token );
 
   // Is this the token?
   if( strncasecmp( buf, token, toklen ) != 0 ) return SDL_FALSE;
@@ -201,7 +201,7 @@ SDL_bool read_config_bool( char *buf, char *token, SDL_bool *dest )
   Sint32 i, toklen;
 
   // Get the token length
-  toklen = strlen( token );
+  toklen = (int)strlen( token );
 
   // Is this the token?
   if( strncasecmp( buf, token, toklen ) != 0 ) return SDL_FALSE;
@@ -225,7 +225,7 @@ SDL_bool read_config_option( char *buf, char *token, Sint32 *dest, char **option
   char *thisopt;
 
   // Get the token length
-  len = strlen( token );
+  len = (int)strlen( token );
 
   // Is this the token?
   if( strncasecmp( buf, token, len ) != 0 ) return SDL_FALSE;
@@ -271,7 +271,7 @@ SDL_bool read_config_int( char *buf, char *token, int *dest, int min, int max )
   int val, hv;
 
   // Get the token length
-  toklen = strlen( token );
+  toklen = (int)strlen( token );
 
   // Is this the token?
   if( strncasecmp( buf, token, toklen ) != 0 ) return SDL_FALSE;
@@ -310,7 +310,7 @@ SDL_bool read_config_joykey( char *buf, char *token, Sint16 *dest )
   char keyname[32];
 
   // Get the token length
-  toklen = strlen( token );
+  toklen = (int)strlen( token );
 
   // Is this the token?
   if( strncasecmp( buf, token, toklen ) != 0 ) return SDL_FALSE;
@@ -432,11 +432,23 @@ static void load_config( struct start_opts *sto, struct machine *oric )
         oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_LOOPBACK;
       else if(!strncasecmp("modem", oric->aciabackendname, 5))
       {
-        char* p = strrchr(oric->aciabackendname, ':');
+        char* p = strchr(oric->aciabackendname, ':');
         oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_MODEM;
         oric->aciabackendcfgport = 0;
-        if(p)
-          oric->aciabackendcfgport = atoi(p+1);
+        oric->aciabackendcfgdomain = 4;
+        if(p) {
+          char* p2 = strchr(p+1, ':');
+          if (p2) {
+            // check if we want IPv6
+            if (strcasecmp(p2+1, "ipv6")==0)
+                oric->aciabackendcfgdomain = 6;
+            *p2 = '\0'; // temporarily place a \0 to isolate the port part of the string
+            oric->aciabackendcfgport = atoi(p+1); // get the port part of the string
+            *p2 = ':'; // put back the semicolon
+          } else {
+            oric->aciabackendcfgport = atoi(p+1);
+          }
+        }
         if(oric->aciabackendcfgport <= 0)
           oric->aciabackendcfgport = ACIA_TYPE_MODEM_DEFAULT_PORT;
       }
@@ -683,11 +695,23 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
               oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_LOOPBACK;
             else if(!strncasecmp("modem", opt_arg, 5))
             {
-              char* p = strrchr(opt_arg, ':');
+              char* p = strchr(opt_arg, ':');
               oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_MODEM;
               oric->aciabackendcfgport = 0;
-              if(p)
-                oric->aciabackendcfgport = atoi(p+1);
+              oric->aciabackendcfgdomain = 4;
+              if(p) {
+                char* p2 = strchr(p+1, ':');
+                if (p2) {
+                   // check if we want IPv6
+                   if (strcasecmp(p2+1, "ipv6")==0)
+                       oric->aciabackendcfgdomain = 6;
+                   *p2 = '\0'; // temporarily place a \0 to isolate the port part of the string
+                   oric->aciabackendcfgport = atoi(p+1); // get the port part of the string
+                   *p2 = ':'; // put back the semicolon
+                } else {
+                   oric->aciabackendcfgport = atoi(p+1);
+                }
+              }
               if(oric->aciabackendcfgport <= 0)
                 oric->aciabackendcfgport = ACIA_TYPE_MODEM_DEFAULT_PORT;
             }
@@ -1008,12 +1032,8 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           break;
 
         default:
-#ifdef __APPLE__
-              ; // we may have additional parameters given when launching the .app therefore we can't stop here
-#else
           free( sto );
           usage( EXIT_FAILURE );
-#endif
       }
     }
   }

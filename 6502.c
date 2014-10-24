@@ -120,7 +120,7 @@ void m6502_reset( struct m6502 *cpu )
                  cpu->f_n = cpu->a&0x80;\
                } else {\
                  r = cpu->a + v + cpu->f_c;\
-                 cpu->f_v = ((cpu->a^v)&(cpu->a^(r&0xff))&0x80) ? 1 : 0;\
+                 cpu->f_v = (~(cpu->a^v)&(cpu->a^r)) & FF_N ? 1 : 0;\
                  FLAG_ZCN(r);\
                  cpu->a = r;\
                }
@@ -172,7 +172,7 @@ void m6502_reset( struct m6502 *cpu )
                  cpu->f_n = cpu->a&0x80;\
                } else {\
                  r = (cpu->a - v) - (cpu->f_c^1);\
-                 cpu->f_v = ((cpu->a^v)&(cpu->a^(r&0xff))&0x80) ? 1 : 0;\
+                 cpu->f_v = ((cpu->a^v)&(cpu->a^r)) & FF_N ? 1 : 0;\
                  FLAG_SZCN(r);\
                  cpu->a = r;\
                }
