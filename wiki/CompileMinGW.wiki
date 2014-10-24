@@ -24,3 +24,5 @@ Note that this method involves just lazily copying the libSDL files right into y
   * Type "{{{mingw32-make}}}". On Windows XP, you will probably have to type "{{{mingw32-make PLATFORM=win32}}}" to override the platform autodetection. On Windows 7 64 bits you need to type "{{{mingw32-make PLATFORM=win32 HOSTOS=win32}}}" to override the platform autodetection and to let make know that even though HOSTOS is win64 it is compatible with win32.
 
 Hopefully, an Oricutron executable should come out the other end.
+
+If you have problems with undefined references to getaddrinfo, say to it you have a version higher than XP by putting #define _WIN32_WINNT 0x0501 before including headers (unlikely to still be necessary nowadays, but maybe).
