@@ -26,3 +26,5 @@ Note that this method involves just lazily copying the libSDL files right into y
 Hopefully, an Oricutron executable should come out the other end.
 
 If you have problems with undefined references to getaddrinfo, say to it you have a version higher than XP by putting #define _WIN32_WINNT 0x0501 before including headers (unlikely to still be necessary nowadays, but maybe).
+Cf: 
+http://programmingrants.blogspot.fr/2009/09/tips-on-undefined-reference-to.html
