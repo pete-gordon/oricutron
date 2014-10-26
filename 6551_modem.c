@@ -19,6 +19,12 @@
  **  6551 ACIA emulation - modem back-end
  */
 
+#ifdef __MINGW32__
+// to cope with getaddrinfo's bug: http://programmingrants.blogspot.fr/2009/09/tips-on-undefined-reference-to.html
+#define _WIN32_WINNT 0x0501
+#endif
+ 
+ 
 #include "system.h"
 #include "6502.h"
 #include "via.h"
@@ -574,6 +580,8 @@ static int socket_bind(int sock, int port, int domain)
 		if (bind(sock, res->ai_addr, res->ai_addrlen) == 0)
 			break;			/* success */
 	} while ( (res = res->ai_next) != NULL);
+	
+	freeaddrinfo(ressave);
     
 	if (res == NULL) {
         perror("socket_bind, bind error: ");
@@ -699,7 +707,9 @@ static int socket_connect(int sock, const char* host, int port, int domain)
 		if (connect(sock, res->ai_addr, res->ai_addrlen) == 0)
 			break;			/* success */
 	} while ( (res = res->ai_next) != NULL);
-    
+ 
+	freeaddrinfo(ressave);
+ 
 	if (res == NULL) {
         perror("socket_bind, connect error: ");
         return 0;
