@@ -72,8 +72,8 @@ Credits
   Ibisum
 
 
-  Pravetz disk support
-  --------------------
+  ACIA & Pravetz disk support
+  ---------------------------
 
   Iss
 
@@ -339,7 +339,7 @@ sticky_mod_keys = yes
 Serial card (ACIA) emulation
 ============================
 
-Oricutron can emulate ACIA at addres #31C (standard address for Telestrat).
+Oricutron can emulate ACIA at address #31C (standard address for Telestrat).
 The emulation works for Oric, Atmos, Telestrat and Pravetz and can be used
 together with any disk type.
 
@@ -365,3 +365,18 @@ ATH0        - disconnect currently connected sockets
 +++         - if connected switches to command mode
 ATO         - returns from command mode to online
 ATD ip:port - connects as client to ip:port. 'ip' can be any host name (ex.:localhost) or the real IP (ex.:127.0.0.1) on LAN or in Internet. ADTP and ATDT are alternative for compatibility.
+
+
+ROM patch files
+=================
+
+For detailed usage see included '.pch' files in roms subdirectory.
+
+Additionaly unlimited number of binary patches can be added:
+
+$XXXX:00112233445566778899AABBCCDDEEFF....
+$YYYY:AA55AA55....
+$ZZZZ:FF00FF00....
+
+where XXXX,YYYY,ZZZZ - are hex addresses relative to ROM start address (i.e. to set byte at C000 to 00 use: $0000:00)
+
