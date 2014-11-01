@@ -335,7 +335,7 @@ void tape_next_raw_count( struct machine *oric )
       }
       
       oric->tapecount = (oric->tapebuf[oric->tapeoffs]<<9)|(oric->tapebuf[oric->tapeoffs+1]<<1);
-      oric->tapeoffs += 3;
+      oric->tapeoffs += 2;
       return;
   }
 
