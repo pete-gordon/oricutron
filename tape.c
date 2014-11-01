@@ -999,7 +999,7 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
   }
 
   // Allocate memory for the tape image and read it in
-  oric->tapebuf = malloc( oric->tapelen );
+  oric->tapebuf = malloc( oric->tapelen+1 );
   if( !oric->tapebuf )
   {
     fclose( f );
@@ -1038,7 +1038,55 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
   // TAP
   else if (memcmp(oric->tapebuf, "\x16\x16\x16", 3) == 0)
   {
+    int i;
     oric->rawtape = SDL_FALSE;
+
+    i = 3;
+    while (i < oric->tapelen)
+    {
+       if (oric->tapebuf[i] == 0x24)
+         break;
+       i++;
+    }
+
+    if (oric->tapelen < (i+10))
+    {
+      oric->rawtape = SDL_TRUE;
+    }
+    else
+    {
+      int load_start, load_end, j, len;
+
+      // Some .tap images are one byte shorter than they need to be
+      // (because the ROM saves/loads one more byte than it needs to)
+      // This check only works if the .tap only contains one program
+      load_start = (oric->tapebuf[i+7]<<8)|oric->tapebuf[i+8];
+      load_end   = (oric->tapebuf[i+5]<<8)|oric->tapebuf[i+6];
+      len = (load_end-load_start)+1;
+
+      i += 10;
+      j = 0;
+      while (i < oric->tapelen)
+      {
+        if (oric->tapebuf[i] == 0)
+        {
+          i++;
+          break;
+        }
+        if (j == 16) break;
+        i++;
+        j++;
+      }
+      len += i;
+
+      // Add extra byte if necessary
+      if (len == oric->tapelen+1)
+        oric->tapelen++;
+
+      // Still too big? Something is up!
+      if (len > oric->tapelen)
+        msgbox(oric, MSGBOX_OK, "This tape image seems invalid (header indicates length larger than tape image)");
+    }
   }
   // ???
   else
