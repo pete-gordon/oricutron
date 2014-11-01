@@ -1,5 +1,53 @@
 Oricutron ChangeLog
 
+1.2 (01-Nov-2014)
+-----------------
+
+All:
+
+* Fixed memory access breakpoints which were broken in (at least)
+  v1.1.
+* Added snapshot files to the filetype autodetection
+* Added a virtual on-screen keyboard, and the ability to remap
+  keys <torguet>
+* Fixed autobooting of Jasmin disks <christian>
+* ACIA 6551 serial port emulation, including a virtual modem which
+  lets you connect over TCP/IP <iss>
+* Fixed a bug in the V flag emulation for SBC/ADC <christian>
+* Detects invalid .tap images (encoded length larger than tape image
+  length)
+
+
+MacOS X:
+
+* Corrected a bug which prevented opening of the save box for
+  snapshots. <torguet>
+* Works on OS X 10.9 <torguet>
+* Added logos for retina displays <torguet>
+* .wav and .ort tapes show up in the tape file requesters <torguet>
+
+
+Amiga:
+
+* Compiles for AmigaOS 2.x <stefan h>
+
+
+Haiku:
+
+* Added HVIF icon <revolf>
+
+
+Linux:
+
+* Added copy to clipboard <iss>
+
+
+Windows:
+
+* Added copy to clipboard <iss>
+
+
+
 1.1 (07-Dec-2013)
 -----------------
 

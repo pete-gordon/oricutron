@@ -3,10 +3,10 @@
 @node Main "Main"
 @toc Contents
 @$VER: Oricutron 1.1.0 (07.12.13)
-Oricutron 1.1
+Oricutron 1.2
 -------------
 
-(c)2009-2013 Peter Gordon (pete\@petergordon.org.uk)
+(c)2009-2014 Peter Gordon (pete@petergordon.org.uk)
 
 This is a work in progress.
 
@@ -47,6 +47,7 @@ Credits
   Ibisum
   Kamel Biskri
   Iss
+  Christian from defence-force forum
 
 
   Amiga & Windows ports
@@ -60,6 +61,7 @@ Credits
 
   Francois Revol
   Kamel Biskri
+  Patrice Torguet
 
 
   MorphOS & AROS ports
@@ -82,8 +84,8 @@ Credits
   Ibisum
 
 
-  Pravetz disk support
-  --------------------
+  ACIA & Pravetz disk support
+  ---------------------------
 
   Iss
 
@@ -209,7 +211,10 @@ Keys
   Shift+F7 - Save all modified disks to new disk images
   F9       - Save tape output
   F10      - Start/Stop AVI capture
-  Help     - Show guide
+  F11      - Copy text screen to clipboard (BeOS, Linux & Windows)
+  F12      - Paste (BeOS, Linux & Windows)
+  Help     - Show guide (Amiga, MorphOS and AROS)
+  AltGr    - Additional modifier
 
 
   In menus
@@ -225,6 +230,7 @@ Keys
   In Debugger/Monitor
   -------------------
 
+  F1      - Go to the menu
   F2      - Return to the emulator
   F3      - Toggle console/debug output/memwatch
   F4      - Toggle VIA/AY/disk information
@@ -249,6 +255,7 @@ Keys
   Hex digits        - Enter address
   S                 - Toggle split mode
   Tab               - Switch windows in split mode
+
 
 
 @endnode
@@ -319,6 +326,110 @@ bsm $0c00 rw       <-- Break when the CPU is about to access $0c00
 bsm $0c00 c        <-- Break after then contents of $0c00 change
 bsm $0c00 rwc      <-- Break just before the CPU accesses $0c00, or just after it
                        changes for any reason.
+
+
+
+@endnode
+@node InternationalKeyboards "International Keyboards under Linux and Mac OS X"
+@toc Contents
+International Keyboards under Linux and Mac OS X
+================================================
+
+There are lots of problems with some international keyboards under Linux and Mac OS X.
+The best way to cope with them is to install an UK or US keyboard definition and to
+switch to it *before* starting oricutron.
+
+Under Mac OS X you can do that in the "System Preferences", "Keyboard", "Input sources".
+Click on the + and search for the UK or US keyboard.
+
+Under Ubuntu you can do that in the System menu, select Preferences, and then select
+Keyboard. In the Keyboard Preferences dialog, select the Layouts tab, and click Add.
+
+For a better solution look under "Visual Keyboard" down here.
+
+
+
+@endnode
+@node Visualkeyboard "Visual Keyboard"
+@toc Contents
+Visual Keyboard
+===============
+
+Oricutron can display a visual keyboard which also adds a keyboard mapping redefinition feature.
+
+It's accessible through a submenu called "Keyboard options".
+
+In the submenu you can find:
+- a toggle that shows/hides the visual keyboard (you can click on the keyboard keys to enter key presses/releases) ;
+- a toggle that gets you in the key mapping definition mode (you can then click on a visual keyboard key ; press a real key on your keyboard and the mapping will work) ;
+- a toggle that allows mod keys (ctrl, shift, funct) to be sticky (ie you first click on a key to press it and then either re-click it to release it or click on another key and it will generate a modded key press - e.g. a Ctrl-T instead of T - and then auto release the key) ;
+- an option to save a keyboard mapping (.kma file) ;
+- an option to load a keyboard mapping ;
+- an option that resets the keyboard mapping to the default one.
+
+You can also add the following in your oricutron.cfg to autoload a keyboard
+mapping (here Test.kma in the keymap directory found in Oricutron's directory):
+
+; automatically load a keyboard mapping file
+autoload_keyboard_mapping = 'keymap/Test.kma'
+
+Other options let you display the keyboard and activate sticky mod keys automatically:
+show_keyboard = yes
+sticky_mod_keys = yes
+
+
+
+@endnode
+@node Serialcard "Serial card (ACIA) emulation"
+@toc Contents
+Serial card (ACIA) emulation
+============================
+
+Oricutron can emulate ACIA at address #31C (standard address for Telestrat).
+The emulation works for Oric, Atmos, Telestrat and Pravetz and can be used
+together with any disk type.
+
+The emulated ACIA communicates with the out-side world trough back-ends.
+Back-ends can be configured from 'oricutron.cfg' or from command line
+(see default 'oricutron.cfg' for usage).
+
+Back-ends are:
+- none      - disables ACIA support
+- loopback  - every transmitted byte is returned to receive buffer (for testing purposes)
+- com       - Oricutron uses any real or virtual COM port in the host machine and communicates with the hardware attached to this serial port
+- modem     - unites ACIA with attached modem linked to internet with server and client sockets
+
+In 'modem' mode are available folowing 'AT' commands:
+AT          - returns 'OK'
+ATZ         - initialize the modem
+AT&F        - initialize the modem
+ATS0=0      - disable auto answering (close sever socket)
+ATS0=1      - enable auto answering (open sever socket and start listening on selected port (default is telnet port 23))
+ATA         - same as 'ATS0=1'
+ATS0?       - returns 'AUTOANSWER OFF' or 'AUTOANSWER ON' depend on current sever socket state
+ATH0        - disconnect currently connected sockets
++++         - if connected switches to command mode
+ATO         - returns from command mode to online
+ATD ip:port - connects as client to ip:port. 'ip' can be any host name (ex.:localhost) or the real IP (ex.:127.0.0.1) on LAN or in Internet. ADTP and ATDT are alternative for compatibility.
+
+
+
+@endnode
+@node Rompatchfiles "ROM patch files"
+@toc Contents
+ROM patch files
+===============
+
+For detailed usage see included '.pch' files in roms subdirectory.
+
+Additionaly unlimited number of binary patches can be added:
+
+$XXXX:00112233445566778899AABBCCDDEEFF....
+$YYYY:AA55AA55....
+$ZZZZ:FF00FF00....
+
+where XXXX,YYYY,ZZZZ - are hex addresses relative to ROM start address
+(i.e. to set byte at C000 to 00 use: $0000:00)
 @endnode
 @node Contents
 @{"Current status" link Currentstatus}
@@ -329,4 +440,8 @@ bsm $0c00 rwc      <-- Break just before the CPU accesses $0c00, or just after i
 @{"Keys" link Keys}
 @{"Monitor instructions" link Monitorinstructions}
 @{"Breakpoints" link Breakpoints}
+@{"International Keyboards under Linux and Mac OS X" link InternationalKeyboards}
+@{"Visual Keyboard" link Visualkeyboard}
+@{"Serial card (ACIA) emulation" link Serialcard}
+@{"ROM patch files" link Rompatchfiles}
 @endnode
