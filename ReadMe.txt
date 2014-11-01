@@ -1,7 +1,7 @@
-Oricutron 1.1
+Oricutron 1.2
 -------------
 
-(c)2009-2013 Peter Gordon (pete@petergordon.org.uk)
+(c)2009-2014 Peter Gordon (pete@petergordon.org.uk)
 
 This is a work in progress.
 
@@ -36,6 +36,7 @@ Credits
   Ibisum
   Kamel Biskri
   Iss
+  Christian from defence-force forum
 
 
   Amiga & Windows ports
@@ -187,8 +188,8 @@ Keys
   Shift+F7 - Save all modified disks to new disk images
   F9       - Save tape output
   F10      - Start/Stop AVI capture
-  F11      - Copy text screen to clipboard (only BeOS)
-  F12      - Paste (only BeOS, Linux & Windows)
+  F11      - Copy text screen to clipboard (BeOS, Linux & Windows)
+  F12      - Paste (BeOS, Linux & Windows)
   Help     - Show guide (Amiga, MorphOS and AROS)
   AltGr    - Additional modifier
 
@@ -231,6 +232,7 @@ Keys
   Hex digits        - Enter address
   S                 - Toggle split mode
   Tab               - Switch windows in split mode
+
 
 
 Monitor instructions
@@ -296,6 +298,8 @@ bsm $0c00 c        <-- Break after then contents of $0c00 change
 bsm $0c00 rwc      <-- Break just before the CPU accesses $0c00, or just after it
                        changes for any reason.
 
+
+
 International Keyboards under Linux and Mac OS X
 ================================================
 
@@ -310,6 +314,8 @@ Under Ubuntu you can do that in the System menu, select Preferences, and then se
 Keyboard. In the Keyboard Preferences dialog, select the Layouts tab, and click Add.
 
 For a better solution look under "Visual Keyboard" down here.
+
+
 
 Visual Keyboard
 ===============
@@ -335,6 +341,7 @@ autoload_keyboard_mapping = 'keymap/Test.kma'
 Other options let you display the keyboard and activate sticky mod keys automatically:
 show_keyboard = yes
 sticky_mod_keys = yes
+
 
 
 Serial card (ACIA) emulation
@@ -366,6 +373,7 @@ ATH0        - disconnect currently connected sockets
 +++         - if connected switches to command mode
 ATO         - returns from command mode to online
 ATD ip:port - connects as client to ip:port. 'ip' can be any host name (ex.:localhost) or the real IP (ex.:127.0.0.1) on LAN or in Internet. ADTP and ATDT are alternative for compatibility.
+
 
 
 ROM patch files

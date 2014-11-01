@@ -1,6 +1,6 @@
 /*
 **  Oricutron
-**  Copyright (C) 2009-2012 Peter Gordon
+**  Copyright (C) 2009-2014 Peter Gordon
 **
 **  This program is free software; you can redistribute it and/or
 **  modify it under the terms of the GNU General Public License
@@ -82,7 +82,7 @@ char __attribute__((used)) stackcookie[] = "$STACK: 1000000";
 #endif
 
 #if defined(__amigaos4__) || defined(__MORPHOS__) || defined(__AROS__)
-char __attribute__((used)) versiontag[] = "$VER: " APP_NAME_FULL " (8.12.2013)";
+char __attribute__((used)) versiontag[] = "$VER: " APP_NAME_FULL " (1.11.2014)";
 #endif
 
 struct start_opts
