@@ -326,7 +326,8 @@ In the submenu you can find:
 - an option to load a keyboard mapping ;
 - an option that resets the keyboard mapping to the default one.
 
-You can also add the following in your oricutron.cfg to autoload a keyboard mapping (here Test.kma in the keymap directory found in Oricutron's directory):
+You can also add the following in your oricutron.cfg to autoload a keyboard
+mapping (here Test.kma in the keymap directory found in Oricutron's directory):
 
 ; automatically load a keyboard mapping file
 autoload_keyboard_mapping = 'keymap/Test.kma'
@@ -357,7 +358,7 @@ In 'modem' mode are available folowing 'AT' commands:
 AT          - returns 'OK'
 ATZ         - initialize the modem
 AT&F        - initialize the modem
-ATS0=0      - disable autoa nswering (close sever socket)
+ATS0=0      - disable auto answering (close sever socket)
 ATS0=1      - enable auto answering (open sever socket and start listening on selected port (default is telnet port 23))
 ATA         - same as 'ATS0=1'
 ATS0?       - returns 'AUTOANSWER OFF' or 'AUTOANSWER ON' depend on current sever socket state
@@ -368,7 +369,7 @@ ATD ip:port - connects as client to ip:port. 'ip' can be any host name (ex.:loca
 
 
 ROM patch files
-=================
+===============
 
 For detailed usage see included '.pch' files in roms subdirectory.
 
@@ -378,5 +379,5 @@ $XXXX:00112233445566778899AABBCCDDEEFF....
 $YYYY:AA55AA55....
 $ZZZZ:FF00FF00....
 
-where XXXX,YYYY,ZZZZ - are hex addresses relative to ROM start address (i.e. to set byte at C000 to 00 use: $0000:00)
-
+where XXXX,YYYY,ZZZZ - are hex addresses relative to ROM start address
+(i.e. to set byte at C000 to 00 use: $0000:00)
