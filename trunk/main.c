@@ -533,7 +533,7 @@ static void usage( int ret )
           "                        'loopback' - for testing - all TX data is returned to RX\n"
 #ifdef BACKEND_MODEM
           "                        'modem[:port]' - emulates com port with attached modem,\n"
-          "                                         only minimat AT command set is supported and\n"
+          "                                         only minimal AT command set is supported and\n"
           "                                         data is redirected to TCP. Default port is 23 (telnet)\n"
 #endif
 #ifdef BACKEND_COM
