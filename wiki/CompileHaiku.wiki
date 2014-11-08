@@ -1,4 +1,4 @@
-#summary How to compile Oricutron for Haiku
+#summary How to compile Oricutron for BeOS / Haiku
 #labels Compiling
 
 = Introduction =
@@ -9,7 +9,9 @@ This page describes how to compile Oricutron
   * Either download and extract a source package from the [http://www.petergordon.org.uk/oricutron/ download page], or [http://code.google.com/p/oriculator/source/checkout check out] the current subversion trunk.
   * Open a shell, and navigate to the Oricutron archive
   * For example type:
-{{{unzip -a Oricutron_src_v11.zip -d oricutron}}}
+{{{unzip -a Oricutron_src_v12.zip -d oricutron}}}
+
+{{{cd oricutron}}}
   * Type:
 {{{make}}}
 
