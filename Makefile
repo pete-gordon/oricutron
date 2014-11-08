@@ -436,21 +436,20 @@ install-linux:
 	install -m 755 $(TARGET) $(INSTALLDIR)/bin
 
 %.info: %_$(AMIGA_ICONS).info
-	copy $< $@
+	copy CLONE $< $@
 
 package-morphos package-aros package-os4: Oricutron.guide $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info))
 	-@delete ram:Oricutron all >NIL:
 	-@delete ram:$(PKGDIR).lha >NIL:
 	makedir ram:Oricutron ram:Oricutron/disks ram:Oricutron/tapes ram:Oricutron/teledisks ram:Oricutron/pravdisks ram:Oricutron/roms ram:Oricutron/snapshots ram:Oricutron/images
-	copy ENVARC:sys/def_drawer.info ram:Oricutron.info
-	copy $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info)) ram:Oricutron
-	copy images/#?.bmp ram:Oricutron/images/
-	copy "disks/#?.(dsk|txt)" ram:Oricutron/disks/
-	copy "tapes/#?.(tap|ort|txt)" ram:Oricutron/tapes/
-	copy "roms/#?.(rom|sym|pch)" ram:Oricutron/roms/
-	copy $(DOCFILES) ram:Oricutron
-	copy Oricutron.guide ram:Oricutron
-	copy $(TARGET) ram:Oricutron
+	copy CLONE ENVARC:sys/def_drawer.info ram:Oricutron.info
+	copy CLONE $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info)) ram:Oricutron
+	copy CLONE images/#?.bmp ram:Oricutron/images/
+	copy CLONE "disks/#?.(dsk|txt)" ram:Oricutron/disks/
+	copy CLONE "tapes/#?.(tap|ort|txt)" ram:Oricutron/tapes/
+	copy CLONE "roms/#?.(rom|sym|pch)" ram:Oricutron/roms/
+	copy CLONE $(DOCFILES) Oricutron.guide ram:Oricutron
+	copy CLONE $(TARGET) ram:Oricutron
 	lha a -r -e ram:$(PKGDIR).lha ram:Oricutron ram:Oricutron.info
 	delete $(patsubst %_$(AMIGA_ICONS).info,%.info,$(wildcard *_$(AMIGA_ICONS).info))
 	-@delete ram:Oricutron ram:Oricutron.info all >NIL:

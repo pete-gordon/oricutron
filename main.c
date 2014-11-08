@@ -1262,7 +1262,9 @@ int main( int argc, char *argv[] )
   SDL_bool isinit;
 
   // This should center SDL window
+#ifndef __MORPHOS__
   putenv("SDL_VIDEO_CENTERED=center");
+#endif
 
   memset(&oric, 0, sizeof(oric));
 
