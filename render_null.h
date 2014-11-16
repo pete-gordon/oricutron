@@ -24,6 +24,7 @@ void render_end_null( struct machine *oric );
 void render_textzone_alloc_null( struct machine *oric, int i );
 void render_textzone_free_null( struct machine *oric, int i );
 void render_textzone_null( struct machine *oric, int i );
+void render_clear_area_null( int x, int y, int w, int h );
 void render_gimg_null( int i, Sint32 xp, Sint32 yp );
 void render_gimgpart_null( int i, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 oy, Sint32 w, Sint32 h );
 void render_video_null( struct machine *oric, SDL_bool doublesize );

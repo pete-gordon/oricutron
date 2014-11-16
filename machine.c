@@ -889,7 +889,7 @@ void preinit_machine( struct machine *oric )
   oric->prclose = 0;
   oric->lasttapefile[0] = 0;
   oric->keymap = KMAP_QWERTY;
-  oric->showfps = SDL_TRUE;
+  oric->statusbar_mode = STATUSBARMODE_FULL;
   oric->popupstr[0] = 0;
   oric->newpopupstr = SDL_FALSE;
   oric->popuptime = 0;
@@ -1092,7 +1092,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           break;
 
         case SDLK_F5:
-          oric->showfps = oric->showfps ? SDL_FALSE : SDL_TRUE;
+          oric->statusbar_mode = (oric->statusbar_mode+1) % STATUSBARMODE_LAST;
           refreshstatus = SDL_TRUE;
           oric->statusstr[0] = 0;
           oric->newstatusstr = SDL_TRUE;

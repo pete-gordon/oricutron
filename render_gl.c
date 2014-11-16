@@ -349,6 +349,10 @@ void render_textzone_gl( struct machine *oric, int i )
   glEnd();
 }
 
+void render_clear_area_gl( int x, int y, int w, int h )
+{
+}
+
 void render_gimg_gl( int i, Sint32 xp, Sint32 yp )
 {
   glBindTexture( GL_TEXTURE_2D, tex[i+TEX_GIMG] );

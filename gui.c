@@ -421,7 +421,10 @@ SDL_bool gimg_load( struct guiimg *gi )
 // Draw the statusbar at the bottom
 void draw_statusbar( struct machine *oric )
 {
-   oric->render_gimg( GIMG_STATUSBAR, 0, GIMG_POS_SBARY );
+   if (oric->statusbar_mode == STATUSBARMODE_NONE)
+     oric->render_clear_area( 0, GIMG_POS_SBARY, 640, 480-GIMG_POS_SBARY );
+   else
+     oric->render_gimg( GIMG_STATUSBAR, 0, GIMG_POS_SBARY );
 }
 
 void draw_keyboard( struct machine *oric ) {
@@ -447,6 +450,9 @@ void draw_disks( struct machine *oric )
 {
   Sint32 i, j;
 
+  if( oric->statusbar_mode == STATUSBARMODE_NONE )
+    return;
+
   if( oric->drivetype == DRV_NONE )
   {
     oric->render_gimgpart( GIMG_STATUSBAR, GIMG_POS_DISKX, GIMG_POS_SBARY, GIMG_POS_DISKX, 0, 18*4, 16 );
@@ -468,6 +474,9 @@ void draw_disks( struct machine *oric )
 // Overlay the AVI record icon onto the status bar
 void draw_avirec( struct machine *oric, SDL_bool recording )
 {
+  if( oric->statusbar_mode == STATUSBARMODE_NONE)
+    return;
+
   if( recording )
   {
     oric->render_gimg( GIMG_AVI_RECORD, GIMG_POS_AVIRECX, GIMG_POS_SBARY );
@@ -480,6 +489,9 @@ void draw_avirec( struct machine *oric, SDL_bool recording )
 // Overlay the tape icon onto the status bar
 void draw_tape( struct machine *oric )
 {
+  if( oric->statusbar_mode == STATUSBARMODE_NONE )
+    return;
+
   if( oric->tapecap )
   {
     oric->render_gimg( GIMG_TAPE_RECORD, GIMG_POS_TAPEX, GIMG_POS_SBARY );
@@ -567,7 +579,7 @@ void render( struct machine *oric )
     case EM_RUNNING:
       oric->render_video( oric, SDL_TRUE );
       render_status( oric );
-      if( oric->showfps )
+      if( oric->statusbar_mode == STATUSBARMODE_FULL )
       {
         fps = 100000/(frametimeave?frametimeave:1);
         if( oric->vid_freq )
@@ -1944,6 +1956,7 @@ void set_render_mode( struct machine *oric, int whichrendermode )
         oric->render_textzone_alloc = render_textzone_alloc_sw8;
         oric->render_textzone_free  = render_textzone_free_sw8;
         oric->render_textzone       = render_textzone_sw8;
+        oric->render_clear_area     = render_clear_area_sw8;
         oric->render_gimg           = render_gimg_sw8;
         oric->render_gimgpart       = render_gimgpart_sw8;
         oric->render_video          = render_video_sw8;
@@ -1962,6 +1975,7 @@ void set_render_mode( struct machine *oric, int whichrendermode )
       oric->render_textzone_alloc = render_textzone_alloc_sw;
       oric->render_textzone_free  = render_textzone_free_sw;
       oric->render_textzone       = render_textzone_sw;
+      oric->render_clear_area     = render_clear_area_sw;
       oric->render_gimg           = render_gimg_sw;
       oric->render_gimgpart       = render_gimgpart_sw;
       switch(oric->sw_depth)
@@ -1994,6 +2008,7 @@ void set_render_mode( struct machine *oric, int whichrendermode )
       oric->render_textzone_alloc = render_textzone_alloc_gl;
       oric->render_textzone_free  = render_textzone_free_gl;
       oric->render_textzone       = render_textzone_gl;
+      oric->render_clear_area     = render_clear_area_gl;
       oric->render_gimg           = render_gimg_gl;
       oric->render_gimgpart       = render_gimgpart_gl;
       oric->render_video          = render_video_gl;
@@ -2014,6 +2029,7 @@ void set_render_mode( struct machine *oric, int whichrendermode )
       oric->render_textzone_alloc = render_textzone_alloc_null;
       oric->render_textzone_free  = render_textzone_free_null;
       oric->render_textzone       = render_textzone_null;
+      oric->render_clear_area     = render_clear_area_null;
       oric->render_gimg           = render_gimg_null;
       oric->render_gimgpart       = render_gimgpart_null;
       oric->render_video          = render_video_null;
