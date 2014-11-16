@@ -207,6 +207,7 @@ struct machine
   void (*render_textzone_alloc)(struct machine *, int);
   void (*render_textzone_free)(struct machine *, int);
   void (*render_textzone)(struct machine *, int);
+  void (*render_clear_area)( int, int, int, int );
   void (*render_gimg)(int, Sint32, Sint32);
   void (*render_gimgpart)(int, Sint32, Sint32, Sint32, Sint32, Sint32, Sint32);
   void (*render_alloc_textzone)(struct machine *, struct textzone *);
@@ -223,7 +224,7 @@ struct machine
   char statusstr[40];
   SDL_bool newstatusstr;
 
-  SDL_bool showfps;
+  int statusbar_mode;
 
   int rampattern;
 

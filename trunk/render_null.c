@@ -50,6 +50,10 @@ void render_textzone_null( struct machine *oric, int i )
 {
 }
 
+void render_clear_area_null( int x, int y, int w, int h )
+{
+}
+
 void render_gimg_null( int i, Sint32 xp, Sint32 yp )
 {
 }

@@ -27,6 +27,7 @@ void render_textzone_sw8( struct machine *oric, int i );
 void render_gimg_sw8( int i, Sint32 xp, Sint32 yp );
 void render_gimgpart_sw8( int i, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 oy, Sint32 w, Sint32 h );
 void render_video_sw8( struct machine *oric, SDL_bool doublesize );
+void render_clear_area_sw8( int x, int y, int w, int h );
 SDL_bool render_togglefullscreen_sw8( struct machine *oric );
 void preinit_render_sw8( struct machine *oric );
 SDL_bool init_render_sw8( struct machine *oric );

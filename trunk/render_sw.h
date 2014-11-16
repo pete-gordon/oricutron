@@ -28,6 +28,7 @@ void render_gimg_sw( int i, Sint32 xp, Sint32 yp );
 void render_gimgpart_sw( int i, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 oy, Sint32 w, Sint32 h );
 void render_video_sw_16bpp( struct machine *oric, SDL_bool doublesize );
 void render_video_sw_32bpp( struct machine *oric, SDL_bool doublesize );
+void render_clear_area_sw( int x, int y, int w, int h );
 SDL_bool render_togglefullscreen_sw( struct machine *oric );
 void preinit_render_sw( struct machine *oric );
 SDL_bool init_render_sw( struct machine *oric );

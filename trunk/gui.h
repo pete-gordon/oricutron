@@ -44,6 +44,14 @@ enum
   NUM_TZ
 };
 
+enum
+{
+  STATUSBARMODE_FULL = 0,
+  STATUSBARMODE_NOFPS,
+  STATUSBARMODE_NONE,
+  STATUSBARMODE_LAST
+};
+
 struct textzone
 {
   int x, y, w, h;           // Dimensions

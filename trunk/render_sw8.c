@@ -179,6 +179,19 @@ void render_textzone_sw8( struct machine *oric, int i )
   }
 }
 
+// Clear an area to background
+void render_clear_area_sw8( int x, int y, int w, int h )
+{
+  Uint8 *dst_scanline;
+  Sint32 i;
+
+  dst_scanline = (Uint8 *)screen->pixels;
+  dst_scanline += screen->pitch * y + x;
+
+  for( i=0; i<h; i++, dst_scanline+=screen->pitch )
+    memset( dst_scanline, 0, w );
+}
+
 // Draw a GUI image at X,Y
 void render_gimg_sw8( int img_id, Sint32 xp, Sint32 yp )
 {
