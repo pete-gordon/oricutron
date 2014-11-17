@@ -176,7 +176,6 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
 void togglehstretch( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglepalghost( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy );
-void togglefullscreen( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglelightpen( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void toggleaciabackend( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void setoverclock( struct machine *oric, struct osdmenuitem *mitem, int dummy );
@@ -285,7 +284,7 @@ struct osdmenuitem dbopitems[] = { { " Autoload symbols file", NULL,   0,       
 struct osdmenuitem vdopitems[] = { { " OpenGL rendering",      "O",    'o',      swap_render_mode, RENDERMODE_GL, 0 },
                                    { " Software rendering",    "S",    's',      swap_render_mode, RENDERMODE_SW, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
-                                   { " Fullscreen",            "F",    'f',      togglefullscreen, 0, 0 },
+                                   { " Fullscreen",         "[F8]",    SDLK_F8,  togglefullscreen, 0, 0 },
                                    { " Scanlines",             "C",    'c',      togglescanlines, 0, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },

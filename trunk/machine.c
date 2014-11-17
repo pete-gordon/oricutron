@@ -1160,6 +1160,10 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           }
           break;
 
+        case SDLK_F8:
+          togglefullscreen( oric, NULL, 0 );
+          break;
+
         case SDLK_F9:
           toggletapecap( oric, find_item_by_function(mainitems, toggletapecap), 0 );
           break;
