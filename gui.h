@@ -167,3 +167,5 @@ void setoverclock( struct machine *oric, struct osdmenuitem *mitem, int value );
 void clear_textzone( struct machine *oric, int i );
 
 struct osdmenuitem *find_item_by_function(struct osdmenuitem *menu, void *function);
+
+void togglefullscreen( struct machine *oric, struct osdmenuitem *mitem, int dummy );

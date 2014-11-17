@@ -186,6 +186,7 @@ Keys
   F6       - Toggle warp speed
   F7       - Save all modified disks
   Shift+F7 - Save all modified disks to new disk images
+  F8       - Toggle fullscreen
   F9       - Save tape output
   F10      - Start/Stop AVI capture
   F11      - Copy text screen to clipboard (BeOS, Linux & Windows)
