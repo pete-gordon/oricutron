@@ -74,6 +74,9 @@ enum
 #ifdef WIN32
 #define BACKEND_MODEM
 #endif
+#ifdef __amigaos4__
+#define BACKEND_MODEM
+#endif
 
 #ifdef __LINUX__
 #define BACKEND_COM

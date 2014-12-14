@@ -470,6 +470,15 @@ SDL_bool acia_init_modem( struct acia* acia )
 #include <time.h>
 
 
+#if defined(__amigaos4__)
+#include <sys/socket.h>
+#include <sys/fcntl.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#define _recvdata(a, b, c) recv(a, b, c, 0)
+#define _closesocket close
+#endif
+
 #if defined(__LINUX__) || defined(__APPLE__)
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -519,10 +528,14 @@ static void socket_done(void)
 static int socket_create(int* sock, int domain)
 {
   int on = 1;
+#ifdef __amigaos4__
+  domain = AF_INET;
+#else
   if (domain == 6)
       domain = AF_INET6;
   else
       domain = AF_INET;
+#endif
   *sock = socket(domain, SOCK_STREAM, 0);
   if(*sock == -1)
     return 0;
@@ -590,7 +603,7 @@ static int socket_bind(int sock, int port, int domain)
 #endif
     
     
-  #if defined(__LINUX__) || defined(__APPLE__)
+  #if defined(__LINUX__) || defined(__APPLE__) || defined(__amigaos4__)
     fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
   #endif
 
@@ -611,7 +624,11 @@ static int socket_listen(int sock)
 
 static int socket_accept(int sock, int* sck)
 {
+#ifdef __amigaos4__
+  struct sockaddr_in cli_addr;
+#else
   struct sockaddr_storage cli_addr;
+#endif
   socklen_t cli_addr_len = sizeof(cli_addr);
 
   *sck = accept(sock, (struct sockaddr*) &cli_addr, &cli_addr_len);
@@ -619,11 +636,11 @@ static int socket_accept(int sock, int* sck)
     return 0;
   else
   {
-    #ifdef __LINUX__
+    #if defined(__LINUX__) || defined(__amigaos4__)
     fcntl(*sck, F_SETFL, fcntl(*sck, F_GETFL, 0) | O_NONBLOCK);
     #endif
 
-    #ifdef WIN32
+    #if defined(WIN32)
     u_long imode = 1;
     ioctlsocket(*sck, FIONBIO, &imode);
     #endif
@@ -716,7 +733,7 @@ static int socket_connect(int sock, const char* host, int port, int domain)
 	}
 #endif
   
-  #if defined(__LINUX__) || defined(__APPLE__)
+  #if defined(__LINUX__) || defined(__APPLE__) || defined(__amigaos4__)
     fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
   #endif
 
@@ -743,10 +760,10 @@ static Uint64 time_getmillisec(void)
   clock_gettime(CLOCK_MONOTONIC, &ts);
   return ((ts.tv_sec * 1000000000) + ts.tv_nsec)/1000;
   #endif
-  #ifdef __APPLE__
+  #if defined(__APPLE__) || defined(__amigaos4__)
     struct timeval ts;
     gettimeofday(&ts, NULL);
-    return ((ts.tv_sec * 1000000) + ts.tv_usec)/1000;
+    return ((ts.tv_sec * 1000000LL) + ts.tv_usec)/1000LL;
   #endif
   #ifdef WIN32
   return GetTickCount();
