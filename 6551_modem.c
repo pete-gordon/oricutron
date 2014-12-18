@@ -41,7 +41,9 @@ static struct machine* oric = NULL;
 
 #define CMD_BUF_SIZE    4
 static Uint8 mdm_cmd_buf[CMD_BUF_SIZE];
-static Uint64 mdm_time_buf[CMD_BUF_SIZE];
+// SDL_GetTicks() counts from 0 on SDL_Init, so overrun would only
+// happen if you ran Oricutron for ~50 days solid
+static Uint32 mdm_time_buf[CMD_BUF_SIZE];
 
 #define DATA_BUF_SIZE   4096
 static int mdm_in = 0;
@@ -67,8 +69,6 @@ static int socket_connect(int sock, const char* ip, int port, int domain);
 static int socket_write(int sock, const unsigned char* data, int len);
 static int socket_read(int sock, unsigned char* data, int* len);
 static int socket_close(int sock);
-
-static Uint64 time_getmillisec(void);
 
 static char* trim(char* line)
 {
@@ -361,7 +361,7 @@ static void mdm_escape(Uint8 data)
   mdm_time_buf[0] = mdm_time_buf[1];
   mdm_time_buf[1] = mdm_time_buf[2];
   mdm_time_buf[2] = mdm_time_buf[3];
-  mdm_time_buf[3] = time_getmillisec();
+  mdm_time_buf[3] = SDL_GetTicks();
   
   if( mdm_cmd_buf[1] == '+' && mdm_cmd_buf[2] == '+' && mdm_cmd_buf[3] == '+')
   {
@@ -436,7 +436,7 @@ SDL_bool acia_init_modem( struct acia* acia )
   mdm_in_buf[0] = 0x00;
   mdm_out_buf[0] = 0x00;
   memset(mdm_cmd_buf, 0, sizeof(Uint8)*CMD_BUF_SIZE);
-  memset(mdm_time_buf, 0, sizeof(Uint64)*CMD_BUF_SIZE);
+  memset(mdm_time_buf, 0, sizeof(Uint32)*CMD_BUF_SIZE);
   
   acia->done = modem_done;
   acia->stat = modem_stat;
@@ -762,23 +762,6 @@ int socket_close(int sock)
     return 0;
 
   return 1;
-}
-
-static Uint64 time_getmillisec(void)
-{
-  #ifdef __LINUX__
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  return ((ts.tv_sec * 1000000000) + ts.tv_nsec)/1000;
-  #endif
-  #if defined(__APPLE__) || defined(__amigaos4__) || defined(__MORPHOS__)
-    struct timeval ts;
-    gettimeofday(&ts, NULL);
-    return ((ts.tv_sec * 1000000LL) + ts.tv_usec)/1000LL;
-  #endif
-  #ifdef WIN32
-  return GetTickCount();
-  #endif
 }
 
 #endif /* BACKEND_MODEM */
