@@ -113,7 +113,7 @@ endif
 
 # MorphOS
 ifeq ($(PLATFORM),morphos)
-CFLAGS += `sdl-config --cflags` -D__OPENGL_AVAILABLE__
+CFLAGS += `sdl-config --cflags` -D__OPENGL_AVAILABLE__ -DNO_GETADDRINFO=1
 LFLAGS += `sdl-config --libs` -s
 FILEREQ_OBJ = filereq_amiga.o
 MSGBOX_OBJ = msgbox_os2.o

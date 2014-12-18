@@ -470,13 +470,24 @@ SDL_bool acia_init_modem( struct acia* acia )
 #include <time.h>
 
 
-#if defined(__amigaos4__)
+#if defined(__amigaos4__) || defined(__MORPHOS__)
 #include <sys/socket.h>
 #include <sys/fcntl.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #define _recvdata(a, b, c) recv(a, b, c, 0)
 #define _closesocket close
+#if defined(__MORPHOS__)
+typedef unsigned long socklen_t;
+char *inet_ntoa(struct in_addr n)
+{
+static char a[sizeof "XXX.XXX.XXX.XXX"];
+char *p = (char *)&n;
+
+snprintf(a, sizeof a, "%d.%d.%d.%d", p[0]&0xff, p[1]&0xff, p[2]&0xff, p[3]&0xff);
+return a;
+}
+#endif
 #endif
 
 #if defined(__LINUX__) || defined(__APPLE__)
@@ -528,7 +539,7 @@ static void socket_done(void)
 static int socket_create(int* sock, int domain)
 {
   int on = 1;
-#ifdef __amigaos4__
+#if defined(__amigaos4__) || defined(__MORPHOS__)
   domain = AF_INET;
 #else
   if (domain == 6)
@@ -624,7 +635,7 @@ static int socket_listen(int sock)
 
 static int socket_accept(int sock, int* sck)
 {
-#ifdef __amigaos4__
+#if defined(__amigaos4__) || defined(__MORPHOS__)
   struct sockaddr_in cli_addr;
 #else
   struct sockaddr_storage cli_addr;
@@ -760,7 +771,7 @@ static Uint64 time_getmillisec(void)
   clock_gettime(CLOCK_MONOTONIC, &ts);
   return ((ts.tv_sec * 1000000000) + ts.tv_nsec)/1000;
   #endif
-  #if defined(__APPLE__) || defined(__amigaos4__)
+  #if defined(__APPLE__) || defined(__amigaos4__) || defined(__MORPHOS__)
     struct timeval ts;
     gettimeofday(&ts, NULL);
     return ((ts.tv_sec * 1000000LL) + ts.tv_usec)/1000LL;

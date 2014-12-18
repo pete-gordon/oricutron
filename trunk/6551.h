@@ -77,6 +77,9 @@ enum
 #ifdef __amigaos4__
 #define BACKEND_MODEM
 #endif
+#ifdef __MORPHOS__
+#define BACKEND_MODEM
+#endif
 
 #ifdef __LINUX__
 #define BACKEND_COM
