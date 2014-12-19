@@ -160,6 +160,19 @@ Here are all the options:
   --vsynchack on|off = Enable or disable VSync hack
   --scanlines on|off = Enable or disable scanline simulation
 
+  --serial <type>    = Set serial card back-end emulation:
+                        'none' - no serial
+                        'loopback' - for testing - all TX data is returned to RX
+                        'modem[:port]' - emulates com port with attached modem,
+                                         only minimal AT command set is supported and
+                                         data is redirected to TCP. Default port is 23 (telnet)
+
+                        'com:115200,8,N,1,<device>' - use real or virtual <device> on host as emulated ACIA.
+                                         Baudrate, data bits, parity and stop bits can be set as needed
+                                   ex.:  Windows: 'com:115200,8,N,1,COM1'
+                                         Linux:   'com:19200,8,N,1,/dev/ttyS0'
+                                                  'com:115200,8,N,1,/dev/ttyUSB0'
+
 NOTE: If you are not sure what machine or drive type is required for a disk or
 tape image, just pass the filename without any options and Oricutron will
 try and autodetect for you.
@@ -379,7 +392,7 @@ ATS0?       - returns 'AUTOANSWER OFF' or 'AUTOANSWER ON' depend on current seve
 ATH0        - disconnect currently connected sockets
 +++         - if connected switches to command mode
 ATO         - returns from command mode to online
-ATD ip:port - connects as client to ip:port. 'ip' can be any host name (ex.:localhost) or the real IP (ex.:127.0.0.1) on LAN or in Internet. ADTP and ATDT are alternative for compatibility.
+ATD ip:port - connects as client to ip:port. 'ip' can be any host name (ex.:localhost) or the real IP (ex.:127.0.0.1) on LAN or in Internet. ATDP and ATDT are alternative for compatibility.
 
 
 
