@@ -1,14 +1,14 @@
-/* $VER: ReadMe2Guide 0.6 $
+/* $VER: ReadMe2Guide 0.7 $
  * Convert simple ReadMe file to AmigaGuide
- * © Stefan Haubenthal 2010-2013
+ * © Stefan Haubenthal 2010-2014
  * rx ReadMe2Guide <foo.txt >foo.guide foo 1.0
  */
 
-say '@database ""'
-say '@author "ReadMe2Guide"'
+say '@database "'word(arg(1), 1)'"'
+say '@author "'word(sourceline(1), 3) word(sourceline(1), 4)'"'
 say '@node Main "Main"'
 say '@toc Contents'
-if arg() then say '@$VER:' arg(1) '('translate(date('e'),'.','/')')'
+if arg() then say '@$VER:' arg(1) '('translate(date('e'),'.','/')') $'
 if ~eof(stdin) then parse pull last "0d"x
 prevnode="Main"
 toc=""
