@@ -432,6 +432,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
         oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_LOOPBACK;
       else if(!strncasecmp("modem", oric->aciabackendname, 5))
       {
+#ifdef BACKEND_MODEM
         char* p = strchr(oric->aciabackendname, ':');
         oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_MODEM;
         oric->aciabackendcfgport = 0;
@@ -451,10 +452,13 @@ static void load_config( struct start_opts *sto, struct machine *oric )
         }
         if(oric->aciabackendcfgport <= 0)
           oric->aciabackendcfgport = ACIA_TYPE_MODEM_DEFAULT_PORT;
+#endif
       }
       else
       {
+#ifdef BACKEND_COM
         oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_COM;
+#endif
       }
       continue;
     }
@@ -695,6 +699,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
               oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_LOOPBACK;
             else if(!strncasecmp("modem", opt_arg, 5))
             {
+#ifdef BACKEND_MODEM
               char* p = strchr(opt_arg, ':');
               oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_MODEM;
               oric->aciabackendcfgport = 0;
@@ -714,11 +719,14 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
               }
               if(oric->aciabackendcfgport <= 0)
                 oric->aciabackendcfgport = ACIA_TYPE_MODEM_DEFAULT_PORT;
+#endif
             }
             else
             {
+#ifdef BACKEND_COM
               strncpy(oric->aciabackendname, opt_arg, ACIA_BACKEND_NAME_LEN);
               oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_COM;
+#endif
             }
           }
 

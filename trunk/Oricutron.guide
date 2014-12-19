@@ -2,11 +2,11 @@
 @author "ReadMe2Guide"
 @node Main "Main"
 @toc Contents
-@$VER: Oricutron 1.1.0 (07.12.13)
+@$VER: Oricutron 1.2.0 (08.11.14)
 Oricutron 1.2
 -------------
 
-(c)2009-2014 Peter Gordon (pete@petergordon.org.uk)
+(c)2009-2014 Peter Gordon (pete\@petergordon.org.uk)
 
 This is a work in progress.
 
@@ -54,6 +54,12 @@ Credits
   ---------------------
 
   Peter Gordon
+
+
+  BeOS/Haiku port
+  ---------------
+
+  Francois Revol
 
 
   MacOS X port
@@ -331,14 +337,14 @@ bsm $0c00 rwc      <-- Break just before the CPU accesses $0c00, or just after i
 
 
 @endnode
-@node InternationalKeyboards "International Keyboards under Linux and Mac OS X"
+@node InternationalKeyboardsunderLinuxandMacOSX "International Keyboards under Linux and Mac OS X"
 @toc Contents
 International Keyboards under Linux and Mac OS X
 ================================================
 
 There are lots of problems with some international keyboards under Linux and Mac OS X.
 The best way to cope with them is to install an UK or US keyboard definition and to
-switch to it *before* starting oricutron.
+switch to it @{b}before@{ub} starting oricutron.
 
 Under Mac OS X you can do that in the "System Preferences", "Keyboard", "Input sources".
 Click on the + and search for the UK or US keyboard.
@@ -351,7 +357,7 @@ For a better solution look under "Visual Keyboard" down here.
 
 
 @endnode
-@node Visualkeyboard "Visual Keyboard"
+@node VisualKeyboard "Visual Keyboard"
 @toc Contents
 Visual Keyboard
 ===============
@@ -381,7 +387,7 @@ sticky_mod_keys = yes
 
 
 @endnode
-@node Serialcard "Serial card (ACIA) emulation"
+@node Serialcard(ACIA)emulation "Serial card (ACIA) emulation"
 @toc Contents
 Serial card (ACIA) emulation
 ============================
@@ -416,7 +422,7 @@ ATD ip:port - connects as client to ip:port. 'ip' can be any host name (ex.:loca
 
 
 @endnode
-@node Rompatchfiles "ROM patch files"
+@node ROMpatchfiles "ROM patch files"
 @toc Contents
 ROM patch files
 ===============
@@ -441,8 +447,8 @@ where XXXX,YYYY,ZZZZ - are hex addresses relative to ROM start address
 @{"Keys" link Keys}
 @{"Monitor instructions" link Monitorinstructions}
 @{"Breakpoints" link Breakpoints}
-@{"International Keyboards under Linux and Mac OS X" link InternationalKeyboards}
-@{"Visual Keyboard" link Visualkeyboard}
-@{"Serial card (ACIA) emulation" link Serialcard}
-@{"ROM patch files" link Rompatchfiles}
+@{"International Keyboards under Linux and Mac OS X" link InternationalKeyboardsunderLinuxandMacOSX}
+@{"Visual Keyboard" link VisualKeyboard}
+@{"Serial card (ACIA) emulation" link Serialcard(ACIA)emulation}
+@{"ROM patch files" link ROMpatchfiles}
 @endnode

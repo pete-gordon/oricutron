@@ -614,7 +614,7 @@ static int socket_bind(int sock, int port, int domain)
 #endif
     
     
-  #if defined(__LINUX__) || defined(__APPLE__) || defined(__amigaos4__)
+  #if defined(__LINUX__) || defined(__APPLE__) || defined(__amigaos4__) || defined(__MORPHOS__)
     fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
   #endif
 
@@ -647,7 +647,7 @@ static int socket_accept(int sock, int* sck)
     return 0;
   else
   {
-    #if defined(__LINUX__) || defined(__amigaos4__)
+    #if defined(__LINUX__) || defined(__amigaos4__) || defined(__MORPHOS__)
     fcntl(*sck, F_SETFL, fcntl(*sck, F_GETFL, 0) | O_NONBLOCK);
     #endif
 
@@ -744,7 +744,7 @@ static int socket_connect(int sock, const char* host, int port, int domain)
 	}
 #endif
   
-  #if defined(__LINUX__) || defined(__APPLE__) || defined(__amigaos4__)
+  #if defined(__LINUX__) || defined(__APPLE__) || defined(__amigaos4__) || defined(__MORPHOS__)
     fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
   #endif
 
