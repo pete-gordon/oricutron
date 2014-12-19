@@ -45,6 +45,12 @@ Credits
   Peter Gordon
 
 
+  BeOS/Haiku port
+  ---------------
+
+  Francois Revol
+
+
   MacOS X port
   ------------
 
