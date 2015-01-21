@@ -412,7 +412,7 @@ winicon.o: $(VPATH)/winicon.ico $(VPATH)/oricutron.rc
 
 %.guide: ReadMe.txt
 # AROS needs path
-	-rx ReadMe2Guide <$? >$(APP_NAME).guide $(APP_NAME) $(VERSION_FULL) || SYS:Rexxc/rx ReadMe2Guide <$? >$(APP_NAME).guide $(APP_NAME) $(VERSION_FULL)
+	-rx ReadMe2Guide <$? >$(APP_NAME).guide $(APP_NAME).guide $(VERSION_FULL) || SYS:Rexxc/rx ReadMe2Guide <$? >$(APP_NAME).guide $(APP_NAME).guide $(VERSION_FULL)
 	-GuideCheck $@
 
 $(RSRC_BEOS): oricutron.rdef
@@ -468,6 +468,7 @@ package-osx:
 	install -m 755 $(TARGET) $(PKGDIR)/Oricutron.app/Contents/MacOS/Oricutron
 	echo 'APPL????' > $(PKGDIR)/Oricutron.app/Contents/PkgInfo
 	sed "s/@@VERSION@@/$(VERSION_MAJ).$(VERSION_MIN)/g" Info.plist > $(PKGDIR)/Oricutron.app/Contents/Info.plist
+	install -m 644 XCode/Oricutron/Oricutron/winicon.icns $(PKGDIR)/Oricutron.app/Contents/Resources
 	install -m 644 images/* $(PKGDIR)/Oricutron.app/Contents/Resources/images
 	# XXX: SDL now opens files in bundles first, but not old versions
 	ln -s Oricutron.app/Contents/Resources/images $(PKGDIR)/images
