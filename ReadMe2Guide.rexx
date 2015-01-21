@@ -1,7 +1,7 @@
 /* $VER: ReadMe2Guide 0.7 $
  * Convert simple ReadMe file to AmigaGuide
  * © Stefan Haubenthal 2010-2014
- * rx ReadMe2Guide <foo.txt >foo.guide foo 1.0
+ * rx ReadMe2Guide <foo.txt >foo.guide foo.guide 1.0
  */
 
 say '@database "'word(arg(1), 1)'"'
