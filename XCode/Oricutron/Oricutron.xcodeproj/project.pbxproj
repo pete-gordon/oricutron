@@ -507,14 +507,15 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Oricutron/Oricutron-Prefix.pch";
 				INFOPLIST_FILE = "Oricutron/Oricutron-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Resources/";
 				OTHER_CFLAGS = "";
 				"OTHER_CFLAGS[arch=*]" = (
 					"-D__CBCOPY__",
 					"-D__CBPASTE__",
 					"-D__SPECIFY_SDL_DIR__",
-					"-DAPP_NAME_FULL='\"Oricutron WIP Rev: 585:586M\"'",
-					"-DAPP_YEAR='\"2013\"'",
-					"-DVERSION_COPYRIGHTS='\"Oricutron 1.1.0 (c)2013 Peter Gordon (pete@petergordon.org.uk)\"'",
+					"-DAPP_NAME_FULL='\"Oricutron 1.2\"'",
+					"-DAPP_YEAR='\"2014\"'",
+					"-DVERSION_COPYRIGHTS='\"Oricutron 1.2.0 (c)2014 Peter Gordon (pete@petergordon.org.uk)\"'",
 					"-DBACKEND_COM",
 					"-DBACKEND_MODEM",
 					"-D__OPENGL_AVAILABLE__",
@@ -537,14 +538,15 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Oricutron/Oricutron-Prefix.pch";
 				INFOPLIST_FILE = "Oricutron/Oricutron-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Resources/";
 				OTHER_CFLAGS = "";
 				"OTHER_CFLAGS[arch=*]" = (
 					"-D__CBCOPY__",
 					"-D__CBPASTE__",
 					"-D__SPECIFY_SDL_DIR__",
-					"-DAPP_NAME_FULL='\"Oricutron WIP Rev: 585:586M\"'",
-					"-DAPP_YEAR='\"2013\"'",
-					"-DVERSION_COPYRIGHTS='\"Oricutron 1.1.0 (c)2013 Peter Gordon (pete@petergordon.org.uk)\"'",
+					"-DAPP_NAME_FULL='\"Oricutron 1.2\"'",
+					"-DAPP_YEAR='\"2014\"'",
+					"-DVERSION_COPYRIGHTS='\"Oricutron 1.2.0 (c)2014 Peter Gordon (pete@petergordon.org.uk)\"'",
 					"-D__OPENGL_AVAILABLE__",
 					"-DBACKEND_COM",
 					"-DBACKEND_MODEM",
