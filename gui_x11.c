@@ -25,9 +25,7 @@
  */
 
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_syswm.h>
-#include <limits.h>
+#define WANT_WMINFO
 
 #include "system.h"
 #include "6502.h"
@@ -39,17 +37,37 @@
 #include "6551.h"
 #include "machine.h"
 
-static Display *SDL_Display;
-static Window SDL_Window;
-static void (*Lock_Display)();
-static void (*Unlock_Display)();
+#include <limits.h>   /* for INT_MAX */
+
+static Display *display;
+static Window window;
+static void (*lock_display)() = NULL;
+static void (*unlock_display)() = NULL;
 
 static SDL_bool initialized = SDL_FALSE;
 
 static char* text = NULL;
 
-static int clipboard_filter(const SDL_Event *event)
+static void Lock_Display(void)
 {
+  if(lock_display)
+    lock_display();
+}
+
+static void Unlock_Display(void)
+{
+  if(unlock_display)
+    unlock_display();
+}
+
+#if SDL_MAJOR_VERSION == 1
+static int clipboard_filter(const SDL_Event *event)
+#else
+static int clipboard_filter(void* userdata, SDL_Event *event)
+#endif
+{
+  XEvent* xevent = (XEvent*)event->syswm.msg;
+
   /* Post all non-window manager specific events */
   if ( event->type != SDL_SYSWMEVENT )
   {
@@ -57,19 +75,19 @@ static int clipboard_filter(const SDL_Event *event)
   }
   
   /* Handle window-manager specific clipboard events */
-  switch (event->syswm.msg->event.xevent.type)
+  switch (xevent->type)
   {
     /* Copy the selection from XA_CUT_BUFFER0 to the requested property */
     case SelectionRequest:
     {
-      XSelectionRequestEvent *req;
       XEvent sevent;
+      XSelectionRequestEvent *req;
       int seln_format;
       unsigned long nbytes;
       unsigned long overflow;
       unsigned char *seln_data;
       
-      req = &event->syswm.msg->event.xevent.xselectionrequest;
+      req = &xevent->xselectionrequest;
       sevent.xselection.type = SelectionNotify;
       sevent.xselection.display = req->display;
       sevent.xselection.selection = req->selection;
@@ -77,7 +95,7 @@ static int clipboard_filter(const SDL_Event *event)
       sevent.xselection.property = None;
       sevent.xselection.requestor = req->requestor;
       sevent.xselection.time = req->time;
-      if ( XGetWindowProperty(SDL_Display, DefaultRootWindow(SDL_Display),
+      if ( XGetWindowProperty(display, DefaultRootWindow(display),
         XA_CUT_BUFFER0, 0, INT_MAX/4, False, req->target,
         &sevent.xselection.target, &seln_format,
         &nbytes, &overflow, &seln_data) == Success )
@@ -89,15 +107,15 @@ static int clipboard_filter(const SDL_Event *event)
             if ( seln_data[nbytes-1] == '\0' )
               --nbytes;
           }
-          XChangeProperty(SDL_Display, req->requestor, req->property,
+          XChangeProperty(display, req->requestor, req->property,
                           sevent.xselection.target, seln_format, PropModeReplace,
                           seln_data, nbytes);
           sevent.xselection.property = req->property;
         }
         XFree(seln_data);
       }
-      XSendEvent(SDL_Display,req->requestor,False,0,&sevent);
-      XSync(SDL_Display, False);
+      XSendEvent(display,req->requestor,False,0,&sevent);
+      XSync(display, False);
     }
     break;
   }
@@ -114,19 +132,23 @@ static void init_clipboard(void)
   /* Grab the window manager specific information */
   SDL_SysWMinfo info;
   SDL_VERSION(&info.version);
-  if (SDL_GetWMInfo(&info))
+  if (SDL_COMPAT_GetWMInfo(&info))
   {
     /* Save the information for later use */
     if (info.subsystem == SDL_SYSWM_X11)
     {
-      SDL_Display = info.info.x11.display;
-      SDL_Window = info.info.x11.window;
-      Lock_Display = info.info.x11.lock_func;
-      Unlock_Display = info.info.x11.unlock_func;
+      display = info.info.x11.display;
+      window = info.info.x11.window;
+#if SDL_MAJOR_VERSION == 1
+      lock_display = info.info.x11.lock_func;
+      unlock_display = info.info.x11.unlock_func;
+#else
+      /* Nop ... */
+#endif
       
       /* Enable the special window hook events */
       SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
-      SDL_SetEventFilter(clipboard_filter);
+      SDL_COMPAT_SetEventFilter(clipboard_filter);
       
       initialized = SDL_TRUE;
     }
@@ -144,11 +166,11 @@ static char* get_clipboard_text_x11(void)
   
   Atom selection;
   Lock_Display();
-  Window owner = XGetSelectionOwner(SDL_Display, XA_PRIMARY);
+  Window owner = XGetSelectionOwner(display, XA_PRIMARY);
   Unlock_Display();
-  if (owner == None || owner == SDL_Window)
+  if (owner == None || owner == window)
   {
-    owner = DefaultRootWindow(SDL_Display);
+    owner = DefaultRootWindow(display);
     selection = XA_CUT_BUFFER0;
   }
   else
@@ -156,19 +178,18 @@ static char* get_clipboard_text_x11(void)
     int selection_response = 0;
     SDL_Event event;
     
-    owner = SDL_Window;
+    owner = window;
     Lock_Display();
-    selection = XInternAtom(SDL_Display, "Oricutron", False);
-    XConvertSelection(SDL_Display, XA_PRIMARY, XA_STRING, selection, owner, CurrentTime);
+    selection = XInternAtom(display, "Oricutron", False);
+    XConvertSelection(display, XA_PRIMARY, XA_STRING, selection, owner, CurrentTime);
     Unlock_Display();
     while (!selection_response)
     {
       SDL_WaitEvent(&event);
       if (event.type == SDL_SYSWMEVENT)
       {
-        XEvent xevent = event.syswm.msg->event.xevent;
-        
-        if (xevent.type == SelectionNotify && xevent.xselection.requestor == owner)
+        XEvent* xevent = (XEvent*)event.syswm.msg;
+        if (xevent->type == SelectionNotify && xevent->xselection.requestor == owner)
           selection_response = 1;
       }
     }
@@ -180,7 +201,7 @@ static char* get_clipboard_text_x11(void)
   unsigned long nbytes;
   unsigned long overflow;
   char *src;
-  if (XGetWindowProperty(SDL_Display, owner, selection, 0, 
+  if (XGetWindowProperty(display, owner, selection, 0,
     INT_MAX/4, False, XA_STRING, &seln_type, &seln_format, 
     &nbytes, &overflow, (unsigned char **)&src) == Success)
   {
@@ -203,10 +224,10 @@ static void set_clipboard_text_x11(const char* text)
     if ( text != NULL )
     {
         Lock_Display();
-        XChangeProperty(SDL_Display, DefaultRootWindow(SDL_Display),
+        XChangeProperty(display, DefaultRootWindow(display),
                         (Atom)XA_CUT_BUFFER0, XA_STRING, 8, PropModeReplace, (unsigned char*)text, strlen(text)+1);
-        if ( XGetSelectionOwner(SDL_Display, XA_PRIMARY) != SDL_Window )
-            XSetSelectionOwner(SDL_Display, XA_PRIMARY, SDL_Window, CurrentTime);
+        if ( XGetSelectionOwner(display, XA_PRIMARY) != window )
+            XSetSelectionOwner(display, XA_PRIMARY, window, CurrentTime);
         Unlock_Display();
     }
 }

@@ -38,7 +38,7 @@
 struct keyjoydef
 {
   char *id;
-  Sint16 sym;
+  SDL_COMPAT_KEY sym;
 };
 
 static struct keyjoydef keyjoytab[] = { { "BACKSPACE",   SDLK_BACKSPACE },
@@ -145,7 +145,7 @@ Sint16 joy_keyname_to_sym( char *name )
 static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Uint8 *joystate, SDL_Joystick *sjoy )
 {
   Sint32 i;
-  Sint16 *kbtab;
+  SDL_COMPAT_KEY *kbtab;
   SDL_bool swallowit = SDL_FALSE;
 
   kbtab = oric->kbjoy2;

@@ -303,10 +303,10 @@ SDL_bool read_config_int( char *buf, char *token, int *dest, int min, int max )
   return SDL_TRUE;
 }
 
-SDL_bool read_config_joykey( char *buf, char *token, Sint16 *dest )
+SDL_bool read_config_joykey( char *buf, char *token, SDL_COMPAT_KEY *dest )
 {
   Sint32 i, toklen, d;
-  Sint16 thekey;
+  SDL_COMPAT_KEY thekey;
   char keyname[32];
 
   // Get the token length
@@ -639,7 +639,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   need_sdl_quit = SDL_TRUE;
 
 #ifndef __APPLE__
-  SDL_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
+  SDL_COMPAT_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
 #endif
 
   render_sw_detectvideo( oric );
@@ -1128,7 +1128,7 @@ void shut( struct machine *oric )
     shut_msgbox( oric );
     shut_gui( oric );
   }
-  if( need_sdl_quit ) SDL_Quit();
+  if( need_sdl_quit ) SDL_COMPAT_Quit();
 }
 
 void frameloop_overclock( struct machine *oric, SDL_bool *framedone, SDL_bool *needrender )
@@ -1403,10 +1403,9 @@ int main( int argc, char *argv[] )
       do {
         switch( event.type )
         {
-          case SDL_ACTIVEEVENT:
+          case SDL_COMPAT_ACTIVEEVENT:
             {
-                SDL_ActiveEvent *act_ev = (SDL_ActiveEvent*)&event;
-                if(act_ev->state == SDL_APPACTIVE && act_ev->gain == 1) {
+                if(SDL_COMPAT_IsAppActive(&event)) {
                     oric.shut_render(&oric);
                     oric.init_render(&oric);
                     needrender = SDL_TRUE;

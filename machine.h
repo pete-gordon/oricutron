@@ -231,7 +231,7 @@ struct machine
   Sint32 joy_iface;
   Sint32 joymode_a, joymode_b;
   Sint32 telejoymode_a, telejoymode_b;
-  Sint16 kbjoy1[6], kbjoy2[6];
+  SDL_COMPAT_KEY kbjoy1[6], kbjoy2[6];
 
   SDL_bool lightpen;
   Uint8  lightpenx, lightpeny;

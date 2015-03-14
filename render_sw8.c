@@ -149,7 +149,7 @@ void render_end_sw8( struct machine *oric )
   if( SDL_MUSTLOCK( screen ) )
     SDL_UnlockSurface( screen );
 
-  SDL_Flip( screen );
+  SDL_COMPAT_Flip( screen );
 }
 
 void render_textzone_alloc_sw8( struct machine *oric, int i )
@@ -326,7 +326,7 @@ SDL_bool render_togglefullscreen_sw8( struct machine *oric )
 {
 #if defined(__amigaos4__) || defined(__linux__)
   // Use SDL_WM_ToggleFullScreen on systems where it is supported
-  if( SDL_WM_ToggleFullScreen( screen ) )
+  if( SDL_COMPAT_WM_ToggleFullScreen( screen ) )
   {
     fullscreen = !fullscreen;
     return SDL_TRUE;
@@ -407,16 +407,16 @@ SDL_bool init_render_sw8( struct machine *oric )
   int i, j;
   Sint32 surfacemode;
 
-  surfacemode = SDL_HWPALETTE;
-  if( fullscreen ) surfacemode |= SDL_FULLSCREEN;
-  if( hwsurface ) surfacemode |= SDL_HWSURFACE;
+  surfacemode = SDL_COMPAT_HWPALETTE;
+  if( fullscreen ) surfacemode |= SDL_COMPAT_FULLSCREEN;
+  if( hwsurface ) surfacemode |= SDL_COMPAT_HWSURFACE;
 
   // Try to setup the video display
-  screen = SDL_SetVideoMode( 640, 480, 8, surfacemode );
+  screen = SDL_COMPAT_SetVideoMode( 640, 480, 8, surfacemode );
   if (oric->show_keyboard) {
-     screen = SDL_SetVideoMode( 640, 480+240, 8, surfacemode );
+     screen = SDL_COMPAT_SetVideoMode( 640, 480+240, 8, surfacemode );
   } else {
-     screen = SDL_SetVideoMode( 640, 480, 8, surfacemode );
+     screen = SDL_COMPAT_SetVideoMode( 640, 480, 8, surfacemode );
   }
     
   if( !screen )
@@ -425,7 +425,7 @@ SDL_bool init_render_sw8( struct machine *oric )
     return SDL_FALSE;
   }
 
-  SDL_WM_SetCaption( APP_NAME_FULL, APP_NAME_FULL );
+  SDL_COMPAT_WM_SetCaption( APP_NAME_FULL, APP_NAME_FULL );
 
   for( i=0; i<8; i++ )
   {
@@ -451,7 +451,7 @@ SDL_bool init_render_sw8( struct machine *oric )
     if (!guiimg_to_img(mgimg + i, gimgs + i))
       return SDL_FALSE;
 
-  SDL_SetPalette( screen, SDL_LOGPAL|SDL_PHYSPAL, colours, 0, next_gimgcol);
+  SDL_COMPAT_SetPalette( screen, SDL_COMPAT_LOGPAL|SDL_COMPAT_PHYSPAL, colours, 0, next_gimgcol);
 
   // Precompute pixel quads for efficient rendering double size
   for( i=0; i<8*2; i++ )
@@ -473,6 +473,6 @@ SDL_bool init_render_sw8( struct machine *oric )
 
 void shut_render_sw8( struct machine *oric )
 {
-  // The surface will be freed by SDL_Quit, or a call to SDL_SetVideoMode from a different render module
+  // The surface will be freed by SDL_Quit, or a call to SDL_COMPAT_SetVideoMode from a different render module
 }
 

@@ -89,11 +89,11 @@ unsigned char *eshapes[] = { eshape0, // 0000
                              eshape4 };//1111
 
 
-static unsigned short *keytab;
+static SDL_COMPAT_KEY *keytab;
 
 // Oric keymap (QWERTY)
 //                                FE           FD           FB           F7           EF           DF           BF           7F
-static unsigned short qwktab[] = { '7'        , 'n'        , '5'        , 'v'        , SDLK_RCTRL , '1'        , 'x'        , '3'        ,
+static SDL_COMPAT_KEY qwktab[] = { '7'        , 'n'        , '5'        , 'v'        , SDLK_RCTRL , '1'        , 'x'        , '3'        ,
                                    'j'        , 't'        , 'r'        , 'f'        , 0          , SDLK_ESCAPE, 'q'        , 'd'        ,
                                    'm'        , '6'        , 'b'        , '4'        , SDLK_LCTRL , 'z'        , '2'        , 'c'        ,
                                    'k'        , '9'        , ';'        , '-'        , '#'        , 0          , '\\'       , '\''       ,
@@ -103,7 +103,7 @@ static unsigned short qwktab[] = { '7'        , 'n'        , '5'        , 'v'   
                                    '8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, '`'        , SDLK_EQUALS };
 
 // AZERTY
-static unsigned short azktab[] = { '7'        , 'n'        , '5'        , 'v'        , SDLK_RCTRL , '1'        , 'x'        , '3'        ,
+static SDL_COMPAT_KEY azktab[] = { '7'        , 'n'        , '5'        , 'v'        , SDLK_RCTRL , '1'        , 'x'        , '3'        ,
                                    'j'        , 't'        , 'r'        , 'f'        , 0          , SDLK_ESCAPE, 'a'        , 'd'        ,
                                    'm'        , '6'        , 'b'        , '4'        , SDLK_LCTRL , 'w'        , '2'        , 'c'        ,
                                    'k'        , '9'        , ';'        , '-'        , '#'        , 0          , '\\'       , '\''       ,
@@ -113,7 +113,7 @@ static unsigned short azktab[] = { '7'        , 'n'        , '5'        , 'v'   
                                    '8'        , 'l'        , '0'        , '/'        , SDLK_RSHIFT, SDLK_RETURN, '`'        , SDLK_EQUALS };
 
 // QWERTZ
-static unsigned short qzktab[] = { '7'        , 'n'        , '5'        , 'v'        , SDLK_RCTRL , '1'        , 'x'        , '3'        ,
+static SDL_COMPAT_KEY qzktab[] = { '7'        , 'n'        , '5'        , 'v'        , SDLK_RCTRL , '1'        , 'x'        , '3'        ,
                                    'j'        , 't'        , 'r'        , 'f'        , 0          , SDLK_ESCAPE, 'q'        , 'd'        ,
                                    'm'        , '6'        , 'b'        , '4'        , SDLK_LCTRL , 'y'        , '2'        , 'c'        ,
                                    'k'        , '9'        , ';'        , '-'        , '#'        , 0          , '\\'       , '\''       ,
@@ -661,7 +661,7 @@ void ay_update_keybits( struct ay8912 *ay )
 /*
 ** Handle a key press
 */
-void ay_keypress( struct ay8912 *ay, unsigned short key, SDL_bool down )
+void ay_keypress( struct ay8912 *ay, SDL_COMPAT_KEY key, SDL_bool down )
 {
   int i;
 

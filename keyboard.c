@@ -73,29 +73,29 @@ SDL_Surface* CreateSurface( int width , int height )
 	return surface;
 }
 
-#define KEYSIM_FLAG ((unsigned short)0x8000)
-#define KEYSIM_MASK ((unsigned short)0x7FFF)
+#define KEYSIM_FLAG ((SDL_COMPAT_KEY)0x8000)
+#define KEYSIM_MASK ((SDL_COMPAT_KEY)0x7FFF)
 
-static unsigned short keyMap[] = {
+static SDL_COMPAT_KEY keyMap[] = {
     '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\\',
     SDLK_ESCAPE, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', SDLK_BACKSPACE,
     SDLK_LCTRL, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', SDLK_RETURN,
     SDLK_LSHIFT, 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', SDLK_RSHIFT,
-    SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_LALT, ' ', ' ', ' ', ' ', ' ', ' ' };
+    SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_RALT, ' ', ' ', ' ', ' ', ' ', ' ' };
 
-static unsigned short keyMapPravetz[] = {
+static SDL_COMPAT_KEY keyMapPravetz[] = {
     '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', KEYSIM_FLAG|';', '-', ';',
     SDLK_ESCAPE, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', KEYSIM_FLAG|'2', '\\', SDLK_BACKSPACE,
     SDLK_LCTRL, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', '[', ']', SDLK_RETURN,
     SDLK_LSHIFT, 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', SDLK_RSHIFT,
-    SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_LALT, KEYSIM_FLAG|'6', ' ', ' ', ' ', ' ', ' ' };
+    SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_RALT, KEYSIM_FLAG|'6', ' ', ' ', ' ', ' ', ' ' };
 
-static unsigned short keyMapShiftedPravetz[] = {
+static SDL_COMPAT_KEY keyMapShiftedPravetz[] = {
     '1', '\'', '3', '4', '5', '7', KEYSIM_FLAG|'\'', '9', '0', '-', '8', KEYSIM_FLAG|'=', '=',
     SDLK_ESCAPE, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '~', '\\', SDLK_BACKSPACE,
     SDLK_LCTRL, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', '[', ']', SDLK_RETURN,
     SDLK_LSHIFT, 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', SDLK_RSHIFT,
-    SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_LALT, '`', ' ', ' ', ' ', ' ', ' ' };
+    SDLK_LEFT, SDLK_DOWN, ' ', SDLK_UP, SDLK_RIGHT, SDLK_RALT, '`', ' ', ' ', ' ', ' ', ' ' };
 
 enum {
     MOD_CTRL = 0,
@@ -105,7 +105,7 @@ enum {
     MODKEY_MAX
 };
 
-static unsigned short modKeys[MODKEY_MAX] = { SDLK_LCTRL, SDLK_LSHIFT, SDLK_RSHIFT, SDLK_LALT };
+static SDL_COMPAT_KEY modKeys[MODKEY_MAX] = { SDLK_LCTRL, SDLK_LSHIFT, SDLK_RSHIFT, SDLK_LALT };
 static char *modKeyNames[MODKEY_MAX] = { "Ctrl", "Left shift", "Right shift", "Funct" };
 static const int modKeyMax = MODKEY_MAX;
 static SDL_bool modKeyPressed[MODKEY_MAX];
@@ -466,7 +466,7 @@ void release_sticky_keys()
     release_keys = SDL_TRUE;
 }
 
-void add_to_keyboard_mapping( struct keyboard_mapping *map, unsigned short host_key, unsigned short oric_key )
+void add_to_keyboard_mapping( struct keyboard_mapping *map, SDL_COMPAT_KEY host_key, SDL_COMPAT_KEY oric_key )
 {
     // search for a matching host key
     int index = 0;
