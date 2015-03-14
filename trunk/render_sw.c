@@ -174,7 +174,7 @@ void render_end_sw( struct machine *oric )
   if( SDL_MUSTLOCK( screen ) )
     SDL_UnlockSurface( screen );
 
-  SDL_Flip( screen );
+  SDL_COMPAT_Flip( screen );
 }
 
 void render_textzone_alloc_sw( struct machine *oric, int i )
@@ -453,27 +453,25 @@ void render_video_sw_32bpp( struct machine *oric, SDL_bool doublesize )
 
 void render_sw_detectvideo( struct machine *oric )
 {
-  const SDL_VideoInfo *info = NULL;
+  int BitsPerPixel = SDL_COMPAT_GetBitsPerPixel();
 
   // Guess the suitable video mode, either 16bpp or 32bpp
   oric->sw_depth = 16;
 
-  if( (info = SDL_GetVideoInfo()) )
-  {
-    switch( info->vfmt->BitsPerPixel )
+  switch( BitsPerPixel )
     {
       // Great, cases we handle
       case 8:
       case 16:
+    case 24:
       case 32:
-        oric->sw_depth = info->vfmt->BitsPerPixel;
+      oric->sw_depth = BitsPerPixel;
         break;
       // Damn, cases we don't handle. Let's say 16 bpp gonna be ok
       default:
         break;
     }
   }
-}
 
 void preinit_render_sw( struct machine *oric )
 {
@@ -491,7 +489,7 @@ SDL_bool render_togglefullscreen_sw( struct machine *oric )
 {
 #if defined(__amigaos4__) || defined(__linux__)
   // Use SDL_WM_ToggleFullScreen on systems where it is supported
-  if( SDL_WM_ToggleFullScreen( screen ) )
+  if( SDL_COMPAT_WM_ToggleFullScreen( screen ) )
   {
     fullscreen = !fullscreen;
     return SDL_TRUE;
@@ -548,14 +546,14 @@ SDL_bool init_render_sw( struct machine *oric )
 
   pixel_size = oric->sw_depth / 8;
 
-  surfacemode = fullscreen ? SDL_FULLSCREEN : SDL_SWSURFACE;
-  if( hwsurface ) { surfacemode &= ~SDL_SWSURFACE; surfacemode |= SDL_HWSURFACE; }
+  surfacemode = fullscreen ? SDL_COMPAT_FULLSCREEN : SDL_SWSURFACE;
+  if( hwsurface ) { surfacemode &= ~SDL_SWSURFACE; surfacemode |= SDL_COMPAT_HWSURFACE; }
 
   // Try to setup the video display
   if (oric->show_keyboard) {
-      screen = SDL_SetVideoMode( 640, 480+240, oric->sw_depth, surfacemode );
+      screen = SDL_COMPAT_SetVideoMode( 640, 480+240, oric->sw_depth, surfacemode );
   } else {
-      screen = SDL_SetVideoMode( 640, 480, oric->sw_depth, surfacemode );
+      screen = SDL_COMPAT_SetVideoMode( 640, 480, oric->sw_depth, surfacemode );
   }
     
   if( !screen )
@@ -564,18 +562,18 @@ SDL_bool init_render_sw( struct machine *oric )
     return SDL_FALSE;
   }
 
-  SDL_WM_SetCaption( APP_NAME_FULL, APP_NAME_FULL );
+  SDL_COMPAT_WM_SetCaption( APP_NAME_FULL, APP_NAME_FULL );
 
   // Set the video bit depth dependent function
   if (oric->sw_depth == 16) {
     printchar = printchar_16bpp;
     guiimg_to_img = guiimg_to_img_16bpp;
-//    SDL_WM_SetCaption( "16bit video", "16bit video" );
+//    SDL_COMPAT_WM_SetCaption( "16bit video", "16bit video" );
   }
   else if (oric->sw_depth == 32) {
     printchar = printchar_32bpp;
     guiimg_to_img = guiimg_to_img_32bpp;
-//    SDL_WM_SetCaption( "32bit video", "32bit video" );
+//    SDL_COMPAT_WM_SetCaption( "32bit video", "32bit video" );
   }
 
   // Convert the GUI palette to the screen format bti depth
@@ -624,5 +622,5 @@ void shut_render_sw( struct machine *oric )
     mgimg[i] = NULL;
   }
 
-  // The surface will be freed by SDL_Quit, or a call to SDL_SetVideoMode from a different render module
+  // The surface will be freed by SDL_Quit, or a call to SDL_COMPAT_SetVideoMode from a different render module
 }

@@ -3659,17 +3659,17 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
         break;
     }
 
-    switch( ev->key.keysym.unicode )
+    switch( SDL_COMPAT_GetKeysymUnicode( ev->key.keysym ) )
     {
       default:
-        if( ( ev->key.keysym.unicode > 31 ) && ( ev->key.keysym.unicode < 127 ) )
+        if( ( SDL_COMPAT_GetKeysymUnicode( ev->key.keysym ) > 31 ) && ( SDL_COMPAT_GetKeysymUnicode( ev->key.keysym ) < 127 ) )
         {
           if( ilen >= MAX_ASM_INPUT ) break;
 
           mon_hide_curs();
           for( i=ilen+1; i>cursx; i-- )
             ibuf[i] = ibuf[i-1];
-          ibuf[cursx] = ev->key.keysym.unicode;
+          ibuf[cursx] = SDL_COMPAT_GetKeysymUnicode( ev->key.keysym );
           cursx++;
           ilen++;
           mon_write_ibuf_asm();
@@ -3798,17 +3798,17 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
       break;
   }
 
-  switch( ev->key.keysym.unicode )
+  switch( SDL_COMPAT_GetKeysymUnicode( ev->key.keysym ) )
   {
     default:
-      if( ( ev->key.keysym.unicode > 31 ) && ( ev->key.keysym.unicode < 127 ) )
+      if( ( SDL_COMPAT_GetKeysymUnicode( ev->key.keysym ) > 31 ) && ( SDL_COMPAT_GetKeysymUnicode( ev->key.keysym ) < 127 ) )
       {
         if( ilen >= MAX_CONS_INPUT ) break;
 
         mon_hide_curs();
         for( i=ilen+1; i>cursx; i-- )
           ibuf[i] = ibuf[i-1];
-        ibuf[cursx] = ev->key.keysym.unicode;
+        ibuf[cursx] = SDL_COMPAT_GetKeysymUnicode( ev->key.keysym );
         cursx++;
         ilen++;
         mon_set_iloff();
@@ -3893,7 +3893,7 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
       break;
   }
 
-  if( ishex( ev->key.keysym.unicode ) )
+  if( ishex( SDL_COMPAT_GetKeysymUnicode( ev->key.keysym ) ) )
   {
     if( mw_mode != 1 )
     {
@@ -3905,7 +3905,7 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
 
     if( mw_koffs < 4 )
     {
-      mw_ibuf[++mw_koffs] = ev->key.keysym.unicode;
+      mw_ibuf[++mw_koffs] = SDL_COMPAT_GetKeysymUnicode( ev->key.keysym );
       mw_ibuf[mw_koffs+1] = 0;
     }
 
@@ -3983,13 +3983,9 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
   donkey = SDL_FALSE;
   switch( ev->type )
   {
-    case SDL_ACTIVEEVENT:
-      switch( ev->active.type )
-      {
-        case SDL_APPINPUTFOCUS:
-        case SDL_APPACTIVE:
+    case SDL_COMPAT_ACTIVEEVENT:
+      if(SDL_COMPAT_IsAppFocused(ev)) {
           *needrender = SDL_TRUE;
-          break;
       }
       break;
 

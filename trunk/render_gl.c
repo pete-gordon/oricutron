@@ -269,7 +269,7 @@ void render_end_gl( struct machine *oric )
     }
   }
 
-  SDL_GL_SwapBuffers();
+  SDL_COMPAT_GL_SwapBuffers();
 }
 
 static unsigned int rounduppow2( unsigned int x )
@@ -462,7 +462,7 @@ SDL_bool render_togglefullscreen_gl( struct machine *oric )
 {
 #if defined(__amigaos4__) || defined(__linux__)
   // Use SDL_WM_ToggleFullScreen on systems where it is supported
-  if( SDL_WM_ToggleFullScreen( screen ) )
+  if( SDL_COMPAT_WM_ToggleFullScreen( screen ) )
   {
     fullscreen = !fullscreen;
     return SDL_TRUE;
@@ -501,16 +501,16 @@ static SDL_bool go_go_gadget_texture( int i, int w, int h, int blendtype, SDL_bo
 SDL_bool init_render_gl( struct machine *oric )
 {
   int depth, i, x, y;
-  const SDL_VideoInfo *info = NULL;
+  int BitsPerPixel = SDL_COMPAT_GetBitsPerPixel();
 
   depth = 32;
-  if( (info = SDL_GetVideoInfo()) )
-    depth = info->vfmt->BitsPerPixel;
+  if( BitsPerPixel )
+    depth = BitsPerPixel;
 
   if (oric->show_keyboard) {
-      screen = SDL_SetVideoMode( 640, 480+240, depth, fullscreen ? SDL_OPENGL|SDL_FULLSCREEN : SDL_OPENGL );
+      screen = SDL_COMPAT_SetVideoMode( 640, 480+240, depth, fullscreen ? SDL_COMPAT_OPENGL|SDL_COMPAT_FULLSCREEN : SDL_COMPAT_OPENGL );
   } else {
-      screen = SDL_SetVideoMode( 640, 480, depth, fullscreen ? SDL_OPENGL|SDL_FULLSCREEN : SDL_OPENGL );
+      screen = SDL_COMPAT_SetVideoMode( 640, 480, depth, fullscreen ? SDL_COMPAT_OPENGL|SDL_COMPAT_FULLSCREEN : SDL_COMPAT_OPENGL );
   }
     
   if( !screen )
@@ -586,7 +586,7 @@ SDL_bool init_render_gl( struct machine *oric )
   for( i=0; i<NUM_TZ; i++ )
     render_textzone_alloc_gl( oric, i );
 
-  SDL_WM_SetCaption( APP_NAME_FULL, APP_NAME_FULL );
+  SDL_COMPAT_WM_SetCaption( APP_NAME_FULL, APP_NAME_FULL );
 
   clrcol[0] = ((float)sgpal[0*3+0])/255.0f;
   clrcol[1] = ((float)sgpal[0*3+1])/255.0f;

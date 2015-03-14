@@ -226,8 +226,8 @@ void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode )
   switch( mode )
   {
     case EM_RUNNING:
-      SDL_EnableKeyRepeat( 0, 0 );
-      SDL_EnableUNICODE( SDL_FALSE );
+      SDL_COMPAT_EnableKeyRepeat( 0, 0 );
+      SDL_COMPAT_EnableUNICODE( SDL_FALSE );
       oric->ay.soundon = soundavailable && soundon && (!warpspeed);
       if( oric->ay.soundon )
       {
@@ -240,8 +240,8 @@ void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode )
     case EM_MENU:
       if( vidcap ) avi_close( &vidcap );
       gotomenu( oric, NULL, 0 );
-      SDL_EnableKeyRepeat( SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL );
-      SDL_EnableUNICODE( SDL_TRUE );
+      SDL_COMPAT_EnableKeyRepeat( SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL );
+      SDL_COMPAT_EnableUNICODE( SDL_TRUE );
       oric->ay.soundon = SDL_FALSE;
       if( soundavailable )
         SDL_PauseAudio( 1 );
@@ -250,8 +250,8 @@ void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode )
     case EM_DEBUG:
       if( vidcap ) avi_close( &vidcap );
       mon_enter( oric );
-      SDL_EnableKeyRepeat( SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL );
-      SDL_EnableUNICODE( SDL_TRUE );
+      SDL_COMPAT_EnableKeyRepeat( SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL );
+      SDL_COMPAT_EnableUNICODE( SDL_TRUE );
       oric->ay.soundon = SDL_FALSE;
       if( soundavailable )
         SDL_PauseAudio( 1 );

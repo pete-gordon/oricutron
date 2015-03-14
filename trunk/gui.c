@@ -1798,13 +1798,9 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
   switch( ev->type )
   {
-    case SDL_ACTIVEEVENT:
-      switch( ev->active.type )
-      {
-        case SDL_APPINPUTFOCUS:
-        case SDL_APPACTIVE:
+    case SDL_COMPAT_ACTIVEEVENT:
+      if(SDL_COMPAT_IsAppFocused(ev)) {
           *needrender = SDL_TRUE;
-          break;
       }
       break;
 
@@ -2050,7 +2046,7 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
 
   shut_gui( oric );
   shut_joy( oric );
-  SDL_Quit();
+  SDL_COMPAT_Quit();
   need_sdl_quit = SDL_FALSE;
 
   // Go SDL!
@@ -2063,7 +2059,7 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
   need_sdl_quit = SDL_TRUE;
 
 #ifndef __APPLE__
-  SDL_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
+  SDL_COMPAT_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
 #endif
 
   if( !init_joy( oric ) )

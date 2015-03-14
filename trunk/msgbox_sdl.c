@@ -120,8 +120,8 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
   SDL_Event event;
   SDL_bool wasunicode;
 
-  wasunicode = SDL_EnableUNICODE( SDL_TRUE );
-  SDL_EnableKeyRepeat( SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL );
+  wasunicode = SDL_COMPAT_EnableUNICODE( SDL_TRUE );
+  SDL_COMPAT_EnableKeyRepeat( SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL );
 
   // Clear any old message
   for( i=1; i<59; i++ )
@@ -173,20 +173,16 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
   {
     if( !SDL_WaitEvent( &event ) ) 
     {
-      SDL_EnableUNICODE( wasunicode );
-      SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+      SDL_COMPAT_EnableUNICODE( wasunicode );
+      SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
       return SDL_FALSE;
     }
 
     switch( event.type )
     {
-      case SDL_ACTIVEEVENT:
-        switch( event.active.type )
-        {
-          case SDL_APPINPUTFOCUS:
-          case SDL_APPACTIVE:
+      case SDL_COMPAT_ACTIVEEVENT:
+        if(SDL_COMPAT_IsAppFocused( &event ) ) {
             msgbox_render( oric );
-            break;
         }
         break;
 
@@ -229,13 +225,13 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
             {
               case MSGBOX_YES_NO:
               case MSGBOX_OK_CANCEL:
-                SDL_EnableUNICODE( wasunicode );
-                SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+                SDL_COMPAT_EnableUNICODE( wasunicode );
+                SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
                 return (presson==0);
 
               default:
-                SDL_EnableUNICODE( wasunicode );
-                SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+                SDL_COMPAT_EnableUNICODE( wasunicode );
+                SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
                 return SDL_TRUE;
             }
             break;
@@ -271,13 +267,13 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
             {
               case MSGBOX_YES_NO:
               case MSGBOX_OK_CANCEL:
-                SDL_EnableUNICODE( wasunicode );
-                SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+                SDL_COMPAT_EnableUNICODE( wasunicode );
+                SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
                 return (cbtn==0);
 
               default:
-                SDL_EnableUNICODE( wasunicode );
-                SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+                SDL_COMPAT_EnableUNICODE( wasunicode );
+                SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
                 return SDL_TRUE;
             }
             break;
@@ -289,7 +285,7 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
     }
   }
 
-  SDL_EnableUNICODE( wasunicode );
-  SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+  SDL_COMPAT_EnableUNICODE( wasunicode );
+  SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
   return SDL_FALSE;
 }

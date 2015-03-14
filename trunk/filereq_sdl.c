@@ -295,8 +295,8 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   SDL_bool shifty = SDL_FALSE, wasunicode;
   int doaction;
 
-  wasunicode = SDL_EnableUNICODE( SDL_TRUE );
-  SDL_EnableKeyRepeat( SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL );
+  wasunicode = SDL_COMPAT_EnableUNICODE( SDL_TRUE );
+  SDL_COMPAT_EnableKeyRepeat( SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL );
 
   filereq_settbox( &freqf_tbox[0], path );
   filereq_settbox( &freqf_tbox[1], fname );
@@ -314,13 +314,13 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       filereq_settbox( &freqf_tbox[0], path );
       if( !filereq_scan( path ) )
       {
-        SDL_EnableUNICODE( wasunicode );
-        SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+        SDL_COMPAT_EnableUNICODE( wasunicode );
+        SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
         return SDL_FALSE;
       }
     } else {
-      SDL_EnableUNICODE( wasunicode );
-      SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+      SDL_COMPAT_EnableUNICODE( wasunicode );
+      SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
       return SDL_FALSE;
     }
   }
@@ -333,8 +333,8 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   {
     if( !SDL_WaitEvent( &event ) )
     {
-      SDL_EnableUNICODE( wasunicode );
-      SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+      SDL_COMPAT_EnableUNICODE( wasunicode );
+      SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
       return SDL_FALSE;
     }
 
@@ -361,13 +361,9 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
 
     switch( event.type )
     {
-      case SDL_ACTIVEEVENT:
-        switch( event.active.type )
-        {
-          case SDL_APPINPUTFOCUS:
-          case SDL_APPACTIVE:
+      case SDL_COMPAT_ACTIVEEVENT:
+        if(SDL_COMPAT_IsAppFocused( &event ) ) {
             filereq_render( oric );
-            break;
         }
         break;
 
@@ -424,8 +420,8 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
             break;
 
           case SDLK_ESCAPE:
-            SDL_EnableUNICODE( wasunicode );
-            SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+            SDL_COMPAT_EnableUNICODE( wasunicode );
+            SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
             return SDL_FALSE;
 
           case SDLK_RETURN:
@@ -442,13 +438,13 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
                     filereq_settbox( &freqf_tbox[0], path );
                     if( !filereq_scan( path ) )
                     {
-                      SDL_EnableUNICODE( wasunicode );
-                      SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+                      SDL_COMPAT_EnableUNICODE( wasunicode );
+                      SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
                       return SDL_FALSE;
                     }
                   } else {
-                    SDL_EnableUNICODE( wasunicode );
-                    SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+                    SDL_COMPAT_EnableUNICODE( wasunicode );
+                    SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
                     return SDL_FALSE;
                   }
                 }
@@ -459,8 +455,8 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
                 break;
               
               case 1:
-                SDL_EnableUNICODE( wasunicode );
-                SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+                SDL_COMPAT_EnableUNICODE( wasunicode );
+                SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
                 return SDL_TRUE;
                 
               case 2:
@@ -626,18 +622,18 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
             break;
         }
 
-        switch( event.key.keysym.unicode )
+        switch( SDL_COMPAT_GetKeysymUnicode( event.key.keysym ) )
         {  
           default:
             if( freqf_cgad == 2 ) break;
 
-            if( ( event.key.keysym.unicode > 31 ) && ( event.key.keysym.unicode < 127 ) )
+            if( ( SDL_COMPAT_GetKeysymUnicode( event.key.keysym ) > 31 ) && ( SDL_COMPAT_GetKeysymUnicode( event.key.keysym ) < 127 ) )
             {
               tb = &freqf_tbox[freqf_cgad];
               if( tb->slen >= (tb->maxlen-1) ) break;
               for( i=tb->slen; i>=tb->cpos; i-- )
                 tb->buf[i] = tb->buf[i-1];
-              tb->buf[tb->cpos] = event.key.keysym.unicode;
+              tb->buf[tb->cpos] = SDL_COMPAT_GetKeysymUnicode( event.key.keysym );
               tb->slen++;
               tb->cpos++;
               tb->buf[tb->cpos] = 0;
@@ -719,8 +715,8 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
           strncpy( &path[i], freqfiles[cfile].name, 4096-i );
           path[4095] = 0;
         } else {
-          SDL_EnableUNICODE( wasunicode );
-          SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+          SDL_COMPAT_EnableUNICODE( wasunicode );
+          SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
           return SDL_TRUE;
         }
         cfile = top = 0;
@@ -733,13 +729,13 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
             filereq_settbox( &freqf_tbox[0], path );
             if( !filereq_scan( path ) )
             {
-              SDL_EnableUNICODE( wasunicode );
-              SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+              SDL_COMPAT_EnableUNICODE( wasunicode );
+              SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
               return SDL_FALSE;
             }
           } else {
-            SDL_EnableUNICODE( wasunicode );
-            SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+            SDL_COMPAT_EnableUNICODE( wasunicode );
+            SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
             return SDL_FALSE;
           }
         }
@@ -751,7 +747,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
     }
   }
 
-  SDL_EnableUNICODE( wasunicode );
-  SDL_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+  SDL_COMPAT_EnableUNICODE( wasunicode );
+  SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
   return SDL_FALSE;
 }

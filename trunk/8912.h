@@ -109,7 +109,7 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric );
 void ay_callback( void *dummy, Sint8 *stream, int length );
 void ay_ticktock( struct ay8912 *ay, int cycles );
 void ay_update_keybits( struct ay8912 *ay );
-void ay_keypress( struct ay8912 *ay, unsigned short key, SDL_bool down );
+void ay_keypress( struct ay8912 *ay, SDL_COMPAT_KEY key, SDL_bool down );
 
 void ay_set_bc1( struct ay8912 *ay, unsigned char state );
 void ay_set_bdir( struct ay8912 *ay, unsigned char state );

@@ -26,16 +26,16 @@ struct kbdkey
   int x, y, w, h;
   int highlight;
   int highlightfade;
-  unsigned short keysim;
-  unsigned short keysimshifted;
+  SDL_COMPAT_KEY keysim;
+  SDL_COMPAT_KEY keysimshifted;
   int is_mod_key;
 };
 
 struct keyboard_mapping
 {
-    unsigned short host_keys[65];
-    unsigned short oric_keys[65];
-    unsigned short nb_map;
+  SDL_COMPAT_KEY host_keys[65];
+  SDL_COMPAT_KEY oric_keys[65];
+  SDL_COMPAT_KEY nb_map;
 };
 
 
@@ -45,7 +45,7 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
 
 void release_sticky_keys();
 
-void add_to_keyboard_mapping( struct keyboard_mapping *map, unsigned short host_key, unsigned short oric_key );
+void add_to_keyboard_mapping( struct keyboard_mapping *map, SDL_COMPAT_KEY host_key, SDL_COMPAT_KEY oric_key );
 
 void reset_keyboard_mapping( struct keyboard_mapping *map );
 

@@ -13,12 +13,19 @@
 # PLATFORM = aitouchbook
 # PLATFORM = aros
 
+# important build parameters:
+# SDL_LIB - select SDL versions
+#     SDL_LIB=sdl  - use v.1.x - default
+#     SDL_LIB=sdl2 - use v.2.x
+
+
+
 VERSION_MAJ = 1
 VERSION_MIN = 2
 VERSION_REV = 0
 VERSION_FULL = $(VERSION_MAJ).$(VERSION_MIN).$(VERSION_REV)
 APP_NAME = Oricutron
-APP_YEAR = 2014
+APP_YEAR = 2015
 COPYRIGHTS = (c)$(APP_YEAR) Peter Gordon (pete@petergordon.org.uk)
 VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) $(COPYRIGHTS)"
 #COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) ©$(APP_YEAR) Peter Gordon (pete@petergordon.org.uk)"
@@ -102,10 +109,14 @@ $(info Target platform: $(PLATFORM))
 
 ####### PLATFORM SPECIFIC STUFF HERE #######
 
+### set SDL_LIB to 'sdl' or 'sdl2' for SDL2 (default is sdl)
+SDL_LIB ?= sdl
+$(info Using SDL lib   : $(SDL_LIB))
+
 # Amiga OS4
 ifeq ($(PLATFORM),os4)
 CFLAGS += -mcrt=newlib -gstabs -I/SDK/Local/common/include/ -I/SDK/Local/common/include/SDL/ -I/SDK/Local/newlib/include/ -I/SDK/Local/newlib/include/SDL/ -D__OPENGL_AVAILABLE__ -DNO_GETADDRINFO=1
-LFLAGS += -lm `sdl-config --libs` -lGL -mcrt=newlib -gstabs
+LFLAGS += -lm `$(SDL_LIB)-config --libs` -lGL -mcrt=newlib -gstabs
 FILEREQ_OBJ = filereq_amiga.o
 MSGBOX_OBJ = msgbox_os4.o
 AMIGA_ICONS = os4icon
@@ -113,8 +124,8 @@ endif
 
 # MorphOS
 ifeq ($(PLATFORM),morphos)
-CFLAGS += `sdl-config --cflags` -D__OPENGL_AVAILABLE__ -DNO_GETADDRINFO=1
-LFLAGS += `sdl-config --libs` -s
+CFLAGS += `$(SDL_LIB)-config --cflags` -D__OPENGL_AVAILABLE__ -DNO_GETADDRINFO=1
+LFLAGS += `$(SDL_LIB)-config --libs` -s
 FILEREQ_OBJ = filereq_amiga.o
 MSGBOX_OBJ = msgbox_os2.o
 AMIGA_ICONS = pngicon
@@ -122,8 +133,8 @@ endif
 
 # AROS
 ifeq ($(PLATFORM),aros)
-CFLAGS += `sdl-config --cflags` -D__OPENGL_AVAILABLE__
-LFLAGS += `sdl-config --libs` -s
+CFLAGS += `$(SDL_LIB)-config --cflags` -D__OPENGL_AVAILABLE__
+LFLAGS += `$(SDL_LIB)-config --libs` -s
 FILEREQ_OBJ = filereq_amiga.o
 MSGBOX_OBJ = msgbox_os2.o
 AMIGA_ICONS = pngicon
@@ -174,8 +185,8 @@ ifneq ($(SDL_PREFIX),)
 CFLAGS += -I$(SDL_PREFIX)/include
 LFLAGS += -L$(SDL_PREFIX)/lib
 else
-CFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config sdl --cflags)
-LFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config sdl --libs)
+CFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config $(SDL_LIB) --cflags)
+LFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config $(SDL_LIB) --libs)
 endif
 CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -D__CBCOPY__ -D__CBPASTE__ -g
 LFLAGS += -g -static-libgcc -static-libstdc++ -mwindows -lopengl32 -lws2_32
@@ -207,8 +218,8 @@ ifneq ($(SDL_PREFIX),)
 CFLAGS += -I$(SDL_PREFIX)/include
 LFLAGS += -L$(SDL_PREFIX)/lib
 else
-CFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config sdl --cflags)
-LFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config sdl --libs)
+CFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config $(SDL_LIB) --cflags)
+LFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config $(SDL_LIB) --libs)
 endif
 CFLAGS += -Dmain=SDL_main -D__SPECIFY_SDL_DIR__ -D__OPENGL_AVAILABLE__ -D__CBCOPY__ -D__CBPASTE__ -g
 LFLAGS += -g -static-libgcc -static-libstdc++ -mwindows -lopengl32 -lws2_32
@@ -234,8 +245,8 @@ endif
 
 ifeq ($(PLATFORMTYPE),beos)
 #CFLAGS += -D__OPENGL_AVAILABLE__
-CFLAGS += $(shell sdl-config --cflags)
-LFLAGS += $(shell sdl-config --libs)
+CFLAGS += $(shell $(SDL_LIB)-config --cflags)
+LFLAGS += $(shell $(SDL_LIB)-config --libs)
 CFLAGS += -Wno-multichar
 CFLAGS += -g -D__CBCOPY__ -D__CBPASTE__
 LFLAGS += -lbe -ltracker -lGL
@@ -255,8 +266,8 @@ endif
 
 # Mac OS X
 ifeq ($(PLATFORM),osx)
-CFLAGS += -D__OPENGL_AVAILABLE__ -D__CBCOPY__ -D__CBPASTE__ $(shell sdl-config --cflags)
-LFLAGS += $(shell sdl-config --libs) -s
+CFLAGS += -D__OPENGL_AVAILABLE__ -D__CBCOPY__ -D__CBPASTE__ $(shell $(SDL_LIB)-config --cflags)
+LFLAGS += $(shell $(SDL_LIB)-config --libs) -s
 LFLAGS += -lm -Wl,-framework,OpenGL
 TARGET = oricutron
 FILEREQ_OBJ =
@@ -282,8 +293,8 @@ LFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3
 FILEREQ_OBJ = filereq_gtk.o
 MSGBOX_OBJ = msgbox_gtk.o
 endif
-CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) -D__OPENGL_AVAILABLE__ -DAUDIO_BUFLEN=1024 -D__CBCOPY__ -D__CBPASTE__
-LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --libs) -lGL -lX11
+CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --cflags) -D__OPENGL_AVAILABLE__ -DAUDIO_BUFLEN=1024 -D__CBCOPY__ -D__CBPASTE__
+LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --libs) -lGL -lX11
 CUSTOMOBJS = gui_x11.o
 TARGET = oricutron
 INSTALLDIR = /usr/local
@@ -301,8 +312,8 @@ CFLAGS += -m32
 LFLAGS += -m32
 endif
 STRIP :=  $(CROSS_COMPILE)$(STRIP)
-CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --cflags) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --cflags) -D__CBCOPY__ -D__CBPASTE__
-LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config sdl --libs) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --libs) -lX11
+CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --cflags) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --cflags) -D__CBCOPY__ -D__CBPASTE__
+LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --libs) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --libs) -lX11
 CUSTOMOBJS = gui_x11.o
 FILEREQ_OBJ = filereq_gtk.o
 MSGBOX_OBJ = msgbox_gtk.o
@@ -318,8 +329,8 @@ CC = $(WIZ_PREFIX)-gcc
 CXX = $(WIZ_PREFIX)-g++
 AR =  $(WIZ_PREFIX)-ar
 RANLIB = $(WIZ_PREFIX)-ranlib
-CFLAGS += `$(WIZ_HOME)/bin/sdl-config --cflags`
-LFLAGS += -lm `$(WIZ_HOME)/bin/sdl-config --libs`
+CFLAGS += `$(WIZ_HOME)/bin/$(SDL_LIB)-config --cflags`
+LFLAGS += -lm `$(WIZ_HOME)/bin/$(SDL_LIB)-config --libs`
 TARGET = oricutron.gpe
 endif
 
@@ -330,8 +341,8 @@ AITB_PREFIX = $(AITB_HOME)arm-angstrom-linux-gnueabi
 CC = $(AITB_PREFIX)-gcc
 CXX = $(AITB_PREFIX)-g++
 AR =  $(AITB_PREFIX)-ar
-CFLAGS += `$(AITB_HOME)/sdl-config --cflags`
-LFLAGS += -lm `$(AITB_HOME)/sdl-config --libs`
+CFLAGS += `$(AITB_HOME)/$(SDL_LIB)-config --cflags`
+LFLAGS += -lm `$(AITB_HOME)/$(SDL_LIB)-config --libs`
 RANLIB = $(AITB_PREFIX)-ranlib
 TARGET = oricutron_AITB
 endif
@@ -340,6 +351,7 @@ endif
 ####### SHOULDN'T HAVE TO CHANGE THIS STUFF #######
 
 OBJECTS = \
+	system_sdl.o \
 	main.o \
 	6502.o \
 	machine.o \
