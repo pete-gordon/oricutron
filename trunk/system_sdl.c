@@ -115,7 +115,11 @@ static void FreeResources(void)
 #if SDL_MAJOR_VERSION == 1
 int SDL_COMPAT_GetWMInfo(SDL_SysWMinfo *info)
 {
+#ifdef __MORPHOS__
+  return 0;
+#else
   return SDL_GetWMInfo(info);
+#endif
 }
 #else
 int SDL_COMPAT_GetWMInfo(SDL_SysWMinfo *info)
