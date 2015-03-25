@@ -478,6 +478,7 @@ SDL_bool acia_init_modem( struct acia* acia )
 #define _recvdata(a, b, c) recv(a, b, c, 0)
 #define _closesocket close
 #if defined(__MORPHOS__)
+struct Library *SocketBase;
 typedef unsigned long socklen_t;
 char *inet_ntoa(struct in_addr n)
 {
@@ -524,6 +525,10 @@ static SDL_bool socket_init(void)
       (WSAStartup(MAKEWORD(1,1), &wsadata) == SOCKET_ERROR) )
       return SDL_FALSE;
     #endif
+    #ifdef __MORPHOS__
+    if( !(SocketBase = OldOpenLibrary("bsdsocket.library")) )
+      return SDL_FALSE;
+    #endif
   }
   socket_initialized = SDL_TRUE;
   return SDL_TRUE;
@@ -533,6 +538,10 @@ static void socket_done(void)
 {
   #ifdef WIN32
   WSACleanup();
+  #endif
+  #ifdef __MORPHOS__
+  if( SocketBase )
+    CloseLibrary(SocketBase);
   #endif
 }
 
