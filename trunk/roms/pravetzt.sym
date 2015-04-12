@@ -10,7 +10,6 @@ c4d3 InsDelLine
 c4e0 DeleteLine
 c524 InsertLine
 c55f SetLineLinkPtrs
-c444 FreeMemCheck
 c592 GetLine
 c5e8 ReadKey
 c5fa TokeniseLine
@@ -114,7 +113,7 @@ e076 AddToFPA
 e0c5 PrintInt
 e22e SQR
 e27c ExpData
-e22a EXP
+e2aa EXP
 e313 SeriesEval
 e34f RND
 e38b COS
@@ -161,7 +160,6 @@ ede0 SetupTimer
 ee1a StopTimer
 ee22 IRQ
 ee8c ResetTimer
-ee1a StopTimer
 ee9d GetTimer
 eeab SetTimer
 eec9 Delay
@@ -200,7 +198,7 @@ fa9f PING
 faa7 PingData
 fab5 SHOOT
 fabd ShootData
-fab5 EXPLODE
+facb EXPLODE
 facb ExplodeData
 fae1 ZAP
 fb06 ZapData
@@ -208,7 +206,6 @@ fb14 KeyClickH
 fb1c KeyClickHData
 fb2a KeyClickL
 fb32 KeyClickLData
-fb14 KeyClickH
 fb40 SOUND
 fbd0 PLAY
 fc18 MUSIC
