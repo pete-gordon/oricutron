@@ -26,11 +26,14 @@ c855 FOR
 c8c1 DoNextLine
 c915 DoStatement
 c952 RESTORE
+c971 STOP
+c973 END
 c9a0 CONT
 c9bd RUN
 c9c8 GOSUB
 c9e5 GOTO
 ca12 RETURN
+ca3c DATA
 ca4e FindEndOfStatement
 ca51 FindEOL
 ca70 IF
@@ -42,8 +45,9 @@ cbab PRINT
 cbf0 NewLine
 cc59 SetCursor
 ccb0 PrintString
-ccce ClrScr
+ccce CLS
 cd16 TRON
+cd19 TROFF
 cd46 GET
 cd55 INPUT
 cd89 READ
