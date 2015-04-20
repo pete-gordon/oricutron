@@ -26,11 +26,14 @@ c855 FOR
 c8c1 DoNextLine
 c915 DoStatement
 c952 RESTORE
+c971 STOP
+c973 END
 c9a0 CONT
 c9bd RUN
 c9c8 GOSUB
 c9e5 GOTO
 ca12 RETURN
+ca3c DATA
 ca4e FindEndOfStatement
 ca51 FindEOL
 ca70 IF
@@ -42,8 +45,9 @@ cbab PRINT
 cbf0 NewLine
 cc59 SetCursor
 ccb0 PrintString
-ccce ClrScr
+ccce CLS
 cd16 TRON
+cd19 TROFF
 cd46 GET
 cd55 INPUT
 cd89 READ
@@ -105,6 +109,7 @@ df0b FALSE
 df0f TRUE
 df13 GetSign
 df21 SGN
+df49 ABS
 df4c CompareFPA
 df8c FPA2Int
 dfbd INT
@@ -118,6 +123,7 @@ e313 SeriesEval
 e34f RND
 e38b COS
 e392 SIN
+e3db TAN
 e407 TrigData
 e43f ATN
 e46f ATNData
@@ -150,6 +156,7 @@ e9d1 RECALL
 eaf0 HiresTest
 eb78 CheckKbd
 ebce HIMEM
+ebe7 GRAB
 ec0c RELEASE
 ec21 TEXT
 ec33 HIRES
@@ -199,7 +206,7 @@ faa7 PingData
 fab5 SHOOT
 fabd ShootData
 facb EXPLODE
-facb ExplodeData
+fad3 ExplodeData
 fae1 ZAP
 fb06 ZapData
 fb14 KeyClickH
