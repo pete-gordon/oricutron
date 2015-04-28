@@ -432,10 +432,6 @@ SDL_bool save_snapshot(struct machine *oric, char *filename)
     NEWBLOCK("ACI\x00");
     PUTDATA(&oric->tele_acia.regs[0], ACIA_LAST);
 
-    // AUX ACIA
-    NEWBLOCK("AUX\x00");
-    PUTDATA(&oric->aux_acia.regs[0], ACIA_LAST);
-
     // VIA
     NEWBLOCK("TVA\x00");
     PUTU8(oric->tele_via.ifr);
@@ -1434,8 +1430,6 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
       if (back2mon) setemumode(oric, NULL, EM_DEBUG);
       return SDL_FALSE;
     }
-
-    getdata(blk, &oric->aux_acia.regs[0], ACIA_LAST);
 
     // Finished with this one
     free_block(blk);

@@ -1445,7 +1445,7 @@ void togglelightpen( struct machine *oric, struct osdmenuitem *mitem, int dummy 
   mitem->name = "\x0e""Lightpen";
 }
 
-// Toggle aux acia (Serial card)
+// Toggle tele acia (Serial card)
 void toggleaciabackend( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
   if( oric->aciabackend )
@@ -1455,10 +1455,7 @@ void toggleaciabackend( struct machine *oric, struct osdmenuitem *mitem, int dum
 
   mitem->name = aciabackends[oric->aciabackend];
 
-  if( oric->type==MACH_TELESTRAT )
-    acia_init( &oric->tele_acia, oric );
-  else
-    acia_init( &oric->aux_acia, oric );
+  acia_init( &oric->tele_acia, oric );
 }
 
 // Toggle symbols autoload

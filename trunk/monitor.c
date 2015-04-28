@@ -3925,9 +3925,9 @@ static unsigned int steppy_step( struct machine *oric )
   if( oric->type == MACH_TELESTRAT )
   {
     via_clock( &oric->tele_via, oric->cpu.icycles );
+  }
+  if( oric->aciabackend )
     acia_clock( &oric->tele_acia, oric->cpu.icycles );
-  } else if( oric->aciabackend )
-    acia_clock( &oric->aux_acia, oric->cpu.icycles );
 
   oric->cpu.rastercycles -= oric->cpu.icycles;
   m6502_inst( &oric->cpu );
@@ -4037,9 +4037,9 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           if( oric->type == MACH_TELESTRAT )
           {
             via_clock( &oric->tele_via, oric->cpu.icycles );
+          }
+          if( oric->aciabackend )
             acia_clock( &oric->tele_acia, oric->cpu.icycles );
-          } else if( oric->aciabackend )
-            acia_clock( &oric->aux_acia, oric->cpu.icycles );
           oric->cpu.rastercycles -= oric->cpu.icycles;
           m6502_inst( &oric->cpu );
           if( oric->cpu.rastercycles <= 0 )

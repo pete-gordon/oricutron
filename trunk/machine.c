@@ -288,7 +288,7 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
   if( ( addr & 0xff00 ) == 0x0300 )
   {
     if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
-      acia_write( &oric->aux_acia, addr, data );
+      acia_write( &oric->tele_acia, addr, data );
     else
       via_write( &oric->via, addr, data );
     return;
@@ -304,7 +304,7 @@ void o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
   if( ( addr & 0xff00 ) == 0x0300 )
   {
     if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
-      acia_write( &oric->aux_acia, addr, data );
+      acia_write( &oric->tele_acia, addr, data );
     else
       via_write( &oric->via, addr, data );
     return;
@@ -385,7 +385,7 @@ void jasmin_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char da
     }
 
     if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
-      acia_write( &oric->aux_acia, addr, data );
+      acia_write( &oric->tele_acia, addr, data );
     else
       via_write( &oric->via, addr, data );
     return;
@@ -417,7 +417,7 @@ void jasmin_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char dat
     }
 
     if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
-      acia_write( &oric->aux_acia, addr, data );
+      acia_write( &oric->tele_acia, addr, data );
     else
       via_write( &oric->via, addr, data );
     return;
@@ -444,7 +444,7 @@ void microdisc_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char
       microdisc_write( &oric->md, addr, data );
     } else {
       if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
-        acia_write( &oric->aux_acia, addr, data );
+        acia_write( &oric->tele_acia, addr, data );
       else
         via_write( &oric->via, addr, data );
     }
@@ -471,7 +471,7 @@ void microdisc_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char 
       microdisc_write( &oric->md, addr, data );
     } else {
       if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
-        acia_write( &oric->aux_acia, addr, data );
+        acia_write( &oric->tele_acia, addr, data );
       else
         via_write( &oric->via, addr, data );
     }
@@ -494,7 +494,7 @@ void pravetz_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char d
   else if( 0x310 <= addr && addr <= 0x31f )
   {
     if( oric->aciabackend && oric->pravetz.extension == 0x100 )
-      acia_write( &oric->aux_acia, addr, data );
+      acia_write( &oric->tele_acia, addr, data );
     else
       pravetz_write( &oric->pravetz, addr, data );
   }
@@ -569,7 +569,7 @@ unsigned char atmosread( struct m6502 *cpu, unsigned short addr )
   if( ( addr & 0xff00 ) == 0x0300 )
   {
     if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
-      return acia_read( &oric->aux_acia, addr );
+      return acia_read( &oric->tele_acia, addr );
 
     return via_read( &oric->via, addr );
   }
@@ -588,7 +588,7 @@ unsigned char o16kread( struct m6502 *cpu, unsigned short addr )
   if( ( addr & 0xff00 ) == 0x0300 )
   {
     if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
-      return acia_read( &oric->aux_acia, addr );
+      return acia_read( &oric->tele_acia, addr );
 
     return via_read( &oric->via, addr );
   }
@@ -658,7 +658,7 @@ unsigned char jasmin_atmosread( struct m6502 *cpu, unsigned short addr )
       return jasmin_read( &oric->jasmin, addr );
 
     if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
-      return acia_read( &oric->aux_acia, addr );
+      return acia_read( &oric->tele_acia, addr );
 
     return via_read( &oric->via, addr );
   }
@@ -687,7 +687,7 @@ unsigned char jasmin_o16kread( struct m6502 *cpu, unsigned short addr )
       return jasmin_read( &oric->jasmin, addr );
 
     if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
-      return acia_read( &oric->aux_acia, addr );
+      return acia_read( &oric->tele_acia, addr );
 
     return via_read( &oric->via, addr );
   }
@@ -715,7 +715,7 @@ unsigned char microdisc_atmosread( struct m6502 *cpu, unsigned short addr )
       return microdisc_read( &oric->md, addr );
 
     if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
-      return acia_read( &oric->aux_acia, addr );
+      return acia_read( &oric->tele_acia, addr );
 
     return via_read( &oric->via, addr );
   }
@@ -743,7 +743,7 @@ unsigned char microdisc_o16kread( struct m6502 *cpu, unsigned short addr )
       return microdisc_read( &oric->md, addr );
 
     if( oric->aciabackend && ( 0x31c <= addr && addr < 0x320 ) )
-      return acia_read( &oric->aux_acia, addr );
+      return acia_read( &oric->tele_acia, addr );
 
     return via_read( &oric->via, addr );
   }
@@ -764,7 +764,7 @@ unsigned char pravetz_atmosread( struct m6502 *cpu, unsigned short addr )
   if( 0x310 == ( addr & 0xfff0 ) )
   {
     if( oric->aciabackend && oric->pravetz.extension == 0x100 )
-      return acia_read( &oric->aux_acia, addr );
+      return acia_read( &oric->tele_acia, addr );
     else
       return pravetz_read( &oric->pravetz, addr );
   }
@@ -1087,8 +1087,6 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           via_init( &oric->via, oric, VIA_MAIN );
           via_init( &oric->tele_via, oric, VIA_TELESTRAT );
           acia_init( &oric->tele_acia, oric );
-          if( oric->aciabackend )
-            acia_init( &oric->aux_acia, oric );
           break;
 
         case SDLK_F5:
@@ -1325,12 +1323,12 @@ static Uint8 hex2bin(char c)
 {
   return ( ('0' <= c && c <= '9')? (c - '0') : (10 + (toupper(c) - 'A')) );
 }
-                                 
+
 static Uint8 hex2byte(char* s)
 {
   return hex2bin(s[0]) * 16 + hex2bin(s[1]);
 }
-    
+
 static SDL_bool ishexchar(char c)
 {
   if('0' <= c && c <= '9')
@@ -1385,12 +1383,12 @@ void load_patches( struct machine *oric, char *fname )
     if( read_config_int(    &filetmp[i], "tt_writeleader_pc",          &oric->pch_tt_writeleader_pc, 0, 65535 ) )          continue;
     if( read_config_int(    &filetmp[i], "tt_writeleader_end_pc",      &oric->pch_tt_writeleader_end_pc, 0, 65535 ) )      continue;
     if( read_config_option( &filetmp[i], "keymap",                     &oric->keymap, keymapnames ) )                      continue;
-    
+
     /*
      * parse real patch line formated as:
      * $xxxx:00112233445566778899AABBCCDDEEFF
      */
-    
+
     // atleast address and 1 byte required
     if(8 <= strlen(&filetmp[i]) && ';' != filetmp[i])
     {
@@ -1414,7 +1412,7 @@ void load_patches( struct machine *oric, char *fname )
         }
       }
     }
-      
+
   }
 
   fclose( f );
@@ -1700,10 +1698,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   m6502_reset( &oric->cpu );
   via_init( &oric->via, oric, VIA_MAIN );
   via_init( &oric->tele_via, oric, VIA_TELESTRAT );
-  if( oric->type == MACH_TELESTRAT )
-    acia_init( &oric->tele_acia, oric );
-  else
-    acia_init( &oric->aux_acia, oric );
+  acia_init( &oric->tele_acia, oric );
   ay_init( &oric->ay, oric );
   joy_setup( oric );
   oric->cpu.rastercycles = oric->cyclesperraster;
