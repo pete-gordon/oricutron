@@ -82,7 +82,14 @@ char __attribute__((used)) stackcookie[] = "$STACK: 1000000";
 #endif
 
 #if defined(__amigaos4__) || defined(__MORPHOS__) || defined(__AROS__)
-char __attribute__((used)) versiontag[] = "$VER: " APP_NAME_FULL " (1.11.2014)";
+#if EXIT_FAILURE == 1
+#undef EXIT_FAILURE
+#define EXIT_FAILURE RETURN_FAIL
+#endif
+#ifndef __AMIGADATE__
+#define __AMIGADATE__ "("__DATE__")"
+#endif
+char __attribute__((used)) versiontag[] = "$VER: " APP_NAME_FULL " " __AMIGADATE__;
 #endif
 
 struct start_opts
