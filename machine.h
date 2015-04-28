@@ -252,7 +252,6 @@ struct machine
   int aciabackendcfgport;
   int aciabackendcfgdomain;
   char aciabackendname[ACIA_BACKEND_NAME_LEN];
-  struct acia aux_acia;
 };
 
 void setromon( struct machine *oric );

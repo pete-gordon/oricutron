@@ -1170,10 +1170,9 @@ void frameloop_overclock( struct machine *oric, SDL_bool *framedone, SDL_bool *n
       if( oric->type == MACH_TELESTRAT )
       {
         via_clock( &oric->tele_via, instcycles );
-        acia_clock( &oric->tele_acia, instcycles );
       }
       if( oric->aciabackend )
-        acia_clock( &oric->aux_acia, instcycles );
+        acia_clock( &oric->tele_acia, instcycles );
 
       oric->cpu.rastercycles -= instcycles;
 
@@ -1219,10 +1218,9 @@ void frameloop_normal( struct machine *oric, SDL_bool *framedone, SDL_bool *need
       if( oric->type == MACH_TELESTRAT )
       {
         via_clock( &oric->tele_via, oric->cpu.icycles );
-        acia_clock( &oric->tele_acia, oric->cpu.icycles );
       }
       if( oric->aciabackend )
-        acia_clock( &oric->aux_acia, oric->cpu.icycles );
+        acia_clock( &oric->tele_acia, oric->cpu.icycles );
 
       oric->cpu.rastercycles -= oric->cpu.icycles;
       if( m6502_inst( &oric->cpu ) )
