@@ -516,7 +516,7 @@ static void usage( int ret )
           "  -d / --disk        = Specify a disk image to use in drive 0\n"
           "  -t / --tape        = Specify a tape image to use\n"
           "  -k / --drive       = Specify a disk drive controller. Valid types are:\n"
-          "  \n"
+          "\n"
           "                       \"microdisc\" or \"m\" for Microdisc\n"
           "                       \"jasmin\" or \"j\" for Jasmin\n"
           "                       \"pravetz\" or \"p\" for Pravetz\n"
@@ -540,19 +540,20 @@ static void usage( int ret )
           "  --scanlines on|off = Enable or disable scanline simulation\n"
           "\n"
           "  --serial <type>    = Set serial card back-end emulation:\n"
-          "                        'none' - no serial\n"
-          "                        'loopback' - for testing - all TX data is returned to RX\n"
+          "\n"
+          "                       \"none\" - no serial\n"
+          "                       \"loopback\" - for testing - all TX data is returned to RX\n"
 #ifdef BACKEND_MODEM
-          "                        'modem[:port]' - emulates com port with attached modem,\n"
-          "                                         only minimal AT command set is supported and\n"
-          "                                         data is redirected to TCP. Default port is 23 (telnet)\n"
+          "                       \"modem[:port]\" - emulates com port with attached modem,\n"
+          "                                        only minimal AT command set is supported and\n"
+          "                                        data is redirected to TCP. Default port is 23 (telnet)\n"
 #endif
 #ifdef BACKEND_COM
-          "                        'com:115200,8,N,1,<device>' - use real or virtual <device> on host as emulated ACIA.\n"
-          "                                         Baudrate, data bits, parity and stop bits can be set as needed\n"
-          "                                   ex.:  Windows: 'com:115200,8,N,1,COM1'\n"
-          "                                         Linux:   'com:19200,8,N,1,/dev/ttyS0'\n"
-          "                                                  'com:115200,8,N,1,/dev/ttyUSB0'\n"
+          "                       \"com:115200,8,N,1,<device>\" - use real or virtual <device> on host as emulated ACIA.\n"
+          "                                        Baudrate, data bits, parity and stop bits can be set as needed\n"
+          "                                  ex.:  Windows: \"com:115200,8,N,1,COM1\"\n"
+          "                                        Linux:   \"com:19200,8,N,1,/dev/ttyS0\"\n"
+          "                                                 \"com:115200,8,N,1,/dev/ttyUSB0\"\n"
 #endif
           "\n");
   exit(ret);
