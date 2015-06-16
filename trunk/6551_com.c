@@ -149,7 +149,6 @@ static SDL_bool com_validate_param(void)
     case 115200: com_param = B115200; break;
     default:
       return SDL_FALSE;
-      break;
   }
 
   switch(com_bits)
@@ -160,7 +159,6 @@ static SDL_bool com_validate_param(void)
     case 8: com_param |= CS8; break;
     default:
       return SDL_FALSE;
-      break;
   }
 
   switch(tolower(com_parity))
@@ -170,7 +168,6 @@ static SDL_bool com_validate_param(void)
     case 'e': com_param |= PARENB; break;
     default:
       return SDL_FALSE;
-      break;
   }
 
   switch(com_stopbits)
@@ -179,7 +176,6 @@ static SDL_bool com_validate_param(void)
     case 1: /* */ break;
     default:
       return SDL_FALSE;
-      break;
   }
 
   com_param |= (CLOCAL|CREAD);
@@ -311,7 +307,6 @@ static SDL_bool com_validate_param(void)
     case 115200: com_dcb.BaudRate = CBR_115200; break;
     default:
       return SDL_FALSE;
-      break;
   }
 
   switch(com_bits)
@@ -322,7 +317,6 @@ static SDL_bool com_validate_param(void)
     case 8: com_dcb.ByteSize = com_bits; break;
     default:
       return SDL_FALSE;
-      break;
   }
 
   switch(tolower(com_parity))
@@ -332,7 +326,6 @@ static SDL_bool com_validate_param(void)
     case 'e': com_dcb.fParity = 1; com_dcb.Parity = 2; break;
     default:
       return SDL_FALSE;
-      break;
   }
 
   switch(com_stopbits)
@@ -341,7 +334,6 @@ static SDL_bool com_validate_param(void)
     case 1: com_dcb.StopBits = 0; break;
     default:
       return SDL_FALSE;
-      break;
   }
 
   return SDL_TRUE;
