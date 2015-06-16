@@ -1,6 +1,6 @@
 /*
 **  Oricutron
-**  Copyright (C) 2009-2014 Peter Gordon
+**  Copyright (C) 2009-2015 Peter Gordon
 **
 **  This program is free software; you can redistribute it and/or
 **  modify it under the terms of the GNU General Public License
@@ -48,7 +48,7 @@ struct AslIFace *IAsl = NULL;
 
 SDL_bool init_filerequester( struct machine *oric )
 {
-  AslBase = OpenLibrary( AslName, 39 );
+  AslBase = OpenLibrary( (CONST_STRPTR)AslName, 39 );
   if( !AslBase ) return SDL_FALSE;
 
 #ifdef __amigaos4__
@@ -119,7 +119,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       break;
   }
   
-  if( pat ) ParsePatternNoCase( pat, ppat, 16*2+2 );
+  if( pat ) ParsePatternNoCase( (CONST_STRPTR)pat, (UBYTE *)ppat, 16*2+2 );
   
   if( !AslRequestTags( req,
          ASLFR_TitleText,     title,
@@ -133,8 +133,8 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
          TAG_DONE ) )
     return SDL_FALSE;
   
-  strncpy( path,  req->fr_Drawer, 4096 ); path[4095] = 0;
-  strncpy( fname, req->fr_File,   512  ); fname[511]  = 0;
+  strncpy( path,  (const char *)req->fr_Drawer, 4096 ); path[4095] = 0;
+  strncpy( fname, (const char *)req->fr_File,   512  ); fname[511] = 0;
   
   return SDL_TRUE;
 }
