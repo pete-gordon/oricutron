@@ -20,7 +20,11 @@
 */
 
 
+#ifndef __APPLE__
 #define WANT_WMINFO
+#else
+#define SDL_SysWMinfo void
+#endif
 
 #include "system.h"
 
@@ -115,7 +119,7 @@ static void FreeResources(void)
 #if SDL_MAJOR_VERSION == 1
 int SDL_COMPAT_GetWMInfo(SDL_SysWMinfo *info)
 {
-#ifdef __MORPHOS__
+#if defined(__MORPHOS__)|defined(__APPLE__)
   return 0;
 #else
   return SDL_GetWMInfo(info);
