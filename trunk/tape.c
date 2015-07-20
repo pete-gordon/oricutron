@@ -1075,6 +1075,7 @@ void tape_autoinsert( struct machine *oric )
 {
   char *odir;
   int i;
+  SDL_bool tape_found;
 
   if( strncmp( (char *)&oric->mem[oric->pch_fd_getname_addr], oric->lasttapefile, 16 ) == 0 )
     oric->mem[oric->pch_fd_getname_addr] = 0;
@@ -1085,14 +1086,14 @@ void tape_autoinsert( struct machine *oric )
 
   odir = getcwd( NULL, 0 );
   chdir( tapepath );
-  tape_load_tap( oric, tapefile );
-  if( !oric->tapebuf )
+  tape_found = tape_load_tap( oric, tapefile );
+  if( !tape_found )
   {
     // Try appending .tap
     strcpy( &tapefile[i], ".tap" );
-    tape_load_tap( oric, tapefile );
+    tape_found = tape_load_tap( oric, tapefile );
   }
-  if( !oric->tapebuf )
+  if( !tape_found )
   {
     // Try appending .ort
     strcpy( &tapefile[i], ".ort" );
@@ -1161,7 +1162,7 @@ void tape_patches( struct machine *oric )
           // Only do this if there is no tape inserted, or we're at the
           // end of the current tape, or the filename ends in .TAP, .ORT or .WAV
           if( ( !oric->tapebuf ) ||
-              ( oric->tapeoffs >= oric->tapelen ) ||
+              ( oric->tapeoffs >= oric->tapelen -1 ) ||
               ( ( i > 3 ) && ( strcasecmp( &oric->lasttapefile[i-4], ".tap" ) == 0 ) ) ||
               ( ( i > 3 ) && ( strcasecmp( &oric->lasttapefile[i-4], ".ort" ) == 0 ) ) ||
               ( ( i > 3 ) && ( strcasecmp( &oric->lasttapefile[i-4], ".wav" ) == 0 ) ) )
