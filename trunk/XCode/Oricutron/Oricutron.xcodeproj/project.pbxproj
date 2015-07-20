@@ -40,6 +40,7 @@
 		181F131918CA6378009690E0 /* msgbox_osx.m in Sources */ = {isa = PBXBuildFile; fileRef = 181F131618CA6378009690E0 /* msgbox_osx.m */; };
 		181F131B18CA63F0009690E0 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 181F131A18CA63F0009690E0 /* OpenGL.framework */; };
 		181F131D18CA6505009690E0 /* SDL.framework in Resources */ = {isa = PBXBuildFile; fileRef = 181F131118CA6219009690E0 /* SDL.framework */; };
+		18A21B171B5CD8EC00B1BF3F /* system_sdl.c in Sources */ = {isa = PBXBuildFile; fileRef = 18A21B161B5CD8EC00B1BF3F /* system_sdl.c */; };
 		18D270CA18D7346600467488 /* keyboard.c in Sources */ = {isa = PBXBuildFile; fileRef = 18D270C818D7346600467488 /* keyboard.c */; };
 		18DC24B119D010EA00C6BCBE /* 6551_com.c in Sources */ = {isa = PBXBuildFile; fileRef = 18DC24AE19D010EA00C6BCBE /* 6551_com.c */; };
 		18DC24B219D010EA00C6BCBE /* 6551_loopback.c in Sources */ = {isa = PBXBuildFile; fileRef = 18DC24AF19D010EA00C6BCBE /* 6551_loopback.c */; };
@@ -118,6 +119,8 @@
 		181F131518CA6378009690E0 /* gui_osx.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = gui_osx.m; path = ../../../gui_osx.m; sourceTree = "<group>"; };
 		181F131618CA6378009690E0 /* msgbox_osx.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = msgbox_osx.m; path = ../../../msgbox_osx.m; sourceTree = "<group>"; };
 		181F131A18CA63F0009690E0 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = ../../../../../../../System/Library/Frameworks/OpenGL.framework; sourceTree = "<group>"; };
+		18A21B161B5CD8EC00B1BF3F /* system_sdl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = system_sdl.c; path = ../../../system_sdl.c; sourceTree = "<group>"; };
+		18A21B181B5CDAD100B1BF3F /* system_sdl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = system_sdl.h; path = ../../../system_sdl.h; sourceTree = "<group>"; };
 		18D270C818D7346600467488 /* keyboard.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = keyboard.c; path = ../../../keyboard.c; sourceTree = "<group>"; };
 		18D270C918D7346600467488 /* keyboard.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = keyboard.h; path = ../../../keyboard.h; sourceTree = "<group>"; };
 		18DC24AE19D010EA00C6BCBE /* 6551_com.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = 6551_com.c; path = ../../../6551_com.c; sourceTree = "<group>"; };
@@ -191,6 +194,8 @@
 		181F128B18CA616A009690E0 /* Oricutron */ = {
 			isa = PBXGroup;
 			children = (
+				18A21B181B5CDAD100B1BF3F /* system_sdl.h */,
+				18A21B161B5CD8EC00B1BF3F /* system_sdl.c */,
 				18D270C818D7346600467488 /* keyboard.c */,
 				18D270C918D7346600467488 /* keyboard.h */,
 				181F131418CA6378009690E0 /* filereq_osx.m */,
@@ -375,6 +380,7 @@
 				18DC24B119D010EA00C6BCBE /* 6551_com.c in Sources */,
 				181F131918CA6378009690E0 /* msgbox_osx.m in Sources */,
 				181F12F118CA61C6009690E0 /* avi.c in Sources */,
+				18A21B171B5CD8EC00B1BF3F /* system_sdl.c in Sources */,
 				181F12F818CA61C6009690E0 /* font.c in Sources */,
 				181F130718CA61C6009690E0 /* render_sw.c in Sources */,
 				181F131818CA6378009690E0 /* gui_osx.m in Sources */,
@@ -519,6 +525,7 @@
 					"-DBACKEND_COM",
 					"-DBACKEND_MODEM",
 					"-D__OPENGL_AVAILABLE__",
+					"-DSDL_MAJOR_VERSION=1",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
@@ -544,6 +551,7 @@
 					"-D__CBCOPY__",
 					"-D__CBPASTE__",
 					"-D__SPECIFY_SDL_DIR__",
+					"-DSDL_MAJOR_VERSION=1",
 					"-DAPP_NAME_FULL='\"Oricutron 1.2\"'",
 					"-DAPP_YEAR='\"2014\"'",
 					"-DVERSION_COPYRIGHTS='\"Oricutron 1.2.0 (c)2014 Peter Gordon (pete@petergordon.org.uk)\"'",
