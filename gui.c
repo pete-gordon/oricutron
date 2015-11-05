@@ -154,11 +154,13 @@ struct osdmenu *cmenu = NULL;
 int cmenuitem = 0;
 
 static char* aciabackends[ACIA_TYPE_LAST] = {
-       " Serial none     ",
-  "\x0e""Serial loopback ",
-  "\x0e""Serial modem    ",
-  "\x0e""Serial com      ",
+       " Serial none          ",
+  "\x0e""Serial loopback $xxxx",
+  "\x0e""Serial modem    $xxxx",
+  "\x0e""Serial com      $xxxx",
 };
+
+static char aciabackendlabel[32];
 
 // Menufunctions
 void toggletapenoise( struct machine *oric, struct osdmenuitem *mitem, int dummy );
@@ -250,7 +252,7 @@ struct osdmenuitem hwopitems[] = { { " Oric-1",                "1",    SDLK_1,  
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { " VSync hack",            NULL,   0,        togglevsynchack, 0, 0 },
                                    { " Lightpen",              NULL,   0,        togglelightpen,  0, 0 },
-                                   { " Serial none     ",      NULL,   0,        toggleaciabackend,   0, 0 },
+                                   { " Serial none          ", NULL,   0,        toggleaciabackend, 0, 0 },
 //                                   { " Mouse",                 NULL,   0,        NULL,            0, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },
@@ -1449,11 +1451,15 @@ void togglelightpen( struct machine *oric, struct osdmenuitem *mitem, int dummy 
 void toggleaciabackend( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
   if( oric->aciabackend )
+  {
     oric->aciabackend = ACIA_TYPE_NONE;
+    mitem->name = aciabackends[oric->aciabackend];
+  }
   else
+  {
     oric->aciabackend = oric->aciabackendcfg;
-
-  mitem->name = aciabackends[oric->aciabackend];
+    mitem->name = aciabackendlabel;
+  }
 
   acia_init( &oric->tele_acia, oric );
 }
@@ -2188,7 +2194,14 @@ void setmenutoggles( struct machine *oric )
   else
     find_item_by_function(hwopitems, togglelightpen)->name = " Lightpen";
 
-  find_item_by_function(hwopitems, toggleaciabackend)->name = aciabackends[oric->aciabackend];
+  if( oric->aciabackend )
+  {
+    strcpy(aciabackendlabel, aciabackends[oric->aciabackend]);
+    sprintf(aciabackendlabel+18, "%.4X", oric->aciaoffset);
+    find_item_by_function(hwopitems, toggleaciabackend)->name = aciabackendlabel;
+  }
+  else
+    find_item_by_function(hwopitems, toggleaciabackend)->name = aciabackends[oric->aciabackend];
 
   if( oric->symbolsautoload )
     find_item_by_function(dbopitems, togglesymbolsauto)->name = "\x0e""Autoload symbols file";
