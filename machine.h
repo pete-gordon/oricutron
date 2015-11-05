@@ -247,6 +247,7 @@ struct machine
   SDL_bool define_mapping;
   SDL_bool sticky_mod_keys;
 
+  int aciaoffset;
   int aciabackend;
   int aciabackendcfg;
   int aciabackendcfgport;

@@ -160,6 +160,10 @@ Here are all the options:
   --vsynchack on|off = Enable or disable VSync hack
   --scanlines on|off = Enable or disable scanline simulation
 
+  --serial_address N = Set serial card base address to N (default is $31C)
+                        where N is decimal or hexadecimal within the range of $31c..$3fc
+                         (i.e. 796, 0x31c, $31C represent the same value)
+
   --serial <type>    = Set serial card back-end emulation:
                         'none' - no serial
                         'loopback' - for testing - all TX data is returned to RX

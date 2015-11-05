@@ -431,6 +431,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
       if( read_config_string( &sto->lctmp[i], tbtmp, telebankfiles[j], 1024 ) ) break;
     }
     if( read_config_bool(   &sto->lctmp[i], "lightpen",     &oric->lightpen ) ) continue;
+    if( read_config_int(    &sto->lctmp[i], "serial_address", &oric->aciaoffset, 0x310, 0x3fc ) ) continue;
     if( read_config_string( &sto->lctmp[i], "serial",       oric->aciabackendname, ACIA_BACKEND_NAME_LEN ) )
     {
       if(!strcasecmp("none", oric->aciabackendname))
@@ -538,6 +539,10 @@ static void usage( int ret )
           "  --lightpen on|off  = Enable or disable lightpen\n"
           "  --vsynchack on|off = Enable or disable VSync hack\n"
           "  --scanlines on|off = Enable or disable scanline simulation\n"
+          "\n"
+          "  --serial_address N = Set serial card base address to N\n"
+          "                       where N is decimal or hexadecimal within the range of $31c..$3fc\n"
+          "                        (i.e. 796, 0x31c, $31C represent the same value)\n"
           "\n"
           "  --serial <type>    = Set serial card back-end emulation:\n"
           "\n"
@@ -699,10 +704,26 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
             continue;
           }
 
+          if( strcasecmp( tmp, "serial_address" ) == 0 )
+          {
+            if( !opt_arg )
+              exit( EXIT_FAILURE );
+            if( '$' == opt_arg[0] && 1 == sscanf(opt_arg, "$%x", &oric->aciaoffset) )
+              continue;
+            if( '0' == opt_arg[0] && 1 == sscanf(opt_arg, "0x%x", &oric->aciaoffset) )
+              continue;
+            if( '0' == opt_arg[0] && 1 == sscanf(opt_arg, "0X%x", &oric->aciaoffset) )
+              continue;
+            if( 1 == sscanf(opt_arg, "%d", &oric->aciaoffset) )
+              continue;
+            exit( EXIT_FAILURE );
+          }
+
           if( strcasecmp( tmp, "serial" ) == 0 )
           {
+            oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_NONE;
             if(!strcasecmp("none", opt_arg))
-              oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_NONE;
+              continue;
             else if(!strcasecmp("loopback", opt_arg))
               oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_LOOPBACK;
             else if(!strncasecmp("modem", opt_arg, 5))
@@ -736,6 +757,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
               oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_COM;
 #endif
             }
+            continue;
           }
 
           if( strcasecmp( tmp, "vsynchack" ) == 0 )

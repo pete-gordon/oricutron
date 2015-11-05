@@ -70,7 +70,7 @@ static void acia_update_params( struct acia *acia )
     case 7: acia->bitmask = 0x7f; break;
     case 8: default: acia->bitmask = 0xff; break;
   }
-  
+
   acia->rx = (acia->regs[ACIA_COMMAND] & ACOMF_DTR)? SDL_TRUE : SDL_FALSE;
   acia->irqrx = (acia->rx && 0 == ( acia->regs[ACIA_COMMAND] & ACOMF_IRQDIS ))? SDL_TRUE : SDL_FALSE;
 
@@ -116,7 +116,7 @@ static void acia_update_params( struct acia *acia )
 
 void acia_init( struct acia *acia, struct machine *oric )
 {
-  if(acia->done)
+  if( acia->done )
     acia->done( acia );
 
   acia->oric = oric;
@@ -256,7 +256,7 @@ void acia_write( struct acia *acia, Uint16 addr, Uint8 data )
 Uint8 acia_read( struct acia *acia, Uint16 addr )
 {
   Uint8 data = acia->regs[addr&3];
-  
+
   switch( addr & 3 )
   {
     case ACIA_RXDATA:
@@ -297,7 +297,7 @@ SDL_bool acia_init_none( struct acia *acia )
   acia->has_byte = NULL;
   acia->get_byte = NULL;
   acia->put_byte = NULL;
-  
+
   acia->oric->aciabackend = ACIA_TYPE_NONE;
   return SDL_TRUE;
 }
