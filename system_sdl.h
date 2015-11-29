@@ -28,7 +28,6 @@
 # include <SDL/SDL_version.h>
 # ifdef WANT_WMINFO
 # include <SDL/SDL_syswm.h>
-#error why am i here
 # endif
 # else
 # include <SDL.h>

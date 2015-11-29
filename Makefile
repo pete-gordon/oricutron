@@ -35,15 +35,19 @@ VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) $(COPYRIGHTS)"
 VPATH ?= .
 
 ### extract svn revision
-SVNREVISION := $(shell svnversion -n $(VPATH))
+GITREVISION := $(shell git rev-parse --short HEAD)
 
-DEFINES =  -DAPP_NAME_FULL='"$(APP_NAME) WIP Rev: $(SVNREVISION)"'
+DEFINES =  -DAPP_NAME_FULL='"$(APP_NAME) WIP Rev: $(GITREVISION)"'
 #DEFINES = -DAPP_NAME_FULL='"$(APP_NAME) $(VERSION_MAJ).$(VERSION_MIN)"'
 #DEFINES += -DAPP_WVER='$(VERSION_MAJ),$(VERSION_MIN),$(VERSION_REV),0'
 #DEFINES += -DAPP_COPYRIGHTS='"$(COPYRIGHTS)"'
 DEFINES += -DAPP_YEAR='"$(APP_YEAR)"' -DVERSION_COPYRIGHTS='$(VERSION_COPYRIGHTS)'
 
+ifneq ($(DEBUG),y)
 CFLAGS = -Wall -O3
+else
+CFLAGS = -Wall -g -O0
+endif
 CFLAGS += $(DEFINES)
 LFLAGS =
 
@@ -145,6 +149,12 @@ ifeq ($(PLATFORM),win32)
 ifneq ($(HOSTOS),win32)
 # in Debian: apt:mingw32
 CROSS_COMPILE ?= i586-mingw32msvc-
+else
+ifeq ($(SDL_LIB),sdl)
+CFLAGS += -DSDL_MAJOR_VERSION=1
+else
+CFLAGS += -DSDL_MAJOR_VERSION=2
+endif
 endif
 CC := $(CROSS_COMPILE)$(CC)
 CXX := $(CROSS_COMPILE)$(CXX)
