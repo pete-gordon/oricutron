@@ -184,6 +184,11 @@ ifneq ($(HOSTOS),win32)
 # in Debian: apt:mingw32
 CROSS_PREFIX ?= i686-w64-mingw32
 CROSS_COMPILE ?= $(CROSS_PREFIX)-
+ifeq ($(SDL_LIB),sdl)
+CFLAGS += -DSDL_MAJOR_VERSION=1
+else
+CFLAGS += -DSDL_MAJOR_VERSION=2
+endif
 endif
 CC := $(CROSS_COMPILE)$(CC)
 CXX := $(CROSS_COMPILE)$(CXX)
@@ -217,6 +222,11 @@ ifneq ($(HOSTOS),win32)
 # in Debian: apt:mingw32
 CROSS_PREFIX ?= x86_64-w64-mingw32
 CROSS_COMPILE ?= $(CROSS_PREFIX)-
+ifeq ($(SDL_LIB),sdl)
+CFLAGS += -DSDL_MAJOR_VERSION=1
+else
+CFLAGS += -DSDL_MAJOR_VERSION=2
+endif
 endif
 CC := $(CROSS_COMPILE)$(CC)
 CXX := $(CROSS_COMPILE)$(CXX)
