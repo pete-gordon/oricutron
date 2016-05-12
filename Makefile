@@ -295,6 +295,23 @@ MSGBOX_OBJ =
 CUSTOMOBJS = gui_osx.o filereq_osx.o msgbox_osx.o
 endif
 
+
+# Special-case for Pandora Linux:
+ifeq ($(PLATFORM),pandora)
+TARGET = oricutron
+INSTALLDIR = /usr/local
+STRIP :=  $(CROSS_COMPILE)$(STRIP)
+CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --cflags) -D__CBCOPY__ -D__CBPASTE__
+LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --libs) -lX11
+CUSTOMOBJS = gui_x11.o
+FILEREQ_OBJ = filereq_sdl.o
+MSGBOX_OBJ = msgbox_sdl.o
+TARGET = oricutron
+INSTALLDIR = /usr/local
+endif
+# Pandora
+
+
 # Linux
 ifeq ($(PLATFORM),linux)
 ifeq (x86_64,$(shell uname -m))
