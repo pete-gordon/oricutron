@@ -227,7 +227,7 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
                 joystate[1] = 1;
               } else {
                 joystate[0] = 0;
-                joystate[0] = 0;
+                joystate[1] = 0;
               }
               break;
           }
