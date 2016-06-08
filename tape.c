@@ -910,6 +910,7 @@ SDL_bool wav_convert( struct machine *oric )
     count+=cps;
   }
 
+  free( lastsmps );
   // Allocate a buffer for the converted data
   ortbuf = malloc(ortlen);
   if (!ortbuf) return SDL_FALSE;
