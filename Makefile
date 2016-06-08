@@ -12,6 +12,7 @@
 # PLATFORM = gphwiz
 # PLATFORM = aitouchbook
 # PLATFORM = aros
+# PLATFORM = rpi
 
 # important build parameters:
 # SDL_LIB - select SDL versions
@@ -358,6 +359,19 @@ TARGET = oricutron
 INSTALLDIR = /usr/local
 endif
 
+# Linux - Raspberry Pi
+ifeq ($(PLATFORM),rpi)
+BASELIBDIR := lib
+STRIP :=  $(CROSS_COMPILE)$(STRIP)
+CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --cflags)
+LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --libs) #-lX11
+CUSTOMOBJS = gui_x11.o
+FILEREQ_OBJ = filereq_sdl.o
+MSGBOX_OBJ = msgbox_sdl.o
+TARGET = oricutron
+INSTALLDIR = /usr/local
+endif
+
 # Linux-gph-wiz
 ifeq ($(PLATFORM),gphwiz)
 WIZ_HOME = /opt/openwiz/toolchain/arm-openwiz-linux-gnu
@@ -561,6 +575,6 @@ package-win-gcc: clean release
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
 
 .PHONY: mrproper
-PLATFORMS := os4 morphos win32 win32-gcc win64-gcc beos haiku osx linux linux-nogl gphwiz aitouchbook aros
+PLATFORMS := os4 morphos win32 win32-gcc win64-gcc beos haiku osx linux linux-nogl gphwiz aitouchbook aros rpi
 mrproper:
 	@for plat in $(PLATFORMS); do $(MAKE) -f $(VPATH)/Makefile clean PLATFORM=$${plat} ; done
