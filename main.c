@@ -647,6 +647,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
   {
     error_printf( "SDL init failed" );
+    free( sto );
     return SDL_FALSE;
   }
   need_sdl_quit = SDL_TRUE;
