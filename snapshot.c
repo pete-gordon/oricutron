@@ -782,12 +782,10 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
 {
   struct m6502 *cpu = &oric->cpu;
   int i;
-  SDL_bool do_wd17xx = SDL_FALSE, back2mon = SDL_FALSE;
+  SDL_bool do_wd17xx = SDL_FALSE, back2mon = oric->emu_mode == EM_DEBUG;
   unsigned int type, drivetype;
   FILE *f = NULL;
   struct blockheader *blk = NULL;
-
-  back2mon = oric->emu_mode == EM_DEBUG;
 
   f = fopen(filename, "rb");
   if (!f)
