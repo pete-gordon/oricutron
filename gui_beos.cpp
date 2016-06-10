@@ -200,11 +200,9 @@ SDL_bool clipboard_copy_text( struct machine *oric )
 
 	for (line = 0; line < 28; line++) {
 		for (col = 0; col < 40; col++) {
-			bool inverted = false;
 			unsigned char c = vidmem[line * 40 + col];
 
 			if (c > 127) {
-				inverted = true;
 				c -= 128;
 			}
 
