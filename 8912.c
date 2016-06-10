@@ -628,7 +628,6 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
   ay->lastcyc = 0;
   ay->ccyc    = 0;
   ay->ccycle  = 0;
-  ay->tapeout = 0;
   ay->tlogged = 0;
   ay->tapeout = 0;
   ay->keybitdelay = 0;

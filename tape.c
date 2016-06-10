@@ -589,7 +589,6 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
               {
 //                printf("At the header...\n");
 //                fflush(stdout);
-                state = TAPSEC_STATE_HEADER;
                 scratch[0] = 0x16;
                 scratch[1] = 0x16;
                 scratch[2] = 0x16;
