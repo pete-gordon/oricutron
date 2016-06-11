@@ -11,3 +11,4 @@ x64
 /msvc/roms
 /msvc/sdl
 /msvc/sdl2
+/roms/*.rom
