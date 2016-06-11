@@ -29,7 +29,11 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#ifndef _MSC_VER
 #include <unistd.h>
+#else
+#include "msvc\unistd.h"
+#endif
 #include <sys/stat.h>
 
 #ifdef __amigaos4__

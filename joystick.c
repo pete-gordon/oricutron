@@ -23,6 +23,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#ifdef _MSC_VER
+#include "msvc\strcasecmp.h"
+#endif
 
 #include "system.h"
 #include "6502.h"

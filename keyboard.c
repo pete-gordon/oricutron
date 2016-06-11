@@ -19,6 +19,9 @@
  **  visual keyboard source
  */
 
+#ifdef _MSC_VER
+#include <stdlib.h>
+#endif
 
 #include "system.h"
 #include "6502.h"

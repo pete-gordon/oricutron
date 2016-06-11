@@ -18,6 +18,9 @@
 **
 **  Oric machine stuff
 */
+#ifdef _MSC_VER
+#include <stdio.h>
+#endif
 
 #include "keyboard.h"
 

@@ -24,6 +24,11 @@
 #define _WIN32_WINNT 0x0501
 #endif
  
+#ifdef _MSC_VER
+#include "msvc\strcasecmp.h"
+// Need to link with Ws2_32.lib
+#pragma comment(lib, "Ws2_32.lib")
+#endif // _MSC_VER
  
 #include "system.h"
 #include "6502.h"
@@ -466,7 +471,11 @@ SDL_bool acia_init_modem( struct acia* acia )
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef _MSC_VER
 #include <unistd.h>
+#else
+#include "msvc\unistd.h"
+#endif
 #include <time.h>
 
 
@@ -660,10 +669,10 @@ static int socket_accept(int sock, int* sck)
     fcntl(*sck, F_SETFL, fcntl(*sck, F_GETFL, 0) | O_NONBLOCK);
     #endif
 
-    #if defined(WIN32)
+#if defined(WIN32)
     u_long imode = 1;
     ioctlsocket(*sck, FIONBIO, &imode);
-    #endif
+#endif
   }
 
   return 1;

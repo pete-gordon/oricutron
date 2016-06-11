@@ -24,22 +24,20 @@
  * Original author: Sam Lantinga
  */
 
-
-#include <SDL/SDL.h>
-#include <SDL/SDL_syswm.h>
-#include <limits.h>
-
+#ifdef _MSC_VER
+#define WANT_WMINFO
+#endif
 #include "system.h"
 #include "6502.h"
 #include "via.h"
 #include "8912.h"
-#include "gui.h"
 #include "disk.h"
+#include "gui.h"
 #include "monitor.h"
 #include "6551.h"
 #include "machine.h"
 
-static HWND SDL_Window;
+static HWND g_SDL_Window;
 
 static SDL_bool initialized = SDL_FALSE;
 
@@ -53,11 +51,15 @@ static void init_clipboard(void)
   /* Grab the window manager specific information */
   SDL_SysWMinfo info;
   SDL_VERSION(&info.version);
-  if (SDL_GetWMInfo(&info))
+  if (SDL_COMPAT_GetWMInfo(&info))
   {
     /* Save the information for later use */
-    SDL_Window = info.window;
-      initialized = SDL_TRUE;
+#if SDL_MAJOR_VERSION == 1
+    g_SDL_Window = info.window;
+#else
+    g_SDL_Window = info.info.win.window;
+#endif
+    initialized = SDL_TRUE;
     }
 }
 
@@ -66,7 +68,7 @@ char* get_clipboard_text_win(void)
   if (!initialized)
     return NULL;
   
-  if (IsClipboardFormatAvailable(CF_TEXT) && OpenClipboard(SDL_Window))
+  if (IsClipboardFormatAvailable(CF_TEXT) && OpenClipboard(g_SDL_Window))
   {
     const HANDLE hMem = GetClipboardData(CF_TEXT);
     if (hMem)
@@ -89,7 +91,7 @@ static void set_clipboard_text_win(const char* text)
     
     if ( text != NULL )
     {
-        if ( OpenClipboard(SDL_Window) )
+        if ( OpenClipboard(g_SDL_Window) )
         {
             HANDLE hMem = GlobalAlloc((GMEM_MOVEABLE|GMEM_DDESHARE), strlen(text)+1);
             if ( hMem != NULL )

@@ -21,7 +21,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef _MSC_VER
 #include <unistd.h>
+#else
+#include "msvc\unistd.h"
+#endif
 #include <windows.h>
 
 #define WANT_WMINFO
@@ -59,8 +63,12 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
 
   hwnd = NULL;
   SDL_VERSION(&wmi.version);
-  if( SDL_GetWMInfo( &wmi ) )
+  if (SDL_COMPAT_GetWMInfo(&wmi))
+#if SDL_MAJOR_VERSION == 1
     hwnd = (HWND)wmi.window;
+#else
+    hwnd = (HWND)wmi.info.win.window;
+#endif
 
   ZeroMemory( &ofn, sizeof( ofn ) );
   ofn.lStructSize = sizeof( ofn );
