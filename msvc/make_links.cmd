@@ -1,17 +1,20 @@
 @echo off
 rem Must be executed as administrator because calling mklink
 
-set OSDK=u:\users\aschnier\Cloud\Syncthing\ASPrivate\ToolZ\RetroGaming\Oric1\osdk_1_4\
-set IMAGES="%OSDK%Oricutron\images"
-set ROMS="%OSDK%Roms"
-set CFG="%OSDK%Oricutron\oricutron.cfg"
+set OSDK=u:\users\aschnier\Cloud\Syncthing\ASPrivate\ToolZ\RetroGaming\Oric1\osdk_1_4
+set IMAGES="..\images"
+set ROMS="..\roms"
+set CFG="..\oricutron.cfg"
 
 rem SDL
 if not exist "sdl2" ( mklink /d "sdl2" "..\..\..\Lib\SDL\SDL2-2.0.4_src" )
 if not exist "sdl" ( mklink /d "sdl" "sdl2" )
 
-rem x86
 if not exist "roms" ( mklink /D "roms" %ROMS% )
+if not exist "images" ( mklink /D "images" %IMAGES% )
+if not exist "oricutron.cfg" ( mklink "oricutron.cfg" %CFG% )
+
+rem x86
 if not exist "Debug" ( md "Debug" )
 if not exist "Debug\SDL2.dll" ( copy "sdl\VisualC\Win32\Debug\SDL2.dll" "Debug\SDL2.dll" )
 if not exist "Debug\roms" ( mklink /D "Debug\roms" %ROMS% )
