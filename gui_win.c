@@ -24,9 +24,11 @@
  * Original author: Sam Lantinga
  */
 
-#ifdef _MSC_VER
+#ifdef WIN32
+#include <windows.h>
 #define WANT_WMINFO
 #endif
+
 #include "system.h"
 #include "6502.h"
 #include "via.h"
@@ -124,6 +126,8 @@ void shut_gui_native( struct machine *oric )
 
 void gui_open_url( const char *url )
 {
+  ShellExecute(NULL, "open", url,
+    NULL, NULL, SW_SHOWNORMAL);
   return;
 }
 

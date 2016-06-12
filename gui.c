@@ -45,10 +45,6 @@
 #include <proto/openurl.h>
 #endif
 
-#ifdef WIN32
-#include <windows.h>
-#define WANT_WMINFO
-#endif
 
 #include "system.h"
 #include "6502.h"
@@ -1627,11 +1623,7 @@ void gotosite( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   sprintf( tmp, "URL:%s", mitem->name );
   if( ( h = IDOS->Open( tmp, MODE_OLDFILE ) ) ) IDOS->Close( h );
 
-#elif defined(WIN32)
-   ShellExecute(NULL, "open", mitem->name,
-                NULL, NULL, SW_SHOWNORMAL);
-
-#elif defined(__APPLE__) || defined(__BEOS__) || defined(__HAIKU__)
+#elif defined(WIN32) || defined(__APPLE__) || defined(__BEOS__) || defined(__HAIKU__)
   gui_open_url( mitem->name );
 
 #else
