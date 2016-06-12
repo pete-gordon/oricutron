@@ -28,8 +28,11 @@
 #include "msvc\strcasecmp.h"
 // Need to link with Ws2_32.lib
 #pragma comment(lib, "Ws2_32.lib")
+#include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
 #endif // _MSC_VER
- 
+
 #include "system.h"
 #include "6502.h"
 #include "via.h"

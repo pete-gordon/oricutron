@@ -22,6 +22,5 @@ You need to recompile the SDL yourself, because the binaries are build with an o
 
 ## Known Issues
 
-   1. 6551.h BACKEND_MODEM disabled, because of linker errors
-   2. APP_NAME_FULL not set to git revision
-   3. Lots of warnings
+   1. APP_NAME_FULL not set to git revision
+   2. Lots of warnings

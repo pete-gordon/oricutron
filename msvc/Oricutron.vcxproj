@@ -168,12 +168,7 @@
     <ClCompile Include="..\6551.c" />
     <ClCompile Include="..\6551_com.c" />
     <ClCompile Include="..\6551_loopback.c" />
-    <ClCompile Include="..\6551_modem.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="..\6551_modem.c" />
     <ClCompile Include="..\8912.c" />
     <ClCompile Include="..\avi.c" />
     <ClCompile Include="..\disk.c" />
