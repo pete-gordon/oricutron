@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #if defined(__amigaos4__) || defined(__MORPHOS__)
 #include <proto/dos.h>

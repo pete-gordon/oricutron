@@ -23,6 +23,8 @@
 #include <stdlib.h>
 #endif
 
+#include <string.h> 
+
 #include "system.h"
 #include "6502.h"
 #include "via.h"
@@ -40,7 +42,6 @@
 #include "ula.h"
 #include "tape.h"
 #include "joystick.h"
-#include "snapshot.h"
 #include "msgbox.h"
 #include "keyboard.h"
 
