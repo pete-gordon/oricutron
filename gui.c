@@ -2322,6 +2322,10 @@ SDL_bool init_gui( struct machine *oric, Sint32 rendermode )
 void shut_gui( struct machine *oric )
 {
   int i;
+  for (i = 0; i<NUM_GIMG; i++)
+  {
+    free(gimgs[i].buf);
+  }
 
   oric->shut_render( oric );
 

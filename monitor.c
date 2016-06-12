@@ -1040,7 +1040,15 @@ void mon_freesyms( struct symboltable *stab )
 {
   // Is it a dynamic table?
   if( stab->symspace == -1 ) return;
-  if( stab->syms ) free( stab->syms );
+  if (stab->syms)
+  {
+    int i;
+    for (i = 0; i < stab->numsyms; i++)
+    {
+      free(stab->syms[i].name);
+    }
+    free(stab->syms);
+  }
   stab->syms     = NULL;
   stab->numsyms  = 0;
   stab->symspace = 0;
