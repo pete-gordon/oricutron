@@ -19,6 +19,30 @@
     <Filter Include="Source Files\msvc">
       <UniqueIdentifier>{2a1ecf99-deac-4e93-8be8-b458195be3e6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\renderer">
+      <UniqueIdentifier>{da16e29b-077d-4e5d-a0f0-a28dcb6a6f8e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\renderer">
+      <UniqueIdentifier>{4e5b9fcf-0045-4de6-b89b-1068fb7c09f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\gui">
+      <UniqueIdentifier>{cc64b1f4-268f-4438-977a-7a111a46d23c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\filereq">
+      <UniqueIdentifier>{cb7fe694-3d2f-454a-ad9d-00a823d54e1b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\gui">
+      <UniqueIdentifier>{4396d62b-8f06-42de-a6cb-f18ad3efec67}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\filereq">
+      <UniqueIdentifier>{7e934c0d-8e01-4561-8fb2-046726f16eab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\msgbox">
+      <UniqueIdentifier>{277732bb-2f68-45d9-8df8-f5445a281fd4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\msgbox">
+      <UniqueIdentifier>{e7b0354f-0047-49e9-b26e-148f1be37f38}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\6502.c">
@@ -48,28 +72,7 @@
     <ClCompile Include="..\disk_pravetz.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\filereq_amiga.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\filereq_gtk.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\filereq_sdl.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\filereq_win32.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\font.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gui.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gui_win.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gui_x11.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\joystick.c">
@@ -87,33 +90,6 @@
     <ClCompile Include="..\monitor.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\msgbox_gtk.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\msgbox_os2.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\msgbox_os4.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\msgbox_sdl.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\msgbox_win32.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\render_gl.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\render_null.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\render_sw.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\render_sw8.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\snapshot.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -129,14 +105,62 @@
     <ClCompile Include="..\via.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\render_gl.c">
+      <Filter>Source Files\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\render_null.c">
+      <Filter>Source Files\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\render_sw.c">
+      <Filter>Source Files\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\render_sw8.c">
+      <Filter>Source Files\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\filereq_amiga.c">
+      <Filter>Source Files\filereq</Filter>
+    </ClCompile>
     <ClCompile Include="..\filereq_beos.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\filereq</Filter>
+    </ClCompile>
+    <ClCompile Include="..\filereq_gtk.c">
+      <Filter>Source Files\filereq</Filter>
+    </ClCompile>
+    <ClCompile Include="..\filereq_sdl.c">
+      <Filter>Source Files\filereq</Filter>
+    </ClCompile>
+    <ClCompile Include="..\filereq_win32.c">
+      <Filter>Source Files\filereq</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gui.c">
+      <Filter>Source Files\gui</Filter>
     </ClCompile>
     <ClCompile Include="..\gui_beos.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gui_win.c">
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gui_x11.c">
+      <Filter>Source Files\gui</Filter>
     </ClCompile>
     <ClCompile Include="..\msgbox_beos.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\msgbox</Filter>
+    </ClCompile>
+    <ClCompile Include="..\msgbox_gtk.c">
+      <Filter>Source Files\msgbox</Filter>
+    </ClCompile>
+    <ClCompile Include="..\msgbox_os2.c">
+      <Filter>Source Files\msgbox</Filter>
+    </ClCompile>
+    <ClCompile Include="..\msgbox_os4.c">
+      <Filter>Source Files\msgbox</Filter>
+    </ClCompile>
+    <ClCompile Include="..\msgbox_sdl.c">
+      <Filter>Source Files\msgbox</Filter>
+    </ClCompile>
+    <ClCompile Include="..\msgbox_win32.c">
+      <Filter>Source Files\msgbox</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -158,12 +182,6 @@
     <ClInclude Include="..\disk_pravetz.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\filereq.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gui.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\joystick.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -177,21 +195,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\monitor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\msgbox.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\render_gl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\render_null.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\render_sw.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\render_sw8.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\snapshot.h">
@@ -220,6 +223,27 @@
     </ClInclude>
     <ClInclude Include="strcasecmp.h">
       <Filter>Header Files\msvc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\render_gl.h">
+      <Filter>Header Files\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\render_null.h">
+      <Filter>Header Files\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\render_sw.h">
+      <Filter>Header Files\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\render_sw8.h">
+      <Filter>Header Files\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gui.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\filereq.h">
+      <Filter>Header Files\filereq</Filter>
+    </ClInclude>
+    <ClInclude Include="..\msgbox.h">
+      <Filter>Header Files\msgbox</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
