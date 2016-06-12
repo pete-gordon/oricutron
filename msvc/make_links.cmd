@@ -29,6 +29,7 @@ if not exist "Release\oricutron.cfg" ( mklink "Release\oricutron.cfg" %CFG% )
 
 rem x64
 if not exist "x64\roms" ( mklink /D "x64\roms" %ROMS% )
+if not exist "x64\images" ( mklink /D "x64\images" %IMAGES% )
 if not exist "x64\Debug" ( md "x64\Debug" )
 if not exist "x64\Debug\SDL2.dll" ( copy "sdl\VisualC\x64\Debug\SDL2.dll" "x64\Debug\SDL2.dll" )
 if not exist "x64\Debug\roms" ( mklink /D "x64\Debug\roms" %ROMS% )
