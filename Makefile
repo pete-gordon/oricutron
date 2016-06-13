@@ -35,8 +35,8 @@ VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) $(COPYRIGHTS)"
 
 VPATH ?= .
 
-### extract svn revision
-GITREVISION := $(shell git rev-parse --short HEAD)
+### extract git/svn revision
+GITREVISION := $(shell git rev-parse --short HEAD || svnversion -n $(VPATH))
 
 DEFINES =  -DAPP_NAME_FULL='"$(APP_NAME) WIP Rev: $(GITREVISION)"'
 #DEFINES = -DAPP_NAME_FULL='"$(APP_NAME) $(VERSION_MAJ).$(VERSION_MIN)"'
