@@ -52,6 +52,7 @@ extern char diskpath[], diskfile[], filetmp[];
 extern char telediskpath[], telediskfile[];
 extern char pravdiskpath[], pravdiskfile[];
 extern SDL_bool refreshstatus, refreshavi;
+extern int g_menu_scheme; // #InfoBadDesign - init g_menu_scheme should be done lesewher - machine.c should not depend on gui - but this is the only place I know
 
 char atmosromfile[1024];
 char oric1romfile[1024];
@@ -1504,6 +1505,8 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   oric->tele_banksyms[7].numsyms = 0;
 
   clear_patches( oric );
+
+  g_menu_scheme = type;
 
   switch( type )
   {

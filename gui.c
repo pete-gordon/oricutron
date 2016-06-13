@@ -127,7 +127,7 @@ extern SDL_bool microdiscrom_valid, jasminrom_valid, pravetzrom_valid;
 #define GIMG_POS_DISKX   (GIMG_POS_TAPEX-(6+(GIMG_W_DISK*4)))
 #define GIMG_POS_AVIRECX (GIMG_POS_DISKX-(6+GIMG_W_AVIR))
 
-// Text zone (and other gui area) colours
+// Text zone (and other gui area) colours R, G, B
 unsigned char sgpal[] = { 0x00, 0x00, 0x00,     // 0 = black
                           0xff, 0xff, 0xff,     // 1 = white
                           0xcc, 0xcc, 0xff,     // 2 = light blue
@@ -136,7 +136,28 @@ unsigned char sgpal[] = { 0x00, 0x00, 0x00,     // 0 = black
                           0x70, 0x70, 0xff,     // 5 = mid blue
                           0x80, 0x80, 0x80,     // 6 = grey
                           0xa0, 0xa0, 0x00,     // 7 = yellow
-                          0x80, 0x00, 0x00 };   // 8 = dark red
+                          0x80, 0x00, 0x00,     // 8 = dark red
+                          0xff, 0x00, 0x00,     // 9 = red
+                          0xcc, 0xcc, 0xcc,     // 10 = Oric-1 bc
+                          0x33, 0x66, 0x99,     // 11 = Oric-1 sel
+                          0xff, 0x66, 0x00,     // 12 = Atmos sel
+                          0xff, 0x33, 0x33,     // 13 = Telestrat sel
+                          0x99, 0x99, 0x66,     // 14 = Pravetz bc
+                          0xcc, 0xcc, 0x99      // 15 = Pravetz sel 
+};
+
+// Colors for the menu, see sgpal for color index
+// MACH_ORIC1 = 0, MACH_ORIC1_16K, MACH_ATMOS, MACH_TELESTRAT, MACH_PRAVETZ
+
+// Name                        = {     OR      TE  PR  Or
+//                                 OR  IC  AT  LE  AV  ig  
+//                                 IC  -1  MO  ST  ET  in  a$
+//                                 -1, 16, S , RA, Z , al, c  };
+static char g_foregroundc[]    = {  0,  0,  1,  1,  0,  2,  1 };
+static char g_backgroundc[]    = { 10, 10,  0,  0, 14,  3,  0 };
+static char g_foregroundcsel[] = {  1,  1,  0,  0,  0,  1,  0 };
+static char g_backgroundcsel[] = { 11, 11, 12, 13, 15,  5,  9 };
+int g_menu_scheme = 5; // Default is original color scheme, set to the current machine type in machine.c swapmach
 
 // All the textzones. Spaces in this array
 // are reserved in gui.h
@@ -161,6 +182,9 @@ static char* aciabackends[ACIA_TYPE_LAST] = {
 };
 
 static char aciabackendlabel[32];
+
+char menufc(SDL_bool bSelected) { return (bSelected ? g_foregroundcsel[g_menu_scheme] : g_foregroundc[g_menu_scheme]); }
+char menubc(SDL_bool bSelected) { return (bSelected ? g_backgroundcsel[g_menu_scheme] : g_backgroundc[g_menu_scheme]); }
 
 // Menufunctions
 void toggletapenoise( struct machine *oric, struct osdmenuitem *mitem, int dummy );
@@ -735,10 +759,10 @@ void tzsetcol( struct textzone *ptz, int fc, int bc )
 void tzsettitle( struct textzone *ptz, char *title )
 {
   int ox, oy;
-  makebox( ptz, 0, 0, ptz->w, ptz->h, 2, 3 );
+  makebox( ptz, 0, 0, ptz->w, ptz->h, menufc(SDL_FALSE), menubc(SDL_FALSE));
   if( !title ) return;
 
-  tzsetcol( ptz, 2, 3 );
+  tzsetcol( ptz, menufc(SDL_FALSE), menubc(SDL_FALSE));
   ox = ptz->px;
   oy = ptz->py;
   ptz->px = 3;
@@ -840,17 +864,17 @@ void drawitems( void )
       for( j=1; j<tz[TZ_MENU]->w-1; j++, o++ )
       {
         tz[TZ_MENU]->tx[o] = 12;
-        tz[TZ_MENU]->fc[o] = 2;
-        tz[TZ_MENU]->bc[o] = 3;
+        tz[TZ_MENU]->fc[o] = menufc(SDL_FALSE);
+        tz[TZ_MENU]->bc[o] = menubc(SDL_FALSE);
       }
       continue;
     }
 
     // Check if this is the highlighted item, and set the colours accordingly
     if( i==cmenu->citem )
-      tzsetcol( tz[TZ_MENU], 1, 5 );
+      tzsetcol( tz[TZ_MENU], menufc(SDL_TRUE), menubc(SDL_TRUE));
     else
-      tzsetcol( tz[TZ_MENU], (cmenu->items[i].flags&OMIF_BRIGHT) ? 1 : 2, 3 );
+      tzsetcol( tz[TZ_MENU], (cmenu->items[i].flags&OMIF_BRIGHT) ? 1 : menufc(SDL_FALSE), menubc(SDL_FALSE));
 
     // Calculate the position in the textzone
     o = tz[TZ_MENU]->w * (i+1) + 1;
