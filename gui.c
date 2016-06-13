@@ -312,7 +312,7 @@ struct osdmenuitem glopitems[] = { { " OpenGL rendering",      "O",    'o',     
 
 struct osdmenuitem aboutitems[] = { { "",                                  NULL,   0, NULL, 0, 0 },
                                     { APP_NAME_FULL,                       NULL,   0, NULL, 0, OMIF_BRIGHT|OMIF_CENTRED },
-                                    { "http://code.google.com/p/oriculator/",NULL,  0, gotosite, 0, OMIF_CENTRED },
+                                    { "https://github.com/pete-gordon/oricutron",NULL,  0, gotosite, 0, OMIF_CENTRED },
                                     { "",                                  NULL,   0, NULL, 0, 0 },
                                     { "(C)" APP_YEAR " Peter Gordon",      NULL,   0, NULL, 0, OMIF_BRIGHT|OMIF_CENTRED },
                                     { "http://www.petergordon.org.uk",     NULL,   0, gotosite, 0, OMIF_CENTRED },
