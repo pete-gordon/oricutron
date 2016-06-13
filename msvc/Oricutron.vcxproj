@@ -316,6 +316,9 @@
   <ItemGroup>
     <Image Include="..\winicon.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\oricutron.rc" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
