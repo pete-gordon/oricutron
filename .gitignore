@@ -12,3 +12,5 @@ x64
 /msvc/sdl
 /msvc/sdl2
 /roms/*.rom
+/oricutron.aps
+/msvc/Oricutron.psess
