@@ -25,7 +25,6 @@
 #endif
  
 #ifdef _MSC_VER
-#include "msvc\strcasecmp.h"
 // Need to link with Ws2_32.lib
 #pragma comment(lib, "Ws2_32.lib")
 #include <string.h>
@@ -474,11 +473,6 @@ SDL_bool acia_init_modem( struct acia* acia )
 
 #include <stdio.h>
 #include <stdlib.h>
-#ifndef _MSC_VER
-#include <unistd.h>
-#else
-#include "msvc\unistd.h"
-#endif
 #include <time.h>
 
 

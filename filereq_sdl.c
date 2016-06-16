@@ -23,11 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #ifndef _MSC_VER
-#include <unistd.h>
 #include <dirent.h>
-#else
-#include "msvc\unistd.h"
-#include "msvc\dirent.h"
 #endif
 #include <sys/stat.h>
 

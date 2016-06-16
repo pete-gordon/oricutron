@@ -22,7 +22,11 @@
 #ifndef ORICUTRON_SYSTEM_H
 #define ORICUTRON_SYSTEM_H
 
-
+#ifndef _MSC_VER
+#include <unistd.h>
+#else
+#include "msvc/unistd.h"
+#endif
 
 /* Output audio frequency */
 #define AUDIO_FREQ   44100

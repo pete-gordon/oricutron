@@ -41,10 +41,6 @@
 #include <windows.h>
 #endif
 
-#ifdef _MSC_VER
-#include "msvc\strcasecmp.h"
-#endif
-
 #include "system.h"
 #include "6502.h"
 #include "via.h"
@@ -1304,12 +1300,12 @@ void once_per_frame( struct machine *oric )
 
 int main( int argc, char *argv[] )
 {
+  static struct machine oric;
+  SDL_bool isinit;
+
 #ifdef _MSC_VER
   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
-
-  static struct machine oric;
-  SDL_bool isinit;
 
   // This should center SDL window
 #ifndef __MORPHOS__

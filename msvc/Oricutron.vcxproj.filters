@@ -43,6 +43,9 @@
     <Filter Include="Source Files\msgbox">
       <UniqueIdentifier>{e7b0354f-0047-49e9-b26e-148f1be37f38}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\acia">
+      <UniqueIdentifier>{e6e88892-b414-4cf9-9cef-c2f287ab8305}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\6502.c">
@@ -214,9 +217,6 @@
     </ClInclude>
     <ClInclude Include="..\via.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dirent.h">
-      <Filter>Header Files\msvc</Filter>
     </ClInclude>
     <ClInclude Include="unistd.h">
       <Filter>Header Files\msvc</Filter>

@@ -272,7 +272,9 @@ static SDL_bool com_peek(Uint8* data)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdlib.h>
+#ifndef _MSC_VER
 #include <io.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>

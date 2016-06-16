@@ -80,6 +80,7 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>sdl\include\</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MBCS;WIN32;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;main=SDL_main;__CBCOPY__;__CBPASTE__;APP_NAME_FULL="Oricutron 1.2";APP_YEAR="2015";VERSION_COPYRIGHTS="Oricutron 1.2.0 (c)2015 Peter Gordon (pete@petergordon.org.uk)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>/we4013 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>sdl\VisualC\$(Platform)\$(Configuration)</AdditionalLibraryDirectories>
@@ -99,6 +100,7 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>sdl\include\</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MBCS;WIN32;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;main=SDL_main;__CBCOPY__;__CBPASTE__;APP_NAME_FULL="Oricutron 1.2";APP_YEAR="2015";VERSION_COPYRIGHTS="Oricutron 1.2.0 (c)2015 Peter Gordon (pete@petergordon.org.uk)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>/we4013 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>SDL2main.lib;SDL2.lib;ws2_32.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -123,6 +125,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <StringPooling>true</StringPooling>
+      <AdditionalOptions>/we4013 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -149,6 +152,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <StringPooling>true</StringPooling>
+      <AdditionalOptions>/we4013 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -294,7 +298,6 @@
     <ClInclude Include="..\tape.h" />
     <ClInclude Include="..\ula.h" />
     <ClInclude Include="..\via.h" />
-    <ClInclude Include="dirent.h" />
     <ClInclude Include="strcasecmp.h" />
     <ClInclude Include="unistd.h" />
   </ItemGroup>

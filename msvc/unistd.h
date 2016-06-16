@@ -7,8 +7,6 @@
 
 #include <direct.h>     // Using _getcwd
 #define getcwd _getcwd
-#endif
-
-//#include <stdio.h>
+#endif // MSC_VER
 
 #include "strcasecmp.h"
