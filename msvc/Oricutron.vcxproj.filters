@@ -51,18 +51,6 @@
     <ClCompile Include="..\6502.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\6551.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\6551_com.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\6551_loopback.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\6551_modem.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\8912.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -164,6 +152,18 @@
     </ClCompile>
     <ClCompile Include="..\msgbox_win32.c">
       <Filter>Source Files\msgbox</Filter>
+    </ClCompile>
+    <ClCompile Include="..\6551.c">
+      <Filter>Source Files\acia</Filter>
+    </ClCompile>
+    <ClCompile Include="..\6551_com.c">
+      <Filter>Source Files\acia</Filter>
+    </ClCompile>
+    <ClCompile Include="..\6551_loopback.c">
+      <Filter>Source Files\acia</Filter>
+    </ClCompile>
+    <ClCompile Include="..\6551_modem.c">
+      <Filter>Source Files\acia</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
