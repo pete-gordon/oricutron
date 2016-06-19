@@ -23,7 +23,6 @@
 #define MAX_ASM_INPUT 36
 #define CONS_WIDTH 46             // Actual console width for input
 
-#define EMUL_EMULREGS_H     // MorphOS should not define REG_PC
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -31,6 +30,8 @@
 #include <ctype.h>
 
 #include "system.h"
+#undef REG_PC                     // MorphOS should not define REG_PC
+#define REG_PC _REG_PC
 #include "6502.h"
 #include "via.h"
 #include "8912.h"
