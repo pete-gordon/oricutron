@@ -78,6 +78,7 @@ char* get_clipboard_text_win(void)
       char *src = (char*)GlobalLock(hMem);
       if (src)
       {
+        free(text);
         text = strdup(src);
         GlobalUnlock(hMem);
       }
