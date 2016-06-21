@@ -2344,6 +2344,7 @@ void shut_gui( struct machine *oric )
   for (i = 0; i<NUM_GIMG; i++)
   {
     free(gimgs[i].buf);
+    gimgs[i].buf = 0;
   }
 
   oric->shut_render( oric );
