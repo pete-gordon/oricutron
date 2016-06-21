@@ -25,6 +25,9 @@
 #ifndef _MSC_VER
 #include <unistd.h>
 #else
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
 #include "msvc/unistd.h"
 #endif
 
