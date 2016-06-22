@@ -1730,7 +1730,7 @@ void shut_machine( struct machine *oric )
   if( oric->prf ) { fclose( oric->prf ); oric->prf = NULL; }
   if( oric->tsavf ) tape_stop_savepatch( oric );
   if( oric->tapecap ) toggletapecap( oric, find_item_by_function(mainitems, toggletapecap), 0 );
-  if (oric->tapebuf) free(oric->tapebuf); oric->tapebuf = NULL;
+  if (oric->tapebuf) { free(oric->tapebuf); oric->tapebuf = NULL; }
   mon_freesyms( &sym_microdisc );
   mon_freesyms( &sym_jasmin );
   mon_freesyms( &sym_pravetz );
