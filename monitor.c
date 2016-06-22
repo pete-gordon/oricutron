@@ -2416,14 +2416,14 @@ struct msym *mon_replace_or_add_symbol( struct symboltable *stab, struct machine
 {
   int i;
   char symtmp[160];
-  struct msym *retval;
+  struct msym *retval = NULL;
 
   for( i=0; issymchar(symname[i]); i++ )
     symtmp[i] = symname[i];
   symtmp[i] = 0;
 
   // Is it a dynamic symbol table?
-  if( stab->symspace == -1 ) return SDL_FALSE;
+  if( stab->symspace == -1 ) return retval;
 
   if( flags == SYM_BESTGUESS )
     flags = mon_sym_best_guess( oric, addr, symtmp, SDL_TRUE );
