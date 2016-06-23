@@ -178,7 +178,7 @@ SDL_bool clipboard_paste( struct machine *oric )
         case '\t': *p = ' '; break;
         case '\n': *p = '\r'; break;
         default:
-          *p = (*p < 0x20 || 128 <= *p)? ' ' : *p;
+          *p = (*p < 0x20 || 127 < *p)? ' ' : *p;
           break;
       }
       p++;
