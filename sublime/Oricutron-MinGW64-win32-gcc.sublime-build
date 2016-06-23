@@ -1,0 +1,4 @@
+{
+    "path": "PATH_TO_MINGW64\\bin\\;PATH_TO_GIT\\bin\\",
+    "cmd": ["mingw32-make.exe", "PLATFORM=win32-gcc", "HOSTOS=win32", "SDL_LIB=sdl2"]
+}
