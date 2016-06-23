@@ -1075,8 +1075,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           break;
 
         case SDLK_F3:
-          oric->cpu.nmi = SDL_TRUE;
-          oric->cpu.nmicount = 2;
+          softresetoric(oric, NULL, 0);
           break;
 
         case SDLK_F4:

@@ -244,8 +244,9 @@ struct osdmenuitem mainitems[] = { { "Insert tape...",         "T",    't',     
                                    { "Debug options...",       "D",    'd',      gotomenu,        3, 0 },
                                    { "Overclock options...",   "C",    'c',      gotomenu,        6, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
-                                   { "Reset",                  "[F4]", SDLK_F4,  resetoric,       0, 0 },
                                    { "Monitor",                "[F2]", SDLK_F2,  setemumode,      EM_DEBUG, 0 },
+                                   { "Reset Button NMI",       "[F3]", SDLK_F3,  softresetoric,       0, 0 },
+                                   { "Hard Reset",             "[F4]", SDLK_F4,  resetoric,       0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,setemumode, EM_RUNNING, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "About",                  NULL,   0,        gotomenu,        5, 0 },
@@ -1320,6 +1321,13 @@ void loadsnap( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   if( !filerequester( oric, "Load Snapshot", snappath, snapfile, FR_SNAPSHOTLOAD ) ) return;
   joinpath( snappath, snapfile );
   load_snapshot( oric, filetmp );
+}
+
+void softresetoric(struct machine *oric, struct osdmenuitem *mitem, int dummy)
+{
+  oric->cpu.nmi = SDL_TRUE;
+  oric->cpu.nmicount = 2;
+  setemumode(oric, NULL, EM_RUNNING);
 }
 
 // Reset the oric
