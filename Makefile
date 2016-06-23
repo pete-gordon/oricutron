@@ -110,13 +110,15 @@ endif
 # default
 HOSTOS ?= os4
 PLATFORM ?= os4
-$(info Target platform: $(PLATFORM))
+$(info Host OS         : $(HOSTOS))
+$(info Target platform : $(PLATFORM))
 
 ####### PLATFORM SPECIFIC STUFF HERE #######
 
 ### set SDL_LIB to 'sdl' or 'sdl2' for SDL2 (default is sdl)
 SDL_LIB ?= sdl
 $(info Using SDL lib   : $(SDL_LIB))
+$(info Using SDL prefix: $(SDL_PREFIX))
 
 # Amiga OS4
 ifeq ($(PLATFORM),os4)
