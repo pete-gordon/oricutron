@@ -27,7 +27,12 @@
 
 #include "system.h"
 
+#ifdef WIN32
+#include <windows.h>
+#endif
+
 #ifndef __APPLE__
+
 #include <GL/gl.h>
 #else
 #include <OpenGL/gl.h>
