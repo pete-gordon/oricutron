@@ -934,7 +934,7 @@ struct msym *mon_tab_find_sym_by_name( struct symboltable *stab, struct machine 
     }
   }
 
-  if( symnum) (*symnum) = -1;
+  if( symnum ) (*symnum) = -1;
   return NULL;
 }
 
@@ -2746,7 +2746,11 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           {
             if( oric->cpu.breakpoints[j] != -1 )
             {
-              mon_printf( "%02d: $%04X", j, oric->cpu.breakpoints[j] );
+              mon_printf( "%02d: $%04X %s%s",
+                j, 
+                oric->cpu.breakpoints[j],
+                (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLES) ? "z" : "",
+                (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLESCONTINUE) ? "c" : "");
               oric->cpu.anybp = SDL_TRUE;
             }
           }
@@ -2833,8 +2837,32 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           }
 
           oric->cpu.breakpoints[j] = v & 0xffff;
+          oric->cpu.breakpoint_flags[j] = 0;
           oric->cpu.anybp = SDL_TRUE;
-          mon_printf( "%02d: $%04X", j, oric->cpu.breakpoints[j] );
+
+          while( isws( cmd[i] ) ) i++;
+          
+          for( ;; )
+          {
+            switch( cmd[i] )
+            {
+              case 'z':
+                oric->cpu.breakpoint_flags[j] |= MBPF_RESETCYCLES;
+                i++;
+                continue;
+              case 'c':
+                oric->cpu.breakpoint_flags[j] |= MBPF_RESETCYCLESCONTINUE;
+                i++;
+                continue;
+            }
+            break;
+          }
+
+          mon_printf( "%02d: $%04X %s%s", 
+            j, 
+            oric->cpu.breakpoints[j],
+            (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLES) ? "z" : "",
+            (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLESCONTINUE) ? "c" : "" );
           break;
 
         case 'c':
@@ -3096,7 +3124,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
       }
       *needrender = SDL_TRUE;
-	  updatepreview = SDL_TRUE;
+      updatepreview = SDL_TRUE;
       break;
 
     case 0:
@@ -3237,7 +3265,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "  bcm <bp id>           - Clear mem breakpoint" );
           mon_str( "  bl                    - List breakpoints" );
           mon_str( "  blm                   - List mem breakpoints" );
-          mon_str( "  bs <addr>             - Set breakpoint" );
+          mon_str( "  bs <addr> [zc]        - Set breakpoint/cycles" );
           mon_str( "  bsm <addr> [rwc]      - Set mem breakpoint" );
           mon_str( "  bz                    - Zap breakpoints" );
           mon_str( "  bzm                   - Zap mem breakpoints" );

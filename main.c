@@ -380,7 +380,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
   char tbtmp[32];
   char keymap_file[4096];
 
-  f = fopen( FILEPREFIX"oricutron.cfg", "r" );
+            f = fopen( FILEPREFIX"oricutron.cfg", "r" );
   if( !f ) return;
 
   while( !feof( f ) )
@@ -1125,17 +1125,46 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 
   if( sto->start_breakpoint )
   {
-    int i = 0;
-    unsigned int addr;
-    if( !mon_getnum( oric, &addr, sto->start_breakpoint, &i, SDL_FALSE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+    if( sto->start_breakpoint[0] == ':' )
     {
-      error_printf( "Invalid breakpoint" );
-      free( sto );
-      return SDL_FALSE;
+      SDL_bool needrender = SDL_FALSE;;
+      char bsbuf[32];
+      char* fn = sto->start_breakpoint + 1;
+      FILE* f = fopen( fn, "rt" );
+      if( !f )
+      {
+        error_printf( "Invalid breakpoint file" );
+        free( sto );
+        return SDL_FALSE;
+      }        
+      while( !feof( f ) )
+      {
+        char* p;
+        if( !fgets( bsbuf, 32, f ) ) break;
+        bsbuf[31] = 0;
+        while( NULL != (p = strchr( bsbuf, '\r' )) ) *p = 0;
+        while( NULL != (p = strchr( bsbuf, '\n' )) ) *p = 0;
+        while( NULL != (p = strchr( bsbuf, '\t' )) ) *p = ' ';
+        p = bsbuf;
+        while( *p && isws( *p ) ) p++;
+        if( *p ) mon_cmd( bsbuf, oric, &needrender );
+      }
+      fclose( f );
     }
-
-    oric->cpu.breakpoints[0] = addr;
-    oric->cpu.anybp = SDL_TRUE;
+    else
+    {
+      int i = 0;
+      unsigned int addr;
+      if( !mon_getnum( oric, &addr, sto->start_breakpoint, &i, SDL_FALSE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+      {
+        error_printf( "Invalid breakpoint" );
+        free( sto );
+        return SDL_FALSE;
+      }
+      
+      oric->cpu.breakpoints[0] = addr;
+      oric->cpu.anybp = SDL_TRUE;
+    }
   }
 
   if( sto->start_snapshot[0] )
