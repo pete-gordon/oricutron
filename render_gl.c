@@ -403,25 +403,15 @@ void render_video_gl( struct machine *oric, SDL_bool doublesize )
       t = 14.0f;
       b = 462.0f;
     } else {
-      if( oric->aratio )
+      l = 320.0f-240.0f;
+      r = 320.0f+240.0f;
+      if( oric->aratio && oric->vid_freq )
       {
-        l = (320.0f-240.0f*(264.0f/312.0f));
-        r = (320.0f+240.0f*(264.0f/312.0f));
-        if( oric->vid_freq )
-        {
-          t = 14.0f + (448.0f-448.0f*(264.0f/312.0f))/2;
-          b = 462.0f - (448.0f-448.0f*(264.0f/312.0f))/2;
-        }
-        else
-        {
-          t = 14.0f;
-          b = 462.0f;
-        }
+        t = 14.0f + (448.0f-448.0f*(260.0f/308.0f))/2;
+        b = 462.0f - (448.0f-448.0f*(260.0f/308.0f))/2;
       }
       else
       {
-        l = 320.0f-240.0f;
-        r = 320.0f+240.0f;
         t = 14.0f;
         b = 462.0f;
       }

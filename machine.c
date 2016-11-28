@@ -1007,14 +1007,13 @@ void move_lightpen( struct machine *oric, int x, int y )
 
   if ((oric->rendermode == RENDERMODE_SW) || (!oric->hstretch))
   {
+    x = (x-80)/2;
     if(oric->rendermode == RENDERMODE_GL && oric->aratio && oric->vid_freq)
     {
-      x = (x-112)/2;
       y = (y-48)/2;
     }
     else
     {
-      x = (x-80)/2;
       y = (y-14)/2;
     }
   }
