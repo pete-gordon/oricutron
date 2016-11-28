@@ -111,6 +111,7 @@ struct machine
   int vid_end;             // Stop drawing video
   int vid_maxrast;         // Number of raster lines
   int vid_raster;          // Current rasterline
+  int vid_offset;          // Current T1 counter position
 
   int vid_fg_col;
   int vid_bg_col;
@@ -201,7 +202,7 @@ struct machine
 
   Sint32 keymap;
 
-  SDL_bool hstretch, scanlines, palghost;
+  SDL_bool aratio, hstretch, scanlines, palghost;
   Sint32 sw_depth; // Bit depth of the emulator video mode
 
   int rendermode;

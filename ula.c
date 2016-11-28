@@ -288,6 +288,9 @@ SDL_bool ula_doraster( struct machine *oric )
     }
 
     oric->vid_raster = 0;
+    
+    // store current T1 counter
+    oric->vid_offset = oric->via.t1c/64;
 
     /*
      * NOTE: this hard coded value is not correct:
@@ -434,6 +437,7 @@ void ula_set_dirty( struct machine *oric )
 void preinit_ula( struct machine *oric )
 {
   oric->scr = NULL;
+  oric->aratio = SDL_TRUE;
   oric->hstretch = SDL_TRUE;
   oric->scanlines = SDL_FALSE;
   oric->palghost = SDL_TRUE;

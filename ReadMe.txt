@@ -152,7 +152,7 @@ Here are all the options:
                        "opengl" for OpenGL
 
   -b / --debug       = Start oricutron in the debugger
-  -r / --breakpoint  = Set a breakpoint
+  -r / --breakpoint  = Set a breakpoint (See NOTE2)
   -h / --help        = Print command line help and quit
 
   --turbotape on|off = Enable or disable turbotape
@@ -181,6 +181,10 @@ NOTE: If you are not sure what machine or drive type is required for a disk or
 tape image, just pass the filename without any options and Oricutron will
 try and autodetect for you.
 
+NOTE2: List with many breakpoints can be loaded from command line. Use default switches -r or --breakpoint,
+but instead of an address, specify filename prefixed with ':'. The file is plain text file, which contains
+desired breakpoint-addresses - one per line using the same syntax as in the monitor. Breakpoints can be set
+with absolute addresses or with symbols (loaded with command line switches -s or --symbols).
 
 Examples:
 
@@ -191,7 +195,7 @@ oricutron -m1 -tBUILD/foo.tap -sBUILD/symbols -b
 oricutron --drive microdisc --disk demos/barbitoric.dsk --fullscreen
 oricutron -ddemos/barbitoric.dsk -f
 oricutron --turbotape off tapes/hobbit.tap
-
+oricutron -s myproject.sym -r :myprojectbp.txt
 
 
 Keys
@@ -277,7 +281,7 @@ Commands:
   bcm <bp id>           - Clear mem breakpoint
   bl                    - List breakpoints
   blm                   - List mem breakpoints
-  bs <addr>             - Set breakpoint
+  bs <addr> [zc]        - Set breakpoint
   bsm <addr> [rwc]      - Set mem breakpoint
   bz                    - Zap breakpoints
   bzm                   - Zap mem breakpoints
@@ -308,6 +312,16 @@ Breakpoints
 There are two types of breakpoints. "Normal" breakpoints trigger when the CPU
 is about to execute an instruction at the breakpoint address. "Memory" breakpoints
 trigger when the breakpoint address is accessed or modified.
+
+Normal breakpoints can use 'z' and/or 'c' modifiers.
+bs $0c00           <-- Break when the CPU is about to execute code at $0c00
+bs $0c00 z         <-- Break when the CPU is about to execute code at $0c00
+                       and set cycles counter to 0
+bs $0c00 zc        <-- Set cycles counter to 0 and continues
+bs $0c00 c         <-- Continues execution (i.e. disabled breakpoint)
+
+Main purpose of this modifiers is to make cycle counting easier.
+If symbols are loaded, they can be used instead of absolute addresses.
 
 There are three ways a memory breakpoint can be triggered; when the CPU is about
 to read the address (r), and the CPU is about to write the address (w), or after the

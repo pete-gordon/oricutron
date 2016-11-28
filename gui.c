@@ -138,14 +138,14 @@ unsigned char sgpal[] = { 0x00, 0x00, 0x00,     // 0 = black
                           0xff, 0x66, 0x00,     // 12 = Atmos sel
                           0xff, 0x33, 0x33,     // 13 = Telestrat sel
                           0x99, 0x99, 0x66,     // 14 = Pravetz bc
-                          0xcc, 0xcc, 0x99      // 15 = Pravetz sel 
+                          0xcc, 0xcc, 0x99      // 15 = Pravetz sel
 };
 
 // Colors for the menu, see sgpal for color index
 // MACH_ORIC1 = 0, MACH_ORIC1_16K, MACH_ATMOS, MACH_TELESTRAT, MACH_PRAVETZ
 
 // Name                        = {     OR      TE  PR  Or
-//                                 OR  IC  AT  LE  AV  ig  
+//                                 OR  IC  AT  LE  AV  ig
 //                                 IC  -1  MO  ST  ET  in  a$
 //                                 -1, 16, S , RA, Z , al, c  };
 static char g_foregroundc[]    = {  0,  0,  1,  1,  0,  2,  1 };
@@ -194,6 +194,7 @@ void togglesymbolsauto( struct machine *oric, struct osdmenuitem *mitem, int dum
 void togglecasesyms( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglevsynchack( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newrendermode );
+void togglearatio( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglehstretch( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglepalghost( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy );
@@ -306,7 +307,7 @@ struct osdmenuitem dbopitems[] = { { " Autoload symbols file", NULL,   0,       
 struct osdmenuitem vdopitems[] = { { " OpenGL rendering",      "O",    'o',      swap_render_mode, RENDERMODE_GL, 0 },
                                    { " Software rendering",    "S",    's',      swap_render_mode, RENDERMODE_SW, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
-                                   { " Fullscreen",         "[F8]",    SDLK_F8,  togglefullscreen, 0, 0 },
+                                   { " Fullscreen",            "[F8]", SDLK_F8,  togglefullscreen, 0, 0 },
                                    { " Scanlines",             "C",    'c',      togglescanlines, 0, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },
@@ -323,6 +324,7 @@ struct osdmenuitem glopitems[] = { { " OpenGL rendering",      "O",    'o',     
                                    { " Software rendering",    "S",    's',      swap_render_mode, RENDERMODE_SW, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { " Fullscreen",            "F",    'f',      togglefullscreen, 0, 0 },
+                                   { " 50Hz/60Hz aspect ratio", "R",   'r',      togglearatio,    0, 0 },
                                    { " Horizontal stretch",    "H",    'h',      togglehstretch,  0, 0 },
                                    { " Scanlines",             "C",    'c',      togglescanlines, 0, 0 },
                                    { " PAL ghosting",          "P",    'p',      togglepalghost,  0, 0 },
@@ -607,7 +609,13 @@ void render( struct machine *oric )
           perc = 200000/(frametimeave?frametimeave:1);
         else
           perc = 166667/(frametimeave?frametimeave:1);
+
+#ifdef DEBUG_VSYNC
+        sprintf( oric->statusstr, "%4d.%02d%% - %4dFPS  VSYNC:%3d", perc/100, perc%100, fps/100, oric->vid_offset );
+#else
         sprintf( oric->statusstr, "%4d.%02d%% - %4dFPS", perc/100, perc%100, fps/100 );
+#endif
+
         oric->newstatusstr = SDL_TRUE;
       }
       if( oric->popuptime > 0 )
@@ -1563,6 +1571,20 @@ void togglefullscreen( struct machine *oric, struct osdmenuitem *mitem, int dumm
   find_item_by_function(glopitems, togglefullscreen)->name = " Fullscreen";
 }
 
+// Toggle 50Hz/60Hz aspect ratio
+void togglearatio( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+  if( oric->aratio )
+  {
+    oric->aratio = SDL_FALSE;
+    mitem->name = " 50Hz/60Hz aspect ratio";
+    return;
+  }
+
+  oric->aratio = SDL_TRUE;
+  mitem->name = "\x0e""50Hz/60Hz aspect ratio";
+}
+
 // Toggle hstretch on/off
 void togglehstretch( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
@@ -2244,6 +2266,11 @@ void setmenutoggles( struct machine *oric )
     find_item_by_function(vdopitems, togglefullscreen)->name = " Fullscreen";
     find_item_by_function(glopitems, togglefullscreen)->name = " Fullscreen";
   }
+
+  if( oric->aratio )
+    find_item_by_function(glopitems, togglearatio)->name = "\x0e""50Hz/60Hz aspect ratio";
+  else
+    find_item_by_function(glopitems, togglearatio)->name = " 50Hz/60Hz aspect ratio";
 
   if( oric->hstretch )
     find_item_by_function(glopitems, togglehstretch)->name = "\x0e""Horizontal stretch";

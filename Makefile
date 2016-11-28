@@ -59,6 +59,10 @@ endif
 #CFLAGS += -DDEBUG_CPU_TRACE=1000
 #CFLAGS += -DDEBUG_CPU_TRACE=200000
 
+ifneq ($(DEBUG_VSYNC),)
+CFLAGS += -DDEBUG_VSYNC
+endif
+
 CC = gcc
 CXX = g++
 AR = ar

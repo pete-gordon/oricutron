@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #endif
 
-#include <string.h> 
+#include <string.h>
 
 #include "system.h"
 #include "6502.h"

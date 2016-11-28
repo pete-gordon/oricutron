@@ -395,6 +395,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_bool(   &sto->lctmp[i], "fullscreen",   &fullscreen ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "hwsurface",    &hwsurface ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "scanlines",    &oric->scanlines ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "aratio",       &oric->aratio ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "hstretch",     &oric->hstretch ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "palghosting",  &oric->palghost ) ) continue;
     if( read_config_string( &sto->lctmp[i], "diskimage",    sto->start_disk, 1024 ) ) continue;
@@ -1136,7 +1137,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
         error_printf( "Invalid breakpoint file" );
         free( sto );
         return SDL_FALSE;
-      }        
+      }
       while( !feof( f ) )
       {
         char* p;
@@ -1161,7 +1162,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
         free( sto );
         return SDL_FALSE;
       }
-      
+
       oric->cpu.breakpoints[0] = addr;
       oric->cpu.anybp = SDL_TRUE;
     }
