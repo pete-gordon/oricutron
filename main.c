@@ -1128,7 +1128,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   {
     if( sto->start_breakpoint[0] == ':' )
     {
-      SDL_bool needrender = SDL_FALSE;;
+      SDL_bool needrender = SDL_FALSE;
       char bsbuf[32];
       char* fn = sto->start_breakpoint + 1;
       FILE* f = fopen( fn, "rt" );

@@ -2,6 +2,7 @@
 Name=Oricutron
 GenericName=ORIC Emulator
 Comment=Emulator for the Oric series of computers
+Comment[de]=Emulator für Heimcomputer der Oric-Reihe
 Comment[fr]=Emulateur de micro-ordinateurs ORIC
 Type=Application
 Exec=oricutron %U
