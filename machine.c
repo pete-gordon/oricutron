@@ -57,8 +57,6 @@
 #include "tape.h"
 #include "keyboard.h"
 
-
-
 extern SDL_bool warpspeed, soundavailable, soundon;
 extern char diskpath[], diskfile[], filetmp[];
 extern char telediskpath[], telediskfile[];
@@ -629,9 +627,9 @@ unsigned char telestratread( struct m6502 *cpu, unsigned short addr )
     switch( addr & 0x0f0 )
     {
 #ifdef WIN32
-	   case 0x040:
-		  return ch376_oric_read(oric->tele_ch376, addr);
-		break;
+      case 0x040:
+        return ch376_oric_read(oric->tele_ch376, addr);
+        break;
 #endif
       case 0x010:
         if( addr >= 0x31c )

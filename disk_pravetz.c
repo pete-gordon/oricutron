@@ -36,7 +36,6 @@
 #include "disk_pravetz.h"
 #include "monitor.h"
 #include "6551.h"
-
 #include "machine.h"
 
 static Uint8  disk_pravetz_read_selected(struct machine *oric);
