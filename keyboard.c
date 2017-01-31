@@ -33,7 +33,6 @@
 #include "disk.h"
 #include "monitor.h"
 #include "6551.h"
-
 #include "machine.h"
 #include "filereq.h"
 #include "render_sw.h"
