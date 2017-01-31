@@ -355,15 +355,16 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
     switch( addr & 0x0f0 )
     {
 #ifdef WIN32
-	  case 0x40:
-		  ch376_oric_write(oric->tele_ch376, addr, data);
-		break;
+      case 0x40:
+        ch376_oric_write(oric->tele_ch376, addr, data);
+      break;
 #endif
-      case 0x20:
+      
+	  case 0x20:
         via_write( &oric->tele_via, addr, data );
         break;
 
-	   case 0x10:
+      case 0x10:
         if( addr >= 0x31c )
           acia_write( &oric->tele_acia, addr, data );
         else
@@ -1114,8 +1115,8 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           via_init( &oric->tele_via, oric, VIA_TELESTRAT );
           acia_init( &oric->tele_acia, oric );
 #ifdef WIN32
-		  oric->tele_ch376=ch376_oric_init();
-		  ch376_oric_config(oric->tele_ch376);
+          oric->tele_ch376=ch376_oric_init();
+          ch376_oric_config(oric->tele_ch376);
 #endif
           break;
 

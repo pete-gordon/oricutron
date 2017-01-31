@@ -41,9 +41,6 @@
 #include <windows.h>
 #endif
 
-
-
-
 #include "system.h"
 #include "6502.h"
 #include "via.h"
@@ -51,7 +48,6 @@
 #include "gui.h"
 #include "disk.h"
 #include "monitor.h"
-
 #include "6551.h"
 #include "machine.h"
 #include "filereq.h"
@@ -66,7 +62,6 @@
 #include "tape.h"
 #include "snapshot.h"
 #include "keyboard.h"
-
 
 #define FRAMES_TO_AVERAGE 8
 

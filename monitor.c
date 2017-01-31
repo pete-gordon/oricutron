@@ -39,13 +39,12 @@
 #include "disk.h"
 #include "monitor.h"
 #include "6551.h"
-
 #include "machine.h"
 #include "ula.h"
 #include "tape.h"
 #include "snapshot.h"
 
-#define LOG_DEBUG 1
+#define LOG_DEBUG 0
 
 #if LOG_DEBUG
 #if defined(__amigaos4__) || defined(__MORPHOS__)
