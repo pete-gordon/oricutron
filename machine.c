@@ -354,7 +354,8 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
     {
 #ifdef WIN32
       case 0x40:
-        ch376_oric_write(oric->tele_ch376, addr, data);
+        if (addr == 0x340 || addr == 0x341)
+          ch376_oric_write(oric->tele_ch376, addr, data);
       break;
 #endif
       
@@ -628,7 +629,8 @@ unsigned char telestratread( struct m6502 *cpu, unsigned short addr )
     {
 #ifdef WIN32
       case 0x040:
-        return ch376_oric_read(oric->tele_ch376, addr);
+		if (addr==0x340 || addr == 0x341)
+		  return ch376_oric_read(oric->tele_ch376, addr);
         break;
 #endif
       case 0x010:
