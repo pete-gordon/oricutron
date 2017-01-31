@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{89EA5DFF-F149-4A3C-9F9F-DD152D43934E}</ProjectGuid>
     <RootNamespace>Oricutron</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -103,7 +103,7 @@
       <AdditionalOptions>/we4013 /we4115 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>SDL2main.lib;SDL2.lib;ws2_32.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shlwapi.lib;SDL2main.lib;SDL2.lib;ws2_32.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>sdl\VisualC\$(Platform)\$(Configuration)</AdditionalLibraryDirectories>
       <SubSystem>Windows</SubSystem>
       <IgnoreAllDefaultLibraries>
@@ -157,7 +157,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>SDL2main.lib;SDL2.lib;ws2_32.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shlwapi.lib;SDL2main.lib;SDL2.lib;ws2_32.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>sdl\VisualC\$(Platform)\$(Configuration)</AdditionalLibraryDirectories>
       <SubSystem>Windows</SubSystem>
       <IgnoreAllDefaultLibraries>
@@ -253,6 +253,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\msgbox_win32.c" />
+    <ClCompile Include="..\plugins\ch376\ch376.c" />
+    <ClCompile Include="..\plugins\ch376\oric_ch376_plugin.c" />
     <ClCompile Include="..\render_gl.c" />
     <ClCompile Include="..\render_null.c" />
     <ClCompile Include="..\render_sw.c">
@@ -288,6 +290,8 @@
     <ClInclude Include="..\main.h" />
     <ClInclude Include="..\monitor.h" />
     <ClInclude Include="..\msgbox.h" />
+    <ClInclude Include="..\plugins\ch376\ch376.h" />
+    <ClInclude Include="..\plugins\ch376\oric_ch376_plugin.h" />
     <ClInclude Include="..\render_gl.h" />
     <ClInclude Include="..\render_null.h" />
     <ClInclude Include="..\render_sw.h" />

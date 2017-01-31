@@ -38,6 +38,16 @@
 #include "disk.h"
 #include "monitor.h"
 #include "6551.h"
+
+#ifdef WIN32
+// this plugin is coded for linux and Morphos (and windows), but it had not been tested for oricutron under Morphos
+// Emulation's code is a common code for oricutron and ACE (CPC emulator)
+// For instance, path for usbdrive is usbdrive/ and sdcard is sdcard/. In the future, it could support an ini file to configure this plugin.
+
+#include "plugins/ch376/ch376.h"
+#include "plugins/ch376/oric_ch376_plugin.h"
+#endif
+
 #include "machine.h"
 #include "avi.h"
 #include "filereq.h"
@@ -46,6 +56,8 @@
 #include "joystick.h"
 #include "tape.h"
 #include "keyboard.h"
+
+
 
 extern SDL_bool warpspeed, soundavailable, soundon;
 extern char diskpath[], diskfile[], filetmp[];
@@ -342,11 +354,16 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
   {
     switch( addr & 0x0f0 )
     {
+#ifdef WIN32
+	  case 0x40:
+		  ch376_oric_write(oric->tele_ch376, addr, data);
+		break;
+#endif
       case 0x20:
         via_write( &oric->tele_via, addr, data );
         break;
 
-      case 0x10:
+	   case 0x10:
         if( addr >= 0x31c )
           acia_write( &oric->tele_acia, addr, data );
         else
@@ -610,6 +627,11 @@ unsigned char telestratread( struct m6502 *cpu, unsigned short addr )
   {
     switch( addr & 0x0f0 )
     {
+#ifdef WIN32
+	   case 0x040:
+		  return ch376_oric_read(oric->tele_ch376, addr);
+		break;
+#endif
       case 0x010:
         if( addr >= 0x31c )
         {
@@ -1091,6 +1113,10 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           via_init( &oric->via, oric, VIA_MAIN );
           via_init( &oric->tele_via, oric, VIA_TELESTRAT );
           acia_init( &oric->tele_acia, oric );
+#ifdef WIN32
+		  oric->tele_ch376=ch376_oric_init();
+		  ch376_oric_config(oric->tele_ch376);
+#endif
           break;
 
         case SDLK_F5:
@@ -1705,6 +1731,10 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   via_init( &oric->via, oric, VIA_MAIN );
   via_init( &oric->tele_via, oric, VIA_TELESTRAT );
   acia_init( &oric->tele_acia, oric );
+#ifdef WIN32
+  oric->tele_ch376=ch376_oric_init();
+  ch376_oric_config(oric->tele_ch376);
+#endif
   ay_init( &oric->ay, oric );
   joy_setup( oric );
   oric->cpu.rastercycles = oric->cyclesperraster;

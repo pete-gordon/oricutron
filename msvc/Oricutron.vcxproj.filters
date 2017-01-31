@@ -165,6 +165,12 @@
     <ClCompile Include="..\6551_modem.c">
       <Filter>Source Files\acia</Filter>
     </ClCompile>
+    <ClCompile Include="..\plugins\ch376\ch376.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\plugins\ch376\oric_ch376_plugin.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\6502.h">
@@ -244,6 +250,12 @@
     </ClInclude>
     <ClInclude Include="..\msgbox.h">
       <Filter>Header Files\msgbox</Filter>
+    </ClInclude>
+    <ClInclude Include="..\plugins\ch376\ch376.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\plugins\ch376\oric_ch376_plugin.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

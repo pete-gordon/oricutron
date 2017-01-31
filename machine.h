@@ -24,6 +24,8 @@
 
 #include "keyboard.h"
 
+
+
 enum
 {
   DRV_NONE = 0,
@@ -84,6 +86,10 @@ struct telebankinfo
   unsigned char *ptr;
 };
 
+
+
+
+
 struct machine
 {
   Uint8 type;
@@ -103,6 +109,7 @@ struct machine
   struct symboltable  tele_banksyms[8];
   struct via          tele_via;
   struct acia         tele_acia;
+  struct ch376		  *tele_ch376;
   int                 tele_currbank;
   unsigned char       tele_banktype;
 
