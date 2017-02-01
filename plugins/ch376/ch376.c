@@ -859,6 +859,7 @@ static void system_free_mem(void *ptr)
 static CH376_BOOL system_init_context(CH376_CONTEXT *context, UNUSED void *user_data)
 {
   /* Nothing to do */
+	return CH376_TRUE;
 }
 
 static void system_clean_context(CH376_CONTEXT *context)
@@ -978,7 +979,8 @@ static CH376_FILE system_file_open_new(CH376_CONTEXT *context, const char *file_
 
 static void system_file_close(CH376_CONTEXT *context, CH376_FILE file)
 {
-    fclose(file);
+	if (file)
+		fclose(file);
 }
 
 static CH376_S32 system_file_seek(CH376_CONTEXT *context, CH376_FILE file, int pos)
@@ -1072,8 +1074,11 @@ static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK
 
 static void system_finish_examine_directory(CH376_CONTEXT *context, CH376_DIR fib)
 {
-    closedir(fib->handle);
-    system_free_mem(fib);
+    if (fib)
+    {
+        closedir(fib->handle);
+        system_free_mem(fib);
+    }
 }
 
 /* /// */

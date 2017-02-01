@@ -1116,7 +1116,8 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           acia_init( &oric->tele_acia, oric );
 #ifdef WIN32
           oric->tele_ch376=ch376_oric_init();
-          ch376_oric_config(oric->tele_ch376);
+		  if (oric->tele_ch376!=NULL)
+            ch376_oric_config(oric->tele_ch376);
 #endif
           break;
 
