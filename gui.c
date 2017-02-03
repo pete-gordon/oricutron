@@ -65,7 +65,6 @@
 #include "plugins/ch376/ch376.h"
 #include "plugins/ch376/oric_ch376_plugin.h"
 
-
 extern SDL_bool fullscreen;
 
 char tapepath[4096], tapefile[512];
@@ -278,7 +277,7 @@ struct osdmenuitem hwopitems[] = { { " Oric-1",                "1",    SDLK_1,  
                                    { " VSync hack",            NULL,   0,        togglevsynchack, 0, 0 },
                                    { " Lightpen",              NULL,   0,        togglelightpen,  0, 0 },
                                    { " Serial none          ", NULL,   0,        toggleaciabackend, 0, 0 },
-								   { " Ch376 (Telestrat)    ", NULL,   0,        togglech376, 0, 0 },
+                                   { " Ch376 (Telestrat)    ", NULL,   0,        togglech376, 0, 0 },
 //                                   { " Mouse",                 NULL,   0,        NULL,            0, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },

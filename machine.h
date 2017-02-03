@@ -153,9 +153,7 @@ struct machine
   char diskname[MAX_DRIVES][32];
   SDL_bool diskautosave;
   SDL_bool auto_jasmin_reset;
-
   
-
   FILE *prf;
   int prclose, prclock;
 

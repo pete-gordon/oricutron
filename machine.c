@@ -46,7 +46,6 @@
 #include "plugins/ch376/ch376.h"
 #include "plugins/ch376/oric_ch376_plugin.h"
 
-
 #include "machine.h"
 #include "avi.h"
 #include "filereq.h"
@@ -353,11 +352,11 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
     {
 
       case 0x40:
-		  if (oric->ch376_activated)
-		  {
-			  if (addr == 0x340 || addr == 0x341)
-		        ch376_oric_write(oric->ch376, addr, data);
-		  }
+        if (oric->ch376_activated)
+          {
+            if (addr == 0x340 || addr == 0x341)
+              ch376_oric_write(oric->ch376, addr, data);
+          }
       break;
 
       
@@ -1119,12 +1118,12 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           via_init( &oric->tele_via, oric, VIA_TELESTRAT );
           acia_init( &oric->tele_acia, oric );
 
-		  if (oric->ch376_activated)
-		  {
-			  oric->ch376 = ch376_oric_init();
-			  if (oric->ch376 != NULL)
-				  ch376_oric_config(oric->ch376);
-		  }
+          if (oric->ch376_activated)
+          {
+            oric->ch376 = ch376_oric_init();
+            if (oric->ch376 != NULL)
+              ch376_oric_config(oric->ch376);
+          }
 
           break;
 
