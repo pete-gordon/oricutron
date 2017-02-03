@@ -10,27 +10,7 @@ void dbg_printf(char *fmt, ...);
 
 struct ch376 * ch376_oric_init()
 {
-	//struct *ch376;
 	return  ch376_create(NULL);
-	
-	/*
-
-
-	dbg_printf("Output :  %s", ch376_get_usb_drive_path(ch376));
-	*/
-	//dbg_printf("[INFO][DATA][CH376_CMD_FILE_CLOSE] Init oric ch376");
-	//dbg_printf("[WRITE][DATA][CH376_CMD_FILE_CLOSE] ch376_set_usb_drive_path: 
-	
-	
-
-/*
-	// Configuration
-	
-	
-	const char * ch376_get_sdcard_drive_path(struct ch376 *ch376);
-	const char * ch376_get_usb_drive_path(struct ch376 *ch376);
-	*/
-//	return ch376;
 }
 
 void ch376_oric_reset(struct ch376 *ch376)
@@ -50,7 +30,7 @@ void ch376_oric_config(struct ch376 *ch376)
 	ch376_set_usb_drive_path(ch376, "usbdrive/");
 }
 
-void	ch376_oric_write(struct  ch376 *ch376, Uint16 addr, Uint8 data)
+void	ch376_oric_write(struct ch376 *ch376, Uint16 addr, Uint8 data)
 {
 	if (addr == CH376_ORIC_EXTENSION_DATA_PORT)
 	{
@@ -64,10 +44,9 @@ void	ch376_oric_write(struct  ch376 *ch376, Uint16 addr, Uint8 data)
 }
 	
 
-unsigned char 	ch376_oric_read(struct  ch376 *ch376, Uint16 addr)
+unsigned char 	ch376_oric_read(struct ch376 *ch376, Uint16 addr)
 {
 	unsigned char  temp;
-
 	if (addr == CH376_ORIC_EXTENSION_DATA_PORT)
 	{
 		temp=ch376_read_data_port(ch376);
@@ -80,6 +59,5 @@ unsigned char 	ch376_oric_read(struct  ch376 *ch376, Uint16 addr)
 		return temp;
 	}
 	return 0;
-	
 }
 

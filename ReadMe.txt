@@ -84,7 +84,10 @@ Credits
 
   Iss
 
+  CH376 support
+  ---------------------------
 
+  Offset (cpc) & Jede
 
 
 Thanks
@@ -397,6 +400,16 @@ ATH0        - disconnect currently connected sockets
 +++         - if connected switches to command mode
 ATO         - returns from command mode to online
 ATD ip:port - connects as client to ip:port. 'ip' can be any host name (ex.:localhost) or the real IP (ex.:127.0.0.1) on LAN or in Internet. ATDP and ATDT are alternative for compatibility.
+
+Ch376 card emulation
+============================
+
+Oricutron runs ch376 chip. This chip is able to read a sdcard and a usbkey (and USB port). This chip handles FAT32. usbdrive/ folder is the CH376 emulation folder. It means that when we asked ch376 to read
+usbkey, it reads in this folder. Please note, that read/write are emulated. Erase file, mkdir does not work. Please note that emulation runs only in telestrat mode.
+Atmos can run this chip, but the rom had not been release yet (and the card with the rom). 
+
+Orix (http://orix.oric.org) works with this chip mainly. Don't modify ch376 emulation : contact Jede (jede@oric.org). Because this emulation is used also in ACE emulator (cpc emulation). Offset and me
+are trying to keep the same emulation. It's easier to work together than alone. 
 
 
 

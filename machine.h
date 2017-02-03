@@ -103,9 +103,8 @@ struct machine
   struct symboltable  tele_banksyms[8];
   struct via          tele_via;
   struct acia         tele_acia;
-#ifdef WIN32
-  struct ch376        *tele_ch376;
-#endif
+  struct ch376        *ch376;
+  SDL_bool            ch376_activated;
   int                 tele_currbank;
   unsigned char       tele_banktype;
 
@@ -154,6 +153,8 @@ struct machine
   char diskname[MAX_DRIVES][32];
   SDL_bool diskautosave;
   SDL_bool auto_jasmin_reset;
+
+  
 
   FILE *prf;
   int prclose, prclock;
