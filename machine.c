@@ -351,15 +351,6 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
     switch( addr & 0x0f0 )
     {
 
-      case 0x40:
-        if (oric->ch376_activated)
-        {
-          if (addr == 0x340 || addr == 0x341)
-            ch376_oric_write(oric->ch376, addr, data);
-        }
-      break;
-
-      
 	  case 0x20:
         via_write( &oric->tele_via, addr, data );
         break;
@@ -370,6 +361,14 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
         else
           microdisc_write( &oric->md, addr, data );
         break;
+
+	  case 0x40:
+		if (oric->ch376_activated)
+		{
+		  if (addr == 0x340 || addr == 0x341)
+		    ch376_oric_write(oric->ch376, addr, data);
+          break;
+        }
 
       default:
         via_write( &oric->via, addr, data );
@@ -628,15 +627,8 @@ unsigned char telestratread( struct m6502 *cpu, unsigned short addr )
   {
     switch( addr & 0x0f0 )
     {
-      case 0x040:
-        if (oric->ch376_activated)
-        {
-          if (addr == 0x340 || addr == 0x341)
-            return ch376_oric_read(oric->ch376, addr);
-        }
-        break;
 
-      case 0x010:
+	  case 0x010:
         if( addr >= 0x31c )
         {
           return acia_read( &oric->tele_acia, addr );
@@ -646,6 +638,13 @@ unsigned char telestratread( struct m6502 *cpu, unsigned short addr )
 
       case 0x020:
         return via_read( &oric->tele_via, addr );
+
+      case 0x040:
+        if (oric->ch376_activated)
+        {
+          if (addr == 0x340 || addr == 0x341)
+            return ch376_oric_read(oric->ch376, addr);
+        }
     }
 
     return via_read( &oric->via, addr );
