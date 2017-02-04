@@ -12,6 +12,7 @@ x64
 /msvc/sdl
 /msvc/sdl2
 /roms/*.rom
+!/roms/orix*.rom
 /oricutron.aps
 /msvc/Oricutron.psess
 /msvc/Oricutron.vcxproj.user

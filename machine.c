@@ -38,6 +38,14 @@
 #include "disk.h"
 #include "monitor.h"
 #include "6551.h"
+
+// this plugin is coded for linux and Morphos (and windows), but it had not been tested for oricutron under Morphos
+// Emulation's code is a common code for oricutron and ACE (CPC emulator)
+// For instance, path for usbdrive is usbdrive/ and sdcard is sdcard/. In the future, it could support an ini file to configure this plugin.
+
+#include "plugins/ch376/ch376.h"
+#include "plugins/ch376/oric_ch376_plugin.h"
+
 #include "machine.h"
 #include "avi.h"
 #include "filereq.h"
@@ -342,7 +350,8 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
   {
     switch( addr & 0x0f0 )
     {
-      case 0x20:
+
+	  case 0x20:
         via_write( &oric->tele_via, addr, data );
         break;
 
@@ -352,6 +361,14 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
         else
           microdisc_write( &oric->md, addr, data );
         break;
+
+	  case 0x40:
+		if (oric->ch376_activated)
+		{
+		  if (addr == 0x340 || addr == 0x341)
+		    ch376_oric_write(oric->ch376, addr, data);
+          break;
+        }
 
       default:
         via_write( &oric->via, addr, data );
@@ -610,7 +627,8 @@ unsigned char telestratread( struct m6502 *cpu, unsigned short addr )
   {
     switch( addr & 0x0f0 )
     {
-      case 0x010:
+
+	  case 0x010:
         if( addr >= 0x31c )
         {
           return acia_read( &oric->tele_acia, addr );
@@ -620,6 +638,13 @@ unsigned char telestratread( struct m6502 *cpu, unsigned short addr )
 
       case 0x020:
         return via_read( &oric->tele_via, addr );
+
+      case 0x040:
+        if (oric->ch376_activated)
+        {
+          if (addr == 0x340 || addr == 0x341)
+            return ch376_oric_read(oric->ch376, addr);
+        }
     }
 
     return via_read( &oric->via, addr );
@@ -1098,6 +1123,14 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           via_init( &oric->via, oric, VIA_MAIN );
           via_init( &oric->tele_via, oric, VIA_TELESTRAT );
           acia_init( &oric->tele_acia, oric );
+
+          if (oric->ch376_activated)
+          {
+            oric->ch376 = ch376_oric_init();
+            if (oric->ch376 != NULL)
+              ch376_oric_config(oric->ch376);
+          }
+
           break;
 
         case SDLK_F5:
@@ -1712,6 +1745,13 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   via_init( &oric->via, oric, VIA_MAIN );
   via_init( &oric->tele_via, oric, VIA_TELESTRAT );
   acia_init( &oric->tele_acia, oric );
+
+  if (oric->ch376_activated)
+  {
+    oric->ch376 = ch376_oric_init();
+    ch376_oric_config(oric->ch376);
+  }
+
   ay_init( &oric->ay, oric );
   joy_setup( oric );
   oric->cpu.rastercycles = oric->cyclesperraster;
