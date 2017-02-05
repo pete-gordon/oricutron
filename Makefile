@@ -26,7 +26,7 @@ VERSION_MIN = 2
 VERSION_REV = 0
 VERSION_FULL = $(VERSION_MAJ).$(VERSION_MIN).$(VERSION_REV)
 APP_NAME = Oricutron
-APP_YEAR = 2015
+APP_YEAR = 2017
 COPYRIGHTS = (c)$(APP_YEAR) Peter Gordon (pete@petergordon.org.uk)
 VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) $(COPYRIGHTS)"
 #COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) ©$(APP_YEAR) Peter Gordon (pete@petergordon.org.uk)"
@@ -140,6 +140,7 @@ LFLAGS += `$(SDL_LIB)-config --libs` -s
 FILEREQ_OBJ = filereq_amiga.o
 MSGBOX_OBJ = msgbox_os2.o
 AMIGA_ICONS = pngicon
+EXTRAOBJS = plugins/ch376/oric_ch376_plugin.o plugins/ch376/ch376.o
 endif
 
 # AROS

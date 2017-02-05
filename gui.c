@@ -278,7 +278,7 @@ struct osdmenuitem hwopitems[] = { { " Oric-1",                "1",    SDLK_1,  
                                    { " VSync hack",            NULL,   0,        togglevsynchack, 0, 0 },
                                    { " Lightpen",              NULL,   0,        togglelightpen,  0, 0 },
                                    { " Serial none          ", NULL,   0,        toggleaciabackend, 0, 0 },
-                                   { " Ch376 (Telestrat)    ", NULL,   0,        togglech376, 0, 0 },
+                                   { " CH376 (Telestrat)    ", NULL,   0,        togglech376, 0, 0 },
 //                                   { " Mouse",                 NULL,   0,        NULL,            0, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },
@@ -1511,12 +1511,12 @@ void togglech376(struct machine *oric, struct osdmenuitem *mitem, int dummy)
 	if (oric->ch376_activated)
 	{
 		oric->ch376_activated = SDL_FALSE;
-		mitem->name = " Ch376 (Telestrat)";
+		mitem->name = " CH376 (Telestrat)";
 		return;
 	}
 
 	oric->ch376_activated = SDL_TRUE;
-	mitem->name = "\x0e""Ch376 (Telestrat)";
+	mitem->name = "\x0e""CH376 (Telestrat)";
 	oric->ch376 = ch376_oric_init();
 	if (oric->ch376 != NULL)
 		ch376_oric_config(oric->ch376);
