@@ -51,8 +51,8 @@ Credits
   Francois Revol
 
 
-  MacOS X port
-  ------------
+  macOS port
+  ----------
 
   Francois Revol
   Kamel Biskri
@@ -84,8 +84,9 @@ Credits
 
   Iss
 
+
   CH376 support
-  ---------------------------
+  -------------
 
   Offset (cpc) & Jede
 
@@ -341,18 +342,19 @@ bsm $0c00 rwc      <-- Break just before the CPU accesses $0c00, or just after i
 
 
 
-International Keyboards under Linux and Mac OS X
-================================================
+International Keyboards under Linux and macOS
+=============================================
 
-There are lots of problems with some international keyboards under Linux and Mac OS X.
-The best way to cope with them is to install an UK or US keyboard definition and to
-switch to it *before* starting oricutron.
+There are lots of problems with some international keyboards under Linux
+and macOS. The best way to cope with them is to install an UK or US
+keyboard definition and to switch to it *before* starting oricutron.
 
-Under Mac OS X you can do that in the "System Preferences", "Keyboard", "Input sources".
-Click on the + and search for the UK or US keyboard.
+Under macOS you can do that in the "System Preferences", "Keyboard", "Input
+sources". Click on the + and search for the UK or US keyboard.
 
-Under Ubuntu you can do that in the System menu, select Preferences, and then select
-Keyboard. In the Keyboard Preferences dialog, select the Layouts tab, and click Add.
+Under Ubuntu you can do that in the System menu, select Preferences, and
+then select Keyboard. In the Keyboard Preferences dialog, select the
+Layouts tab, and click Add.
 
 For a better solution look under "Visual Keyboard" down here.
 
