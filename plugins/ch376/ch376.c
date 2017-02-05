@@ -3,7 +3,7 @@
  * Very minimal CH376 emulation (21.12.2016)                        *
  *                                                                  *
  * Code:                                                            *
- *   Jérôme 'Jede' Debrune                                          *
+ *   JÃ©rÃ´me 'Jede' Debrune                                          *
  *   Philippe 'OffseT' Rimauro                                      *
  *                                                                  *
  ** ch376.c *********************************************************/
@@ -24,7 +24,7 @@ extern struct Library *SysBase;
 #include <windows.h>
 #include <stdio.h>
 #include <strsafe.h>
-#include <Shlwapi.h>
+#include <shlwapi.h>
 
 #elif __unix__
 
@@ -901,7 +901,7 @@ static CH376_BOOL system_get_disk_info(CH376_CONTEXT *context, CH376_LOCK root_l
 
 static CH376_LOCK system_obtain_directory_lock(CH376_CONTEXT *context, const char *dir_path, CH376_LOCK root_lock)
 {
-    CH376_LOCK lock;
+    CH376_LOCK lock = NULL;
     char *old_dir = NULL;
     struct stat path_stat;
 
@@ -945,7 +945,8 @@ static FILE * file_open(const char *file_name,  CH376_LOCK root_lock, const char
 {
     FILE *file;
     char *old_dir = NULL;
-    struct stat path_stat;
+    // FIXME: unused variable
+    //struct stat path_stat;
 
     if(root_lock)
     {

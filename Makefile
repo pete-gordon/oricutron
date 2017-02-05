@@ -33,10 +33,11 @@ VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) $(COPYRIGHTS)"
 
 ####### DEFAULT SETTINGS HERE #######
 
-VPATH ?= .
+SRC_DIR = .
+VPATH = $(SRC_DIR) $(SRC_DIR)/plugins/ch376
 
 ### extract git/svn revision
-GITREVISION := $(shell git rev-parse --short HEAD || svnversion -n $(VPATH))
+GITREVISION = $(shell git rev-parse --short HEAD || svnversion -n $(SRC_DIR))
 
 DEFINES =  -DAPP_NAME_FULL='"$(APP_NAME) WIP Rev: $(GITREVISION)"'
 #DEFINES = -DAPP_NAME_FULL='"$(APP_NAME) $(VERSION_MAJ).$(VERSION_MIN)"'
@@ -222,6 +223,7 @@ TARGET_DEPS = /usr/$(CROSS_PREFIX)/sys-root/mingw/bin/SDL.dll
 FILEREQ_OBJ = filereq_win32.o
 MSGBOX_OBJ = msgbox_win32.o
 CUSTOMOBJS = gui_win.o winicon.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o
 endif
 
 # Windows 64bit GCC
@@ -260,6 +262,7 @@ TARGET_DEPS = /usr/$(CROSS_PREFIX)/sys-root/mingw/bin/SDL.dll
 FILEREQ_OBJ = filereq_win32.o
 MSGBOX_OBJ = msgbox_win32.o
 CUSTOMOBJS = gui_win.o winicon.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o
 endif
 
 # BeOS / Haiku
@@ -341,6 +344,7 @@ endif
 CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --cflags) -D__OPENGL_AVAILABLE__ -DAUDIO_BUFLEN=1024 -D__CBCOPY__ -D__CBPASTE__
 LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --libs) -lGL -lX11
 CUSTOMOBJS = gui_x11.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o
 TARGET = oricutron
 INSTALLDIR = /usr/local
 endif
@@ -360,6 +364,7 @@ STRIP :=  $(CROSS_COMPILE)$(STRIP)
 CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --cflags) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --cflags) -D__CBCOPY__ -D__CBPASTE__
 LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --libs) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --libs) -lX11
 CUSTOMOBJS = gui_x11.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o
 FILEREQ_OBJ = filereq_gtk.o
 MSGBOX_OBJ = msgbox_gtk.o
 TARGET = oricutron
@@ -477,8 +482,8 @@ $(OBJECTS): %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
 	@$(CC) -MM $(CFLAGS) $< > $*.d
 
-winicon.o: $(VPATH)/winicon.ico $(VPATH)/oricutron.rc
-	$(WINDRES) $(DEFINES) -i $(VPATH)/oricutron.rc -o winicon.o
+winicon.o: $(SRC_DIR)/winicon.ico $(SRC_DIR)/oricutron.rc
+	$(WINDRES) $(DEFINES) -i $(SRC_DIR)/oricutron.rc -o winicon.o
 
 %.guide: ReadMe.txt
 # AROS needs path
@@ -572,11 +577,11 @@ package-win-gcc: clean release
 	mkdir -p $(PKGDIR)/tapes
 	mkdir -p $(PKGDIR)/roms
 	install -m 755 $(TARGET) $(TARGET_DEPS) $(PKGDIR)/
-	install -m 644 $(VPATH)/images/* $(PKGDIR)/images/
-	#install -m 644 $(VPATH)/disks/* $(PKGDIR)/disks/
-	#install -m 644 $(VPATH)/tapes/* $(PKGDIR)/tapes/
-	install -m 644 $(VPATH)/roms/* $(PKGDIR)/roms/
-	install -m 644 $(addprefix $(VPATH)/,$(DOCFILES)) $(PKGDIR)/
+	install -m 644 $(SRC_DIR)/images/* $(PKGDIR)/images/
+	#install -m 644 $(SRC_DIR)/disks/* $(PKGDIR)/disks/
+	#install -m 644 $(SRC_DIR)/tapes/* $(PKGDIR)/tapes/
+	install -m 644 $(SRC_DIR)/roms/* $(PKGDIR)/roms/
+	install -m 644 $(addprefix $(SRC_DIR)/,$(DOCFILES)) $(PKGDIR)/
 	# unix2dos is not always installed
 	sed -i "s/$$/\r/g" $(PKGDIR)/ReadMe.txt
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
@@ -584,4 +589,4 @@ package-win-gcc: clean release
 .PHONY: mrproper
 PLATFORMS := os4 morphos win32 win32-gcc win64-gcc beos haiku osx linux linux-nogl gphwiz aitouchbook aros rpi
 mrproper:
-	@for plat in $(PLATFORMS); do $(MAKE) -f $(VPATH)/Makefile clean PLATFORM=$${plat} ; done
+	@for plat in $(PLATFORMS); do $(MAKE) -f $(SRC_DIR)/Makefile clean PLATFORM=$${plat} ; done
