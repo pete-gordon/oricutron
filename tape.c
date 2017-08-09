@@ -21,7 +21,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "system.h"
 #include "6502.h"
@@ -105,7 +104,7 @@ void toggletapecap( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 
   /* Write header */
   fwrite( ortheader, 4, 1, oric->tapecap);
-  
+
   /* Counter reset */
   oric->tapecapcount = -1;
   oric->tapecaplastbit = (oric->via.orb&oric->via.ddrb)>>7;
@@ -167,10 +166,10 @@ void tape_orbchange( struct via *via )
 
   /* Capturing tape output? */
   if( !oric->tapecap ) return;
-  
+
   /* Saving a tap section? */
   if( oric->tapecap == oric->tsavf ) return;
-  
+
   tapebit = (via->orb & via->ddrb) >> 7;
   if( tapebit == oric->tapecaplastbit ) return;
 
@@ -325,7 +324,7 @@ void tape_next_raw_count( struct machine *oric )
 
       oric->tapecount = oric->tapebuf[oric->tapeoffs++] << 1;
       return;
-    
+
     case 0xfd:
       if( oric->tapeoffs >= (oric->tapelen-1) )
       {
@@ -333,7 +332,7 @@ void tape_next_raw_count( struct machine *oric )
         oric->tapehitend = 3;
         return;
       }
-      
+
       oric->tapecount = (oric->tapebuf[oric->tapeoffs]<<9)|(oric->tapebuf[oric->tapeoffs+1]<<1);
       oric->tapeoffs += 2;
       return;
@@ -388,13 +387,13 @@ static int next_ort_value( unsigned char *ortdata, int *offset, int end, SDL_boo
         val = ortdata[(*offset)+1];
         (*offset) += 2;
         return val;
-      
+
       case 0xfd:
         if ((*offset) >= (end-2)) return 0;
         val = (ortdata[(*offset)+1]<<8)|ortdata[(*offset)+2];
         (*offset) += 3;
         return val;
-      
+
       case 0xfe:
         return 0;
 
@@ -406,7 +405,7 @@ static int next_ort_value( unsigned char *ortdata, int *offset, int end, SDL_boo
         (*offset)+=skip;
         (*anytapsec) = SDL_TRUE;
         break;
-      
+
       default:
         return ortdata[(*offset)++];
     }
@@ -553,7 +552,7 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
 //              fflush(stdout);
             }
             break;
-          
+
           case TAPSEC_STATE_LEADER:
             bitcount = (bitcount+1)%14;
             if ((bitcount==13)&&validbyte(accum)) bitcount = 0;
@@ -577,7 +576,7 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
               }
             }
             break;
-          
+
           case TAPSEC_STATE_FINDHEADER:
             bitcount = (bitcount+1)%14;
             if ((bitcount==13)&&validbyte(accum)) bitcount = 0;
@@ -589,7 +588,6 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
               {
 //                printf("At the header...\n");
 //                fflush(stdout);
-                state = TAPSEC_STATE_HEADER;
                 scratch[0] = 0x16;
                 scratch[1] = 0x16;
                 scratch[2] = 0x16;
@@ -627,7 +625,7 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
 
                 data_bytes = (load_end-load_start)+1;
                 state = TAPSEC_STATE_FILENAME;
-                
+
 //                printf("Lets try and load %d bytes!\n", data_bytes);
 //                fflush(stdout);
               }
@@ -646,9 +644,9 @@ static int tapsections( unsigned char *ortbuf, int ortbuflen, unsigned char *scr
               {
                 state = TAPSEC_STATE_FINDDATA;
               }
-            }              
+            }
             break;
-          
+
           case TAPSEC_STATE_FINDDATA:
             // Look for a valid byte (start bits, valid parity)
             if (validbyte(accum))
@@ -751,14 +749,14 @@ SDL_bool wav_convert( struct machine *oric )
     // Sane length?
     if ((i+chunklen+8) > oric->tapelen)
       return SDL_FALSE;
- 
+
     // Format chunk?
     if (memcmp(&p[i], "fmt ", 4) == 0)
     {
       // PCM?
       if ((chunklen != 16) || (((p[i+9]<<8)|p[i+8])!=1))
         return SDL_FALSE;
-      
+
       // Channels
       switch ((p[i+11]<<8)|(p[i+10]))
       {
@@ -788,7 +786,7 @@ SDL_bool wav_convert( struct machine *oric )
       data = &p[i+8];
       datalen = chunklen;
     }
-    
+
     // Skip chunk
     i += chunklen+8;
   }
@@ -910,6 +908,7 @@ SDL_bool wav_convert( struct machine *oric )
     count+=cps;
   }
 
+  free( lastsmps );
   // Allocate a buffer for the converted data
   ortbuf = malloc(ortlen);
   if (!ortbuf) return SDL_FALSE;
@@ -1023,7 +1022,7 @@ SDL_bool tape_load_tap( struct machine *oric, char *fname )
   {
     if (!wav_convert( oric ))
     {
-      msgbox( oric, MSGBOX_OK, "Invalid wav file" );  
+      msgbox( oric, MSGBOX_OK, "Invalid wav file" );
       tape_eject( oric );
       return SDL_FALSE;
     }
@@ -1099,13 +1098,13 @@ void tape_autoinsert( struct machine *oric )
     strcpy( &tapefile[i], ".ort" );
     tape_load_tap( oric, tapefile );
   }
-  
+
   if( oric->tapebuf )
   {
     // We already inserted this one. Don't re-insert it when we get to the end. */
     oric->lasttapefile[0] = 0;
   }
-    
+
   chdir( odir );
   free( odir );
 }
@@ -1206,7 +1205,7 @@ void tape_patches( struct machine *oric )
           tmptapename[i] = 0;
 
           // If no name, prompt for one
-          if( tmptapename[0] == 0 ) 
+          if( tmptapename[0] == 0 )
           {
             if( !filerequester( oric, "Save to tape", tapepath, tmptapename, FR_TAPESAVETAP ) )
               tmptapename[0] = 0;
@@ -1388,20 +1387,22 @@ void tape_ticktock( struct machine *oric, int cycles )
   // The VSync hack is triggered in the video emulation
   // but actually handled here, since the VSync signal
   // is read into the tape input. The video emulation
-  // puts half a scanlines worth of cycles into this
-  // counter, which we count down here.
+  // puts 260+12 microseconds into this counter, 
+  // which we count down here.
+  // See more comments about VSync in ula.c
   if( oric->vsync > 0 )
   {
     oric->vsync -= cycles;
     if( oric->vsync < 0 )
       oric->vsync = 0;
   }
-  
+
   // If the VSync hack is active, we pull CB1 low
-  // while the above counter is active.
+  // while the above counter is active and it's value
+  // is less 260.
   if( oric->vsynchack )
   {
-    j = (oric->vsync == 0);
+    j = (0 == oric->vsync || 260 < oric->vsync);
     if( oric->via.cb1 != j )
       via_write_CB1( &oric->via, j );
   }
@@ -1528,7 +1529,7 @@ void tape_ticktock( struct machine *oric, int cycles )
         oric->tapetime = TAPE_0_PULSE;
         oric->tapeparity = 1;
         break;
-      
+
       default:    // For bit numbers 2 to 9, send actual byte bits 0 to 7
         if( oric->tapebuf[oric->tapeoffs]&(1<<(oric->tapebit-2)) )
         {

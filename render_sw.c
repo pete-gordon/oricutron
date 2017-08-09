@@ -463,7 +463,7 @@ void render_sw_detectvideo( struct machine *oric )
       // Great, cases we handle
       case 8:
       case 16:
-    case 24:
+      case 24:
       case 32:
       oric->sw_depth = BitsPerPixel;
         break;
@@ -487,7 +487,7 @@ void preinit_render_sw( struct machine *oric )
 
 SDL_bool render_togglefullscreen_sw( struct machine *oric )
 {
-#if defined(__amigaos4__) || defined(__linux__)
+#if defined(__amigaos4__) || defined(__linux__) || defined(__MORPHOS__)
   // Use SDL_WM_ToggleFullScreen on systems where it is supported
   if( SDL_COMPAT_WM_ToggleFullScreen( screen ) )
   {

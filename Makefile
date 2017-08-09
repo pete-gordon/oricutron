@@ -12,6 +12,7 @@
 # PLATFORM = gphwiz
 # PLATFORM = aitouchbook
 # PLATFORM = aros
+# PLATFORM = rpi
 
 # important build parameters:
 # SDL_LIB - select SDL versions
@@ -25,17 +26,18 @@ VERSION_MIN = 2
 VERSION_REV = 0
 VERSION_FULL = $(VERSION_MAJ).$(VERSION_MIN).$(VERSION_REV)
 APP_NAME = Oricutron
-APP_YEAR = 2015
+APP_YEAR = 2017
 COPYRIGHTS = (c)$(APP_YEAR) Peter Gordon (pete@petergordon.org.uk)
 VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) $(COPYRIGHTS)"
 #COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) ©$(APP_YEAR) Peter Gordon (pete@petergordon.org.uk)"
 
 ####### DEFAULT SETTINGS HERE #######
 
-VPATH ?= .
+SRC_DIR = .
+VPATH = $(SRC_DIR) $(SRC_DIR)/plugins/ch376
 
-### extract svn revision
-GITREVISION := $(shell git rev-parse --short HEAD)
+### extract git/svn revision
+GITREVISION = $(shell git rev-parse --short HEAD || svnversion -n $(SRC_DIR))
 
 DEFINES =  -DAPP_NAME_FULL='"$(APP_NAME) WIP Rev: $(GITREVISION)"'
 #DEFINES = -DAPP_NAME_FULL='"$(APP_NAME) $(VERSION_MAJ).$(VERSION_MIN)"'
@@ -57,6 +59,10 @@ endif
 
 #CFLAGS += -DDEBUG_CPU_TRACE=1000
 #CFLAGS += -DDEBUG_CPU_TRACE=200000
+
+ifneq ($(DEBUG_VSYNC),)
+CFLAGS += -DDEBUG_VSYNC
+endif
 
 CC = gcc
 CXX = g++
@@ -109,13 +115,15 @@ endif
 # default
 HOSTOS ?= os4
 PLATFORM ?= os4
-$(info Target platform: $(PLATFORM))
+$(info Host OS         : $(HOSTOS))
+$(info Target platform : $(PLATFORM))
 
 ####### PLATFORM SPECIFIC STUFF HERE #######
 
 ### set SDL_LIB to 'sdl' or 'sdl2' for SDL2 (default is sdl)
 SDL_LIB ?= sdl
 $(info Using SDL lib   : $(SDL_LIB))
+$(info Using SDL prefix: $(SDL_PREFIX))
 
 # Amiga OS4
 ifeq ($(PLATFORM),os4)
@@ -133,6 +141,7 @@ LFLAGS += `$(SDL_LIB)-config --libs` -s
 FILEREQ_OBJ = filereq_amiga.o
 MSGBOX_OBJ = msgbox_os2.o
 AMIGA_ICONS = pngicon
+EXTRAOBJS = plugins/ch376/oric_ch376_plugin.o plugins/ch376/ch376.o
 endif
 
 # AROS
@@ -184,6 +193,11 @@ ifneq ($(HOSTOS),win32)
 # in Debian: apt:mingw32
 CROSS_PREFIX ?= i686-w64-mingw32
 CROSS_COMPILE ?= $(CROSS_PREFIX)-
+ifeq ($(SDL_LIB),sdl)
+CFLAGS += -DSDL_MAJOR_VERSION=1
+else
+CFLAGS += -DSDL_MAJOR_VERSION=2
+endif
 endif
 CC := $(CROSS_COMPILE)$(CC)
 CXX := $(CROSS_COMPILE)$(CXX)
@@ -209,6 +223,7 @@ TARGET_DEPS = /usr/$(CROSS_PREFIX)/sys-root/mingw/bin/SDL.dll
 FILEREQ_OBJ = filereq_win32.o
 MSGBOX_OBJ = msgbox_win32.o
 CUSTOMOBJS = gui_win.o winicon.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o
 endif
 
 # Windows 64bit GCC
@@ -217,6 +232,11 @@ ifneq ($(HOSTOS),win32)
 # in Debian: apt:mingw32
 CROSS_PREFIX ?= x86_64-w64-mingw32
 CROSS_COMPILE ?= $(CROSS_PREFIX)-
+ifeq ($(SDL_LIB),sdl)
+CFLAGS += -DSDL_MAJOR_VERSION=1
+else
+CFLAGS += -DSDL_MAJOR_VERSION=2
+endif
 endif
 CC := $(CROSS_COMPILE)$(CC)
 CXX := $(CROSS_COMPILE)$(CXX)
@@ -242,6 +262,7 @@ TARGET_DEPS = /usr/$(CROSS_PREFIX)/sys-root/mingw/bin/SDL.dll
 FILEREQ_OBJ = filereq_win32.o
 MSGBOX_OBJ = msgbox_win32.o
 CUSTOMOBJS = gui_win.o winicon.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o
 endif
 
 # BeOS / Haiku
@@ -285,6 +306,23 @@ MSGBOX_OBJ =
 CUSTOMOBJS = gui_osx.o filereq_osx.o msgbox_osx.o
 endif
 
+
+# Special-case for Pandora Linux:
+ifeq ($(PLATFORM),pandora)
+TARGET = oricutron
+INSTALLDIR = /usr/local
+STRIP :=  $(CROSS_COMPILE)$(STRIP)
+CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --cflags) -D__CBCOPY__ -D__CBPASTE__
+LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --libs) -lX11
+CUSTOMOBJS = gui_x11.o
+FILEREQ_OBJ = filereq_sdl.o
+MSGBOX_OBJ = msgbox_sdl.o
+TARGET = oricutron
+INSTALLDIR = /usr/local
+endif
+# Pandora
+
+
 # Linux
 ifeq ($(PLATFORM),linux)
 ifeq (x86_64,$(shell uname -m))
@@ -306,6 +344,7 @@ endif
 CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --cflags) -D__OPENGL_AVAILABLE__ -DAUDIO_BUFLEN=1024 -D__CBCOPY__ -D__CBPASTE__
 LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --libs) -lGL -lX11
 CUSTOMOBJS = gui_x11.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o
 TARGET = oricutron
 INSTALLDIR = /usr/local
 endif
@@ -325,8 +364,22 @@ STRIP :=  $(CROSS_COMPILE)$(STRIP)
 CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --cflags) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --cflags) -D__CBCOPY__ -D__CBPASTE__
 LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --libs) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --libs) -lX11
 CUSTOMOBJS = gui_x11.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o
 FILEREQ_OBJ = filereq_gtk.o
 MSGBOX_OBJ = msgbox_gtk.o
+TARGET = oricutron
+INSTALLDIR = /usr/local
+endif
+
+# Linux - Raspberry Pi
+ifeq ($(PLATFORM),rpi)
+BASELIBDIR := lib
+STRIP :=  $(CROSS_COMPILE)$(STRIP)
+CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --cflags)
+LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --libs) #-lX11
+CUSTOMOBJS = gui_x11.o
+FILEREQ_OBJ = filereq_sdl.o
+MSGBOX_OBJ = msgbox_sdl.o
 TARGET = oricutron
 INSTALLDIR = /usr/local
 endif
@@ -429,8 +482,8 @@ $(OBJECTS): %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
 	@$(CC) -MM $(CFLAGS) $< > $*.d
 
-winicon.o: $(VPATH)/winicon.ico $(VPATH)/oricutron.rc
-	$(WINDRES) $(DEFINES) -i $(VPATH)/oricutron.rc -o winicon.o
+winicon.o: $(SRC_DIR)/winicon.ico $(SRC_DIR)/oricutron.rc
+	$(WINDRES) $(DEFINES) -i $(SRC_DIR)/oricutron.rc -o winicon.o
 
 %.guide: ReadMe.txt
 # AROS needs path
@@ -524,16 +577,16 @@ package-win-gcc: clean release
 	mkdir -p $(PKGDIR)/tapes
 	mkdir -p $(PKGDIR)/roms
 	install -m 755 $(TARGET) $(TARGET_DEPS) $(PKGDIR)/
-	install -m 644 $(VPATH)/images/* $(PKGDIR)/images/
-	#install -m 644 $(VPATH)/disks/* $(PKGDIR)/disks/
-	#install -m 644 $(VPATH)/tapes/* $(PKGDIR)/tapes/
-	install -m 644 $(VPATH)/roms/* $(PKGDIR)/roms/
-	install -m 644 $(addprefix $(VPATH)/,$(DOCFILES)) $(PKGDIR)/
+	install -m 644 $(SRC_DIR)/images/* $(PKGDIR)/images/
+	#install -m 644 $(SRC_DIR)/disks/* $(PKGDIR)/disks/
+	#install -m 644 $(SRC_DIR)/tapes/* $(PKGDIR)/tapes/
+	install -m 644 $(SRC_DIR)/roms/* $(PKGDIR)/roms/
+	install -m 644 $(addprefix $(SRC_DIR)/,$(DOCFILES)) $(PKGDIR)/
 	# unix2dos is not always installed
 	sed -i "s/$$/\r/g" $(PKGDIR)/ReadMe.txt
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
 
 .PHONY: mrproper
-PLATFORMS := os4 morphos win32 win32-gcc win64-gcc beos haiku osx linux linux-nogl gphwiz aitouchbook aros
+PLATFORMS := os4 morphos win32 win32-gcc win64-gcc beos haiku osx linux linux-nogl gphwiz aitouchbook aros rpi
 mrproper:
-	@for plat in $(PLATFORMS); do $(MAKE) -f $(VPATH)/Makefile clean PLATFORM=$${plat} ; done
+	@for plat in $(PLATFORMS); do $(MAKE) -f $(SRC_DIR)/Makefile clean PLATFORM=$${plat} ; done

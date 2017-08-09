@@ -22,8 +22,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
+#ifndef _MSC_VER
 #include <dirent.h>
+#endif
 #include <sys/stat.h>
 
 #include "system.h"

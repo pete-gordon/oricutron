@@ -29,7 +29,6 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <sys/stat.h>
 
 #ifdef __amigaos4__
@@ -41,10 +40,6 @@
 #include <proto/openurl.h>
 #endif
 
-#ifdef WIN32
-#include <windows.h>
-#define WANT_WMINFO
-#endif
 
 #include "system.h"
 #include "6502.h"
@@ -66,6 +61,9 @@
 #include "snapshot.h"
 #include "msgbox.h"
 #include "keyboard.h"
+
+#include "plugins/ch376/ch376.h"
+#include "plugins/ch376/oric_ch376_plugin.h"
 
 extern SDL_bool fullscreen;
 
@@ -127,7 +125,7 @@ extern SDL_bool microdiscrom_valid, jasminrom_valid, pravetzrom_valid;
 #define GIMG_POS_DISKX   (GIMG_POS_TAPEX-(6+(GIMG_W_DISK*4)))
 #define GIMG_POS_AVIRECX (GIMG_POS_DISKX-(6+GIMG_W_AVIR))
 
-// Text zone (and other gui area) colours
+// Text zone (and other gui area) colours R, G, B
 unsigned char sgpal[] = { 0x00, 0x00, 0x00,     // 0 = black
                           0xff, 0xff, 0xff,     // 1 = white
                           0xcc, 0xcc, 0xff,     // 2 = light blue
@@ -136,7 +134,28 @@ unsigned char sgpal[] = { 0x00, 0x00, 0x00,     // 0 = black
                           0x70, 0x70, 0xff,     // 5 = mid blue
                           0x80, 0x80, 0x80,     // 6 = grey
                           0xa0, 0xa0, 0x00,     // 7 = yellow
-                          0x80, 0x00, 0x00 };   // 8 = dark red
+                          0x80, 0x00, 0x00,     // 8 = dark red
+                          0xff, 0x00, 0x00,     // 9 = red
+                          0xcc, 0xcc, 0xcc,     // 10 = Oric-1 bc
+                          0x33, 0x66, 0x99,     // 11 = Oric-1 sel
+                          0xff, 0x66, 0x00,     // 12 = Atmos sel
+                          0xff, 0x33, 0x33,     // 13 = Telestrat sel
+                          0x99, 0x99, 0x66,     // 14 = Pravetz bc
+                          0xcc, 0xcc, 0x99      // 15 = Pravetz sel
+};
+
+// Colors for the menu, see sgpal for color index
+// MACH_ORIC1 = 0, MACH_ORIC1_16K, MACH_ATMOS, MACH_TELESTRAT, MACH_PRAVETZ
+
+// Name                        = {     OR      TE  PR  Or
+//                                 OR  IC  AT  LE  AV  ig
+//                                 IC  -1  MO  ST  ET  in  a$
+//                                 -1, 16, S , RA, Z , al, c  };
+static char g_foregroundc[]    = {  0,  0,  1,  1,  0,  2,  1 };
+static char g_backgroundc[]    = { 10, 10,  0,  0, 14,  3,  0 };
+static char g_foregroundcsel[] = {  1,  1,  0,  0,  0,  1,  0 };
+static char g_backgroundcsel[] = { 11, 11, 12, 13, 15,  5,  9 };
+int g_menu_scheme = 5; // Default is original color scheme, set to the current machine type in machine.c swapmach
 
 // All the textzones. Spaces in this array
 // are reserved in gui.h
@@ -162,6 +181,9 @@ static char* aciabackends[ACIA_TYPE_LAST] = {
 
 static char aciabackendlabel[32];
 
+char menufc(SDL_bool bSelected) { return (bSelected ? g_foregroundcsel[g_menu_scheme] : g_foregroundc[g_menu_scheme]); }
+char menubc(SDL_bool bSelected) { return (bSelected ? g_backgroundcsel[g_menu_scheme] : g_backgroundc[g_menu_scheme]); }
+
 // Menufunctions
 void toggletapenoise( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglesound( struct machine *oric, struct osdmenuitem *mitem, int dummy );
@@ -169,12 +191,14 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive );
 void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void toggletapeturbo( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void togglech376(struct machine *oric, struct osdmenuitem *mitem, int dummy);
 void toggleautowind( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void toggleautoinsrt( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglesymbolsauto( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglecasesyms( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglevsynchack( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newrendermode );
+void togglearatio( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglehstretch( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglepalghost( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglescanlines( struct machine *oric, struct osdmenuitem *mitem, int dummy );
@@ -225,8 +249,9 @@ struct osdmenuitem mainitems[] = { { "Insert tape...",         "T",    't',     
                                    { "Debug options...",       "D",    'd',      gotomenu,        3, 0 },
                                    { "Overclock options...",   "C",    'c',      gotomenu,        6, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
-                                   { "Reset",                  "[F4]", SDLK_F4,  resetoric,       0, 0 },
                                    { "Monitor",                "[F2]", SDLK_F2,  setemumode,      EM_DEBUG, 0 },
+                                   { "Reset Button NMI",       "[F3]", SDLK_F3,  softresetoric,       0, 0 },
+                                   { "Hard Reset",             "[F4]", SDLK_F4,  resetoric,       0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,setemumode, EM_RUNNING, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "About",                  NULL,   0,        gotomenu,        5, 0 },
@@ -253,6 +278,7 @@ struct osdmenuitem hwopitems[] = { { " Oric-1",                "1",    SDLK_1,  
                                    { " VSync hack",            NULL,   0,        togglevsynchack, 0, 0 },
                                    { " Lightpen",              NULL,   0,        togglelightpen,  0, 0 },
                                    { " Serial none          ", NULL,   0,        toggleaciabackend, 0, 0 },
+                                   { " CH376 (Telestrat)    ", NULL,   0,        togglech376, 0, 0 },
 //                                   { " Mouse",                 NULL,   0,        NULL,            0, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },
@@ -286,7 +312,7 @@ struct osdmenuitem dbopitems[] = { { " Autoload symbols file", NULL,   0,       
 struct osdmenuitem vdopitems[] = { { " OpenGL rendering",      "O",    'o',      swap_render_mode, RENDERMODE_GL, 0 },
                                    { " Software rendering",    "S",    's',      swap_render_mode, RENDERMODE_SW, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
-                                   { " Fullscreen",         "[F8]",    SDLK_F8,  togglefullscreen, 0, 0 },
+                                   { " Fullscreen",            "[F8]", SDLK_F8,  togglefullscreen, 0, 0 },
                                    { " Scanlines",             "C",    'c',      togglescanlines, 0, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },
@@ -303,6 +329,7 @@ struct osdmenuitem glopitems[] = { { " OpenGL rendering",      "O",    'o',     
                                    { " Software rendering",    "S",    's',      swap_render_mode, RENDERMODE_SW, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { " Fullscreen",            "F",    'f',      togglefullscreen, 0, 0 },
+                                   { " 50Hz/60Hz aspect ratio", "R",   'r',      togglearatio,    0, 0 },
                                    { " Horizontal stretch",    "H",    'h',      togglehstretch,  0, 0 },
                                    { " Scanlines",             "C",    'c',      togglescanlines, 0, 0 },
                                    { " PAL ghosting",          "P",    'p',      togglepalghost,  0, 0 },
@@ -312,7 +339,7 @@ struct osdmenuitem glopitems[] = { { " OpenGL rendering",      "O",    'o',     
 
 struct osdmenuitem aboutitems[] = { { "",                                  NULL,   0, NULL, 0, 0 },
                                     { APP_NAME_FULL,                       NULL,   0, NULL, 0, OMIF_BRIGHT|OMIF_CENTRED },
-                                    { "http://code.google.com/p/oriculator/",NULL,  0, gotosite, 0, OMIF_CENTRED },
+                                    { "https://github.com/pete-gordon/oricutron",NULL,  0, gotosite, 0, OMIF_CENTRED },
                                     { "",                                  NULL,   0, NULL, 0, 0 },
                                     { "(C)" APP_YEAR " Peter Gordon",      NULL,   0, NULL, 0, OMIF_BRIGHT|OMIF_CENTRED },
                                     { "http://www.petergordon.org.uk",     NULL,   0, gotosite, 0, OMIF_CENTRED },
@@ -587,7 +614,13 @@ void render( struct machine *oric )
           perc = 200000/(frametimeave?frametimeave:1);
         else
           perc = 166667/(frametimeave?frametimeave:1);
+
+#ifdef DEBUG_VSYNC
+        sprintf( oric->statusstr, "%4d.%02d%% - %4dFPS  VSYNC:%3d", perc/100, perc%100, fps/100, oric->vid_offset );
+#else
         sprintf( oric->statusstr, "%4d.%02d%% - %4dFPS", perc/100, perc%100, fps/100 );
+#endif
+
         oric->newstatusstr = SDL_TRUE;
       }
       if( oric->popuptime > 0 )
@@ -735,10 +768,10 @@ void tzsetcol( struct textzone *ptz, int fc, int bc )
 void tzsettitle( struct textzone *ptz, char *title )
 {
   int ox, oy;
-  makebox( ptz, 0, 0, ptz->w, ptz->h, 2, 3 );
+  makebox( ptz, 0, 0, ptz->w, ptz->h, menufc(SDL_FALSE), menubc(SDL_FALSE));
   if( !title ) return;
 
-  tzsetcol( ptz, 2, 3 );
+  tzsetcol( ptz, menufc(SDL_FALSE), menubc(SDL_FALSE));
   ox = ptz->px;
   oy = ptz->py;
   ptz->px = 3;
@@ -840,17 +873,17 @@ void drawitems( void )
       for( j=1; j<tz[TZ_MENU]->w-1; j++, o++ )
       {
         tz[TZ_MENU]->tx[o] = 12;
-        tz[TZ_MENU]->fc[o] = 2;
-        tz[TZ_MENU]->bc[o] = 3;
+        tz[TZ_MENU]->fc[o] = menufc(SDL_FALSE);
+        tz[TZ_MENU]->bc[o] = menubc(SDL_FALSE);
       }
       continue;
     }
 
     // Check if this is the highlighted item, and set the colours accordingly
     if( i==cmenu->citem )
-      tzsetcol( tz[TZ_MENU], 1, 5 );
+      tzsetcol( tz[TZ_MENU], menufc(SDL_TRUE), menubc(SDL_TRUE));
     else
-      tzsetcol( tz[TZ_MENU], (cmenu->items[i].flags&OMIF_BRIGHT) ? 1 : 2, 3 );
+      tzsetcol( tz[TZ_MENU], (cmenu->items[i].flags&OMIF_BRIGHT) ? 1 : menufc(SDL_FALSE), menubc(SDL_FALSE));
 
     // Calculate the position in the textzone
     o = tz[TZ_MENU]->w * (i+1) + 1;
@@ -1303,6 +1336,13 @@ void loadsnap( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   load_snapshot( oric, filetmp );
 }
 
+void softresetoric(struct machine *oric, struct osdmenuitem *mitem, int dummy)
+{
+  oric->cpu.nmi = SDL_TRUE;
+  oric->cpu.nmicount = 2;
+  setemumode(oric, NULL, EM_RUNNING);
+}
+
 // Reset the oric
 void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
@@ -1464,6 +1504,24 @@ void toggleaciabackend( struct machine *oric, struct osdmenuitem *mitem, int dum
   acia_init( &oric->tele_acia, oric );
 }
 
+// Toggle ch376 on/off
+void togglech376(struct machine *oric, struct osdmenuitem *mitem, int dummy)
+{
+
+	if (oric->ch376_activated)
+	{
+		oric->ch376_activated = SDL_FALSE;
+		mitem->name = " CH376 (Telestrat)";
+		return;
+	}
+
+	oric->ch376_activated = SDL_TRUE;
+	mitem->name = "\x0e""CH376 (Telestrat)";
+	oric->ch376 = ch376_oric_init();
+	if (oric->ch376 != NULL)
+		ch376_oric_config(oric->ch376);
+}
+
 // Toggle symbols autoload
 void togglesymbolsauto( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
@@ -1534,6 +1592,20 @@ void togglefullscreen( struct machine *oric, struct osdmenuitem *mitem, int dumm
 
   find_item_by_function(vdopitems, togglefullscreen)->name = " Fullscreen";
   find_item_by_function(glopitems, togglefullscreen)->name = " Fullscreen";
+}
+
+// Toggle 50Hz/60Hz aspect ratio
+void togglearatio( struct machine *oric, struct osdmenuitem *mitem, int dummy )
+{
+  if( oric->aratio )
+  {
+    oric->aratio = SDL_FALSE;
+    mitem->name = " 50Hz/60Hz aspect ratio";
+    return;
+  }
+
+  oric->aratio = SDL_TRUE;
+  mitem->name = "\x0e""50Hz/60Hz aspect ratio";
 }
 
 // Toggle hstretch on/off
@@ -1623,11 +1695,7 @@ void gotosite( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   sprintf( tmp, "URL:%s", mitem->name );
   if( ( h = IDOS->Open( tmp, MODE_OLDFILE ) ) ) IDOS->Close( h );
 
-#elif defined(WIN32)
-   ShellExecute(NULL, "open", mitem->name,
-                NULL, NULL, SW_SHOWNORMAL);
-
-#elif defined(__APPLE__) || defined(__BEOS__) || defined(__HAIKU__)
+#elif defined(WIN32) || defined(__APPLE__) || defined(__BEOS__) || defined(__HAIKU__)
   gui_open_url( mitem->name );
 
 #else
@@ -2222,6 +2290,11 @@ void setmenutoggles( struct machine *oric )
     find_item_by_function(glopitems, togglefullscreen)->name = " Fullscreen";
   }
 
+  if( oric->aratio )
+    find_item_by_function(glopitems, togglearatio)->name = "\x0e""50Hz/60Hz aspect ratio";
+  else
+    find_item_by_function(glopitems, togglearatio)->name = " 50Hz/60Hz aspect ratio";
+
   if( oric->hstretch )
     find_item_by_function(glopitems, togglehstretch)->name = "\x0e""Horizontal stretch";
   else
@@ -2326,6 +2399,11 @@ SDL_bool init_gui( struct machine *oric, Sint32 rendermode )
 void shut_gui( struct machine *oric )
 {
   int i;
+  for (i = 0; i<NUM_GIMG; i++)
+  {
+    free(gimgs[i].buf);
+    gimgs[i].buf = 0;
+  }
 
   oric->shut_render( oric );
 

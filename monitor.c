@@ -23,7 +23,6 @@
 #define MAX_ASM_INPUT 36
 #define CONS_WIDTH 46             // Actual console width for input
 
-#define EMUL_EMULREGS_H     // MorphOS should not define REG_PC
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -31,6 +30,8 @@
 #include <ctype.h>
 
 #include "system.h"
+#undef REG_PC                     // MorphOS should not define REG_PC
+#define REG_PC _REG_PC
 #include "6502.h"
 #include "via.h"
 #include "8912.h"
@@ -933,7 +934,7 @@ struct msym *mon_tab_find_sym_by_name( struct symboltable *stab, struct machine 
     }
   }
 
-  if( symnum) (*symnum) = -1;
+  if( symnum ) (*symnum) = -1;
   return NULL;
 }
 
@@ -1037,7 +1038,15 @@ void mon_freesyms( struct symboltable *stab )
 {
   // Is it a dynamic table?
   if( stab->symspace == -1 ) return;
-  if( stab->syms ) free( stab->syms );
+  if (stab->syms)
+  {
+    int i;
+    for (i = 0; i < stab->numsyms; i++)
+    {
+      free(stab->syms[i].name);
+    }
+    free(stab->syms);
+  }
   stab->syms     = NULL;
   stab->numsyms  = 0;
   stab->symspace = 0;
@@ -2407,14 +2416,14 @@ struct msym *mon_replace_or_add_symbol( struct symboltable *stab, struct machine
 {
   int i;
   char symtmp[160];
-  struct msym *retval;
+  struct msym *retval = NULL;
 
   for( i=0; issymchar(symname[i]); i++ )
     symtmp[i] = symname[i];
   symtmp[i] = 0;
 
   // Is it a dynamic symbol table?
-  if( stab->symspace == -1 ) return SDL_FALSE;
+  if( stab->symspace == -1 ) return retval;
 
   if( flags == SYM_BESTGUESS )
     flags = mon_sym_best_guess( oric, addr, symtmp, SDL_TRUE );
@@ -2737,7 +2746,11 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           {
             if( oric->cpu.breakpoints[j] != -1 )
             {
-              mon_printf( "%02d: $%04X", j, oric->cpu.breakpoints[j] );
+              mon_printf( "%02d: $%04X %s%s",
+                j, 
+                oric->cpu.breakpoints[j],
+                (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLES) ? "z" : "",
+                (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLESCONTINUE) ? "c" : "");
               oric->cpu.anybp = SDL_TRUE;
             }
           }
@@ -2824,8 +2837,32 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           }
 
           oric->cpu.breakpoints[j] = v & 0xffff;
+          oric->cpu.breakpoint_flags[j] = 0;
           oric->cpu.anybp = SDL_TRUE;
-          mon_printf( "%02d: $%04X", j, oric->cpu.breakpoints[j] );
+
+          while( isws( cmd[i] ) ) i++;
+          
+          for( ;; )
+          {
+            switch( cmd[i] )
+            {
+              case 'z':
+                oric->cpu.breakpoint_flags[j] |= MBPF_RESETCYCLES;
+                i++;
+                continue;
+              case 'c':
+                oric->cpu.breakpoint_flags[j] |= MBPF_RESETCYCLESCONTINUE;
+                i++;
+                continue;
+            }
+            break;
+          }
+
+          mon_printf( "%02d: $%04X %s%s", 
+            j, 
+            oric->cpu.breakpoints[j],
+            (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLES) ? "z" : "",
+            (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLESCONTINUE) ? "c" : "" );
           break;
 
         case 'c':
@@ -3087,7 +3124,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
       }
       *needrender = SDL_TRUE;
-	  updatepreview = SDL_TRUE;
+      updatepreview = SDL_TRUE;
       break;
 
     case 0:
@@ -3228,7 +3265,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "  bcm <bp id>           - Clear mem breakpoint" );
           mon_str( "  bl                    - List breakpoints" );
           mon_str( "  blm                   - List mem breakpoints" );
-          mon_str( "  bs <addr>             - Set breakpoint" );
+          mon_str( "  bs <addr> [zc]        - Set breakpoint/cycles" );
           mon_str( "  bsm <addr> [rwc]      - Set mem breakpoint" );
           mon_str( "  bz                    - Zap breakpoints" );
           mon_str( "  bzm                   - Zap mem breakpoints" );

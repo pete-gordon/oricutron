@@ -19,6 +19,11 @@
  **  visual keyboard source
  */
 
+#ifdef _MSC_VER
+#include <stdlib.h>
+#endif
+
+#include <string.h>
 
 #include "system.h"
 #include "6502.h"
@@ -37,7 +42,6 @@
 #include "ula.h"
 #include "tape.h"
 #include "joystick.h"
-#include "snapshot.h"
 #include "msgbox.h"
 #include "keyboard.h"
 
@@ -506,31 +510,31 @@ SDL_bool save_keyboard_mapping( struct machine *oric, char *filename )
     if (fputs("# SDL_key_symbol_for_host : SDL_key_symbol_for_oric\n", f) < 0)
     {
         msgbox(oric, MSGBOX_OK, "Unable to write to keyboard mapping file (2)");
-        return SDL_FALSE;
+        ok = SDL_FALSE;
     }
-    if (fputs("# see http://www.libsdl.org/release/SDL-1.2.15/docs/html/sdlkey.html \n", f)  < 0)
+    if (ok == SDL_TRUE && fputs("# see http://www.libsdl.org/release/SDL-1.2.15/docs/html/sdlkey.html \n", f)  < 0)
     {
         msgbox(oric, MSGBOX_OK, "Unable to write to keyboard mapping file (2)");
-        return SDL_FALSE;
+        ok = SDL_FALSE;
     }
 
     // if we have any definition to save
-    if (oric->keyboard_mapping.nb_map != 0) {
+    if (ok == SDL_TRUE && oric->keyboard_mapping.nb_map != 0) {
         int i;
         // loop through them
-        for(i=0; i < oric->keyboard_mapping.nb_map; i++) {
+        for(i=0; i < oric->keyboard_mapping.nb_map && ok == SDL_TRUE; i++) {
             // print them in the file
             if (fprintf(f, "%d : %d\n", oric->keyboard_mapping.host_keys[i], oric->keyboard_mapping.oric_keys[i]) < 0)
             {
                 msgbox(oric, MSGBOX_OK, "Unable to write to keyboard mapping file (3)");
-                return SDL_FALSE;
+                ok = SDL_FALSE;
             }
         }
     }
 
     if(fclose(f) == EOF) {
         msgbox(oric, MSGBOX_OK, "Unable to close keyboard mapping file (4)");
-        return SDL_FALSE;
+        ok = SDL_FALSE;
     }
 
     return ok;
@@ -570,15 +574,15 @@ SDL_bool load_keyboard_mapping( struct machine *oric, char *filename )
 
     if(ferror(f)) {
         msgbox(oric, MSGBOX_OK, "Problem while reading from keyboard mapping file (2)");
-        return SDL_FALSE;
+        ok = SDL_FALSE;
     }
 
-    if (sprintf(buf, "Read %d key mappings", oric->keyboard_mapping.nb_map) > 0)
+    if (ok == SDL_TRUE && sprintf(buf, "Read %d key mappings", oric->keyboard_mapping.nb_map) > 0)
         do_popup(oric, buf);
 
     if(fclose(f) == EOF) {
         msgbox(oric, MSGBOX_OK, "Unable to close keyboard mapping file (3)");
-        return SDL_FALSE;
+        ok = SDL_FALSE;
     }
 
     return ok;

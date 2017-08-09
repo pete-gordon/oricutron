@@ -22,6 +22,11 @@
 #include "CoreFoundation/CoreFoundation.h"
 #endif
 
+#ifdef _MSC_VER
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -375,7 +380,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
   char tbtmp[32];
   char keymap_file[4096];
 
-  f = fopen( FILEPREFIX"oricutron.cfg", "r" );
+            f = fopen( FILEPREFIX"oricutron.cfg", "r" );
   if( !f ) return;
 
   while( !feof( f ) )
@@ -390,6 +395,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_bool(   &sto->lctmp[i], "fullscreen",   &fullscreen ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "hwsurface",    &hwsurface ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "scanlines",    &oric->scanlines ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "aratio",       &oric->aratio ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "hstretch",     &oric->hstretch ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "palghosting",  &oric->palghost ) ) continue;
     if( read_config_string( &sto->lctmp[i], "diskimage",    sto->start_disk, 1024 ) ) continue;
@@ -488,6 +494,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_joykey( &sto->lctmp[i], "kbjoy2_fire1", &oric->kbjoy2[4] ) ) continue;
     if( read_config_joykey( &sto->lctmp[i], "kbjoy2_fire2", &oric->kbjoy2[5] ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "diskautosave", &oric->diskautosave ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "ch376",        &oric->ch376_activated) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "show_keyboard", &oric->show_keyboard ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "sticky_mod_keys", &oric->sticky_mod_keys ) )continue;
     if( read_config_string( &sto->lctmp[i], "autoload_keyboard_mapping", keymap_file, 4096 ) )
@@ -625,6 +632,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   sto->start_syms[0]  = 0;
   sto->start_snapshot[0] = 0;
   sto->start_breakpoint = NULL;
+  oric->ch376_activated = SDL_FALSE;
   fullscreen          = SDL_FALSE;
 #ifdef WIN32
   hwsurface           = SDL_TRUE;
@@ -647,6 +655,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
   {
     error_printf( "SDL init failed" );
+    free( sto );
     return SDL_FALSE;
   }
   need_sdl_quit = SDL_TRUE;
@@ -1119,17 +1128,46 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 
   if( sto->start_breakpoint )
   {
-    int i = 0;
-    unsigned int addr;
-    if( !mon_getnum( oric, &addr, sto->start_breakpoint, &i, SDL_FALSE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+    if( sto->start_breakpoint[0] == ':' )
     {
-      error_printf( "Invalid breakpoint" );
-      free( sto );
-      return SDL_FALSE;
+      SDL_bool needrender = SDL_FALSE;
+      char bsbuf[32];
+      char* fn = sto->start_breakpoint + 1;
+      FILE* f = fopen( fn, "rt" );
+      if( !f )
+      {
+        error_printf( "Invalid breakpoint file" );
+        free( sto );
+        return SDL_FALSE;
+      }
+      while( !feof( f ) )
+      {
+        char* p;
+        if( !fgets( bsbuf, 32, f ) ) break;
+        bsbuf[31] = 0;
+        while( NULL != (p = strchr( bsbuf, '\r' )) ) *p = 0;
+        while( NULL != (p = strchr( bsbuf, '\n' )) ) *p = 0;
+        while( NULL != (p = strchr( bsbuf, '\t' )) ) *p = ' ';
+        p = bsbuf;
+        while( *p && isws( *p ) ) p++;
+        if( *p ) mon_cmd( bsbuf, oric, &needrender );
+      }
+      fclose( f );
     }
+    else
+    {
+      int i = 0;
+      unsigned int addr;
+      if( !mon_getnum( oric, &addr, sto->start_breakpoint, &i, SDL_FALSE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+      {
+        error_printf( "Invalid breakpoint" );
+        free( sto );
+        return SDL_FALSE;
+      }
 
-    oric->cpu.breakpoints[0] = addr;
-    oric->cpu.anybp = SDL_TRUE;
+      oric->cpu.breakpoints[0] = addr;
+      oric->cpu.anybp = SDL_TRUE;
+    }
   }
 
   if( sto->start_snapshot[0] )
@@ -1296,6 +1334,10 @@ int main( int argc, char *argv[] )
 {
   static struct machine oric;
   SDL_bool isinit;
+
+#ifdef _MSC_VER
+  _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
 
   // This should center SDL window
 #ifndef __MORPHOS__

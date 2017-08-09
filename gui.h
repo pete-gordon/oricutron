@@ -116,7 +116,7 @@ enum
   NUM_GIMG
 };
 
-#define NUM_GUI_COLS 9
+#define NUM_GUI_COLS 16
 
 SDL_bool alloc_textzone( struct machine *oric, int i, int x, int y, int w, int h, char *title );
 void free_textzone( struct machine *oric, int i );
@@ -169,3 +169,5 @@ void clear_textzone( struct machine *oric, int i );
 struct osdmenuitem *find_item_by_function(struct osdmenuitem *menu, void *function);
 
 void togglefullscreen( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+
+void softresetoric(struct machine *oric, struct osdmenuitem *mitem, int dummy);

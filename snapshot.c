@@ -171,14 +171,14 @@ SDL_bool save_snapshot(struct machine *oric, char *filename)
   PUTU8(oric->type);            //  0
   PUTU32(oric->overclockmult);  //  1
   PUTU32(oric->overclockshift); //  5
-  PUTU8(oric->vsync);           //  9
-  PUTU8(oric->romdis);          // 10
-  PUTU8(oric->romon);           // 11
-  PUTU8(oric->vsynchack);       // 12
-  PUTU8(oric->drivetype);       // 13
-  PUTU8(oric->tapeturbo);       // 14
-  PUTU8(oric->vid_mode);        // 15
-  PUTU32(oric->keymap);         // 16 = 20
+  PUTU16(oric->vsync);          //  9
+  PUTU8(oric->romdis);          // 11
+  PUTU8(oric->romon);           // 12
+  PUTU8(oric->vsynchack);       // 13
+  PUTU8(oric->drivetype);       // 14
+  PUTU8(oric->tapeturbo);       // 15
+  PUTU8(oric->vid_mode);        // 16
+  PUTU32(oric->keymap);         // 17 = 21
   DATABLOCK(oric->mem, oric->memsize);
 
   NEWBLOCK("TAP\x00");
@@ -782,12 +782,10 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
 {
   struct m6502 *cpu = &oric->cpu;
   int i;
-  SDL_bool do_wd17xx = SDL_FALSE, back2mon = SDL_FALSE;
+  SDL_bool do_wd17xx = SDL_FALSE, back2mon = oric->emu_mode == EM_DEBUG;
   unsigned int type, drivetype;
   FILE *f = NULL;
   struct blockheader *blk = NULL;
-
-  back2mon = oric->emu_mode == EM_DEBUG;
 
   f = fopen(filename, "rb");
   if (!f)
@@ -857,7 +855,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
   blk->offs = 1;
   oric->overclockmult  = getu32(blk);
   oric->overclockshift = getu32(blk);
-  oric->vsync          = getu8 (blk);
+  oric->vsync          = getu16(blk);
   oric->romdis         = getu8 (blk);
   oric->romon          = getu8 (blk);
   oric->vsynchack      = getu8 (blk);

@@ -54,6 +54,10 @@
 #define MBPF_WRITE (1<<MBPB_WRITE)
 #define MBPB_CHANGE 2
 #define MBPF_CHANGE (1<<MBPB_CHANGE)
+#define MBPB_RESETCYCLES 3
+#define MBPF_RESETCYCLES (1<<MBPB_RESETCYCLES)
+#define MBPB_RESETCYCLESCONTINUE 4
+#define MBPF_RESETCYCLESCONTINUE (1<<MBPB_RESETCYCLESCONTINUE)
 
 // Merge the seperate flag stores into a 6502 status register form
 #define MAKEFLAGS ((cpu->f_n<<7)|(cpu->f_v<<6)|(1<<5)|(cpu->f_b<<4)|(cpu->f_d<<3)|(cpu->f_i<<2)|(cpu->f_z<<1)|cpu->f_c)
@@ -86,6 +90,7 @@ struct m6502
   unsigned char (*read)(struct m6502 *,Uint16);
   SDL_bool anybp, anymbp;
   Sint32   breakpoints[16];
+  Uint8    breakpoint_flags[16];
   struct membreakpoint membreakpoints[16];
   void    *userdata;
 

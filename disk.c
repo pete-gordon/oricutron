@@ -33,7 +33,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "system.h"
 #include "6502.h"
@@ -160,7 +159,11 @@ struct diskimage *diskimage_alloc( Uint32 rawimglen )
   }
 
   dimg = malloc( sizeof( struct diskimage ) );
-  if( !dimg ) return NULL;
+  if( !dimg )
+  {
+    free( buf );
+    return NULL;
+  }
 
   dimg->drivenum    = -1;
   dimg->numtracks   = 0;

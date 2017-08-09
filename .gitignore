@@ -1,0 +1,18 @@
+/msvc/.vs
+Debug
+Release
+x64
+/*.d
+/*.o
+/msvc/Debug clang
+/msvc/Release clang
+/msvc/images
+/msvc/oricutron.cfg
+/msvc/roms
+/msvc/sdl
+/msvc/sdl2
+/roms/*.rom
+!/roms/orix*.rom
+/oricutron.aps
+/msvc/Oricutron.psess
+/msvc/Oricutron.vcxproj.user

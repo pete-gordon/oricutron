@@ -18,6 +18,9 @@
 **
 **  Oric machine stuff
 */
+#ifdef _MSC_VER
+#include <stdio.h>
+#endif
 
 #include "keyboard.h"
 
@@ -100,6 +103,8 @@ struct machine
   struct symboltable  tele_banksyms[8];
   struct via          tele_via;
   struct acia         tele_acia;
+  struct ch376        *ch376;
+  SDL_bool            ch376_activated;
   int                 tele_currbank;
   unsigned char       tele_banktype;
 
@@ -108,6 +113,7 @@ struct machine
   int vid_end;             // Stop drawing video
   int vid_maxrast;         // Number of raster lines
   int vid_raster;          // Current rasterline
+  int vid_offset;          // Current T1 counter position
 
   int vid_fg_col;
   int vid_bg_col;
@@ -148,7 +154,7 @@ struct machine
   char diskname[MAX_DRIVES][32];
   SDL_bool diskautosave;
   SDL_bool auto_jasmin_reset;
-
+  
   FILE *prf;
   int prclose, prclock;
 
@@ -198,7 +204,7 @@ struct machine
 
   Sint32 keymap;
 
-  SDL_bool hstretch, scanlines, palghost;
+  SDL_bool aratio, hstretch, scanlines, palghost;
   Sint32 sw_depth; // Bit depth of the emulator video mode
 
   int rendermode;

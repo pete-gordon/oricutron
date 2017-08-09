@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #if defined(__amigaos4__) || defined(__MORPHOS__)
 #include <proto/dos.h>
@@ -37,6 +38,14 @@
 #include "disk.h"
 #include "monitor.h"
 #include "6551.h"
+
+// this plugin is coded for linux and Morphos (and windows), but it had not been tested for oricutron under Morphos
+// Emulation's code is a common code for oricutron and ACE (CPC emulator)
+// For instance, path for usbdrive is usbdrive/ and sdcard is sdcard/. In the future, it could support an ini file to configure this plugin.
+
+#include "plugins/ch376/ch376.h"
+#include "plugins/ch376/oric_ch376_plugin.h"
+
 #include "machine.h"
 #include "avi.h"
 #include "filereq.h"
@@ -51,6 +60,7 @@ extern char diskpath[], diskfile[], filetmp[];
 extern char telediskpath[], telediskfile[];
 extern char pravdiskpath[], pravdiskfile[];
 extern SDL_bool refreshstatus, refreshavi;
+extern int g_menu_scheme; // #InfoBadDesign - init g_menu_scheme should be done lesewher - machine.c should not depend on gui - but this is the only place I know
 
 char atmosromfile[1024];
 char oric1romfile[1024];
@@ -340,7 +350,8 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
   {
     switch( addr & 0x0f0 )
     {
-      case 0x20:
+
+	  case 0x20:
         via_write( &oric->tele_via, addr, data );
         break;
 
@@ -350,6 +361,14 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
         else
           microdisc_write( &oric->md, addr, data );
         break;
+
+	  case 0x40:
+		if (oric->ch376_activated)
+		{
+		  if (addr == 0x340 || addr == 0x341)
+		    ch376_oric_write(oric->ch376, addr, data);
+          break;
+        }
 
       default:
         via_write( &oric->via, addr, data );
@@ -608,7 +627,8 @@ unsigned char telestratread( struct m6502 *cpu, unsigned short addr )
   {
     switch( addr & 0x0f0 )
     {
-      case 0x010:
+
+	  case 0x010:
         if( addr >= 0x31c )
         {
           return acia_read( &oric->tele_acia, addr );
@@ -618,6 +638,13 @@ unsigned char telestratread( struct m6502 *cpu, unsigned short addr )
 
       case 0x020:
         return via_read( &oric->tele_via, addr );
+
+      case 0x040:
+        if (oric->ch376_activated)
+        {
+          if (addr == 0x340 || addr == 0x341)
+            return ch376_oric_read(oric->ch376, addr);
+        }
     }
 
     return via_read( &oric->via, addr );
@@ -1006,7 +1033,14 @@ void move_lightpen( struct machine *oric, int x, int y )
   if ((oric->rendermode == RENDERMODE_SW) || (!oric->hstretch))
   {
     x = (x-80)/2;
-    y = (y-14)/2;
+    if(oric->rendermode == RENDERMODE_GL && oric->aratio && oric->vid_freq)
+    {
+      y = (y-48)/2;
+    }
+    else
+    {
+      y = (y-14)/2;
+    }
   }
   else
   {
@@ -1073,8 +1107,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           break;
 
         case SDLK_F3:
-          oric->cpu.nmi = SDL_TRUE;
-          oric->cpu.nmicount = 2;
+          softresetoric(oric, NULL, 0);
           break;
 
         case SDLK_F4:
@@ -1090,6 +1123,14 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           via_init( &oric->via, oric, VIA_MAIN );
           via_init( &oric->tele_via, oric, VIA_TELESTRAT );
           acia_init( &oric->tele_acia, oric );
+
+          if (oric->ch376_activated)
+          {
+            oric->ch376 = ch376_oric_init();
+            if (oric->ch376 != NULL)
+              ch376_oric_config(oric->ch376);
+          }
+
           break;
 
         case SDLK_F5:
@@ -1504,6 +1545,8 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
 
   clear_patches( oric );
 
+  g_menu_scheme = type;
+
   switch( type )
   {
     case MACH_ORIC1_16K:
@@ -1702,6 +1745,13 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   via_init( &oric->via, oric, VIA_MAIN );
   via_init( &oric->tele_via, oric, VIA_TELESTRAT );
   acia_init( &oric->tele_acia, oric );
+
+  if (oric->ch376_activated)
+  {
+    oric->ch376 = ch376_oric_init();
+    ch376_oric_config(oric->ch376);
+  }
+
   ay_init( &oric->ay, oric );
   joy_setup( oric );
   oric->cpu.rastercycles = oric->cyclesperraster;
@@ -1726,6 +1776,7 @@ void shut_machine( struct machine *oric )
   if( oric->prf ) { fclose( oric->prf ); oric->prf = NULL; }
   if( oric->tsavf ) tape_stop_savepatch( oric );
   if( oric->tapecap ) toggletapecap( oric, find_item_by_function(mainitems, toggletapecap), 0 );
+  if (oric->tapebuf) { free(oric->tapebuf); oric->tapebuf = NULL; }
   mon_freesyms( &sym_microdisc );
   mon_freesyms( &sym_jasmin );
   mon_freesyms( &sym_pravetz );

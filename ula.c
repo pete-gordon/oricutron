@@ -79,7 +79,7 @@ static inline void ula_decode_attr( struct machine *oric, int attr, int y )
 
     case 0x18: // Video mode
       oric->vid_mode = attr & 0x07;
-      
+
       // Set up pointers for new mode
       if( oric->vid_mode & 4 )
       {
@@ -92,7 +92,7 @@ static inline void ula_decode_attr( struct machine *oric, int attr, int y )
 
       ula_refresh_charset( oric );
       break;
-  }   
+  }
 }
 
 static inline void ula_raster_default( struct machine *oric )
@@ -190,7 +190,7 @@ void ula_renderscreen( struct machine *oric )
       rptr = &oric->mem[oric->vidbases[2] + cy -1];  // bb80 = bf68 - (200/8*40)
     }
     bitmask = (oric->frames&0x10)?0x3f:oric->vid_blinkmask;
-    
+
     for( b=0; b<40; b++ )
     {
       c = *(++rptr);
@@ -216,17 +216,17 @@ void ula_renderscreen( struct machine *oric )
           rptr = &oric->mem[oric->vidbases[2] + b + cy];   // bb80 = bf68 - (200/8*40)
         }
         bitmask = (oric->frames&0x10)?0x3f:oric->vid_blinkmask;
-    
+
       } else {
         if( hires )
         {
           ula_render_block( oric, (c & 0x80)!=0, c & bitmask, y );
         } else {
           int ch_ix, ch_dat;
-          
-          ch_ix   = c & 0x7f;          
+
+          ch_ix   = c & 0x7f;
           ch_dat = oric->vid_ch_data[ (ch_ix<<3) | oric->vid_chline ] & bitmask;
-        
+
           ula_render_block( oric, (c & 0x80)!=0, ch_dat, y );
         }
       }
@@ -288,7 +288,31 @@ SDL_bool ula_doraster( struct machine *oric )
     }
 
     oric->vid_raster = 0;
-    oric->vsync      = oric->cyclesperraster / 2;
+    
+    // store current T1 counter
+    oric->vid_offset = oric->via.t1c/64;
+
+    /*
+     * NOTE: this hard coded value is not correct:
+     * oric->vsync = oric->cyclesperraster / 2;
+     *
+     * VSync pulse waveform:
+     * ====================
+     *
+     * - on RGB output VSYNC: |___             _____   _____   _____
+     *                        |   |           |     | |     | |     .....
+     *                        |   |___________|     |_|     |_|
+     *                        |
+     * - on VIA pin 18 CB1:   |________             ________________
+     *                        |        |           |                .....
+     *                        |12uS -->|___________|
+     *                        |delay    <---------> 260uS negative pulse
+     *                        |
+     *                        +-----------------------------------------> t
+     */
+
+    oric->vsync = 12 + 260;
+
     needrender = SDL_TRUE;
     oric->frames++;
 
@@ -303,19 +327,20 @@ SDL_bool ula_doraster( struct machine *oric )
       // 312 scanlines/frame, so 16667/312 = ~53 cpu cycles / scanline
 
       // NTSC = 60Hz = 1,000,000/60 = 16667 cpu cycles/frame
-      // 262 scanlines/frame, so 16667/262 = ~64 cpu cycles / scanline
+      // 264 scanlines/frame, so 16667/260 = ~64 cpu cycles / scanline
+
       if( oric->vid_freq )
       {
-        // PAL50
+        // PAL50 - T1 period 19966
         oric->cyclesperraster = 64;
-        oric->vid_start       = 65;
-        oric->vid_maxrast     = 312;
+        oric->vid_maxrast     = 308 + 4; /* VSync */
+        oric->vid_start       = (oric->vid_maxrast - 224) /2;
         oric->vid_end         = oric->vid_start + 224;
       } else {
-        // NTSC
+        // NTSC - T1 period 16894
         oric->cyclesperraster = 64;
-        oric->vid_start       = 32;
-        oric->vid_maxrast     = 262;
+        oric->vid_maxrast     = 260 + 4; /* VSync */
+        oric->vid_start       = (oric->vid_maxrast - 224) /2;
         oric->vid_end         = oric->vid_start + 224;
       }
     }
@@ -327,7 +352,7 @@ SDL_bool ula_doraster( struct machine *oric )
 
   y = oric->vid_raster - oric->vid_start;
   oric->scrpt = &oric->scr[y*240];
-  
+
   cy = (y>>3) * 40;
 
   // Always start each scanline with white on black
@@ -353,7 +378,7 @@ SDL_bool ula_doraster( struct machine *oric )
     rptr = &oric->mem[oric->vidbases[2] + cy -1];  // bb80 = bf68 - (200/8*40)
   }
   bitmask = (oric->frames&0x10)?0x3f:oric->vid_blinkmask;
-    
+
   for( b=0; b<40; b++ )
   {
     c = *(++rptr);
@@ -387,10 +412,10 @@ SDL_bool ula_doraster( struct machine *oric )
         oric->vid_block_func( oric, (c & 0x80)!=0, c & bitmask, y );
       } else {
         int ch_ix, ch_dat;
-          
-        ch_ix   = c & 0x7f;          
+
+        ch_ix   = c & 0x7f;
         ch_dat = oric->vid_ch_data[ (ch_ix<<3) | oric->vid_chline ] & bitmask;
-        
+
         oric->vid_block_func( oric, (c & 0x80)!=0, ch_dat, y );
       }
     }
@@ -412,6 +437,7 @@ void ula_set_dirty( struct machine *oric )
 void preinit_ula( struct machine *oric )
 {
   oric->scr = NULL;
+  oric->aratio = SDL_TRUE;
   oric->hstretch = SDL_TRUE;
   oric->scanlines = SDL_FALSE;
   oric->palghost = SDL_TRUE;

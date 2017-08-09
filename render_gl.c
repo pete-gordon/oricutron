@@ -27,7 +27,12 @@
 
 #include "system.h"
 
+#ifdef WIN32
+#include <windows.h>
+#endif
+
 #ifndef __APPLE__
+
 #include <GL/gl.h>
 #else
 #include <OpenGL/gl.h>
@@ -145,7 +150,7 @@ static void update_textzone_texture( struct machine *oric, int i )
     for( x=0, px=0; x<tz[i]->w; x++, o++, px+=8 )
       printchar( i+TEX_TZ, px, py, tz[i]->tx[o], gpal[tz[i]->fc[o]], gpal[tz[i]->bc[o]], SDL_TRUE );
   }
-  
+
   glBindTexture( GL_TEXTURE_2D, tex[i+TEX_TZ] );
   glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[i+TEX_TZ].w, tx[i+TEX_TZ].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[i+TEX_TZ].buf );
 
@@ -177,7 +182,7 @@ static void update_video_texture( struct machine *oric )
       tx[TEX_VIDEO].buf[o++] = oricpalette[c++];
       tx[TEX_VIDEO].buf[o++] = 0xff;
     }
-    
+
     // Repeat the right and bottom borders to prevent linear interpolation to
     // garbage at the edges (GL_CLAMP takes care of the left and top)
     tx[TEX_VIDEO].buf[o++] = oricpalette[c-3];
@@ -198,7 +203,7 @@ static void update_video_texture( struct machine *oric )
     tx[TEX_VIDEO].buf[o++] = oricpalette[c++];
     tx[TEX_VIDEO].buf[o++] = 0xff;
   }
-    
+
   // Repeat the right and bottom borders to prevent linear interpolation to
   // garbage at the edges (GL_CLAMP takes care of the left and top)
   tx[TEX_VIDEO].buf[o++] = oricpalette[c-3];
@@ -228,7 +233,7 @@ void render_begin_gl( struct machine *oric )
     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[TEX_POPUP].w, tx[TEX_POPUP].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[TEX_POPUP].buf );
     oric->newpopupstr = SDL_FALSE;
   }
-  
+
   if( oric->newstatusstr )
   {
     memset( tx[TEX_STATUS].buf, 0, tx[TEX_STATUS].w*tx[TEX_STATUS].h*4 );
@@ -237,7 +242,7 @@ void render_begin_gl( struct machine *oric )
     glBindTexture( GL_TEXTURE_2D, tex[TEX_STATUS] );
     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, tx[TEX_STATUS].w, tx[TEX_STATUS].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[TEX_STATUS].buf );
   }
-    
+
   glClearColor(clrcol[0], clrcol[1], clrcol[2], 1.0f);
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 }
@@ -254,7 +259,7 @@ void render_end_gl( struct machine *oric )
         glTexCoord2f( 320.0f/512.0f,        0.0f ); glVertex3f( 640.0f,  0.0f, 0.0f );
         glTexCoord2f( 320.0f/512.0f, 12.0f/32.0f ); glVertex3f( 640.0f, 12.0f, 0.0f );
         glTexCoord2f(          0.0f, 12.0f/32.0f ); glVertex3f( 320.0f, 12.0f, 0.0f );
-      glEnd();    
+      glEnd();
     }
 
     if( oric->statusstr[0] )
@@ -265,7 +270,7 @@ void render_end_gl( struct machine *oric )
         glTexCoord2f( 320.0f/512.0f,        0.0f ); glVertex3f( 320.0f, 466.0f, 0.0f );
         glTexCoord2f( 320.0f/512.0f, 12.0f/32.0f ); glVertex3f( 320.0f, 478.0f, 0.0f );
         glTexCoord2f(          0.0f, 12.0f/32.0f ); glVertex3f(   0.0f, 478.0f, 0.0f );
-      glEnd();    
+      glEnd();
     }
   }
 
@@ -384,7 +389,7 @@ void render_gimgpart_gl( int i, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 oy, Sint
 
 void render_video_gl( struct machine *oric, SDL_bool doublesize )
 {
-  float l, r;
+  float l, r, t, b;
   int y;
 
   glBindTexture( GL_TEXTURE_2D, tex[TEX_VIDEO] );
@@ -395,16 +400,28 @@ void render_video_gl( struct machine *oric, SDL_bool doublesize )
     {
       l = 0.0f;
       r = 640.f;
+      t = 14.0f;
+      b = 462.0f;
     } else {
       l = 320.0f-240.0f;
       r = 320.0f+240.0f;
+      if( oric->aratio && oric->vid_freq )
+      {
+        t = 14.0f + (448.0f-448.0f*(260.0f/308.0f))/2;
+        b = 462.0f - (448.0f-448.0f*(260.0f/308.0f))/2;
+      }
+      else
+      {
+        t = 14.0f;
+        b = 462.0f;
+      }
     }
 
     glBegin( GL_QUADS );
-      glTexCoord2f(          0.0f,          0.0f ); glVertex3f( l,  14.0f, 0.0f );
-      glTexCoord2f( 240.0f/256.0f,          0.0f ); glVertex3f( r,  14.0f, 0.0f );
-      glTexCoord2f( 240.0f/256.0f, 224.0f/256.0f ); glVertex3f( r, 462.0f, 0.0f );
-      glTexCoord2f(          0.0f, 224.0f/256.0f ); glVertex3f( l, 462.0f, 0.0f );
+      glTexCoord2f(          0.0f,          0.0f ); glVertex3f( l, t, 0.0f );
+      glTexCoord2f( 240.0f/256.0f,          0.0f ); glVertex3f( r, t, 0.0f );
+      glTexCoord2f( 240.0f/256.0f, 224.0f/256.0f ); glVertex3f( r, b, 0.0f );
+      glTexCoord2f(          0.0f, 224.0f/256.0f ); glVertex3f( l, b, 0.0f );
     glEnd();
 
     if( oric->palghost )
@@ -412,10 +429,10 @@ void render_video_gl( struct machine *oric, SDL_bool doublesize )
       float offs = (oric->hstretch) ? 3.2f : 2.2f;
       glColor4ub( 255, 255, 255, 64 );
       glBegin( GL_QUADS );
-        glTexCoord2f(          0.0f,          0.0f ); glVertex3f( l+offs,  14.0f, 0.0f );
-        glTexCoord2f( 240.0f/256.0f,          0.0f ); glVertex3f( r+offs,  14.0f, 0.0f );
-        glTexCoord2f( 240.0f/256.0f, 224.0f/256.0f ); glVertex3f( r+offs, 462.0f, 0.0f );
-        glTexCoord2f(          0.0f, 224.0f/256.0f ); glVertex3f( l+offs, 462.0f, 0.0f );
+        glTexCoord2f(          0.0f,          0.0f ); glVertex3f( l+offs, t, 0.0f );
+        glTexCoord2f( 240.0f/256.0f,          0.0f ); glVertex3f( r+offs, t, 0.0f );
+        glTexCoord2f( 240.0f/256.0f, 224.0f/256.0f ); glVertex3f( r+offs, b, 0.0f );
+        glTexCoord2f(          0.0f, 224.0f/256.0f ); glVertex3f( l+offs, b, 0.0f );
       glEnd();
       glColor4ub( 255, 255, 255, 255 );
     }
@@ -474,7 +491,7 @@ SDL_bool render_togglefullscreen_gl( struct machine *oric )
   fullscreen = !fullscreen;
   if( oric->init_render( oric ) ) return SDL_TRUE;
   set_render_mode( oric, RENDERMODE_NULL );
-  oric->emu_mode = EM_PLEASEQUIT; 
+  oric->emu_mode = EM_PLEASEQUIT;
   return SDL_FALSE;
 #endif
 }
@@ -485,7 +502,7 @@ static SDL_bool go_go_gadget_texture( int i, int w, int h, int blendtype, SDL_bo
   tx[i].h = h;
   tx[i].buf = malloc( w*h*4 );
   if( !tx[i].buf ) return SDL_FALSE;
-  
+
   memset( tx[i].buf, 0, w*h*4 );
 
   glBindTexture( GL_TEXTURE_2D, tex[i] );
@@ -494,7 +511,7 @@ static SDL_bool go_go_gadget_texture( int i, int w, int h, int blendtype, SDL_bo
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, blendtype );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, blendtype );
   if( callteximg2d )glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[i].buf );
-  
+
   return SDL_TRUE;
 }
 
@@ -512,7 +529,7 @@ SDL_bool init_render_gl( struct machine *oric )
   } else {
       screen = SDL_COMPAT_SetVideoMode( 640, 480, depth, fullscreen ? SDL_COMPAT_OPENGL|SDL_COMPAT_FULLSCREEN : SDL_COMPAT_OPENGL );
   }
-    
+
   if( !screen )
   {
     printf( "SDL video failed\n" );

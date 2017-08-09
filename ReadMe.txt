@@ -51,8 +51,8 @@ Credits
   Francois Revol
 
 
-  MacOS X port
-  ------------
+  macOS port
+  ----------
 
   Francois Revol
   Kamel Biskri
@@ -85,6 +85,10 @@ Credits
   Iss
 
 
+  CH376 support
+  -------------
+
+  Offset (cpc) & Jede
 
 
 Thanks
@@ -152,7 +156,7 @@ Here are all the options:
                        "opengl" for OpenGL
 
   -b / --debug       = Start oricutron in the debugger
-  -r / --breakpoint  = Set a breakpoint
+  -r / --breakpoint  = Set a breakpoint (See NOTE2)
   -h / --help        = Print command line help and quit
 
   --turbotape on|off = Enable or disable turbotape
@@ -181,6 +185,10 @@ NOTE: If you are not sure what machine or drive type is required for a disk or
 tape image, just pass the filename without any options and Oricutron will
 try and autodetect for you.
 
+NOTE2: List with many breakpoints can be loaded from command line. Use default switches -r or --breakpoint,
+but instead of an address, specify filename prefixed with ':'. The file is plain text file, which contains
+desired breakpoint-addresses - one per line using the same syntax as in the monitor. Breakpoints can be set
+with absolute addresses or with symbols (loaded with command line switches -s or --symbols).
 
 Examples:
 
@@ -191,7 +199,7 @@ oricutron -m1 -tBUILD/foo.tap -sBUILD/symbols -b
 oricutron --drive microdisc --disk demos/barbitoric.dsk --fullscreen
 oricutron -ddemos/barbitoric.dsk -f
 oricutron --turbotape off tapes/hobbit.tap
-
+oricutron -s myproject.sym -r :myprojectbp.txt
 
 
 Keys
@@ -277,7 +285,7 @@ Commands:
   bcm <bp id>           - Clear mem breakpoint
   bl                    - List breakpoints
   blm                   - List mem breakpoints
-  bs <addr>             - Set breakpoint
+  bs <addr> [zc]        - Set breakpoint
   bsm <addr> [rwc]      - Set mem breakpoint
   bz                    - Zap breakpoints
   bzm                   - Zap mem breakpoints
@@ -309,6 +317,16 @@ There are two types of breakpoints. "Normal" breakpoints trigger when the CPU
 is about to execute an instruction at the breakpoint address. "Memory" breakpoints
 trigger when the breakpoint address is accessed or modified.
 
+Normal breakpoints can use 'z' and/or 'c' modifiers.
+bs $0c00           <-- Break when the CPU is about to execute code at $0c00
+bs $0c00 z         <-- Break when the CPU is about to execute code at $0c00
+                       and set cycles counter to 0
+bs $0c00 zc        <-- Set cycles counter to 0 and continues
+bs $0c00 c         <-- Continues execution (i.e. disabled breakpoint)
+
+Main purpose of this modifiers is to make cycle counting easier.
+If symbols are loaded, they can be used instead of absolute addresses.
+
 There are three ways a memory breakpoint can be triggered; when the CPU is about
 to read the address (r), and the CPU is about to write the address (w), or after the
 value at the address changes for any reason (c).
@@ -324,18 +342,19 @@ bsm $0c00 rwc      <-- Break just before the CPU accesses $0c00, or just after i
 
 
 
-International Keyboards under Linux and Mac OS X
-================================================
+International Keyboards under Linux and macOS
+=============================================
 
-There are lots of problems with some international keyboards under Linux and Mac OS X.
-The best way to cope with them is to install an UK or US keyboard definition and to
-switch to it *before* starting oricutron.
+There are lots of problems with some international keyboards under Linux
+and macOS. The best way to cope with them is to install an UK or US
+keyboard definition and to switch to it *before* starting oricutron.
 
-Under Mac OS X you can do that in the "System Preferences", "Keyboard", "Input sources".
-Click on the + and search for the UK or US keyboard.
+Under macOS you can do that in the "System Preferences", "Keyboard", "Input
+sources". Click on the + and search for the UK or US keyboard.
 
-Under Ubuntu you can do that in the System menu, select Preferences, and then select
-Keyboard. In the Keyboard Preferences dialog, select the Layouts tab, and click Add.
+Under Ubuntu you can do that in the System menu, select Preferences, and
+then select Keyboard. In the Keyboard Preferences dialog, select the
+Layouts tab, and click Add.
 
 For a better solution look under "Visual Keyboard" down here.
 
@@ -397,6 +416,23 @@ ATH0        - disconnect currently connected sockets
 +++         - if connected switches to command mode
 ATO         - returns from command mode to online
 ATD ip:port - connects as client to ip:port. 'ip' can be any host name (ex.:localhost) or the real IP (ex.:127.0.0.1) on LAN or in Internet. ATDP and ATDT are alternative for compatibility.
+
+
+CH376 card emulation
+====================
+
+Oricutron runs ch376 chip. This chip is able to read a sdcard and a usbkey
+(and USB port). This chip handles FAT32. usbdrive/ folder is the CH376
+emulation folder. It means that when we asked ch376 to read usbkey, it
+reads in this folder. Please note, that read/write are emulated. Erase
+file, mkdir does not work. Please note that emulation runs only in
+telestrat mode. Atmos can run this chip, but the rom had not been release
+yet (and the card with the rom).
+
+Orix (http://orix.oric.org) works with this chip mainly. Don't modify ch376
+emulation: contact Jede (jede@oric.org). Because this emulation is used
+also in ACE emulator (cpc emulation). Offset and me are trying to keep the
+same emulation. It's easier to work together than alone.
 
 
 
