@@ -424,16 +424,47 @@ CH376 card emulation
 Oricutron runs ch376 chip. This chip is able to read a sdcard and a usbkey
 (and USB port). This chip handles FAT32. usbdrive/ folder is the CH376
 emulation folder. It means that when we asked ch376 to read usbkey, it
-reads in this folder. Please note, that read/write are emulated. Erase
-file, mkdir does not work. Please note that emulation runs only in
-telestrat mode. Atmos can run this chip, but the rom had not been release
-yet (and the card with the rom).
+reads in this folder. Please note, that read/write are emulated (see below for emulated ch376 command ). Please note that emulation runs only in
+telestrat mode. Atmos can run this chip, but the rom had not been release yet (and the card with the rom).
 
 Orix (http://orix.oric.org) works with this chip mainly. Don't modify ch376
 emulation: contact Jede (jede@oric.org). Because this emulation is used
 also in ACE emulator (cpc emulation). Offset and me are trying to keep the
 same emulation. It's easier to work together than alone.
 
+CH376 command emulated :
+- CH376_CMD_GET_IC_VER
+- CH376_CMD_CHECK_EXIST
+- CH376_CMD_SET_USB_MODE
+- CH376_CMD_GET_STATUS
+- CH376_CMD_RD_USB_DATA0
+- CH376_CMD_WR_REQ_DATA
+- CH376_CMD_SET_FILE_NAME
+- CH376_CMD_DISK_MOUNT
+- CH376_CMD_FILE_OPEN
+- CH376_CMD_FILE_ENUM_GO
+- CH376_CMD_FILE_CREATE
+- CH376_CMD_FILE_ERASE (not emulated under linux)
+- CH376_CMD_FILE_CLOSE
+- CH376_CMD_BYTE_LOCATE
+- CH376_CMD_BYTE_READ
+- CH376_CMD_BYTE_RD_GO
+- CH376_CMD_BYTE_WRITE
+- CH376_CMD_BYTE_WR_GO
+- CH376_CMD_DISK_QUERY
+- CH376_CMD_DIR_CREATE (not emulated under linux)
+- CH376_CMD_DISK_RD_GO 
+
+Known bug :
+Under windows, API's file does not send "." and ".." entries when we read the content on the folder. It's a problem because ch376 chip send these 
+entries, when we ask to this chip to read the content of a directory.
+
+If someone wants to emulate CH376_CMD_DIR_CREATE and CH376_CMD_FILE_ERASE. It's easy to do : it justs need to copy WIN32 function and replace DeleteFile
+ and CreateDir with rm() and mkdir(). But it's not done because we are not able to test it.
+
+CH376 emulation added for :
+CH376_CMD_FILE_ERASE suppress a file
+CH376_CMD_DIR_CREATE create folder
 
 
 ROM patch files
