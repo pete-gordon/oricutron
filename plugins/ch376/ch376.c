@@ -3,12 +3,20 @@
  * Very minimal CH376 emulation (21.12.2016)                        *
  *                                                                  *
  * Code:                                                            *
- *   JÃ©rÃ´me 'Jede' Debrune                                          *
+ *   Jérôme 'Jede' Debrune                                          *
  *   Philippe 'OffseT' Rimauro                                      *
  *                                                                  *
  ** ch376.c *********************************************************/
 
+/*
+ Changes:
+
+ 22.07.2017 - OffseT: Added support for CMD_DIR_CREATE and CMD_FILE_ERASE (Added related Amiga system APIs only)
+
+ */
 /* /// "Portable includes" */
+
+
 
 #if defined(__MORPHOS__) || defined (__AMIGA__) || defined (__AROS__)
 
@@ -52,73 +60,44 @@ extern struct Library *SysBase;
 #define CH376_DATA_IC_VER 3
 
 // Commands
-#define CH376_CMD_NONE			    0x00
-#define CH376_CMD_GET_IC_VER		0x01
-#define CH376_CMD_SET_BAUDRATE 		0x02 /*Not emulated*/
-#define CH376_CMD_GET_ENTER_SLEEP	0x03 /*Not emulated*/
-#define CH376_CMD_RESET_ALL 		0x05 /*Not emulated*/
-#define CH376_CMD_CHECK_EXIST		0x06 
-#define CH376_CMD_GET_FILE_SIZE 	0x0c /*Not emulated*/
-#define CH376_CMD_SET_USB_MODE		0x15
-#define CH376_CMD_GET_STATUS		0x22
-#define CH376_CMD_RD_USB_DATA0		0x27
-#define CH376_CMD_WR_REQ_DATA		0x2d
-#define CH376_CMD_SET_FILE_NAME		0x2f
-#define CH376_CMD_DISK_CONNECT 		0x30 /*Not emulated*/
-#define CH376_CMD_DISK_MOUNT		0x31
-#define CH376_CMD_FILE_OPEN			0x32
-#define CH376_CMD_FILE_ENUM_GO		0x33
-#define CH376_CMD_FILE_CREATE		0x34
-#define CH376_CMD_FILE_ERASE		0x35
-#define CH376_CMD_FILE_CLOSE		0x36
-#define CH376_CMD_BYTE_LOCATE		0x39
-#define CH376_CMD_BYTE_READ			0x3a
-#define CH376_CMD_BYTE_RD_GO		0x3b
-#define CH376_CMD_BYTE_WRITE		0x3c
-#define CH376_CMD_BYTE_WR_GO		0x3d
-#define CH376_CMD_DISK_CAPACITY 	0x3e /*Not emulated*/
-#define CH376_CMD_DISK_QUERY		0x3f
-#define CH376_CMD_DISK_RD_GO		0x55
-
-
-
-
-
-
+#define CH376_CMD_NONE        0x00
+#define CH376_CMD_GET_IC_VER  0x01
+#define CH376_CMD_CHECK_EXIST   0x06
+#define CH376_CMD_SET_USB_MODE  0x15
+#define CH376_CMD_GET_STATUS    0x22
+#define CH376_CMD_RD_USB_DATA0  0x27
+#define CH376_CMD_WR_REQ_DATA   0x2d
+#define CH376_CMD_SET_FILE_NAME 0x2f
+#define CH376_CMD_DISK_MOUNT    0x31
+#define CH376_CMD_FILE_OPEN     0x32
+#define CH376_CMD_FILE_ENUM_GO  0x33
+#define CH376_CMD_FILE_CREATE   0x34
+#define CH376_CMD_FILE_ERASE    0x35
+#define CH376_CMD_FILE_CLOSE    0x36
+#define CH376_CMD_BYTE_LOCATE   0x39
+#define CH376_CMD_BYTE_READ     0x3a
+#define CH376_CMD_BYTE_RD_GO    0x3b
+#define CH376_CMD_BYTE_WRITE    0x3c
+#define CH376_CMD_BYTE_WR_GO    0x3d
+#define CH376_CMD_DISK_QUERY    0x3f
+#define CH376_CMD_DIR_CREATE    0x40
+#define CH376_CMD_DISK_RD_GO    0x55
 
 #define CH376_ARG_SET_USB_MODE_INVALID  0x00
 #define CH376_ARG_SET_USB_MODE_SD_HOST  0x03
 #define CH376_ARG_SET_USB_MODE_USB_HOST 0x06
 
 // Status & errors
-#define CH376_ERR_OPEN_DIR		0x41
-#define CH376_ERR_MISS_FILE		0x42
-#define CH376_ERR_FOUND_NAME 	0x43 /*Not emulated*/
-#define CH376_ERR_DISK_DISCON 	0x82 /*Not emulated*/
-#define CH376_ERR_LARGE_SECTOR 	0x84 /*Not emulated*/
-#define CH376_ERR_TYPE_ERROR 	0x92 /*Not emulated*/
-#define CH376_ERR_BPB_ERROR 	0xa1 /*Not emulated*/
-#define CH376_ERR_DISK_FULL 	0xb1 /*Not emulated*/
-#define CH376_ERR_FDT_OVER 		0xb2 /*Not emulated*/
-#define CH376_ERR_FILE_CLOSE 	0xb4 /*Not emulated*/
-
-
+#define CH376_ERR_OPEN_DIR   0x41
+#define CH376_ERR_MISS_FILE  0x42
+#define CH376_ERR_FOUND_NAME 0x43
 
 #define CH376_RET_SUCCESS 0x51
 #define CH376_RET_ABORT   0x5f
 
-#define CH376_INT_SUCCESS		0x14
-#define CH376_INT_CONNECT 		0x15 /*Not emulated*/
-#define CH376_INT_DISCONNECT	0x16 /*Not emulated*/
-#define CH376_INT_BUF_OVER 		0x17 /*Not emulated*/
-#define CH376_INT_USB_READY 	0x18 /*Not emulated*/
-#define CH376_INT_DISK_READ		0x1d
-#define CH376_INT_DISK_WRITE 	0x1e /*Not emulated*/
-#define CH376_INT_DISK_ERR 		0x1f /*Not emulated*/
-
-
-
-
+#define CH376_INT_SUCCESS    0x14
+#define CH376_INT_DISK_READ  0x1d
+#define CH376_INT_DISK_WRITE 0x1e
 
 /* /// */
 
@@ -267,6 +246,9 @@ static void system_release_directory_lock(CH376_CONTEXT *context, CH376_LOCK dir
 // Clone a directory lock
 static CH376_LOCK system_clone_directory_lock(CH376_CONTEXT *context, CH376_LOCK dir_lock);
 
+// Create a new directory
+static CH376_LOCK system_create_directory(CH376_CONTEXT *context, const char *dir_path, CH376_LOCK root_lock);
+
 // Return a file handle corresponding to the given file located in the provited directory lock
 // Return 0 if the file could not be found
 static CH376_FILE system_file_open_existing(CH376_CONTEXT *context, const char *file_name, CH376_LOCK root_lock);
@@ -286,6 +268,9 @@ static CH376_S32 system_file_read(CH376_CONTEXT *context, CH376_FILE file, void 
 
 // Write some data into a file
 static CH376_S32 system_file_write(CH376_CONTEXT *context, CH376_FILE file, void *buffer, CH376_S32 size);
+
+// Delete a file (or a directory)
+static CH376_BOOL system_file_delete(CH376_CONTEXT *context, const char *file_name, CH376_LOCK root_lock);
 
 // Start examining a directory
 // Return information about the directory itself
@@ -419,6 +404,29 @@ static CH376_LOCK system_clone_directory_lock(CH376_CONTEXT *context, CH376_LOCK
     return DupLock(dir_lock);
 }
 
+static CH376_LOCK system_create_directory(CH376_CONTEXT *context, const char *dir_path, CH376_LOCK root_lock)
+{
+    struct Library *DOSBase = context->DOSBase;
+    BPTR lock;
+    BPTR old_lock = (BPTR)0;
+
+    dbg_printf("system_create_directory: %s\n", dir_path);
+
+    if(root_lock)
+    {
+        old_lock = CurrentDir(root_lock);
+    }
+
+    lock = CreateDir(dir_path);
+
+    if(old_lock)
+    {
+        CurrentDir(old_lock);
+    }
+
+    return lock;
+}
+
 static BPTR file_open(CH376_CONTEXT *context, CONST_STRPTR file_name, BPTR root_lock, LONG mode)
 {
     struct Library *DOSBase = context->DOSBase;
@@ -490,6 +498,27 @@ static CH376_S32 system_file_write(CH376_CONTEXT *context, CH376_FILE file, void
         return Write(file, buffer, size);
     else
         return -1;
+}
+
+static CH376_BOOL system_file_delete(CH376_CONTEXT *context, const char *file_name, CH376_LOCK root_lock)
+{
+    struct Library *DOSBase = context->DOSBase;
+    BPTR old_lock = (BPTR)0;
+    LONG err;
+
+    if(root_lock)
+    {
+        old_lock = CurrentDir(root_lock);
+    }
+
+    err = DeleteFile(file_name);
+
+    if(old_lock)
+    {
+        CurrentDir(old_lock);
+    }
+
+    return (err != 0);
 }
 
 static CH376_DIR system_start_examine_directory(CH376_CONTEXT *context, CH376_LOCK dir_lock)
@@ -578,20 +607,16 @@ static void system_finish_examine_directory(CH376_CONTEXT *context, CH376_DIR fi
 /* /// "Windows system functions" */
 
 #ifdef DEBUG_CH376
-void dbg_printf(char *fmt, ...);
-
-/*
 static void dbg_printf(LPCTSTR str, ...)
 {
-    TCHAR buffer[256];
+	TCHAR buffer[256];
 
-    va_list args;
-    va_start(args, str);
-    _vsnprintf_s(buffer, sizeof(buffer)-1, sizeof(buffer)-1, str, args);
-    OutputDebugString(buffer);
-    va_end(args);
+	va_list args;
+	va_start(args, str);
+	_vsnprintf_s(buffer, sizeof(buffer) - 1, sizeof(buffer) - 1, str, args);
+	OutputDebugString(buffer);
+	va_end(args);
 }
-*/
 #else
 #define dbg_printf(...)
 #endif
@@ -719,6 +744,57 @@ static HANDLE file_open(CH376_CONTEXT *context, const char *file_name, PCHAR roo
     else
         return NULL;
 }
+
+static CH376_BOOL system_file_delete(CH376_CONTEXT *context, const char *file_name, CH376_LOCK root_lock)
+{
+	LONG err;
+	TCHAR old_dir[MAX_PATH];
+
+	if (root_lock)
+	{
+		GetCurrentDirectory(sizeof(old_dir), old_dir);
+		SetCurrentDirectory(root_lock->path);
+	};
+
+	dbg_printf("system_file_delete: %s\n", file_name);
+
+	err = DeleteFile(file_name);
+
+	if (root_lock)
+	{
+		SetCurrentDirectory(old_dir);
+	};
+
+
+	return (err != 0);
+}
+
+
+static CH376_LOCK system_create_directory(CH376_CONTEXT *context, const char *dir_path, CH376_LOCK root_lock)
+{
+	LONG err;
+	TCHAR old_dir[MAX_PATH];
+
+	if (root_lock)
+	{
+		GetCurrentDirectory(sizeof(old_dir), old_dir);
+		SetCurrentDirectory(root_lock->path);
+	};
+
+	dbg_printf("system_create_directory: %s\n", dir_path);
+
+	CreateDirectory(dir_path, NULL);
+
+	if (root_lock)
+	{
+		SetCurrentDirectory(old_dir);
+	};
+
+	return root_lock; // instead of lock
+	
+}
+
+
 
 static CH376_FILE system_file_open_existing(CH376_CONTEXT *context, const char *file_name, CH376_LOCK root_lock)
 {
@@ -859,7 +935,6 @@ static void system_free_mem(void *ptr)
 static CH376_BOOL system_init_context(CH376_CONTEXT *context, UNUSED void *user_data)
 {
   /* Nothing to do */
-	return CH376_TRUE;
 }
 
 static void system_clean_context(CH376_CONTEXT *context)
@@ -945,8 +1020,8 @@ static FILE * file_open(const char *file_name,  CH376_LOCK root_lock, const char
 {
     FILE *file;
     char *old_dir = NULL;
-    // FIXME: unused variable
-    //struct stat path_stat;
+	// FIXME: unused variable
+	 //struct stat path_stat;
 
     if(root_lock)
     {
@@ -980,8 +1055,7 @@ static CH376_FILE system_file_open_new(CH376_CONTEXT *context, const char *file_
 
 static void system_file_close(CH376_CONTEXT *context, CH376_FILE file)
 {
-	if (file)
-		fclose(file);
+    fclose(file);
 }
 
 static CH376_S32 system_file_seek(CH376_CONTEXT *context, CH376_FILE file, int pos)
@@ -1075,11 +1149,8 @@ static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK
 
 static void system_finish_examine_directory(CH376_CONTEXT *context, CH376_DIR fib)
 {
-    if (fib)
-    {
-        closedir(fib->handle);
-        system_free_mem(fib);
-    }
+    closedir(fib->handle);
+    system_free_mem(fib);
 }
 
 /* /// */
@@ -1685,22 +1756,117 @@ void ch376_write_command_port(struct ch376 *ch376, CH376_U8 command)
         }
         break;
 
-	case CH376_CMD_FILE_ERASE:
-		ch376->command = CH376_CMD_FILE_ERASE;
-		if (ch376->root_dir_lock)
-		{
-			/*Add here Erase file emulation*/
-		}
-		else
-		{
-			dbg_printf("[WRITE][COMMAND][CH376_CMD_FILE_ERASE] no operation possible (device not mounted)\n");
+    case CH376_CMD_DIR_CREATE:
+        ch376->command = CH376_CMD_DIR_CREATE;
+        // mounted?
+        if(ch376->root_dir_lock)
+        {
+            char fixed_file_name[13]; // Max = 8 + '.' + 3 + '\0'
+            CH376_FILE existing_file;
+            int i = 0;
 
-			ch376->interface_status = 0;
-			ch376->command_status = CH376_RET_ABORT;
-		}
-		break;
+            // back to root?
+            if(ch376->cmd_data.CMD_FileName[i] == '/')
+            {
+                dbg_printf("[WRITE][COMMAND][CH376_CMD_DIR_CREATE] opening root directory\n");
+                system_release_directory_lock(&ch376->context, ch376->current_dir_lock);
+                ch376->current_dir_lock = system_clone_directory_lock(&ch376->context, ch376->root_dir_lock);
+                i++;
+            }
 
-		break;
+            trim_file_name(&ch376->cmd_data.CMD_FileName[i], fixed_file_name);
+
+            existing_file = system_file_open_existing(&ch376->context, fixed_file_name, ch376->current_dir_lock);
+
+            if(existing_file)
+            {
+                system_file_close(&ch376->context, existing_file);
+                ch376->interface_status = 0;
+                ch376->command_status = CH376_ERR_FOUND_NAME;
+            }
+            else
+            {
+                CH376_LOCK created_dir_lock;
+
+                created_dir_lock = system_create_directory(&ch376->context, fixed_file_name, ch376->current_dir_lock);
+
+                // Actually created?
+                if(created_dir_lock)
+                {
+                    dbg_printf("[WRITE][COMMAND][CH376_CMD_DIR_CREATE] entering created directory: %s\n", &ch376->cmd_data.CMD_FileName[i]);
+
+                    system_release_directory_lock(&ch376->context, ch376->current_dir_lock);
+                    ch376->current_dir_lock = created_dir_lock;
+
+                    ch376->interface_status = 127;
+                    ch376->command_status = CH376_INT_SUCCESS;
+                }
+                else
+                {
+                    dbg_printf("[WRITE][COMMAND][CH376_CMD_DIR_CREATE] directory could not be created: %s\n", &ch376->cmd_data.CMD_FileName[i]);
+
+                    ch376->interface_status = 0;
+                    ch376->command_status = CH376_ERR_MISS_FILE;
+                }
+            }
+        }
+        else
+        {
+            dbg_printf("[WRITE][COMMAND][CH376_CMD_DIR_CREATE] no operation possible (device not mounted)\n");
+
+            ch376->interface_status = 0;
+            ch376->command_status = CH376_RET_ABORT;
+        }
+        break;
+
+    case CH376_CMD_FILE_ERASE:
+        ch376->command = CH376_CMD_FILE_ERASE;
+        // mounted?
+        if(ch376->root_dir_lock)
+        {
+            char fixed_file_name[13]; // Max = 8 + '.' + 3 + '\0'
+            int i = 0;
+
+            // back to root?
+            if(ch376->cmd_data.CMD_FileName[i] == '/')
+            {
+                dbg_printf("[WRITE][COMMAND][CH376_CMD_FILE_ERASE] opening root directory\n");
+                system_release_directory_lock(&ch376->context, ch376->current_dir_lock);
+                ch376->current_dir_lock = system_clone_directory_lock(&ch376->context, ch376->root_dir_lock);
+                i++;
+            }
+
+            trim_file_name(&ch376->cmd_data.CMD_FileName[i], fixed_file_name);
+
+            if(ch376->current_file)
+            {
+                system_file_close(&ch376->context, ch376->current_file);
+                ch376->current_file = (CH376_FILE)0;
+            }
+
+            if(system_file_delete(&ch376->context, fixed_file_name, ch376->root_dir_lock))
+            {
+                dbg_printf("[WRITE][COMMAND][CH376_CMD_FILE_ERASE] file or directory deleted: %s\n", &ch376->cmd_data.CMD_FileName[i]);
+
+                ch376->interface_status = 127;
+                ch376->command_status = CH376_INT_SUCCESS;
+            }
+            else
+            {
+                dbg_printf("[WRITE][COMMAND][CH376_CMD_FILE_ERASE] file or directory could not be deleted: %s\n", &ch376->cmd_data.CMD_FileName[i]);
+
+                ch376->interface_status = 0;
+                ch376->command_status = CH376_ERR_MISS_FILE;
+            }
+        }
+        else
+        {
+            dbg_printf("[WRITE][COMMAND][CH376_CMD_FILE_ERASE] no operation possible (device not mounted)\n");
+
+            ch376->interface_status = 0;
+            ch376->command_status = CH376_RET_ABORT;
+        }
+        break;
 
     case CH376_CMD_RD_USB_DATA0:
         ch376->command = CH376_CMD_RD_USB_DATA0;
