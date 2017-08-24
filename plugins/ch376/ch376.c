@@ -986,7 +986,7 @@ static CH376_LOCK system_obtain_directory_lock(CH376_CONTEXT *context, const cha
     if(root_lock)
     {
         if((old_dir = getcwd(NULL, 0)) != NULL)
-            chdir(lock);
+            chdir(root_lock);
     }
 
     stat(dir_path, &path_stat);
