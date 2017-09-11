@@ -25,8 +25,13 @@
  */
 
 
+#ifdef __SPECIFY_SDL_DIR__
 #include <SDL/SDL.h>
 #include <SDL/SDL_syswm.h>
+#else
+#include <SDL.h>
+#include <SDL_syswm.h>
+#endif
 #include <limits.h>
 
 #include "system.h"
@@ -56,7 +61,7 @@ static void init_clipboard(void)
   if (SDL_GetWMInfo(&info))
   {
     /* Save the information for later use */
-    SDL_Window = info.window;
+    SDL_Window = info.win.window;
       initialized = SDL_TRUE;
     }
 }
