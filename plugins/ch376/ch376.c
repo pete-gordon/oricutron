@@ -166,7 +166,7 @@ union CommandData
     struct FatDirInfo CMD_FatDirInfo;       // [R/O] CH376_CMD_FILE_OPEN, CH376_CMD_FILE_ENUM_GO
     struct DiskQuery  CMD_DiskQuery;        // [R/O] CH376_CMD_DISK_QUERY
     CH376_U8          CMD_FileSeek[4];      // [R/W] CH376_CMD_BYTE_LOCATE
-    CH376_U8          CMD_FileReadWrite[2]; // [W/O] CH376_CMD_BYTE_READ, CH376_CMD_BYTE_WRITE
+    CH376_U8          CMD_FileReadWrite[4]; // [W/O] CH376_CMD_BYTE_READ, CH376_CMD_BYTE_WRITE
     CH376_U8          CMD_IOBuffer[255];    // [R/W] CH376_CMD_BYTE_READ, CH376_CMD_BYTE_RD_GO, CH376_CMD_BYTE_WRITE, CH376_CMD_BYTE_WR_GO
     CH376_U8          CMD_CheckByte;        // [R/W] CH376_CMD_CHECK_EXIST
 };
@@ -2087,7 +2087,9 @@ void ch376_write_data_port(struct ch376 *ch376, CH376_U8 data)
             if(++ch376->pos_rw_in_cmd_data == sizeof(ch376->cmd_data.CMD_FileReadWrite))
             {
                 ch376->bytes_to_read_write = (ch376->cmd_data.CMD_FileReadWrite[0] <<  0)
-                                           | (ch376->cmd_data.CMD_FileReadWrite[1] <<  8);
+                                           | (ch376->cmd_data.CMD_FileReadWrite[1] <<  8)
+                                           | (ch376->cmd_data.CMD_FileReadWrite[2] << 16)
+                                           | (ch376->cmd_data.CMD_FileReadWrite[3] << 24);
                 file_read_chunk(ch376);
             }
         }
@@ -2102,7 +2104,9 @@ void ch376_write_data_port(struct ch376 *ch376, CH376_U8 data)
             if(++ch376->pos_rw_in_cmd_data == sizeof(ch376->cmd_data.CMD_FileReadWrite))
             {
                 ch376->bytes_to_read_write = (ch376->cmd_data.CMD_FileReadWrite[0] <<  0)
-                                           | (ch376->cmd_data.CMD_FileReadWrite[1] <<  8);
+                                           | (ch376->cmd_data.CMD_FileReadWrite[1] <<  8)
+                                           | (ch376->cmd_data.CMD_FileReadWrite[2] << 16)
+                                           | (ch376->cmd_data.CMD_FileReadWrite[3] << 24);
 
                 if(ch376->bytes_to_read_write > sizeof(ch376->cmd_data.CMD_IOBuffer))
                     ch376->nb_bytes_in_cmd_data = sizeof(ch376->cmd_data.CMD_IOBuffer);
