@@ -10,7 +10,7 @@
 
 /*
  Changes:
- 
+
  21.08.2017 - Jede  : Added support for CMD_DIR_CREATE and CMD_FILE_ERASE (WIN32 only)
  22.07.2017 - OffseT: Added support for CMD_DIR_CREATE and CMD_FILE_ERASE (Added related Amiga system APIs only)
 
@@ -337,12 +337,12 @@ static CH376_BOOL system_get_disk_info(CH376_CONTEXT *context, CH376_LOCK root_l
                 disk_info->DISK_TotalSector[0] = (total_sector & 0x000000ff) >>  0;
                 disk_info->DISK_TotalSector[1] = (total_sector & 0x0000ff00) >>  8;
                 disk_info->DISK_TotalSector[2] = (total_sector & 0x00ff0000) >> 16;
-                disk_info->DISK_TotalSector[3] = (total_sector & 0xff000000) >> 32;
+                disk_info->DISK_TotalSector[3] = (total_sector & 0xff000000) >> 24;
 
                 disk_info->DISK_FreeSector[0] = (free_sector & 0x000000ff) >>  0;
                 disk_info->DISK_FreeSector[1] = (free_sector & 0x0000ff00) >>  8;
                 disk_info->DISK_FreeSector[2] = (free_sector & 0x00ff0000) >> 16;
-                disk_info->DISK_FreeSector[3] = (free_sector & 0xff000000) >> 32;
+                disk_info->DISK_FreeSector[3] = (free_sector & 0xff000000) >> 24;
 
                 disk_info->DISK_DiskFat = 0x0c; // FAT32?
 
@@ -665,12 +665,12 @@ static CH376_BOOL system_get_disk_info(CH376_CONTEXT *context, CH376_LOCK root_l
         disk_info->DISK_TotalSector[0] = (INT8)((total_sector & 0x000000ff) >>  0);
         disk_info->DISK_TotalSector[1] = (INT8)((total_sector & 0x0000ff00) >>  8);
         disk_info->DISK_TotalSector[2] = (INT8)((total_sector & 0x00ff0000) >> 16);
-        disk_info->DISK_TotalSector[3] = (INT8)((total_sector & 0xff000000) >> 32);
+        disk_info->DISK_TotalSector[3] = (INT8)((total_sector & 0xff000000) >> 24);
 
         disk_info->DISK_FreeSector[0] = (INT8)((free_sector & 0x000000ff) >>  0);
         disk_info->DISK_FreeSector[1] = (INT8)((free_sector & 0x0000ff00) >>  8);
         disk_info->DISK_FreeSector[2] = (INT8)((free_sector & 0x00ff0000) >> 16);
-        disk_info->DISK_FreeSector[3] = (INT8)((free_sector & 0xff000000) >> 32);
+        disk_info->DISK_FreeSector[3] = (INT8)((free_sector & 0xff000000) >> 24);
 
         disk_info->DISK_DiskFat = 0x0c; // FAT32?
 
@@ -792,7 +792,7 @@ static CH376_LOCK system_create_directory(CH376_CONTEXT *context, const char *di
 	};
 
 	return root_lock; // instead of lock
-	
+
 }
 
 
@@ -959,12 +959,12 @@ static CH376_BOOL system_get_disk_info(CH376_CONTEXT *context, CH376_LOCK root_l
             disk_info->DISK_TotalSector[0] = (total_sector & 0x000000ff) >>  0;
             disk_info->DISK_TotalSector[1] = (total_sector & 0x0000ff00) >>  8;
             disk_info->DISK_TotalSector[2] = (total_sector & 0x00ff0000) >> 16;
-            disk_info->DISK_TotalSector[3] = (total_sector & 0xff000000) >> 32;
+            disk_info->DISK_TotalSector[3] = (total_sector & 0xff000000) >> 24;
 
             disk_info->DISK_FreeSector[0] = (free_sector & 0x000000ff) >>  0;
             disk_info->DISK_FreeSector[1] = (free_sector & 0x0000ff00) >>  8;
             disk_info->DISK_FreeSector[2] = (free_sector & 0x00ff0000) >> 16;
-            disk_info->DISK_FreeSector[3] = (free_sector & 0xff000000) >> 32;
+            disk_info->DISK_FreeSector[3] = (free_sector & 0xff000000) >> 24;
 
             disk_info->DISK_DiskFat = 0x0c; // FAT32?
 
