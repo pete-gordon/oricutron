@@ -169,7 +169,7 @@ union CommandData
     struct FatDirInfo CMD_FatDirInfo;       // [R/O] CH376_CMD_FILE_OPEN, CH376_CMD_FILE_ENUM_GO
     struct DiskQuery  CMD_DiskQuery;        // [R/O] CH376_CMD_DISK_QUERY
     CH376_U8          CMD_FileSeek[4];      // [R/W] CH376_CMD_BYTE_LOCATE
-    CH376_U8          CMD_FileReadWrite[4]; // [W/O] CH376_CMD_BYTE_READ, CH376_CMD_BYTE_WRITE
+    CH376_U8          CMD_FileReadWrite[2]; // [W/O] CH376_CMD_BYTE_READ, CH376_CMD_BYTE_WRITE
     CH376_U8          CMD_IOBuffer[255];    // [R/W] CH376_CMD_BYTE_READ, CH376_CMD_BYTE_RD_GO, CH376_CMD_BYTE_WRITE, CH376_CMD_BYTE_WR_GO
     CH376_U8          CMD_CheckByte;        // [R/W] CH376_CMD_CHECK_EXIST
 };
@@ -535,7 +535,7 @@ static CH376_BOOL system_directory_delete(CH376_CONTEXT *context, CH376_LOCK roo
     // FIXME
     struct Library *DOSBase = context->DOSBase;
 
-    dbg_printf("system_directory_delete: %s\n", root_lock));
+    dbg_printf("system_directory_delete: %s\n", root_lock);
 
     if(root_lock)
         return (DeleteFile(file_name) != 0);
@@ -793,7 +793,7 @@ static CH376_BOOL system_file_delete(CH376_CONTEXT *context, const char *file_na
 
 static CH376_BOOL system_directory_delete(CH376_CONTEXT *context, CH376_LOCK root_lock)
 {
-    dbg_printf("system_directory_delete: %s\n", root_lock));
+    dbg_printf("system_directory_delete: %s\n", root_lock);
 
     if (root_lock)
         return (RemoveDirectory(root_lock) != 0);
@@ -803,25 +803,32 @@ static CH376_BOOL system_directory_delete(CH376_CONTEXT *context, CH376_LOCK roo
 
 static CH376_LOCK system_create_directory(CH376_CONTEXT *context, const char *dir_path, CH376_LOCK root_lock)
 {
-	LONG err;
-	TCHAR old_dir[MAX_PATH];
+    LONG err;
+    TCHAR old_dir[MAX_PATH];
+    CH376_LOCK lock = NULL
 
-	if (root_lock)
-	{
-		GetCurrentDirectory(sizeof(old_dir), old_dir);
-		SetCurrentDirectory(root_lock->path);
-	};
+    if (root_lock)
+    {
+        GetCurrentDirectory(sizeof(old_dir), old_dir);
+        SetCurrentDirectory(root_lock->path);
+    };
 
-	dbg_printf("system_create_directory: %s\n", dir_path);
+    dbg_printf("system_create_directory: %s\n", dir_path);
 
-	CreateDirectory(dir_path, NULL);
+    if (CreateDirectory(dir_path, NULL))
+    {
+        lock = (CH376_LOCK)system_alloc_mem(sizeof(struct _CH376_LOCK ));
+        SetCurrentDirectory(dir_path);
+        GetCurrentDirectory(sizeof(lock->path), lock->path);
+        lock->handle = INVALID_HANDLE_VALUE;
+    }
 
-	if (root_lock)
-	{
-		SetCurrentDirectory(old_dir);
-	};
+    if (root_lock)
+    {
+        SetCurrentDirectory(old_dir);
+    };
 
-	return root_lock; // instead of lock
+    return lock;
 
 }
 
@@ -1087,7 +1094,7 @@ static CH376_BOOL system_file_delete(CH376_CONTEXT *context, const char *file_na
             chdir(root_lock);
     }
 
-    err = unlink(file_name);
+    err = remove(file_name);
 
     dbg_printf("system_file_delete: %s\n", file_name);
 
@@ -1141,18 +1148,8 @@ static CH376_LOCK system_create_directory(CH376_CONTEXT *context, const char *di
 static CH376_FILE system_file_open_existing(CH376_CONTEXT *context, const char *file_name, CH376_LOCK root_lock)
 {
     FILE *fp;
-    int err;
 
     fp = file_open(file_name, root_lock, "rb+");
-    err= errno;
-
-    if (!fp)
-    {
-        if (err == EISDIR)
-        {
-            return file_open(file_name, root_lock, "rb");
-        }
-    }
 
     return fp;
 }
@@ -1172,8 +1169,9 @@ static CH376_S32 system_file_seek(CH376_CONTEXT *context, CH376_FILE file, int p
     dbg_printf("system_file_seek trying to seek to position %d\n", pos);
 
     if(file)
-        return fseek(file, pos, SEEK_SET);
-    else
+        if (!fseek(file, pos, SEEK_SET))
+            return ftell(file);
+//    else
         return -1;
 }
 
@@ -1764,7 +1762,7 @@ void ch376_write_command_port(struct ch376 *ch376, CH376_U8 command)
             {
                 // We are done
                 ch376->interface_status = 127; // Found :)
-                ch376->command_status = CH376_INT_SUCCESS;
+                ch376->command_status = CH376_ERR_OPEN_DIR;
                 ch376->current_file_is_directory = CH376_TRUE;
             }
             else
@@ -1918,7 +1916,11 @@ void ch376_write_command_port(struct ch376 *ch376, CH376_U8 command)
             {
                 CH376_LOCK created_dir_lock;
 
-                created_dir_lock = system_create_directory(&ch376->context, fixed_file_name, ch376->current_dir_lock);
+                // Already created?
+                created_dir_lock = system_obtain_directory_lock(&ch376->context, fixed_file_name, ch376->current_dir_lock);
+
+                if (!created_dir_lock)
+                    created_dir_lock = system_create_directory(&ch376->context, fixed_file_name, ch376->current_dir_lock);
 
                 // Actually created?
                 if(created_dir_lock)
@@ -2146,6 +2148,7 @@ void ch376_write_data_port(struct ch376 *ch376, CH376_U8 data)
             // store new filename character
             ch376->cmd_data.CMD_FileName[ch376->pos_rw_in_cmd_data++] = data;
             ch376->cmd_data.CMD_FileName[ch376->pos_rw_in_cmd_data] = '\0';
+//            ch376->current_file_is_directory = CH376_FALSE;
         }
         break;
 
@@ -2225,9 +2228,7 @@ void ch376_write_data_port(struct ch376 *ch376, CH376_U8 data)
             if(++ch376->pos_rw_in_cmd_data == sizeof(ch376->cmd_data.CMD_FileReadWrite))
             {
                 ch376->bytes_to_read_write = (ch376->cmd_data.CMD_FileReadWrite[0] <<  0)
-                                           | (ch376->cmd_data.CMD_FileReadWrite[1] <<  8)
-                                           | (ch376->cmd_data.CMD_FileReadWrite[2] << 16)
-                                           | (ch376->cmd_data.CMD_FileReadWrite[3] << 24);
+                                           | (ch376->cmd_data.CMD_FileReadWrite[1] <<  8);
                 file_read_chunk(ch376);
             }
         }
@@ -2242,9 +2243,7 @@ void ch376_write_data_port(struct ch376 *ch376, CH376_U8 data)
             if(++ch376->pos_rw_in_cmd_data == sizeof(ch376->cmd_data.CMD_FileReadWrite))
             {
                 ch376->bytes_to_read_write = (ch376->cmd_data.CMD_FileReadWrite[0] <<  0)
-                                           | (ch376->cmd_data.CMD_FileReadWrite[1] <<  8)
-                                           | (ch376->cmd_data.CMD_FileReadWrite[2] << 16)
-                                           | (ch376->cmd_data.CMD_FileReadWrite[3] << 24);
+                                           | (ch376->cmd_data.CMD_FileReadWrite[1] <<  8);
 
                 if(ch376->bytes_to_read_write > sizeof(ch376->cmd_data.CMD_IOBuffer))
                     ch376->nb_bytes_in_cmd_data = sizeof(ch376->cmd_data.CMD_IOBuffer);
