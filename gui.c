@@ -79,7 +79,7 @@ extern char pravetzromfile[2][1024];
 extern char telebankfiles[8][1024];
 char snappath[4096], snapfile[512];
 char mappingpath[4096], mappingfile[512];
-char filetmp[4096+512];
+char filetmp[4096+512+4];
 
 SDL_bool refreshstatus = SDL_TRUE, refreshdisks = SDL_TRUE, refreshavi = SDL_TRUE, refreshtape = SDL_TRUE,
     refreshkeyboard = SDL_TRUE;

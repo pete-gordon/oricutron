@@ -3,9 +3,9 @@
  * Very minimal CH376 emulation (21.12.2016)                        *
  *                                                                  *
  * Code:                                                            *
- *   Jérôme 'Jede' Debrune                                          *
+ *   JÃ©rÃ´me 'Jede' Debrune                                          *
  *   Philippe 'OffseT' Rimauro                                      *
- *   Christian 'Assinie' Lardière                                   *
+ *   Christian 'Assinie' LardiÃ¨re                                   *
  *                                                                  *
  ** ch376.c *********************************************************/
 
@@ -35,9 +35,10 @@ extern struct Library *SysBase;
 #include <windows.h>
 #include <stdio.h>
 #include <strsafe.h>
-#include <shlwapi.h>
+#include <sys/stat.h>
+//@iss #include <shlwapi.h>
 
-#elif __unix__
+#elif defined(__unix__)
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -673,7 +674,8 @@ static CH376_BOOL system_get_disk_info(CH376_CONTEXT *context, CH376_LOCK root_l
     DWORD number_of_free_clusters;
     DWORD total_number_of_clusters;
 
-    volume[0] = (char)(PathGetDriveNumber(root_lock->path) + 'A');
+    //@iss volume[0] = (char)(PathGetDriveNumber(root_lock->path) + 'A');
+    volume[0] = ((char*)root_lock->path)[0] & 0xdf;
     volume[1] = ':';
     volume[2] = '\\';
     volume[3] = '\0';
@@ -704,6 +706,7 @@ static CH376_LOCK system_obtain_directory_lock(CH376_CONTEXT *context, const cha
 {
     CH376_LOCK lock = NULL;
     TCHAR old_dir[MAX_PATH];
+    struct stat s;
 
     if(root_lock)
     {
@@ -711,7 +714,8 @@ static CH376_LOCK system_obtain_directory_lock(CH376_CONTEXT *context, const cha
         SetCurrentDirectory(root_lock->path);
     };
 
-    if(PathIsDirectory(dir_path))
+    //@iss PathIsDirectory(dir_path)
+    if(stat(dir_path,&s) == 0 && s.st_mode & S_IFDIR)
     {
         lock = (CH376_LOCK)system_alloc_mem(sizeof(struct _CH376_LOCK ));
         GetFullPathName(dir_path, MAX_PATH, lock->path, NULL);
@@ -796,16 +800,15 @@ static CH376_BOOL system_directory_delete(CH376_CONTEXT *context, CH376_LOCK roo
     dbg_printf("system_directory_delete: %s\n", root_lock);
 
     if (root_lock)
-        return (RemoveDirectory(root_lock) != 0);
+        return (RemoveDirectory((LPCSTR)root_lock) != 0);
 
     return CH376_FALSE;
 }
 
 static CH376_LOCK system_create_directory(CH376_CONTEXT *context, const char *dir_path, CH376_LOCK root_lock)
 {
-    LONG err;
     TCHAR old_dir[MAX_PATH];
-    CH376_LOCK lock = NULL
+    CH376_LOCK lock = NULL;
 
     if (root_lock)
     {
