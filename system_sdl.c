@@ -392,3 +392,94 @@ void SDL_COMPAT_GL_SwapBuffers(void)
 }
 #endif
 #endif
+
+#ifdef __OPENGL_AVAILABLE__
+SDL_Surface * flipVert(SDL_Surface* sfc)
+{
+	SDL_Surface* result = SDL_CreateRGBSurface(sfc->flags, sfc->w, sfc->h,
+		sfc->format->BytesPerPixel * 8, sfc->format->Rmask, sfc->format->Gmask,
+		sfc->format->Bmask, sfc->format->Amask);
+
+	if (result == NULL) return NULL;
+
+	Uint8* pixels = (Uint8*) sfc->pixels;
+	Uint8* rpixels = (Uint8*) result->pixels;
+
+	Uint32 pitch = sfc->pitch;
+	Uint32 pxlength = pitch*sfc->h;
+
+	for(int line = 0; line < sfc->h; ++line) {
+		Uint32 pos = line * pitch;
+		memcpy(&rpixels[pos], &pixels[(pxlength-pos)-pitch], pitch);
+	}
+
+	return result;
+}
+
+#if SDL_MAJOR_VERSION == 1
+void SDL_COMPAT_takeScreenshot(char *fname)
+{
+	SDL_Surface *g_screen = SDL_GetVideoSurface();
+
+	if(g_screen->flags & SDL_COMPAT_OPENGL)
+	{
+	// Juste pour recuperer les dimensions :/
+		int g_width = g_screen->w;
+		int g_height = g_screen->h;
+
+		// 24 Bits
+		SDL_Surface *surf = SDL_CreateRGBSurface(SDL_SWSURFACE, g_width, g_height, 24, RMASK, GMASK, BMASK, 0);
+		glReadPixels(0, 0, g_width, g_height, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);
+
+		// 32 Bits
+		//SDL_Surface *surf = SDL_CreateRGBSurface(SDL_SWSURFACE, g_width, g_height, 32, RMASK, GMASK, BMASK, AMASK);
+		//glReadPixels(0, 0, g_width, g_height, GL_RGBA, GL_UNSIGNED_BYTE, surf->pixels);
+
+		SDL_Surface *flip = flipVert(surf);
+		SDL_SaveBMP(flip, fname);
+
+		SDL_FreeSurface(flip);
+		SDL_FreeSurface(surf);
+	}
+	else
+		SDL_SaveBMP(g_screen, fname);
+}
+#else
+
+void SDL_COMPAT_takeScreenshot(char *fname)
+{
+	// 24 Bits
+	// SDL_Surface *surf = SDL_CreateRGBSurface(SDL_SWSURFACE, g_width, g_height, 24, RMASK, BMASK, GMASK, 0);
+
+	// 32 Bits
+	SDL_Surface *surf = SDL_CreateRGBSurface(SDL_SWSURFACE, g_width, g_height, g_bpp, RMASK, GMASK, BMASK, AMASK);
+
+	if (surf == NULL)
+		return;
+
+	// 24 Bits
+	// glReadPixels(0,0,g_width, g_height, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);
+
+	// 32 Bits
+	glReadPixels(0,0,g_width, g_height, GL_RGBA, GL_UNSIGNED_BYTE, surf->pixels);
+
+	SDL_Surface *flip = flipVert(surf);
+	SDL_SaveBMP(flip, fname);
+
+	SDL_FreeSurface(flip);
+	SDL_FreeSurface(surf);
+}
+#endif
+#else
+#if SDL_MAJOR_VERSION == 1
+void SDL_COMPAT_takeScreenshot(char *fname)
+{
+	SDL_SaveBMP(SDL_GetVideoSurface(), fname);
+}
+#else
+void SDL_COMPAT_takeScreenshot(char *fname)
+{
+	SDL_SaveBMP(g_screen, fname);
+}
+#endif
+#endif

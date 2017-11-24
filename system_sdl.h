@@ -123,6 +123,7 @@ typedef SDL_RendererInfo SDL_COMPAT_VideoInfo;
 #define SDLK_KP8                      SDLK_KP_8
 #define SDLK_KP9                      SDLK_KP_9
 
+#define SDLK_PRINT                    SDLK_PRINTSCREEN
 #endif
 
 /* SDL compatability protos */
@@ -144,6 +145,7 @@ SDL_Surface* SDL_COMPAT_SetVideoMode(int width, int height, int bitsperpixel, Ui
 int SDL_COMPAT_SetPalette(SDL_Surface *surface, int flags, SDL_Color *colors, int firstcolor, int ncolors);
 void SDL_COMPAT_SetEventFilter(SDL_EventFilter filter);
 void SDL_COMPAT_Quit(void);
+void SDL_COMPAT_takeScreenshot(char *fname);
 
 #ifdef __OPENGL_AVAILABLE__
 void SDL_COMPAT_GL_SwapBuffers(void);
