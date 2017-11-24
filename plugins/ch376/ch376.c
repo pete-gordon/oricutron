@@ -49,7 +49,6 @@ extern struct Library *SysBase;
 #include <string.h>
 #include <sys/statvfs.h>
 #include <sys/stat.h>
-#include <fnmatch.h>
 
 #else
 #error "FixMe!"
@@ -571,7 +570,7 @@ static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK
 
     if(fib) while(!is_done && ExNext(dir_lock, fib) == DOSTRUE)
     {
-        if(normalize_file_name(fib->entry->d_name, dir_info->DIR_Name) && pattern_match(pattern, dir_info->DIR_Name))
+        if(normalize_file_name(fib->fib_FileName, dir_info->DIR_Name) && pattern_match(pattern, dir_info->DIR_Name))
         {
             dir_info->DIR_Attr = 0;
 
@@ -909,7 +908,7 @@ static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK
     {
         while(!is_done && FindNextFile(dir_lock->handle, fib))
         {
-            if(normalize_file_name(fib->entry->d_name, dir_info->DIR_Name) && pattern_match(pattern, dir_info->DIR_Name))
+            if(normalize_file_name(fib->cFileName, dir_info->DIR_Name) && pattern_match(pattern, dir_info->DIR_Name))
             {
                 // Storing attributes :)
                 dir_info->DIR_Attr = (UINT8)fib->dwFileAttributes;
@@ -1866,8 +1865,7 @@ void ch376_write_command_port(struct ch376 *ch376, CH376_U8 command)
             }
             else
             {
-                // wildcard? (only '*' is supported for now!)
-                // if(ch376->cmd_data.CMD_FileName[i] == '*')
+                // wildcard?
                 if(strchr(ch376->cmd_data.CMD_FileName,'*') || strchr(ch376->cmd_data.CMD_FileName,'?'))
                 {
                     dbg_printf("[WRITE][COMMAND][CH376_CMD_FILE_OPEN] examining directory contents\n");
