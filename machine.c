@@ -1282,6 +1282,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 #endif
 
         case SDLK_PRINT:
+	  sprintf( screencapname, "Capturing to screenshot%02d.bmp", screencapcount );
           screencapcount++;
           do_popup( oric, screencapname );
           SDL_COMPAT_takeScreenshot(&screencapname[13]);
