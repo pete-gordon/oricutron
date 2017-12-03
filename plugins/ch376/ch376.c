@@ -1537,7 +1537,6 @@ static void file_write_chunk(struct ch376 *ch376)
 }
 
 // Normalize file pattern (use normalize_file_name())
-// and replace '*' with '??...'
 static const char * normalize_pattern(const char *pattern, char *normalized_pattern)
 {
     int i = -1;
@@ -1556,36 +1555,21 @@ static const char * normalize_pattern(const char *pattern, char *normalized_patt
         return NULL;
     }
 
-    while (i<8)
-    {
-        i++;
-        if (normalized_pattern[i] == '*')
-        {
-            // normalized_pattern[i++] = '?';
-            // while (i < 8 && (normalized_pattern[i] == ' ' || normalized_pattern[i] == '*'))
-            // DOS: Here '*' means any character up to extension part
-            while (i < 8)
-                normalized_pattern[i++]='?';
-        }
-    }
-
-    dbg_printf("normalize_pattern: '%s' (i=%d)\n", normalized_pattern, i);
     while (i<11)
     {
+        i++;
         if (normalized_pattern[i] == '*')
         {
-            // normalized_pattern[i++] = '?';
-            // while (i < 11 && (normalized_pattern[i] == ' ' || normalized_pattern[i] == '*'))
-            // DOS: Here '*' means any character up to end of extension part
+            // We can't use '?' as wildcard character because ch376 can't use '?' as meta character
+            // Unlike DOS: Here '*' means any character up to end of filename including extension part
             while (i < 11)
-                normalized_pattern[i++]='?';
+                normalized_pattern[i++]='*';
         }
-        i++;
     }
 
     dbg_printf("normalize_pattern: '%s' (i=%d)\n", normalized_pattern, i);
 
-        return normalized_pattern;
+    return normalized_pattern;
 }
 
 // Check file_name against pattern
@@ -1599,7 +1583,7 @@ static CH376_BOOL pattern_match(const char *pattern, const char * file_name)
 
     while(1)
     {
-        if (pattern[i] != '?')
+        if (pattern[i] != '*')
         {
             if (pattern[i] != file_name[i])
             {
