@@ -49,7 +49,6 @@ extern struct Library *SysBase;
 #include <string.h>
 #include <sys/statvfs.h>
 #include <sys/stat.h>
-#include <errno.h>
 
 #else
 #error "FixMe!"
@@ -203,6 +202,7 @@ struct ch376
     CH376_DIR current_directory_browsing;
 
     CH376_BOOL current_file_is_directory;
+    char dir_pattern[14];
 
     char *sdcard_drive_path;
     char *usb_drive_path;
@@ -220,6 +220,8 @@ static const char * normalize_file_name(const char *file_name, char *normalized_
 static const char * trim_file_name(const char *file_name, char *trimmed_file_name);
 static void file_read_chunk(struct ch376 *ch376);
 static void file_write_chunk(struct ch376 *ch376);
+static CH376_BOOL pattern_match(const char *pattern, const char *str);
+static const char * normalize_pattern(const char *pattern, char *normalized_pattern);
 
 /* /// */
 
@@ -287,7 +289,7 @@ static CH376_BOOL system_directory_delete(CH376_CONTEXT *context, CH376_LOCK roo
 static CH376_DIR system_start_examine_directory(CH376_CONTEXT *context, CH376_LOCK dir_lock);
 
 // Get the next entry from a directory on which a examine session was started using system_start_examine_directory
-static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK dir_lock, CH376_DIR fib, struct FatDirInfo *dir_info);
+static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK dir_lock, CH376_DIR fib, struct FatDirInfo *dir_info, char *pattern);
 
 // Finish a directory examine session (release all related resources)
 static void system_finish_examine_directory(CH376_CONTEXT *context, CH376_DIR fib);
@@ -561,14 +563,14 @@ static CH376_DIR system_start_examine_directory(CH376_CONTEXT *context, CH376_LO
     return fib;
 }
 
-static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK dir_lock, CH376_DIR fib, struct FatDirInfo *dir_info)
+static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK dir_lock, CH376_DIR fib, struct FatDirInfo *dir_info, char *pattern)
 {
     struct Library *DOSBase = context->DOSBase;
     BOOL is_done = FALSE;
 
     if(fib) while(!is_done && ExNext(dir_lock, fib) == DOSTRUE)
     {
-        if(normalize_file_name(fib->fib_FileName, dir_info->DIR_Name))
+        if(normalize_file_name(fib->fib_FileName, dir_info->DIR_Name) && pattern_match(pattern, dir_info->DIR_Name))
         {
             dir_info->DIR_Attr = 0;
 
@@ -898,7 +900,7 @@ static CH376_DIR system_start_examine_directory(CH376_CONTEXT *context, CH376_LO
     return find_file_data;
 }
 
-static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK dir_lock, CH376_DIR fib, struct FatDirInfo *dir_info)
+static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK dir_lock, CH376_DIR fib, struct FatDirInfo *dir_info, char *pattern)
 {
     BOOL is_done = FALSE;
 
@@ -906,7 +908,7 @@ static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK
     {
         while(!is_done && FindNextFile(dir_lock->handle, fib))
         {
-            if(normalize_file_name(fib->cFileName, dir_info->DIR_Name))
+            if(normalize_file_name(fib->cFileName, dir_info->DIR_Name) && pattern_match(pattern, dir_info->DIR_Name))
             {
                 // Storing attributes :)
                 dir_info->DIR_Attr = (UINT8)fib->dwFileAttributes;
@@ -1066,8 +1068,8 @@ static FILE * file_open(const char *file_name,  CH376_LOCK root_lock, const char
 {
     FILE *file;
     char *old_dir = NULL;
-	// FIXME: unused variable
-	 //struct stat path_stat;
+    // FIXME: unused variable
+    //struct stat path_stat;
 
     if(root_lock)
     {
@@ -1211,7 +1213,7 @@ static CH376_DIR system_start_examine_directory(CH376_CONTEXT *context, CH376_LO
     return fib;
 }
 
-static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK dir_lock, CH376_DIR fib, struct FatDirInfo *dir_info)
+static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK dir_lock, CH376_DIR fib, struct FatDirInfo *dir_info, char *pattern)
 {
     CH376_BOOL is_done = CH376_FALSE;
     struct stat file_stat;
@@ -1225,7 +1227,7 @@ static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK
 
     if(fib) while(!is_done && (fib->entry = readdir(fib->handle)))
     {
-        if(normalize_file_name(fib->entry->d_name, dir_info->DIR_Name))
+        if(normalize_file_name(fib->entry->d_name, dir_info->DIR_Name) && pattern_match(pattern, dir_info->DIR_Name))
         {
             stat(fib->entry->d_name, &file_stat);
 
@@ -1416,6 +1418,8 @@ static const char * normalize_file_name(const char *file_name, char *normalized_
         normalized_file_name[j] = ' ';
     }
 
+    normalized_file_name[j] = '\0';
+
     return normalized_file_name;
 }
 
@@ -1530,6 +1534,81 @@ static void file_write_chunk(struct ch376 *ch376)
         ch376->interface_status = 0;
         ch376->command_status = CH376_RET_ABORT;
     }
+}
+
+// Normalize file pattern (use normalize_file_name())
+static const char * normalize_pattern(const char *pattern, char *normalized_pattern)
+{
+    int i = -1;
+
+    dbg_printf("normalize_pattern: '%s'\n", normalized_pattern);
+
+    if (!strcmp(pattern, "*"))
+    {
+        dbg_printf("normalize_pattern: * -> *.*\n");
+        normalize_file_name("*.*", normalized_pattern);
+    }
+    else if (!normalize_file_name(pattern, normalized_pattern))
+    {
+        dbg_printf("normalize_pattern: error\n");
+        normalized_pattern[0] = '\0'; // if used, pattern_match() will always return FALSE
+        return NULL;
+    }
+
+    while (i<11)
+    {
+        i++;
+        if (normalized_pattern[i] == '*')
+        {
+            // We can't use '?' as wildcard character because ch376 can't use '?' as meta character
+            // Unlike DOS: Here '*' means any character up to end of filename including extension part
+            while (i < 11)
+                normalized_pattern[i++]='*';
+        }
+    }
+
+    dbg_printf("normalize_pattern: '%s' (i=%d)\n", normalized_pattern, i);
+
+    return normalized_pattern;
+}
+
+// Check file_name against pattern
+// file_name and pattern must be normalized before calling the function
+static CH376_BOOL pattern_match(const char *pattern, const char * file_name)
+{
+    CH376_BOOL found = CH376_FALSE;
+    int i=0;
+
+    dbg_printf("pattern_match('%s', '%s') => ", pattern, file_name);
+
+    while(1)
+    {
+        if (pattern[i] != '*')
+        {
+            if (pattern[i] != file_name[i])
+            {
+                found = CH376_FALSE;
+                break;
+            }
+            if (pattern[i] == '\0')
+            {
+                found = CH376_TRUE;
+                break;
+            }
+        }
+        else
+        {
+            if (file_name[i] == '\0')
+            {
+                found = CH376_TRUE;
+                break;
+            }
+        }
+        i++;
+    }
+
+    dbg_printf("i=%d, found=%d\n", i, found);
+    return found;
 }
 
 /* /// */
@@ -1770,14 +1849,15 @@ void ch376_write_command_port(struct ch376 *ch376, CH376_U8 command)
             }
             else
             {
-                // wildcard? (only '*' is supported for now!)
-                if(ch376->cmd_data.CMD_FileName[i] == '*')
+                // wildcard?
+                if(strchr(ch376->cmd_data.CMD_FileName,'*') || strchr(ch376->cmd_data.CMD_FileName,'?'))
                 {
                     dbg_printf("[WRITE][COMMAND][CH376_CMD_FILE_OPEN] examining directory contents\n");
 
                     // Start a directory examine session
                     system_finish_examine_directory(&ch376->context, ch376->current_directory_browsing);
                     ch376->current_directory_browsing = system_start_examine_directory(&ch376->context, ch376->current_dir_lock);
+                    normalize_pattern(ch376->cmd_data.CMD_FileName, ch376->dir_pattern);
 
                     goto file_enum_go;
                 }
@@ -2027,7 +2107,7 @@ void ch376_write_command_port(struct ch376 *ch376, CH376_U8 command)
     case CH376_CMD_FILE_ENUM_GO:
         ch376->command = CH376_CMD_FILE_ENUM_GO;
 file_enum_go:
-        if(system_go_examine_directory(&ch376->context, ch376->current_dir_lock, ch376->current_directory_browsing, &ch376->cmd_data.CMD_FatDirInfo))
+        if(system_go_examine_directory(&ch376->context, ch376->current_dir_lock, ch376->current_directory_browsing, &ch376->cmd_data.CMD_FatDirInfo, ch376->dir_pattern))
         {
             dbg_printf("[WRITE][COMMAND][CH376_CMD_FILE_ENUM_GO] next directory entry in buffer\n");
             ch376->nb_bytes_in_cmd_data = sizeof(ch376->cmd_data.CMD_FatDirInfo);
