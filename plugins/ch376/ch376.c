@@ -12,6 +12,8 @@
 /*
  Changes:
 
+ 06.12.2017 - Assinie: Added support for CMD_DISK_CAPACITY
+ 13.11.2017 - Assinie: Improve '*' wildcard support for CMD_FILE_OPEN
  05.10.2017 - Assinie: Added support for CMD_DIR_CREATE and CMD_FILE_ERASE (Linux only)
  21.08.2017 - Jede   : Added support for CMD_DIR_CREATE and CMD_FILE_ERASE (WIN32 only)
  22.07.2017 - OffseT : Added support for CMD_DIR_CREATE and CMD_FILE_ERASE (Added related Amiga system APIs only)
@@ -83,6 +85,7 @@ extern struct Library *SysBase;
 #define CH376_CMD_BYTE_RD_GO    0x3b
 #define CH376_CMD_BYTE_WRITE    0x3c
 #define CH376_CMD_BYTE_WR_GO    0x3d
+#define CH376_CMD_DISK_CAPACITY 0x3e
 #define CH376_CMD_DISK_QUERY    0x3f
 #define CH376_CMD_DIR_CREATE    0x40
 #define CH376_CMD_DISK_RD_GO    0x55
@@ -167,7 +170,7 @@ union CommandData
     char              CMD_FileName[14];     // [W/O] CH376_CMD_SET_FILE_NAME
     struct MountInfo  CMD_MountInfo;        // [R/O] CH376_CMD_DISK_MOUNT
     struct FatDirInfo CMD_FatDirInfo;       // [R/O] CH376_CMD_FILE_OPEN, CH376_CMD_FILE_ENUM_GO
-    struct DiskQuery  CMD_DiskQuery;        // [R/O] CH376_CMD_DISK_QUERY
+    struct DiskQuery  CMD_DiskQuery;        // [R/O] CH376_CMD_DISK_QUERY, CH376_CMD_DISK_CAPACITY
     CH376_U8          CMD_FileSeek[4];      // [R/W] CH376_CMD_BYTE_LOCATE
     CH376_U8          CMD_FileReadWrite[2]; // [W/O] CH376_CMD_BYTE_READ, CH376_CMD_BYTE_WRITE
     CH376_U8          CMD_IOBuffer[255];    // [R/W] CH376_CMD_BYTE_READ, CH376_CMD_BYTE_RD_GO, CH376_CMD_BYTE_WRITE, CH376_CMD_BYTE_WR_GO
@@ -2126,19 +2129,38 @@ file_enum_go:
         }
         break;
 
-    case CH376_CMD_DISK_QUERY:
-        ch376->command = CH376_CMD_DISK_QUERY;
+    case CH376_CMD_DISK_CAPACITY:
+        ch376->command = CH376_CMD_DISK_CAPACITY;
         // mounted?
         if(system_get_disk_info(&ch376->context, ch376->root_dir_lock, &ch376->cmd_data.CMD_DiskQuery))
         {
             dbg_printf("[WRITE][COMMAND][CH376_CMD_DISK_CAPACITY] sector capacity in buffer\n");
-            ch376->nb_bytes_in_cmd_data = sizeof(ch376->cmd_data.CMD_DiskQuery);
+            // Only first 4 bytes of cmd_data.CMD_DiskQuery
+            ch376->nb_bytes_in_cmd_data = 4;
             ch376->interface_status = 127;
             ch376->command_status = CH376_INT_SUCCESS;
         }
         else
         {
             dbg_printf("[WRITE][COMMAND][CH376_CMD_DISK_CAPACITY] no operation possible (device not mounted)\n");
+            ch376->interface_status = 0;
+            ch376->command_status = CH376_RET_ABORT;
+        }
+        break;
+
+    case CH376_CMD_DISK_QUERY:
+        ch376->command = CH376_CMD_DISK_QUERY;
+        // mounted?
+        if(system_get_disk_info(&ch376->context, ch376->root_dir_lock, &ch376->cmd_data.CMD_DiskQuery))
+        {
+            dbg_printf("[WRITE][COMMAND][CH376_CMD_DISK_QUERY] sector capacity in buffer\n");
+            ch376->nb_bytes_in_cmd_data = sizeof(ch376->cmd_data.CMD_DiskQuery);
+            ch376->interface_status = 127;
+            ch376->command_status = CH376_INT_SUCCESS;
+        }
+        else
+        {
+            dbg_printf("[WRITE][COMMAND][CH376_CMD_DISK_QUERY] no operation possible (device not mounted)\n");
             ch376->interface_status = 0;
             ch376->command_status = CH376_RET_ABORT;
         }
