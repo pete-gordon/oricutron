@@ -961,6 +961,32 @@ static void system_finish_examine_directory(CH376_CONTEXT *context, CH376_DIR fi
     }
 }
 
+#include <errno.h>
+#include <string.h>
+static CH376_S32 system_get_file_size(CH376_CONTEXT *context, CH376_FILE file)
+{
+    CH376_S32 file_size = 0xffffffff;
+    BY_HANDLE_FILE_INFORMATION file_stat;
+
+    if (file)
+    {
+        if ( GetFileInformationByHandle(file, &file_stat) )
+        {
+            // Only low DWORD
+            file_size = file_stat.nFileSizeLow;
+        }
+        else
+        {
+           int err = errno;
+           dbg_printf("system_get_file_size: error (%s)\n", strerror(err));
+        }
+    }
+    else
+        dbg_printf("system_get_file_size: no file handle\n");
+
+    return file_size;
+}
+
 /* /// */
 
 #elif defined(__unix__)
