@@ -145,7 +145,7 @@ SDL_Surface* SDL_COMPAT_SetVideoMode(int width, int height, int bitsperpixel, Ui
 int SDL_COMPAT_SetPalette(SDL_Surface *surface, int flags, SDL_Color *colors, int firstcolor, int ncolors);
 void SDL_COMPAT_SetEventFilter(SDL_EventFilter filter);
 void SDL_COMPAT_Quit(void);
-void SDL_COMPAT_takeScreenshot(char *fname);
+void SDL_COMPAT_TakeScreenshot(char *fname);
 
 #ifdef __OPENGL_AVAILABLE__
 void SDL_COMPAT_GL_SwapBuffers(void);

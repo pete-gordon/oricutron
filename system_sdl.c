@@ -1,23 +1,23 @@
 /*
-**  Oricutron
-**  Copyright (C) 2009-2014 Peter Gordon
-**
-**  This program is free software; you can redistribute it and/or
-**  modify it under the terms of the GNU General Public License
-**  as published by the Free Software Foundation, version 2
-**  of the License.
-**
-**  This program is distributed in the hope that it will be useful,
-**  but WITHOUT ANY WARRANTY; without even the implied warranty of
-**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-**  GNU General Public License for more details.
-**
-**  You should have received a copy of the GNU General Public License
-**  along with this program; if not, write to the Free Software
-**  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-**
-**  SDL System specific stuff
-*/
+ **  Oricutron
+ **  Copyright (C) 2009-2014 Peter Gordon
+ **
+ **  This program is free software; you can redistribute it and/or
+ **  modify it under the terms of the GNU General Public License
+ **  as published by the Free Software Foundation, version 2
+ **  of the License.
+ **
+ **  This program is distributed in the hope that it will be useful,
+ **  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ **  GNU General Public License for more details.
+ **
+ **  You should have received a copy of the GNU General Public License
+ **  along with this program; if not, write to the Free Software
+ **  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ **
+ **  SDL System specific stuff
+ */
 
 
 #ifndef __APPLE__
@@ -119,11 +119,11 @@ static void FreeResources(void)
 #if SDL_MAJOR_VERSION == 1
 int SDL_COMPAT_GetWMInfo(SDL_SysWMinfo *info)
 {
-#if defined(__MORPHOS__)|defined(__APPLE__)
+  #if defined(__MORPHOS__)|defined(__APPLE__)
   return 0;
-#else
+  #else
   return SDL_GetWMInfo(info);
-#endif
+  #endif
 }
 #else
 int SDL_COMPAT_GetWMInfo(SDL_SysWMinfo *info)
@@ -188,19 +188,19 @@ SDL_bool SDL_COMPAT_IsAppFocused(SDL_Event* event)
 SDL_bool SDL_COMPAT_IsAppActive(SDL_Event* event)
 {
   /* NOTE: not needed wit SDL 2.0
-  return (event->window.event == SDL_WINDOWEVENT_FOCUS_GAINED)? SDL_TRUE : SDL_FALSE; */
+   *  return (event->window.event == SDL_WINDOWEVENT_FOCUS_GAINED)? SDL_TRUE : SDL_FALSE; */
   return SDL_FALSE;
 }
 SDL_bool SDL_COMPAT_IsAppFocused(SDL_Event* event)
 {
   /* NOTE: not needed wit SDL 2.0
-  switch( event->window.event  )
-  {
-    case SDL_WINDOWEVENT_FOCUS_GAINED:
-    case SDL_WINDOWEVENT_ENTER:
-      return SDL_TRUE;
-      break;
-  } */
+   *  switch( event->window.event  )
+   *  {
+   *    case SDL_WINDOWEVENT_FOCUS_GAINED:
+   *    case SDL_WINDOWEVENT_ENTER:
+   *      return SDL_TRUE;
+   *      break;
+} */
   return SDL_FALSE;
 }
 #endif
@@ -383,12 +383,12 @@ void SDL_COMPAT_Quit(void)
 #if SDL_MAJOR_VERSION == 1
 void SDL_COMPAT_GL_SwapBuffers(void)
 {
-    SDL_GL_SwapBuffers();
+  SDL_GL_SwapBuffers();
 }
 #else
 void SDL_COMPAT_GL_SwapBuffers(void)
 {
-    SDL_GL_SwapWindow(g_window);
+  SDL_GL_SwapWindow(g_window);
 }
 #endif
 #endif
@@ -396,90 +396,90 @@ void SDL_COMPAT_GL_SwapBuffers(void)
 #ifdef __OPENGL_AVAILABLE__
 SDL_Surface * flipVert(SDL_Surface* sfc)
 {
-	SDL_Surface* result = SDL_CreateRGBSurface(sfc->flags, sfc->w, sfc->h,
-		sfc->format->BytesPerPixel * 8, sfc->format->Rmask, sfc->format->Gmask,
-		sfc->format->Bmask, sfc->format->Amask);
+  int line;
+  SDL_Surface* result = SDL_CreateRGBSurface(sfc->flags, sfc->w, sfc->h,
+                                             sfc->format->BytesPerPixel * 8, sfc->format->Rmask, sfc->format->Gmask,
+                                             sfc->format->Bmask, sfc->format->Amask);
 
-	if (result == NULL) return NULL;
+  if (result == NULL) return NULL;
 
-	Uint8* pixels = (Uint8*) sfc->pixels;
-	Uint8* rpixels = (Uint8*) result->pixels;
+  Uint8* pixels = (Uint8*) sfc->pixels;
+  Uint8* rpixels = (Uint8*) result->pixels;
 
-	Uint32 pitch = sfc->pitch;
-	Uint32 pxlength = pitch*sfc->h;
+  Uint32 pitch = sfc->pitch;
+  Uint32 pxlength = pitch*sfc->h;
 
-	for(int line = 0; line < sfc->h; ++line) {
-		Uint32 pos = line * pitch;
-		memcpy(&rpixels[pos], &pixels[(pxlength-pos)-pitch], pitch);
-	}
+  for(line = 0; line < sfc->h; ++line)
+  {
+    Uint32 pos = line * pitch;
+    memcpy(&rpixels[pos], &pixels[(pxlength-pos)-pitch], pitch);
+  }
 
-	return result;
+  return result;
 }
-
 #if SDL_MAJOR_VERSION == 1
-void SDL_COMPAT_takeScreenshot(char *fname)
+void SDL_COMPAT_TakeScreenshot(char *fname)
 {
-	SDL_Surface *g_screen = SDL_GetVideoSurface();
+  SDL_Surface *g_screen = SDL_GetVideoSurface();
 
-	if(g_screen->flags & SDL_COMPAT_OPENGL)
-	{
-	// Juste pour recuperer les dimensions :/
-		int g_width = g_screen->w;
-		int g_height = g_screen->h;
+  if(g_screen->flags & SDL_COMPAT_OPENGL)
+  {
+    // Juste pour recuperer les dimensions :/
+    int g_width = g_screen->w;
+    int g_height = g_screen->h;
 
-		// 24 Bits
-		SDL_Surface *surf = SDL_CreateRGBSurface(SDL_SWSURFACE, g_width, g_height, 24, RMASK, GMASK, BMASK, 0);
-		glReadPixels(0, 0, g_width, g_height, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);
+    // 24 Bits
+    SDL_Surface *surf = SDL_CreateRGBSurface(SDL_SWSURFACE, g_width, g_height, 24, RMASK, GMASK, BMASK, 0);
+    glReadPixels(0, 0, g_width, g_height, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);
 
-		// 32 Bits
-		//SDL_Surface *surf = SDL_CreateRGBSurface(SDL_SWSURFACE, g_width, g_height, 32, RMASK, GMASK, BMASK, AMASK);
-		//glReadPixels(0, 0, g_width, g_height, GL_RGBA, GL_UNSIGNED_BYTE, surf->pixels);
+    // 32 Bits
+    //SDL_Surface *surf = SDL_CreateRGBSurface(SDL_SWSURFACE, g_width, g_height, 32, RMASK, GMASK, BMASK, AMASK);
+    //glReadPixels(0, 0, g_width, g_height, GL_RGBA, GL_UNSIGNED_BYTE, surf->pixels);
 
-		SDL_Surface *flip = flipVert(surf);
-		SDL_SaveBMP(flip, fname);
+    SDL_Surface *flip = flipVert(surf);
+    SDL_SaveBMP(flip, fname);
 
-		SDL_FreeSurface(flip);
-		SDL_FreeSurface(surf);
-	}
-	else
-		SDL_SaveBMP(g_screen, fname);
+    SDL_FreeSurface(flip);
+    SDL_FreeSurface(surf);
+  }
+  else
+    SDL_SaveBMP(g_screen, fname);
 }
 #else
-
-void SDL_COMPAT_takeScreenshot(char *fname)
+void SDL_COMPAT_TakeScreenshot(char *fname)
 {
-	// 24 Bits
-	// SDL_Surface *surf = SDL_CreateRGBSurface(SDL_SWSURFACE, g_width, g_height, 24, RMASK, BMASK, GMASK, 0);
+  // 24 Bits
+  // SDL_Surface *surf = SDL_CreateRGBSurface(SDL_SWSURFACE, g_width, g_height, 24, RMASK, BMASK, GMASK, 0);
 
-	// 32 Bits
-	SDL_Surface *surf = SDL_CreateRGBSurface(SDL_SWSURFACE, g_width, g_height, g_bpp, RMASK, GMASK, BMASK, AMASK);
+  // 32 Bits
+  SDL_Surface *surf = SDL_CreateRGBSurface(SDL_SWSURFACE, g_width, g_height, g_bpp, RMASK, GMASK, BMASK, AMASK);
 
-	if (surf == NULL)
-		return;
+  if (surf == NULL)
+    return;
 
-	// 24 Bits
-	// glReadPixels(0,0,g_width, g_height, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);
+  // 24 Bits
+  // glReadPixels(0,0,g_width, g_height, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);
 
-	// 32 Bits
-	glReadPixels(0,0,g_width, g_height, GL_RGBA, GL_UNSIGNED_BYTE, surf->pixels);
+  // 32 Bits
+  glReadPixels(0,0,g_width, g_height, GL_RGBA, GL_UNSIGNED_BYTE, surf->pixels);
 
-	SDL_Surface *flip = flipVert(surf);
-	SDL_SaveBMP(flip, fname);
+  SDL_Surface *flip = flipVert(surf);
+  SDL_SaveBMP(flip, fname);
 
-	SDL_FreeSurface(flip);
-	SDL_FreeSurface(surf);
+  SDL_FreeSurface(flip);
+  SDL_FreeSurface(surf);
 }
 #endif
 #else
 #if SDL_MAJOR_VERSION == 1
-void SDL_COMPAT_takeScreenshot(char *fname)
+void SDL_COMPAT_TakeScreenshot(char *fname)
 {
-	SDL_SaveBMP(SDL_GetVideoSurface(), fname);
+  SDL_SaveBMP(SDL_GetVideoSurface(), fname);
 }
 #else
-void SDL_COMPAT_takeScreenshot(char *fname)
+void SDL_COMPAT_TakeScreenshot(char *fname)
 {
-	SDL_SaveBMP(g_screen, fname);
+  SDL_SaveBMP(g_screen, fname);
 }
 #endif
 #endif
