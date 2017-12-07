@@ -69,6 +69,7 @@ extern struct Library *SysBase;
 #define CH376_CMD_NONE        0x00
 #define CH376_CMD_GET_IC_VER  0x01
 #define CH376_CMD_CHECK_EXIST   0x06
+#define CH376_CMD_GET_FILE_SIZE 0x0c
 #define CH376_CMD_SET_USB_MODE  0x15
 #define CH376_CMD_GET_STATUS    0x22
 #define CH376_CMD_RD_USB_DATA0  0x27
@@ -175,6 +176,7 @@ union CommandData
     CH376_U8          CMD_FileReadWrite[2]; // [W/O] CH376_CMD_BYTE_READ, CH376_CMD_BYTE_WRITE
     CH376_U8          CMD_IOBuffer[255];    // [R/W] CH376_CMD_BYTE_READ, CH376_CMD_BYTE_RD_GO, CH376_CMD_BYTE_WRITE, CH376_CMD_BYTE_WR_GO
     CH376_U8          CMD_CheckByte;        // [R/W] CH376_CMD_CHECK_EXIST
+    CH376_U8          CMD_FileSize[4];       // [R/W] CH376_CMD_GET_FILE_SIZE, CH376_CMD_SET_FILE_SIZE
 };
 
 #pragma pack()
@@ -296,6 +298,9 @@ static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK
 
 // Finish a directory examine session (release all related resources)
 static void system_finish_examine_directory(CH376_CONTEXT *context, CH376_DIR fib);
+
+// Get the size of the current file
+static CH376_S32 system_get_file_size(CH376_CONTEXT *context, CH376_FILE file);
 
 /* /// */
 
@@ -1286,6 +1291,31 @@ static void system_finish_examine_directory(CH376_CONTEXT *context, CH376_DIR fi
     }
 }
 
+#include <errno.h>
+#include <string.h>
+static CH376_S32 system_get_file_size(CH376_CONTEXT *context, CH376_FILE file)
+{
+    CH376_S32 file_size = 0xffffffff;
+    struct stat file_stat;
+
+    if (file)
+    {
+        if ( !fstat(fileno(file), &file_stat) )
+        {
+            file_size = file_stat.st_size;
+        }
+        else
+        {
+           int err = errno;
+           dbg_printf("system_get_file_size: error (%s)\n", strerror(err));
+        }
+    }
+    else
+        dbg_printf("system_get_file_size: no file handle\n");
+
+    return file_size;
+}
+
 /* /// */
 
 #else
@@ -1641,6 +1671,27 @@ CH376_U8 ch376_read_data_port(struct ch376 *ch376)
         dbg_printf("[READ][DATA][CH376_CMD_CHECK_EXIST] setting data port to &%02x\n", data_out);
         break;
 
+    case CH376_CMD_GET_FILE_SIZE:
+        if(ch376->nb_bytes_in_cmd_data)
+        {
+            if(ch376->nb_bytes_in_cmd_data != ch376->pos_rw_in_cmd_data)
+            {
+                data_out = ch376->cmd_data.CMD_FileSize[ch376->pos_rw_in_cmd_data];
+
+                dbg_printf("[READ][DATA][CH376_CMD_GET_FILE_SIZE] read &%02x from i/o buffer at position &%02x\n", data_out, ch376->pos_rw_in_cmd_data);
+
+                if(++ch376->pos_rw_in_cmd_data == ch376->nb_bytes_in_cmd_data)
+                    ch376->nb_bytes_in_cmd_data = 0;
+            }
+        }
+        else
+        {
+            data_out = 0;
+            dbg_printf("[READ][DATA][CH376_CMD_GET_FILE_SIZE] nothing to read from i/o buffer\n");
+        }
+
+        break;
+
     case CH376_CMD_GET_IC_VER:
         data_out = (0x40 | CH376_DATA_IC_VER) & 0x7f;
         dbg_printf("[READ][DATA][CH376_CMD_GET_IC_VER] setting data port to &%02x\n", data_out);
@@ -1743,6 +1794,11 @@ void ch376_write_command_port(struct ch376 *ch376, CH376_U8 command)
     case CH376_CMD_CHECK_EXIST:
         ch376->command = CH376_CMD_CHECK_EXIST;
         dbg_printf("[WRITE][COMMAND][CH376_CMD_CHECK_EXIST] waiting for check byte\n");
+        break;
+
+    case CH376_CMD_GET_FILE_SIZE:
+        ch376->command = CH376_CMD_GET_FILE_SIZE;
+        dbg_printf("[WRITE][COMMAND][CH376_CMD_GET_FILE_SIZE] wait for &68 byte\n");
         break;
 
     case CH376_CMD_GET_IC_VER:
@@ -2224,6 +2280,35 @@ void ch376_write_data_port(struct ch376 *ch376, CH376_U8 data)
     case CH376_CMD_CHECK_EXIST:
         ch376->cmd_data.CMD_CheckByte = ~data;
         dbg_printf("[WRITE][DATA][CH376_CMD_CHECK_EXIST] got check byte &%02x\n", data);
+        break;
+
+    case CH376_CMD_GET_FILE_SIZE:
+        // dbg_printf("[WRITE][DATA][CH376_CMD_GET_FILE_SIZE] got &%02x byte\n", data);
+        if (data == 0x68)
+        {
+            CH376_S32 file_size = system_get_file_size(&ch376->context, ch376->current_file);
+
+            ch376->cmd_data.CMD_FileSize[0] = (CH376_U8)((file_size & 0x000000ff) >>  0);
+            ch376->cmd_data.CMD_FileSize[1] = (CH376_U8)((file_size & 0x0000ff00) >>  8);
+            ch376->cmd_data.CMD_FileSize[2] = (CH376_U8)((file_size & 0x00ff0000) >> 16);
+            ch376->cmd_data.CMD_FileSize[3] = (CH376_U8)((file_size & 0xff000000) >> 24);
+
+            ch376->nb_bytes_in_cmd_data = sizeof(ch376->cmd_data.CMD_FileSize);
+            ch376->pos_rw_in_cmd_data = 0;
+         
+            dbg_printf("[WRITE][DATA][CH376_CMD_GET_FILE_SIZE] done, file size is %d, waiting for data read\n", file_size);
+
+            // Lignes suivantes utiles?
+            ch376->interface_status = 127;
+            ch376->command_status = CH376_INT_SUCCESS;
+        }
+        else
+        {
+            dbg_printf("[WRITE][DATA][CH376_CMD_GET_FILE_SIZE] wrong command byte: looking for &68, got &%02x\n", data);
+
+            ch376->interface_status = 0;
+            ch376->command_status = CH376_RET_ABORT;
+        }
         break;
 
     case CH376_CMD_SET_USB_MODE:
