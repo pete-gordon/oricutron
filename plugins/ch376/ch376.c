@@ -633,6 +633,36 @@ static void system_finish_examine_directory(CH376_CONTEXT *context, CH376_DIR fi
     }
 }
 
+static CH376_S32 system_get_file_size(CH376_CONTEXT *context, CH376_FILE file)
+{
+    struct Library *DOSBase = context->DOSBase;
+    struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
+    CH376_S32 file_size = 0xffffffff;
+
+    if (fib)
+    {
+        if (file)
+        {
+            if ( ExamineFH(file, &fib) )
+            {
+                file_size = fib->fib_Size;
+            }
+            else
+            {
+               dbg_printf("system_get_file_size: error\n");
+            }
+        }
+        else
+        {
+            dbg_printf("system_get_file_size: no file handle\n");
+        }
+
+        FreeDosObject(DOS_FIB, fib);
+    }
+
+    return file_size;
+}
+
 /* /// */
 
 #elif defined(WIN32)
@@ -961,8 +991,6 @@ static void system_finish_examine_directory(CH376_CONTEXT *context, CH376_DIR fi
     }
 }
 
-#include <errno.h>
-#include <string.h>
 static CH376_S32 system_get_file_size(CH376_CONTEXT *context, CH376_FILE file)
 {
     CH376_S32 file_size = 0xffffffff;
@@ -977,8 +1005,7 @@ static CH376_S32 system_get_file_size(CH376_CONTEXT *context, CH376_FILE file)
         }
         else
         {
-           int err = errno;
-           dbg_printf("system_get_file_size: error (%s)\n", strerror(err));
+           dbg_printf("system_get_file_size: error\n");
         }
     }
     else
@@ -1317,8 +1344,6 @@ static void system_finish_examine_directory(CH376_CONTEXT *context, CH376_DIR fi
     }
 }
 
-#include <errno.h>
-#include <string.h>
 static CH376_S32 system_get_file_size(CH376_CONTEXT *context, CH376_FILE file)
 {
     CH376_S32 file_size = 0xffffffff;
@@ -1332,8 +1357,7 @@ static CH376_S32 system_get_file_size(CH376_CONTEXT *context, CH376_FILE file)
         }
         else
         {
-           int err = errno;
-           dbg_printf("system_get_file_size: error (%s)\n", strerror(err));
+           dbg_printf("system_get_file_size: error\n");
         }
     }
     else
