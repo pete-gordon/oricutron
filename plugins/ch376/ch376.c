@@ -66,8 +66,8 @@ extern struct Library *SysBase;
 #define CH376_DATA_IC_VER 3
 
 // Commands
-#define CH376_CMD_NONE        0x00
-#define CH376_CMD_GET_IC_VER  0x01
+#define CH376_CMD_NONE          0x00
+#define CH376_CMD_GET_IC_VER    0x01
 #define CH376_CMD_CHECK_EXIST   0x06
 #define CH376_CMD_GET_FILE_SIZE 0x0c
 #define CH376_CMD_SET_USB_MODE  0x15
