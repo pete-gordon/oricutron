@@ -29,6 +29,7 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <string.h>
 
 extern struct Library *SysBase;
 
@@ -544,7 +545,7 @@ static CH376_BOOL system_directory_delete(CH376_CONTEXT *context, CH376_LOCK roo
     dbg_printf("system_directory_delete: %s\n", root_lock);
 
     if(root_lock)
-        return (DeleteFile(file_name) != 0);
+        return (DeleteFile(root_lock) != 0);
 
     return CH376_FALSE;
 }
