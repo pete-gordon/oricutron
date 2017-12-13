@@ -73,6 +73,9 @@ struct avi_handle *vidcap = NULL;
 char vidcapname[128];
 int vidcapcount = 0;
 
+char screencapname[128];
+int screencapcount = 0;
+
 unsigned char rom_microdisc[8912], rom_jasmin[2048], rom_pravetz[512];
 struct symboltable sym_microdisc, sym_jasmin, sym_pravetz;
 SDL_bool microdiscrom_valid, jasminrom_valid, pravetzrom_valid;
@@ -1277,6 +1280,13 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
            }
            break;
 #endif
+
+        case SDLK_PRINT:
+          sprintf( screencapname, "Capturing to screenshot%02d.bmp", screencapcount );
+          screencapcount++;
+          do_popup( oric, screencapname );
+          SDL_COMPAT_TakeScreenshot( &screencapname[13] );
+          break;
 
         case SDLK_LSHIFT:
         case SDLK_RSHIFT:

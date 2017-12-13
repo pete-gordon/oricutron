@@ -1387,15 +1387,9 @@ void tape_ticktock( struct machine *oric, int cycles )
   // The VSync hack is triggered in the video emulation
   // but actually handled here, since the VSync signal
   // is read into the tape input. The video emulation
-  // puts 260+12 microseconds into this counter, 
+  // puts 260+12 microseconds into this counter,
   // which we count down here.
   // See more comments about VSync in ula.c
-  if( oric->vsync > 0 )
-  {
-    oric->vsync -= cycles;
-    if( oric->vsync < 0 )
-      oric->vsync = 0;
-  }
 
   // If the VSync hack is active, we pull CB1 low
   // while the above counter is active and it's value
@@ -1405,6 +1399,13 @@ void tape_ticktock( struct machine *oric, int cycles )
     j = (0 == oric->vsync || 260 < oric->vsync);
     if( oric->via.cb1 != j )
       via_write_CB1( &oric->via, j );
+  }
+
+  if( oric->vsync > 0 )
+  {
+    oric->vsync -= cycles;
+    if( oric->vsync < 0 )
+      oric->vsync = 0;
   }
 
   // No tape? Motor off?
