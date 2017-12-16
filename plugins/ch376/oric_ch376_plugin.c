@@ -60,4 +60,3 @@ unsigned char 	ch376_oric_read(struct ch376 *ch376, Uint16 addr)
 	}
 	return 0;
 }
-

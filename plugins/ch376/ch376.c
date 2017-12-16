@@ -3,9 +3,9 @@
  * Very minimal CH376 emulation (21.12.2016)                        *
  *                                                                  *
  * Code:                                                            *
- *   JÃ©rÃ´me 'Jede' Debrune                                          *
+ *   Jérôme 'Jede' Debrune                                          *
  *   Philippe 'OffseT' Rimauro                                      *
- *   Christian 'Assinie' LardiÃ¨re                                   *
+ *   Christian 'Assinie' Lardière                                   *
  *                                                                  *
  ** ch376.c *********************************************************/
 
@@ -41,7 +41,7 @@ extern struct Library *SysBase;
 #include <sys/stat.h>
 //@iss #include <shlwapi.h>
 
-#elif defined(__unix__)
+#elif defined(__unix__) || defined(__APPLE__)
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -959,7 +959,7 @@ static void system_finish_examine_directory(CH376_CONTEXT *context, CH376_DIR fi
 
 /* /// */
 
-#elif defined(__unix__)
+#elif defined(__unix__) || defined(__APPLE__)
 
 /* /// "POSIX system functions" */
 

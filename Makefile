@@ -304,6 +304,7 @@ TARGET = oricutron
 FILEREQ_OBJ =
 MSGBOX_OBJ =
 CUSTOMOBJS = gui_osx.o filereq_osx.o msgbox_osx.o
+EXTRAOBJS = plugins/ch376/oric_ch376_plugin.o plugins/ch376/ch376.o
 endif
 
 
