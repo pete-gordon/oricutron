@@ -12,6 +12,7 @@
 /*
  Changes:
 
+ 07.12.2017 - Assinie: Added support for CMD_GET_FILE_SIZE
  06.12.2017 - Assinie: Added support for CMD_DISK_CAPACITY
  13.11.2017 - Assinie: Improve '*' wildcard support for CMD_FILE_OPEN
  05.10.2017 - Assinie: Added support for CMD_DIR_CREATE and CMD_FILE_ERASE (Linux only)
