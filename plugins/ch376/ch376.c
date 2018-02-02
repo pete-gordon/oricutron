@@ -41,7 +41,7 @@ extern struct Library *SysBase;
 #include <sys/stat.h>
 //@iss #include <shlwapi.h>
 
-#elif defined(__unix__) || defined(__APPLE__)
+#elif defined(__unix__) || defined(__APPLE__) || defined(__HAIKU__)
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -959,7 +959,7 @@ static void system_finish_examine_directory(CH376_CONTEXT *context, CH376_DIR fi
 
 /* /// */
 
-#elif defined(__unix__) || defined(__APPLE__)
+#elif defined(__unix__) || defined(__APPLE__) || defined(__HAIKU__)
 
 /* /// "POSIX system functions" */
 
