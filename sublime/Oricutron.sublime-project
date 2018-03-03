@@ -1,0 +1,15 @@
+{
+  "folders":
+  [
+    {
+      "path": "../",
+      "name": "Oricutron",
+      "follow_symlinks": false,
+      "file_exclude_patterns": ["*.gitignore", "*.pch", "*.o"]
+    },
+  ],
+  "settings":
+  {
+    "tab_size": 2
+  }
+}
