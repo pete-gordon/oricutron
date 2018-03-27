@@ -109,6 +109,8 @@ struct start_opts
   char     start_disk[1024];
   char     start_tape[1024];
   char     start_syms[1024];
+  char*    start_syms_files[32];
+  Sint32   start_syms_count;
   char     start_snapshot[1024];
   char    *start_breakpoint;
 };
@@ -528,6 +530,7 @@ static void usage( int ret )
           "                       \"microdisc\" or \"m\" for Microdisc\n"
           "                       \"jasmin\" or \"j\" for Jasmin\n"
           "                       \"pravetz\" or \"p\" for Pravetz\n"
+          "                       \"none\" or \"n\"\n"
           "\n"
           "  -s / --symbols     = Load symbols from a file\n"
           "  -f / --fullscreen  = Run oricutron fullscreen\n"
@@ -630,6 +633,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   sto->start_disk[0]  = 0;
   sto->start_tape[0]  = 0;
   sto->start_syms[0]  = 0;
+  sto->start_syms_count = 0;
   sto->start_snapshot[0] = 0;
   sto->start_breakpoint = NULL;
   oric->ch376_activated = SDL_FALSE;
@@ -966,6 +970,13 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
               sto->start_disktype_set = SDL_TRUE;
               break;
             }
+            if(( strcasecmp( opt_arg, "none"      ) == 0 ) ||
+               ( strcasecmp( opt_arg, "n"         ) == 0 ))
+            {
+              sto->start_disktype = DRV_NONE;
+              sto->start_disktype_set = SDL_FALSE;
+              break;
+            }
           }
 
           error_printf( "Invalid drive type" );
@@ -976,8 +987,12 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
         case 's':  // Pre-load symbols file
           if( opt_arg )
           {
-            strncpy( sto->start_syms, opt_arg, 1024 );
-            sto->start_syms[1023] = 0;
+            if( sto->start_syms_count < 32 )
+            {
+              char* new_syms = strdup( opt_arg );
+              if( NULL != new_syms )
+                sto->start_syms_files[sto->start_syms_count++] = new_syms;
+            }
           } else {
             error_printf( "No symbols file specified" );
             free( sto );
@@ -1125,6 +1140,17 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   mon_init( oric );
   if( sto->start_syms[0] )
     mon_new_symbols( &oric->usersyms, oric, sto->start_syms, SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
+
+  for( i=0; i<sto->start_syms_count; i++ )
+  {
+    if( NULL!=sto->start_syms_files[i] )
+    {
+      mon_new_symbols( &oric->usersyms, oric, sto->start_syms_files[i], SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
+      free(sto->start_syms_files[i]);
+      sto->start_syms_files[i] = NULL;
+    }
+  }
+  sto->start_syms_count = 0;
 
   if( sto->start_breakpoint )
   {

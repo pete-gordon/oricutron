@@ -3,8 +3,9 @@
  * Very minimal CH376 emulation                                     *
  *                                                                  *
  * Code:                                                            *
- *   JÈrÙme 'Jede' Debrune                                          *
- *   Philippe 'OffseT' Rimauro of Futurs'                           *
+ *   J√©r√¥me 'Jede' Debrune                                          *
+ *   Philippe 'OffseT' Rimauro                                      *
+ *   Christian 'Assinie' Lardi√®re                                   *
  *                                                                  *
  ** ch376.h *********************************************************/
 

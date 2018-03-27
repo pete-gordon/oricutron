@@ -3,9 +3,9 @@
  * Very minimal CH376 emulation (21.12.2016)                        *
  *                                                                  *
  * Code:                                                            *
- *   Jérôme 'Jede' Debrune                                          *
+ *   JÃ©rÃ´me 'Jede' Debrune                                          *
  *   Philippe 'OffseT' Rimauro                                      *
- *   Christian 'Assinie' Lardière                                   *
+ *   Christian 'Assinie' LardiÃ¨re                                   *
  *                                                                  *
  ** ch376.c *********************************************************/
 
