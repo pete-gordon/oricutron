@@ -38,10 +38,18 @@
 #include <OpenGL/gl.h>
 #endif
 
-#ifdef __SPECIFY_SDL_DIR__
-#include <SDL/SDL_endian.h>
-#else
-#include <SDL_endian.h>
+#if SDL_MAJOR_VERSION == 1
+# ifdef __SPECIFY_SDL_DIR__
+# include <SDL/SDL_endian.h>
+# else
+# include <SDL_endian.h>
+# endif
+#else /* SDL_MAJOR_VERSION == 1 */
+# ifdef __SPECIFY_SDL_DIR__
+# include <SDL2/SDL_endian.h>
+# else
+# include <SDL_endian.h>
+# endif
 #endif
 
 #include "6502.h"
