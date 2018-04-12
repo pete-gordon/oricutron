@@ -811,7 +811,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
 
   /* Set up the emulation for the required machine type */
   type      = blk->buf[0];
-  drivetype = blk->buf[13];
+  drivetype = blk->buf[14];
 
   if (type >= MACH_LAST)
   {
