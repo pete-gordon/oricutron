@@ -2339,6 +2339,8 @@ void setmenutoggles( struct machine *oric )
      find_item_by_function(keopitems, togglestickykeys)->name = "\x0e""Sticky mod keys";
   else
      find_item_by_function(keopitems, togglestickykeys)->name = " Sticky mod keys";
+
+  find_item_by_function(hwopitems, togglech376)->name = oric->ch376_activated ? "\x0e""CH376 (Telestrat)" : " CH376 (Telestrat)    ";
 }
 
 // Initialise the GUI
