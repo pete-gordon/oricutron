@@ -479,7 +479,7 @@ void microdisc_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char
       microdisc_write( &oric->md, addr, data );
 
     else if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
-        acia_write( &oric->tele_acia, addr, data );
+      acia_write( &oric->tele_acia, addr, data );
 
     else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
       ch376_oric_write(oric->ch376, addr, data);
@@ -509,7 +509,7 @@ void microdisc_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char 
       microdisc_write( &oric->md, addr, data );
 
     else if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
-        acia_write( &oric->tele_acia, addr, data );
+      acia_write( &oric->tele_acia, addr, data );
 
     else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
       ch376_oric_write(oric->ch376, addr, data);
