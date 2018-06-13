@@ -608,6 +608,6 @@ package-win-gcc: clean release
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
 
 .PHONY: mrproper
-PLATFORMS := os4 morphos win32 win32-gcc win64-gcc beos haiku osx linux linux-nogl gphwiz aitouchbook aros rpi
+PLATFORMS := os4 morphos win32 win32-gcc win64-gcc beos haiku osx linux linux-nogl gphwiz aitouchbook aros rpi mint mint-cf
 mrproper:
 	@for plat in $(PLATFORMS); do $(MAKE) -f $(SRC_DIR)/Makefile clean PLATFORM=$${plat} ; done
