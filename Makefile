@@ -415,20 +415,22 @@ endif
 
 # Atari MINT
 ifeq ($(PLATFORM),mint-cf)
-PLATFORM = mint
 SDK_HOME ?=/opt/netsurf/m5475-atari-mint
 SDK_PREFIX := $(SDK_HOME)/cross/bin/m5475-atari-mint
+TARGET = oricutcf.app
 endif
-ifeq ($(PLATFORM:%-cf=%),mint)
+ifeq ($(PLATFORM),mint)
 SDK_HOME ?=/opt/netsurf/m68k-atari-mint
 SDK_PREFIX ?= $(SDK_HOME)/cross/bin/m68k-atari-mint
+TARGET = oricutrn.app
+endif
+ifeq ($(PLATFORM:%-cf=%),mint)
 CC = $(SDK_PREFIX)-gcc
 CXX = $(SDK_PREFIX)-gcc
 AR =  $(SDK_PREFIX)-ar
 RANLIB = $(SDK_PREFIX)-ranlib
 CFLAGS += `$(SDK_HOME)/env/bin/$(SDL_LIB)-config --cflags`
 LFLAGS += -Wl,--stack,256k -Wl,--msuper-memory -lm `$(SDK_HOME)/env/bin/$(SDL_LIB)-config --libs`
-TARGET = oricutron.app
 EXTRAOBJS = oric_ch376_plugin.o ch376.o
 endif
 
