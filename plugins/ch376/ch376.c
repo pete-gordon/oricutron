@@ -42,7 +42,7 @@ extern struct Library *SysBase;
 #include <sys/stat.h>
 //@iss #include <shlwapi.h>
 
-#elif defined(__unix__) || defined(__APPLE__) || defined(__HAIKU__)
+#elif defined(__unix__) || defined(__APPLE__) || defined(__HAIKU__) || defined(__MINT__)
 
 #include <stdlib.h>
 #include <stdint.h>

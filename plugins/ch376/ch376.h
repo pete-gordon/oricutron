@@ -70,7 +70,7 @@ typedef struct { void *dummy; } CH376_CONTEXT;
 
 #define UNUSED
 
-#elif defined(__unix__) || defined(__APPLE__) || defined(__HAIKU__)
+#elif defined(__unix__) || defined(__APPLE__) || defined(__HAIKU__) || defined(__MINT__)
 
 #include <stdint.h>
 #include <stdbool.h>
