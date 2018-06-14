@@ -609,6 +609,24 @@ package-win-gcc: clean release
 	sed -i "s/$$/\r/g" $(PKGDIR)/ReadMe.txt
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
 
+package-mint package-mint-cf:
+	mkdir -p $(PKGDIR)/images
+	mkdir -p $(PKGDIR)/disks
+	mkdir -p $(PKGDIR)/teledisks
+	mkdir -p $(PKGDIR)/pravdisks
+	mkdir -p $(PKGDIR)/tapes
+	mkdir -p $(PKGDIR)/roms
+	install -m 755 $(TARGET) $(PKGDIR)
+	install -m 644 images/* $(PKGDIR)/images
+	#install -m 644 disks/* $(PKGDIR)/disks
+	#install -m 644 tapes/* $(PKGDIR)/tapes
+	install -m 644 roms/* $(PKGDIR)/roms
+	install -m 644 $(DOCFILES) $(PKGDIR)
+	# unix2dos is not always installed
+	sed -i "s/$$/\r/g" $(PKGDIR)/ReadMe.txt
+	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
+
+
 .PHONY: mrproper
 PLATFORMS := os4 morphos win32 win32-gcc win64-gcc beos haiku osx linux linux-nogl gphwiz aitouchbook aros rpi mint mint-cf
 mrproper:
