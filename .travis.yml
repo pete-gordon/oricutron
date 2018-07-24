@@ -1,0 +1,14 @@
+language: c
+before_install:
+    - sudo apt-get update -qq
+    - sudo apt-get install libsdl2-2.0-0 -y --force-yes
+    - sudo apt-get install pkg-config -y --force-yes
+    - sudo apt-get install libgles2-mesa-dev -y --force-yes
+    - sudo apt-get install libglu1-mesa -y --force-yes    
+    - sudo apt-get install libglu1-mesa-dev -y --force-yes
+    - sudo apt-get install libsdl2-dev -y --force-yes
+    - sudo apt-get install libsdl-dev -y --force-yes
+    - sudo apt-get install libgtk2.0-dev -y --force-yes
+    - sudo apt-get install libgtk-3-dev -y --force-yes
+    - sudo apt-get install binutils-mingw-w64-i686 gcc-mingw-w64-i686 -y --force-yes
+

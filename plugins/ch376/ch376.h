@@ -3,8 +3,9 @@
  * Very minimal CH376 emulation                                     *
  *                                                                  *
  * Code:                                                            *
- *   JÈrÙme 'Jede' Debrune                                          *
- *   Philippe 'OffseT' Rimauro of Futurs'                           *
+ *   J√©r√¥me 'Jede' Debrune                                          *
+ *   Philippe 'OffseT' Rimauro                                      *
+ *   Christian 'Assinie' Lardi√®re                                   *
  *                                                                  *
  ** ch376.h *********************************************************/
 
@@ -69,7 +70,7 @@ typedef struct { void *dummy; } CH376_CONTEXT;
 
 #define UNUSED
 
-#elif defined(__unix__)
+#elif defined(__unix__) || defined(__APPLE__) || defined(__HAIKU__) || defined(__MINT__)
 
 #include <stdint.h>
 #include <stdbool.h>

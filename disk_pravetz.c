@@ -38,6 +38,13 @@
 #include "6551.h"
 #include "machine.h"
 
+#define GENERAL_DISK_DEBUG 0
+
+#if GENERAL_DISK_DEBUG
+static int last_track = -1;
+static int last_sector = -1;
+#endif
+
 static Uint8  disk_pravetz_read_selected(struct machine *oric);
 static void   disk_pravetz_write_selected(struct machine *oric, Uint8 data);
 static void   disk_pravetz_switch(struct machine *oric, Uint16 addr);
@@ -60,9 +67,9 @@ void disk_pravetz_write(struct machine *oric, Uint16 addr, Uint8 data)
 }
 
 /* Skewing-Table */
-static int skewing[16] = 
-{   
-    0, 7, 14, 6, 13, 5, 12, 4, 11, 3, 10, 2, 9, 1, 8, 15 
+static int interleave[16] =
+{
+    0, 7, 14, 6, 13, 5, 12, 4, 11, 3, 10, 2, 9, 1, 8, 15
 };
 
 /* Translation Table */
@@ -208,7 +215,7 @@ Uint8  disk_pravetz_image_raw_byte(struct machine *oric, int drive,  Uint16 t_id
         eor = 0;
 
         /* Read the coming sector */
-        f_pos = (256 * 16 * t_idx) + (256 * skewing[s_idx]);
+        f_pos = (256 * 16 * t_idx) + (256 * interleave[s_idx]);
         if (drv->pimg)
           drv->sector_ptr = &drv->pimg->rawimage[f_pos];
         else
@@ -264,6 +271,21 @@ static Uint8  disk_pravetz_readbyte(struct machine *oric)
         return 0xFF;
 
     disk_pravetz_update_position(drv);
+
+    /**/
+#if GENERAL_DISK_DEBUG
+    if(last_sector != drv->byte / PRAV_RAW_BYTES_PER_SECTOR || last_track != drv->half_track)
+    {
+      printf("{R} fdu: T:%.2d S:%.2X.%.3d [%.2X]\n",
+            drv->half_track / 2,
+            drv->byte / PRAV_RAW_BYTES_PER_SECTOR,
+            drv->byte % PRAV_RAW_BYTES_PER_SECTOR,
+            drv->image[drv->half_track / 2][drv->byte]);
+      last_sector = drv->byte / PRAV_RAW_BYTES_PER_SECTOR;
+      last_track = drv->half_track;
+    }
+#endif
+    /**/
 
     return drv->image[drv->half_track / 2][drv->byte];
 }
@@ -403,7 +425,7 @@ find_sector:
 
         /* write the sector */
         f_pos = (PRAV_BYTES_PER_SECTOR * PRAV_SECTORS_PER_TRACK * t_idx) +
-                (PRAV_BYTES_PER_SECTOR * skewing[s_idx]);
+                (PRAV_BYTES_PER_SECTOR * interleave[s_idx]);
 
         memcpy(&d_ptr->pimg->rawimage[f_pos], temp_sector_buffer, PRAV_BYTES_PER_SECTOR);
         d_ptr->pimg->modified = SDL_TRUE;
@@ -440,13 +462,20 @@ static void  disk_pravetz_writebyte(struct machine *oric, Uint8  w_byte)
     drv->dirty = SDL_TRUE;
     drv->image[drv->half_track / 2][drv->byte] = w_byte;
 
-    /*
-    printf("{W} fdu: T:%.2d%c S:%.2X.%.3d [%.2X]\n",
-        current_drive->half_track/2, (current_drive->half_track & 1) ? '+' : ' ',
-        current_drive->byte/RAW_BYTES_PER_SECTOR,
-        current_drive->byte%RAW_BYTES_PER_SECTOR,
-        w_byte);
-    */
+    /**/
+#if GENERAL_DISK_DEBUG
+    if(last_sector != drv->byte / PRAV_RAW_BYTES_PER_SECTOR || last_track != drv->half_track)
+    {
+      printf("{W} fdu: T:%.2d S:%.2X.%.3d [%.2X]\n",
+            drv->half_track / 2,
+            drv->byte / PRAV_RAW_BYTES_PER_SECTOR,
+            drv->byte % PRAV_RAW_BYTES_PER_SECTOR,
+            w_byte);
+      last_sector = drv->byte / PRAV_RAW_BYTES_PER_SECTOR;
+      last_track = drv->half_track;
+    }
+#endif
+    /**/
 }
 
 /**

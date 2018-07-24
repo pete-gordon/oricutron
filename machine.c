@@ -302,8 +302,13 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
   {
     if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
       acia_write( &oric->tele_acia, addr, data );
+
+    else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      ch376_oric_write(oric->ch376, addr, data);
+
     else
       via_write( &oric->via, addr, data );
+
     return;
   }
   oric->mem[addr] = data;
@@ -318,8 +323,13 @@ void o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
   {
     if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
       acia_write( &oric->tele_acia, addr, data );
+
+    else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      ch376_oric_write(oric->ch376, addr, data);
+
     else
       via_write( &oric->via, addr, data );
+
     return;
   }
 
@@ -354,7 +364,7 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
     switch( addr & 0x0f0 )
     {
 
-	  case 0x20:
+      case 0x20:
         via_write( &oric->tele_via, addr, data );
         break;
 
@@ -365,11 +375,11 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
           microdisc_write( &oric->md, addr, data );
         break;
 
-	  case 0x40:
-		if (oric->ch376_activated)
-		{
-		  if (addr == 0x340 || addr == 0x341)
-		    ch376_oric_write(oric->ch376, addr, data);
+      case 0x40:
+        if (oric->ch376_activated)
+        {
+          if (addr == 0x340 || addr == 0x341)
+            ch376_oric_write(oric->ch376, addr, data);
           break;
         }
 
@@ -401,15 +411,17 @@ void jasmin_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char da
   if( ( addr & 0xff00 ) == 0x0300 )
   {
     if( ( addr >= 0x3f4 ) && ( addr < 0x400 ) )
-    {
       jasmin_write( &oric->jasmin, addr, data );
-      return;
-    }
 
-    if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
+    else if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
       acia_write( &oric->tele_acia, addr, data );
+
+    else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      ch376_oric_write(oric->ch376, addr, data);
+
     else
       via_write( &oric->via, addr, data );
+
     return;
   }
   oric->mem[addr] = data;
@@ -433,15 +445,17 @@ void jasmin_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char dat
   if( ( addr & 0xff00 ) == 0x0300 )
   {
     if( ( addr >= 0x3f4 ) && ( addr < 0x400 ) )
-    {
       jasmin_write( &oric->jasmin, addr, data );
-      return;
-    }
 
-    if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
+    else if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
       acia_write( &oric->tele_acia, addr, data );
+
+    else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      ch376_oric_write(oric->ch376, addr, data);
+
     else
       via_write( &oric->via, addr, data );
+
     return;
   }
 
@@ -462,14 +476,17 @@ void microdisc_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char
   if( ( addr & 0xff00 ) == 0x0300 )
   {
     if( ( addr >= 0x310 ) && ( addr < 0x31c ) )
-    {
       microdisc_write( &oric->md, addr, data );
-    } else {
-      if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
-        acia_write( &oric->tele_acia, addr, data );
-      else
-        via_write( &oric->via, addr, data );
-    }
+
+    else if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
+      acia_write( &oric->tele_acia, addr, data );
+
+    else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      ch376_oric_write(oric->ch376, addr, data);
+
+    else
+      via_write( &oric->via, addr, data );
+
     return;
   }
   oric->mem[addr] = data;
@@ -489,14 +506,17 @@ void microdisc_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char 
   if( ( addr & 0xff00 ) == 0x0300 )
   {
     if( ( addr >= 0x310 ) && ( addr < 0x31c ) )
-    {
       microdisc_write( &oric->md, addr, data );
-    } else {
-      if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
-        acia_write( &oric->tele_acia, addr, data );
-      else
-        via_write( &oric->via, addr, data );
-    }
+
+    else if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
+      acia_write( &oric->tele_acia, addr, data );
+
+    else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      ch376_oric_write(oric->ch376, addr, data);
+
+    else
+      via_write( &oric->via, addr, data );
+
     return;
   }
   oric->mem[addr&0x3fff] = data;
@@ -593,6 +613,9 @@ unsigned char atmosread( struct m6502 *cpu, unsigned short addr )
     if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
       return acia_read( &oric->tele_acia, addr );
 
+    if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      return ch376_oric_read(oric->ch376, addr);
+
     return via_read( &oric->via, addr );
   }
 
@@ -611,6 +634,9 @@ unsigned char o16kread( struct m6502 *cpu, unsigned short addr )
   {
     if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
       return acia_read( &oric->tele_acia, addr );
+
+    if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      return ch376_oric_read(oric->ch376, addr);
 
     return via_read( &oric->via, addr );
   }
@@ -631,7 +657,7 @@ unsigned char telestratread( struct m6502 *cpu, unsigned short addr )
     switch( addr & 0x0f0 )
     {
 
-	  case 0x010:
+      case 0x010:
         if( addr >= 0x31c )
         {
           return acia_read( &oric->tele_acia, addr );
@@ -690,6 +716,9 @@ unsigned char jasmin_atmosread( struct m6502 *cpu, unsigned short addr )
     if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
       return acia_read( &oric->tele_acia, addr );
 
+    if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      return ch376_oric_read(oric->ch376, addr);
+
     return via_read( &oric->via, addr );
   }
 
@@ -719,6 +748,9 @@ unsigned char jasmin_o16kread( struct m6502 *cpu, unsigned short addr )
     if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
       return acia_read( &oric->tele_acia, addr );
 
+    if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      return ch376_oric_read(oric->ch376, addr);
+
     return via_read( &oric->via, addr );
   }
 
@@ -747,6 +779,9 @@ unsigned char microdisc_atmosread( struct m6502 *cpu, unsigned short addr )
     if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
       return acia_read( &oric->tele_acia, addr );
 
+    if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      return ch376_oric_read(oric->ch376, addr);
+
     return via_read( &oric->via, addr );
   }
 
@@ -774,6 +809,9 @@ unsigned char microdisc_o16kread( struct m6502 *cpu, unsigned short addr )
 
     if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
       return acia_read( &oric->tele_acia, addr );
+
+    if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      return ch376_oric_read(oric->ch376, addr);
 
     return via_read( &oric->via, addr );
   }
@@ -1013,7 +1051,7 @@ int mapkey( struct machine *oric, int key )
     case '}': return ']';
     case '^': return '\\';
 #elif defined(WIN32)
-	case '<': return '\\';
+    case '<': return '\\';
 #endif
   }
 

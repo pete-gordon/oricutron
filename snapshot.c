@@ -801,7 +801,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
   }
 
   /* Get the main block */
-  blk = load_block(oric, "OSN\x00", f, SDL_TRUE, 20, SDL_TRUE);
+  blk = load_block(oric, "OSN\x00", f, SDL_TRUE, 21, SDL_TRUE);
   if (!blk)
   {
     free_blockheaders();
@@ -811,7 +811,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
 
   /* Set up the emulation for the required machine type */
   type      = blk->buf[0];
-  drivetype = blk->buf[13];
+  drivetype = blk->buf[14];
 
   if (type >= MACH_LAST)
   {

@@ -30,5 +30,5 @@ Uint8 disk_pravetz_read(struct machine *oric, Uint16 addr);
 void  disk_pravetz_write(struct machine *oric, Uint16 addr, Uint8 data);
 Uint8  disk_pravetz_image_raw_byte(struct machine *oric, int drive,  Uint16 t_idx, Uint16 s_idx, Uint16 b_idx);
 void  disk_pravetz_write_image(struct pravetz_drive *d_ptr);
-#endif /* __disk_pravetz_h__ */
 
+#endif /* __disk_pravetz_h__ */

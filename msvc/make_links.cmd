@@ -1,7 +1,6 @@
 @echo off
 rem Must be executed as administrator because calling mklink
 
-set OSDK=u:\users\aschnier\Cloud\Syncthing\ASPrivate\ToolZ\RetroGaming\Oric1\osdk_1_4
 set IMAGES="..\images"
 set ROMS="..\roms"
 set CFG="..\oricutron.cfg"

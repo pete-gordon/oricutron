@@ -12,6 +12,7 @@
 # PLATFORM = gphwiz
 # PLATFORM = aitouchbook
 # PLATFORM = aros
+# PLATFORM = mint
 # PLATFORM = rpi
 
 # important build parameters:
@@ -286,6 +287,7 @@ INSTALLDIR = /boot/apps/Oricutron
 FILEREQ_OBJ =
 MSGBOX_OBJ =
 CUSTOMOBJS = gui_beos.o msgbox_beos.o filereq_beos.o
+EXTRAOBJS = plugins/ch376/oric_ch376_plugin.o plugins/ch376/ch376.o
 BEOS_BERES := beres
 BEOS_RC := rc
 BEOS_XRES := xres
@@ -304,6 +306,7 @@ TARGET = oricutron
 FILEREQ_OBJ =
 MSGBOX_OBJ =
 CUSTOMOBJS = gui_osx.o filereq_osx.o msgbox_osx.o
+EXTRAOBJS = plugins/ch376/oric_ch376_plugin.o plugins/ch376/ch376.o
 endif
 
 
@@ -410,6 +413,26 @@ RANLIB = $(AITB_PREFIX)-ranlib
 TARGET = oricutron_AITB
 endif
 
+# Atari MINT
+ifeq ($(PLATFORM),mint-cf)
+SDK_HOME ?=/opt/netsurf/m5475-atari-mint
+SDK_PREFIX := $(SDK_HOME)/cross/bin/m5475-atari-mint
+TARGET = oricutcf.app
+endif
+ifeq ($(PLATFORM),mint)
+SDK_HOME ?=/opt/netsurf/m68k-atari-mint
+SDK_PREFIX ?= $(SDK_HOME)/cross/bin/m68k-atari-mint
+TARGET = oricutrn.app
+endif
+ifeq ($(PLATFORM:%-cf=%),mint)
+CC = $(SDK_PREFIX)-gcc
+CXX = $(SDK_PREFIX)-gcc
+AR =  $(SDK_PREFIX)-ar
+RANLIB = $(SDK_PREFIX)-ranlib
+CFLAGS += `$(SDK_HOME)/env/bin/$(SDL_LIB)-config --cflags`
+LFLAGS += -Wl,--stack,256k -Wl,--msuper-memory -lm `$(SDK_HOME)/env/bin/$(SDL_LIB)-config --libs`
+EXTRAOBJS = oric_ch376_plugin.o ch376.o
+endif
 
 ####### SHOULDN'T HAVE TO CHANGE THIS STUFF #######
 
@@ -586,7 +609,25 @@ package-win-gcc: clean release
 	sed -i "s/$$/\r/g" $(PKGDIR)/ReadMe.txt
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
 
+package-mint package-mint-cf:
+	mkdir -p $(PKGDIR)/images
+	mkdir -p $(PKGDIR)/disks
+	mkdir -p $(PKGDIR)/teledisks
+	mkdir -p $(PKGDIR)/pravdisks
+	mkdir -p $(PKGDIR)/tapes
+	mkdir -p $(PKGDIR)/roms
+	install -m 755 $(TARGET) $(PKGDIR)
+	install -m 644 images/* $(PKGDIR)/images
+	#install -m 644 disks/* $(PKGDIR)/disks
+	#install -m 644 tapes/* $(PKGDIR)/tapes
+	install -m 644 roms/* $(PKGDIR)/roms
+	install -m 644 $(DOCFILES) $(PKGDIR)
+	# unix2dos is not always installed
+	sed -i "s/$$/\r/g" $(PKGDIR)/ReadMe.txt
+	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
+
+
 .PHONY: mrproper
-PLATFORMS := os4 morphos win32 win32-gcc win64-gcc beos haiku osx linux linux-nogl gphwiz aitouchbook aros rpi
+PLATFORMS := os4 morphos win32 win32-gcc win64-gcc beos haiku osx linux linux-nogl gphwiz aitouchbook aros rpi mint mint-cf
 mrproper:
 	@for plat in $(PLATFORMS); do $(MAKE) -f $(SRC_DIR)/Makefile clean PLATFORM=$${plat} ; done

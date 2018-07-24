@@ -401,18 +401,19 @@ SDL_Surface * flipVert(SDL_Surface* sfc)
                                              sfc->format->BytesPerPixel * 8, sfc->format->Rmask, sfc->format->Gmask,
                                              sfc->format->Bmask, sfc->format->Amask);
 
-  if (result == NULL) return NULL;
-
-  Uint8* pixels = (Uint8*) sfc->pixels;
-  Uint8* rpixels = (Uint8*) result->pixels;
-
-  Uint32 pitch = sfc->pitch;
-  Uint32 pxlength = pitch*sfc->h;
-
-  for(line = 0; line < sfc->h; ++line)
+  if (result)
   {
-    Uint32 pos = line * pitch;
-    memcpy(&rpixels[pos], &pixels[(pxlength-pos)-pitch], pitch);
+    Uint8* pixels = (Uint8*) sfc->pixels;
+    Uint8* rpixels = (Uint8*) result->pixels;
+
+    Uint32 pitch = sfc->pitch;
+    Uint32 pxlength = pitch*sfc->h;
+
+    for(line = 0; line < sfc->h; ++line)
+    {
+      Uint32 pos = line * pitch;
+      memcpy(&rpixels[pos], &pixels[(pxlength-pos)-pitch], pitch);
+    }
   }
 
   return result;
@@ -427,6 +428,7 @@ void SDL_COMPAT_TakeScreenshot(char *fname)
     // Juste pour recuperer les dimensions :/
     int g_width = g_screen->w;
     int g_height = g_screen->h;
+    SDL_Surface *flip;
 
     // 24 Bits
     SDL_Surface *surf = SDL_CreateRGBSurface(SDL_SWSURFACE, g_width, g_height, 24, RMASK, GMASK, BMASK, 0);
@@ -436,7 +438,7 @@ void SDL_COMPAT_TakeScreenshot(char *fname)
     //SDL_Surface *surf = SDL_CreateRGBSurface(SDL_SWSURFACE, g_width, g_height, 32, RMASK, GMASK, BMASK, AMASK);
     //glReadPixels(0, 0, g_width, g_height, GL_RGBA, GL_UNSIGNED_BYTE, surf->pixels);
 
-    SDL_Surface *flip = flipVert(surf);
+    flip = flipVert(surf);
     SDL_SaveBMP(flip, fname);
 
     SDL_FreeSurface(flip);
