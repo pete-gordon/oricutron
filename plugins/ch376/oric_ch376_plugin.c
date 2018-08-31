@@ -1,4 +1,8 @@
+#ifdef __SPECIFY_SDL_DIR__
+#include <SDL2/SDL.h>
+#else
 #include <SDL.h>
+#endif
 #include "ch376.h"
 #include "stdio.h"
 
