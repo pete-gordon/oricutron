@@ -2,8 +2,8 @@
 Debug
 Release
 x64
-/*.d
-/*.o
+*.d
+*.o
 /msvc/Debug clang
 /msvc/Release clang
 /msvc/images
@@ -16,4 +16,3 @@ x64
 /oricutron.aps
 /msvc/Oricutron.psess
 /msvc/Oricutron.vcxproj.user
-.gitignore
