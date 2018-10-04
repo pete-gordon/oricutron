@@ -170,4 +170,6 @@ struct osdmenuitem *find_item_by_function(struct osdmenuitem *menu, void *functi
 
 void togglefullscreen( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 
-void softresetoric(struct machine *oric, struct osdmenuitem *mitem, int dummy);
+void softresetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+
+void pravdiskboot( struct machine *oric );

@@ -1074,7 +1074,7 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
           swapmach( oric, NULL, (DRV_PRAVETZ<<16)|MACH_PRAVETZ );
           joinpath( tapepath, tapefile );
           diskimage_load( oric, filetmp, 0 );
-          queuekeys("CALL#320\x0d");
+          pravdiskboot( oric );
         }
         setemumode( oric, NULL, EM_RUNNING );
         return;
@@ -1089,7 +1089,7 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
           swapmach( oric, NULL, (DRV_PRAVETZ<<16)|MACH_PRAVETZ );
           joinpath( tapepath, tapefile );
           diskimage_load( oric, filetmp, 0 );
-          queuekeys("CALL#320\x0d");
+          pravdiskboot( oric );
         }
         setemumode( oric, NULL, EM_RUNNING );
         return;
@@ -1259,7 +1259,7 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
           "Would you like to switch to that configuration?"))
         {
           swapmach( oric, NULL, (DRV_PRAVETZ<<16)|MACH_PRAVETZ );
-          queuekeys("CALL#320\x0d");
+          pravdiskboot( oric );
         }
         break;
       }
@@ -1267,7 +1267,7 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
       if (oric->drivetype == DRV_NONE)
       {
         swapmach( oric, NULL, (DRV_PRAVETZ<<16)|MACH_PRAVETZ );
-        queuekeys("CALL#320\x0d");
+        pravdiskboot( oric );
         break;
       }
 
@@ -1278,7 +1278,7 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
           "Would you like to switch to that configuration?"))
         {
           swapmach( oric, NULL, (DRV_PRAVETZ<<16)|MACH_PRAVETZ );
-          queuekeys("CALL#320\x0d");
+          pravdiskboot( oric );
         }
         break;
       }
@@ -2419,4 +2419,12 @@ void shut_gui( struct machine *oric )
 #elif defined(__linux__)
     shut_gui_native( oric );
 #endif
+}
+
+void pravdiskboot( struct machine *oric )
+{
+  if( oric->pravdiskautoboot )
+  {
+    queuekeys( "CALL800\x0d" );
+  }
 }

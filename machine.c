@@ -1016,6 +1016,8 @@ void preinit_machine( struct machine *oric )
   oric->show_keyboard = SDL_FALSE;
   oric->define_mapping = SDL_FALSE;
   oric->sticky_mod_keys = SDL_FALSE;
+  
+  oric->pravdiskautoboot = SDL_TRUE;
 }
 
 void load_diskroms( struct machine *oric )

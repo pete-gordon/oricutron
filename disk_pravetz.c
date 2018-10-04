@@ -319,6 +319,8 @@ static Uint8 disk_pravetz_read_selected(struct machine *oric)
     return 0;
 }
 
+static Uint8 temp_sector_buffer[PRAV_BYTES_PER_SECTOR + 2];
+
 void disk_pravetz_write_image(struct pravetz_drive *d_ptr)
 {
     Uint8   eor;
@@ -331,11 +333,12 @@ void disk_pravetz_write_image(struct pravetz_drive *d_ptr)
     int  tb_idx;
     int  sector_count, f_pos;
 
-    Uint8 temp_sector_buffer[PRAV_BYTES_PER_SECTOR + 2];
-
+    if (!d_ptr)
+      return;
+    
     if (!d_ptr->dirty)
-        return;
-
+      return;
+    
     tb_idx = 0;
     for (t_idx = 0; t_idx < PRAV_TRACKS_PER_DISK; t_idx++)
     {
