@@ -462,7 +462,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
 void ay_ticktock( struct ay8912 *ay, int cycles )
 {
   // Need to do queued keys?
-  if( ( keyqueue ) && ( keysqueued ) )
+  if( ( keyqueue ) && ( keysqueued ) && (!ay->oric->cpu.irq) )
   {
     if( kqoffs >= keysqueued )
     {

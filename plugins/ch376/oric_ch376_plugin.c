@@ -1,8 +1,17 @@
-#ifdef __SPECIFY_SDL_DIR__
-#include <SDL2/SDL.h>
-#else
-#include <SDL.h>
+#if SDL_MAJOR_VERSION == 1
+# ifdef __SPECIFY_SDL_DIR__
+# include <SDL/SDL.h>
+# else
+# include <SDL.h>
+# endif
+#else /* SDL_MAJOR_VERSION == 1 */
+# ifdef __SPECIFY_SDL_DIR__
+# include <SDL2/SDL.h>
+# else
+# include <SDL.h>
+# endif
 #endif
+
 #include "ch376.h"
 #include "stdio.h"
 
