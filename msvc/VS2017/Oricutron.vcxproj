@@ -13,7 +13,6 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{89EA5DFF-F149-4A3C-9F9F-DD152D43934E}</ProjectGuid>
     <RootNamespace>Oricutron</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -44,18 +43,37 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
+  <ItemDefinitionGroup>
+    <PreBuildEvent>
+      <Command>
+if not exist "..\..\vcpkg\vcpkg.exe" ( git submodule update --init )
+if not exist "..\..\vcpkg\vcpkg.exe" ( ..\..\vcpkg\bootstrap-vcpkg.bat )
+if "$(Platform)"=="x86" ( if not exist "..\..\vcpkg\installed\x86-windows\bin\SDL2.dll" ( ..\..\vcpkg\vcpkg.exe install sdl2:x86-windows ) )
+if "$(Platform)"=="x64" ( if not exist "..\..\vcpkg\installed\x64-windows\bin\SDL2.dll" ( ..\..\vcpkg\vcpkg.exe install sdl2:x64-windows ) )
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>
+if not exist "$(OutDir)\roms" ( xcopy "..\..\roms" "$(OutDir)\roms\" /E )
+if not exist "$(OutDir)\images" ( xcopy "..\..\images" "$(OutDir)\images\" /E )
+if not exist "$(OutDir)\oricutron.cfg" ( copy "..\..\oricutron.cfg" "$(OutDir)\oricutron.cfg" )
+if "$(Configuration.Contains('Debug'))"=="True" ( copy "..\..\vcpkg\installed\x64-windows\debug\bin\SDL2d.dll" "$(OutDir)\SDL2.dll" )
+if "$(Configuration.Contains('Release'))"=="True" ( copy "..\..\vcpkg\installed\x64-windows\bin\SDL2.dll" "$(OutDir)\SDL2.dll" )
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>u:\Users\aschnier\Dev\ThirdParty\vcpkg\installed\x64-windows\include\SDL2\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\vcpkg\installed\x64-windows\include\SDL2\</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>SDL_MAIN_HANDLED=1;__OPENGL_AVAILABLE__;_MBCS;WIN32;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;__CBCOPY__;__CBPASTE__;APP_NAME_FULL="Oricutron 1.2";APP_YEAR="2015";VERSION_COPYRIGHTS="Oricutron 1.2.0 (c)2015 Peter Gordon (pete@petergordon.org.uk)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/we4013 /we4115 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>shlwapi.lib;SDL2.lib;ws2_32.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>u:\Users\aschnier\Dev\ThirdParty\vcpkg\installed\x64-windows\lib\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\vcpkg\installed\x64-windows\lib\</AdditionalLibraryDirectories>
       <SubSystem>Console</SubSystem>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
@@ -71,7 +89,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>u:\Users\aschnier\Dev\ThirdParty\vcpkg\installed\x64-windows\include\SDL2\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\vcpkg\installed\x64-windows\include\SDL2\</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>SDL_MAIN_HANDLED=1;__OPENGL_AVAILABLE__;_MBCS;WIN32;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;__CBCOPY__;__CBPASTE__;APP_NAME_FULL="Oricutron 1.2";APP_YEAR="2015";VERSION_COPYRIGHTS="Oricutron 1.2.0 (c)2015 Peter Gordon (pete@petergordon.org.uk)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -82,7 +100,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>shlwapi.lib;SDL2.lib;ws2_32.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>u:\Users\aschnier\Dev\ThirdParty\vcpkg\installed\x64-windows\lib\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\vcpkg\installed\x64-windows\lib\</AdditionalLibraryDirectories>
       <SubSystem>Console</SubSystem>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
