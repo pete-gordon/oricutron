@@ -57,8 +57,12 @@ if "$(Platform)"=="x64" ( if not exist "..\..\vcpkg\installed\x64-windows\bin\SD
 if not exist "$(OutDir)\roms" ( xcopy "..\..\roms" "$(OutDir)\roms\" /E )
 if not exist "$(OutDir)\images" ( xcopy "..\..\images" "$(OutDir)\images\" /E )
 if not exist "$(OutDir)\oricutron.cfg" ( copy "..\..\oricutron.cfg" "$(OutDir)\oricutron.cfg" )
-if "$(Configuration.Contains('Debug'))"=="True" ( copy "..\..\vcpkg\installed\x64-windows\debug\bin\SDL2d.dll" "$(OutDir)\SDL2.dll" )
-if "$(Configuration.Contains('Release'))"=="True" ( copy "..\..\vcpkg\installed\x64-windows\bin\SDL2.dll" "$(OutDir)\SDL2.dll" )
+if "$(Configuration.Contains('Debug'))"=="True" ( if "$(Platform)"=="Win32" ( copy "..\..\vcpkg\installed\x86-windows\debug\bin\SDL2d.dll" "$(OutDir)\SDL2.dll" ) )
+if "$(Configuration.Contains('Debug'))"=="True" ( if "$(Platform)"=="x86" ( copy "..\..\vcpkg\installed\x86-windows\debug\bin\SDL2d.dll" "$(OutDir)\SDL2.dll" ) )
+if "$(Configuration.Contains('Debug'))"=="True" ( if "$(Platform)"=="x64" ( copy "..\..\vcpkg\installed\x64-windows\debug\bin\SDL2d.dll" "$(OutDir)\SDL2.dll" ) )
+if "$(Configuration.Contains('Release'))"=="True" ( if "$(Platform)"=="Win32" ( copy "..\..\vcpkg\installed\x86-windows\bin\SDL2.dll" "$(OutDir)\SDL2.dll" ) )
+if "$(Configuration.Contains('Release'))"=="True" ( if "$(Platform)"=="x86" ( copy "..\..\vcpkg\installed\x86-windows\bin\SDL2.dll" "$(OutDir)\SDL2.dll" ) )
+if "$(Configuration.Contains('Release'))"=="True" ( if "$(Platform)"=="Win32" ( copy "..\..\vcpkg\installed\x64-windows\bin\SDL2.dll" "$(OutDir)\SDL2.dll" ) )
       </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
