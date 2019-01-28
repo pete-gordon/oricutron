@@ -657,7 +657,7 @@ static int socket_accept(int sock, int* sck)
 #endif
   socklen_t cli_addr_len = sizeof(cli_addr);
   
-  *sck = accept(sock, (struct sockaddr*) &cli_addr, &cli_addr_len);
+  *sck = accept(sock, (struct sockaddr*) &cli_addr, (long*) &cli_addr_len);
   if(*sck == -1)
     return 0;
   else
@@ -677,14 +677,14 @@ static int socket_accept(int sock, int* sck)
 
 static int socket_write(int sock, const unsigned char* data, int len)
 {
-  if(send(sock, (char*)data, len, 0) == -1)
+  if(send(sock, (unsigned char*)data, len, 0) == -1)
     return 0;
   return 1;
 }
 
 static int socket_read(int sock, unsigned char* data, int* len)
 {
-  int ret = (int)_recvdata(sock, (char*)data, *len);
+  int ret = (int)_recvdata(sock, (unsigned char*)data, *len);
   *len = 0;
   if(0 == ret)
     return 0;
@@ -694,9 +694,9 @@ static int socket_read(int sock, unsigned char* data, int* len)
 }
 
 #ifdef NO_GETADDRINFO
-static void hostname_to_ip(const char * host, char* ip, int len)
+static void hostname_to_ip(const char* host, char* ip, int len)
 {
-  struct hostent *he = gethostbyname( host );
+  struct hostent *he = gethostbyname( (unsigned char*)host );
   if( NULL != he )
   {
     struct in_addr **addr_list = (struct in_addr **) he->h_addr_list;
@@ -719,7 +719,7 @@ static int socket_connect(int sock, const char* host, int port, int domain)
   addr.sin_port = htons(port);
   
   hostname_to_ip(host, ip, 64);
-  addr.sin_addr.s_addr = inet_addr(ip);
+  addr.sin_addr.s_addr = inet_addr((unsigned char*)ip);
   
   if(connect(sock, (struct sockaddr*) &addr, sizeof(addr)) != 0) {
     perror("socket_connect, connect error: ");
