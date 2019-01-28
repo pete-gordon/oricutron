@@ -45,7 +45,7 @@
 SDL_AudioSpec obtained;
 Uint32 cyclespersample;
 
-SDL_AudioCVT cvt;
+static SDL_AudioCVT cvt;
 
 static Sint16 audiocapbuf[AUDIO_BUFLEN];
 extern struct avi_handle *vidcap;

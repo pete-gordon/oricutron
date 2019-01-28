@@ -103,8 +103,6 @@ struct ay8912
   struct tnchange tapelog[TAPELOG_SIZE];
 };
 
-extern SDL_AudioCVT cvt;
-
 void queuekeys( char *str );
 
 SDL_bool ay_init( struct ay8912 *ay, struct machine *oric );
