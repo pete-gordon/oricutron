@@ -45,7 +45,10 @@
 SDL_AudioSpec obtained;
 Uint32 cyclespersample;
 
+#if SDL_MAJOR_VERSION == 1
+#else
 static SDL_AudioCVT cvt;
+#endif
 
 static Sint16 audiocapbuf[AUDIO_BUFLEN];
 extern struct avi_handle *vidcap;
@@ -375,7 +378,6 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
   out = (Uint16 *)stream;
 #if SDL_MAJOR_VERSION == 1
 #else
-#define AUDIO_BUFLEN obtained.samples
   cvt.buf = (Uint8 *)stream;
 #endif
 
