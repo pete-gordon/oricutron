@@ -548,21 +548,29 @@ void pravetz_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char d
         oric->pravetz.olay = 0;
         oric->pravetz.romdis = 1;
         oric->pravetz.extension = 0;
+        oric->romdis = !oric->pravetz.romdis;
+        oric->romon = !oric->romdis;
         break;
       case 0x381:
         oric->pravetz.olay = 1;
         oric->pravetz.romdis = 0;
         oric->pravetz.extension = 0;
+        oric->romdis = !oric->pravetz.romdis;
+        oric->romon = !oric->romdis;
         break;
       case 0x382:
         oric->pravetz.olay = 0;
         oric->pravetz.romdis = 1;
         oric->pravetz.extension = 0x100;
+        oric->romdis = !oric->pravetz.romdis;
+        oric->romon = !oric->romdis;
         break;
       case 0x383:
         oric->pravetz.olay = 1;
         oric->pravetz.romdis = 0;
         oric->pravetz.extension = 0x100;
+        oric->romdis = !oric->pravetz.romdis;
+        oric->romon = !oric->romdis;
         break;
       default:
         break;
@@ -1160,6 +1168,13 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           {
             oric->romdis = SDL_TRUE;
             microdisc_init( &oric->md, &oric->wddisk, oric );
+          }
+          else if( oric->drivetype == DRV_PRAVETZ )
+          {
+            oric->pravetz.olay = 0;
+            oric->pravetz.romdis = 1;
+            oric->pravetz.extension = 0;
+            oric->romdis = !oric->pravetz.romdis;
           }
           setromon( oric );
           m6502_reset( &oric->cpu );
