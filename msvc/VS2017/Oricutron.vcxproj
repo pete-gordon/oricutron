@@ -46,7 +46,7 @@
   <ItemDefinitionGroup>
     <PreBuildEvent>
       <Command>
-if not exist "..\..\vcpkg\vcpkg.exe" ( git submodule update --init )
+if not exist "..\..\vcpkg\vcpkg.exe" ( git clone -q --depth 1 --single-branch https://github.com/Microsoft/vcpkg.git ..\..\vcpkg )
 if not exist "..\..\vcpkg\vcpkg.exe" ( ..\..\vcpkg\bootstrap-vcpkg.bat )
 if "$(Platform)"=="x86" ( if not exist "..\..\vcpkg\installed\x86-windows\bin\SDL.dll" ( ..\..\vcpkg\vcpkg.exe install sdl1:x86-windows
 ..\..\vcpkg\vcpkg.exe install sdl2:x86-windows ) )
