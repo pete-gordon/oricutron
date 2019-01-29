@@ -657,7 +657,7 @@ static int socket_accept(int sock, int* sck)
 #endif
   socklen_t cli_addr_len = sizeof(cli_addr);
   
-  *sck = accept(sock, (struct sockaddr*) &cli_addr, (long*) &cli_addr_len);
+  *sck = accept(sock, (struct sockaddr*) &cli_addr, (socklen_t*) &cli_addr_len);
   if(*sck == -1)
     return 0;
   else

@@ -45,11 +45,7 @@
 SDL_AudioSpec obtained;
 Uint32 cyclespersample;
 
-#if SDL_MAJOR_VERSION == 1
-#else
 static SDL_AudioCVT cvt;
-#endif
-
 static Sint16 audiocapbuf[AUDIO_BUFLEN];
 extern struct avi_handle *vidcap;
 
@@ -366,6 +362,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
   struct ay8912 *ay = (struct ay8912 *)dummy;
   Sint32 dcadjustave, dcadjustmax;
   SDL_bool tapenoise;
+  int actual_length;
 
   logc    = 0;
   tlogc   = 0;
@@ -376,12 +373,13 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
   if( !tapenoise ) ay->tapeout = 0;
 
   out = (Uint16 *)stream;
-#if SDL_MAJOR_VERSION == 1
-#else
   cvt.buf = (Uint8 *)stream;
-#endif
 
-  for( i=0,j=0; i<AUDIO_BUFLEN && i<length/(2*sizeof(Uint16)); i++ )
+  actual_length = length/(2*sizeof(Uint16));
+  actual_length = (actual_length < AUDIO_BUFLEN)? actual_length : AUDIO_BUFLEN;
+  actual_length = (actual_length < obtained.samples)? actual_length : obtained.samples;
+  
+  for( i=0,j=0; i<actual_length; i++ )
   {
     ay->ccyc = ay->ccycle>>FPBITS;
 
@@ -418,7 +416,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
 
   if( dcadjustave )
   {
-    for( i=0, j=0; i<AUDIO_BUFLEN && i<length/(2*sizeof(Uint16)); i++ )
+    for( i=0, j=0; i<actual_length; i++ )
     {
       out[j++] -= dcadjustave;
       out[j++] -= dcadjustave;
@@ -457,10 +455,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
       ay->tapeout = ay->tapelog[tlogc++].val * 8192;
   }
 
-#if SDL_MAJOR_VERSION == 1
-#else
   SDL_ConvertAudio(&cvt);
-#endif
 
   ay->ccycle -= (ay->lastcyc<<FPBITS);
   ay->lastcyc = 0;
@@ -650,13 +645,10 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
   if( soundavailable )
     SDL_PauseAudio( 0 );
 
-#if SDL_MAJOR_VERSION == 1
-#else
   // initialize audio conversion system for SDL2
   SDL_BuildAudioCVT(&cvt, AUDIO_S16SYS, 2, AUDIO_FREQ, obtained.format, obtained.channels, obtained.freq);
   cvt.len = obtained.samples * sizeof(Sint16) * obtained.channels;
   // Do not allocate a buffer, write directly into the callback stream
-#endif
 
   return SDL_TRUE;
 }
