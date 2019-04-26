@@ -239,6 +239,9 @@ struct machine
   Sint32 telejoymode_a, telejoymode_b;
   SDL_COMPAT_KEY kbjoy1[6], kbjoy2[6];
 
+  SDL_bool printenable;
+  SDL_bool printfilter;
+
   SDL_bool lightpen;
   Uint8  lightpenx, lightpeny;
   unsigned char (*read_not_lightpen)(struct m6502 *,Uint16);

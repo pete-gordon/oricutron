@@ -483,7 +483,7 @@ void microdisc_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char
 
     else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
       ch376_oric_write(oric->ch376, addr, data);
-
+    
     else
       via_write( &oric->via, addr, data );
 
@@ -889,7 +889,7 @@ static SDL_bool load_rom( struct machine *oric, char *fname, int size, unsigned 
   f = SDL_RWFromFile( tmpname, "rb" );
   if( !f )
   {
-    printf( "Unable to open '%s'\n", tmpname );
+    error_printf( "Unable to open '%s'\n", tmpname );
     free( tmpname );
     return SDL_FALSE;
   }
@@ -903,7 +903,7 @@ static SDL_bool load_rom( struct machine *oric, char *fname, int size, unsigned 
 
     if( filesize > -size )
     {
-      printf( "ROM '%s' exceeds %d bytes.\n", fname, -size );
+      error_printf( "ROM '%s' exceeds %d bytes.\n", fname, -size );
       SDL_RWclose( f );
       free( tmpname );
       return SDL_FALSE;
@@ -915,7 +915,7 @@ static SDL_bool load_rom( struct machine *oric, char *fname, int size, unsigned 
 
   if( SDL_RWread( f, where, size, 1 ) != 1 )
   {
-    printf( "Unable to read '%s'\n", tmpname );
+    error_printf( "Unable to read '%s'\n", tmpname );
     SDL_RWclose( f );
     free( tmpname );
     return SDL_FALSE;
@@ -1014,7 +1014,10 @@ void preinit_machine( struct machine *oric )
   oric->lightpenx = 0;
   oric->lightpeny = 0;
   oric->read_not_lightpen = NULL;
-
+  
+  oric->printenable = SDL_TRUE;
+  oric->printfilter = SDL_TRUE;
+  
   oric->aciabackend = ACIA_TYPE_NONE;
   oric->aciaoffset = 0x31c;
 
@@ -1621,7 +1624,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->mem = malloc( oric->memsize );
       if( !oric->mem )
       {
-        printf( "Out of memory\n" );
+        error_printf( "Out of memory\n" );
         return SDL_FALSE;
       }
 
@@ -1654,7 +1657,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->mem = malloc( oric->memsize );
       if( !oric->mem )
       {
-        printf( "Out of memory\n" );
+        error_printf( "Out of memory\n" );
         return SDL_FALSE;
       }
 
@@ -1687,7 +1690,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->mem = malloc( oric->memsize );
       if( !oric->mem )
       {
-        printf( "Out of memory\n" );
+        error_printf( "Out of memory\n" );
         return SDL_FALSE;
       }
 
@@ -1721,20 +1724,19 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->mem = malloc( oric->memsize );
       if( !oric->mem )
       {
-        printf( "Out of memory\n" );
+        error_printf( "Out of memory\n" );
         return SDL_FALSE;
       }
 
       blank_ram( oric->rampattern, oric->mem, 65536+16384*7 );
-
-      clear_patches( oric );
 
       setup_for_microdisc( oric, telestratread, telestratwrite );
       oric->disksyms = NULL;
 
       for( i=0; i<8; i++ )
       {
-        oric->tele_bank[i].ptr  = &oric->mem[0x0c000+(i*0x4000)];
+        // assign oric->rom to allow binary patches
+        oric->rom = oric->tele_bank[i].ptr  = &oric->mem[0x0c000+(i*0x4000)];
         if( telebankfiles[i][0] )
         {
           oric->tele_bank[i].type = TELEBANK_ROM;
@@ -1755,7 +1757,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       oric->mem = malloc( oric->memsize );
       if( !oric->mem )
       {
-        printf( "Out of memory\n" );
+        error_printf( "Out of memory\n" );
         return SDL_FALSE;
       }
 

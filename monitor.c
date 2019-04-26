@@ -3705,7 +3705,7 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
           mon_hide_curs();
           for( i=ilen+1; i>cursx; i-- )
             ibuf[i] = ibuf[i-1];
-          ibuf[cursx] = SDL_COMPAT_GetKeysymUnicode( ev->key.keysym );
+          ibuf[cursx] = SDL_COMPAT_TranslateUnicode( ev->key.keysym );
           cursx++;
           ilen++;
           mon_write_ibuf_asm();
@@ -3844,7 +3844,7 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
         mon_hide_curs();
         for( i=ilen+1; i>cursx; i-- )
           ibuf[i] = ibuf[i-1];
-        ibuf[cursx] = SDL_COMPAT_GetKeysymUnicode( ev->key.keysym );
+        ibuf[cursx] = SDL_COMPAT_TranslateUnicode( ev->key.keysym );
         cursx++;
         ilen++;
         mon_set_iloff();
@@ -3901,6 +3901,7 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
 
     case SDLK_ESCAPE:
       mw_mode = 0;
+      *needrender = SDL_TRUE;
       break;
 
     case SDLK_BACKSPACE:
@@ -3941,7 +3942,7 @@ static SDL_bool mon_mwatch_keydown( SDL_Event *ev, struct machine *oric, SDL_boo
 
     if( mw_koffs < 4 )
     {
-      mw_ibuf[++mw_koffs] = SDL_COMPAT_GetKeysymUnicode( ev->key.keysym );
+      mw_ibuf[++mw_koffs] = SDL_COMPAT_TranslateUnicode( ev->key.keysym );
       mw_ibuf[mw_koffs+1] = 0;
     }
 

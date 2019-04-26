@@ -70,11 +70,11 @@ SDL_Surface* CreateSurface( int width , int height )
     surface = SDL_CreateRGBSurface( 0 , width , height , 32 , rmask , gmask , bmask , amask );
     if( surface == NULL )
     {
-        ( void )fprintf(stderr, "CreateRGBSurface failed: %s\n", SDL_GetError() );
-        exit(EXIT_FAILURE);
+      error_printf("CreateRGBSurface failed: %s", SDL_GetError() );
+      exit(EXIT_FAILURE);
     }
 
-	return surface;
+  return surface;
 }
 
 #define KEYSIM_FLAG ((SDL_COMPAT_KEY)0x8000)

@@ -45,28 +45,32 @@
 // after the printer is idle for a while.
 void lprintchar( struct machine *oric, char c )
 {
-  // Filter out chars that are probably not meant for the printer
-  if( ( c == 9 ) || ( c == 10 ) || ( c == 13 ) || ( c == 17 ) || ( c == 18 ) ||
-      ( c == 27 ) || (( c >= 32 ) && ( c <= 127 )) )
+  if( oric->printenable )
   {
-    // If the printer handle isn't currently open,
-    // open it and do a popup to tell the user.
-    if( !oric->prf )
+    // Filter out chars that are probably not meant for the printer
+    if( ( !oric->printfilter ) || ( c == 9 ) || ( c == 10 ) || ( c == 13 ) || ( c == 17 ) ||
+      ( c == 18 ) || ( c == 27 ) || (( c >= 32 ) && ( c <= 127 )) )
     {
-      oric->prf = fopen( "printer_out.txt", "a" );
+      // If the printer handle isn't currently open,
+      // open it and do a popup to tell the user.
       if( !oric->prf )
       {
-        do_popup( oric, "Printing failed :-(" );
-        return;
+        oric->prf = fopen( "printer_out.txt", "a" );
+        if( !oric->prf )
+        {
+          do_popup( oric, "Printing failed :-(" );
+          return;
+        }
+        
+        do_popup( oric, "Printing to 'printer_out.txt'" );
       }
       
-      do_popup( oric, "Printing to 'printer_out.txt'" );
+      // Put the char to the file, set up the timers
+      fputc( c, oric->prf );
+      oric->prclock = 40;
+      oric->prclose = 64*312*50*5;
     }
-    
-    // Put the char to the file, set up the timers
-    fputc( c, oric->prf );
-    oric->prclock = 40;
-    oric->prclose = 64*312*50*5;
+    // emulate ack signal
     via_write_CA1( &oric->via, 1 );
   }
 }
@@ -119,7 +123,9 @@ void via_main_w_iorb( struct via *v, unsigned char oldorb )
   // Look for negative edge on printer strobe
   if( ( (oldorb&v->ddrb&0x10) != 0 ) &&
       ( (v->orb&v->ddrb&0x10) == 0 ) )
+  {
     lprintchar( v->oric, v->ora );
+  }
 
   tape_setmotor( v->oric, (v->orb&v->ddrb&0x40) != 0 );
 
@@ -425,7 +431,8 @@ void via_clock( struct via *v, unsigned int cycles )
     if( v->oric->prclock <= 0 )
     {
       v->oric->prclock = 0;
-      via_write_CA1( v, 0 );
+      if( v->oric->printenable )
+        via_write_CA1( v, 0 );
     }
   }
 

@@ -1,19 +1,25 @@
-# valid platforms:
-# PLATFORM = os4
+# 
+# valid platforms in alphabetical order:
+# 
+# PLATFORM = aitouchbook
+# PLATFORM = aros
+# PLATFORM = beos
+# PLATFORM = gphwiz
+# PLATFORM = haiku
+# PLATFORM = lin-32
+# PLATFORM = lin-64
+# PLATFORM = linux
+# PLATFORM = linux-nogl
+# PLATFORM = mint
+# PLATFORM = mint-cf
 # PLATFORM = morphos
+# PLATFORM = os4
+# PLATFORM = osx
+# PLATFORM = pandora
+# PLATFORM = rpi
 # PLATFORM = win32
 # PLATFORM = win32-gcc
 # PLATFORM = win64-gcc
-# PLATFORM = beos
-# PLATFORM = haiku
-# PLATFORM = osx
-# PLATFORM = linux
-# PLATFORM = linux-nogl
-# PLATFORM = gphwiz
-# PLATFORM = aitouchbook
-# PLATFORM = aros
-# PLATFORM = mint
-# PLATFORM = rpi
 
 # important build parameters:
 # SDL_LIB - select SDL versions
@@ -27,7 +33,7 @@ VERSION_MIN = 2
 VERSION_REV = 0
 VERSION_FULL = $(VERSION_MAJ).$(VERSION_MIN).$(VERSION_REV)
 APP_NAME = Oricutron
-APP_YEAR = 2017
+APP_YEAR = 2019
 COPYRIGHTS = (c)$(APP_YEAR) Peter Gordon (pete@petergordon.org.uk)
 VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) $(COPYRIGHTS)"
 #COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) ©$(APP_YEAR) Peter Gordon (pete@petergordon.org.uk)"
@@ -71,7 +77,8 @@ AR = ar
 RANLIB = ranlib
 STRIP = strip
 DEBUGLIB =
-TARGET = oricutron
+TARGET_NAME = oricutron
+TARGET = $(TARGET_NAME)
 FILEREQ_OBJ = filereq_sdl.o
 MSGBOX_OBJ = msgbox_sdl.o
 EXTRAOBJS =
@@ -207,8 +214,16 @@ RANLIB :=  $(CROSS_COMPILE)$(RANLIB)
 WINDRES := $(CROSS_COMPILE)windres
 STRIP :=  $(CROSS_COMPILE)$(STRIP)
 ifneq ($(SDL_PREFIX),)
+ifneq (,$(SDL_CFLAGS))
+CFLAGS += $(SDL_CFLAGS)
+else
 CFLAGS += -I$(SDL_PREFIX)/include
+endif
+ifneq (,$(SDL_LFLAGS))
+LFLAGS += $(SDL_LFLAGS)
+else
 LFLAGS += -L$(SDL_PREFIX)/lib
+endif
 else
 CFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config $(SDL_LIB) --cflags)
 LFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config $(SDL_LIB) --libs)
@@ -219,7 +234,7 @@ ifneq ($(PROFILING),)
 CFLAGS += -pg
 LFLAGS += -pg
 endif
-TARGET = oricutron.exe
+TARGET = $(TARGET_NAME).exe
 TARGET_DEPS = /usr/$(CROSS_PREFIX)/sys-root/mingw/bin/SDL.dll
 FILEREQ_OBJ = filereq_win32.o
 MSGBOX_OBJ = msgbox_win32.o
@@ -246,8 +261,16 @@ RANLIB :=  $(CROSS_COMPILE)$(RANLIB)
 WINDRES := $(CROSS_COMPILE)windres
 STRIP :=  $(CROSS_COMPILE)$(STRIP)
 ifneq ($(SDL_PREFIX),)
+ifneq (,$(SDL_CFLAGS))
+CFLAGS += $(SDL_CFLAGS)
+else
 CFLAGS += -I$(SDL_PREFIX)/include
+endif
+ifneq (,$(SDL_LFLAGS))
+LFLAGS += $(SDL_LFLAGS)
+else
 LFLAGS += -L$(SDL_PREFIX)/lib
+endif
 else
 CFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config $(SDL_LIB) --cflags)
 LFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(CROSS_PREFIX)/sys-root/mingw/lib/pkgconfig pkg-config $(SDL_LIB) --libs)
@@ -258,7 +281,7 @@ ifneq ($(PROFILING),)
 CFLAGS += -pg
 LFLAGS += -pg
 endif
-TARGET = oricutron.exe
+TARGET = $(TARGET_NAME).exe
 TARGET_DEPS = /usr/$(CROSS_PREFIX)/sys-root/mingw/bin/SDL.dll
 FILEREQ_OBJ = filereq_win32.o
 MSGBOX_OBJ = msgbox_win32.o
@@ -299,10 +322,18 @@ endif
 
 # Mac OS X
 ifeq ($(PLATFORM),osx)
+ifneq (,$(CROSS_CFLAGS))
+CFLAGS += -D__OPENGL_AVAILABLE__ -D__CBCOPY__ -D__CBPASTE__ $(CROSS_CFLAGS)
+else
 CFLAGS += -D__OPENGL_AVAILABLE__ -D__CBCOPY__ -D__CBPASTE__ $(shell $(SDL_LIB)-config --cflags)
+endif
+ifneq (,$(CROSS_LFLAGS))
+LFLAGS += $(CROSS_LFLAGS) -s
+else
 LFLAGS += $(shell $(SDL_LIB)-config --libs) -s
+endif
 LFLAGS += -lm -Wl,-framework,OpenGL
-TARGET = oricutron
+TARGET = $(TARGET_NAME)
 FILEREQ_OBJ =
 MSGBOX_OBJ =
 CUSTOMOBJS = gui_osx.o filereq_osx.o msgbox_osx.o
@@ -351,6 +382,47 @@ EXTRAOBJS = oric_ch376_plugin.o ch376.o
 TARGET = oricutron
 INSTALLDIR = /usr/local
 endif
+
+# Linux-cross 32
+ifeq ($(PLATFORM),lin-32)
+BASELIBDIR := lib
+CFLAGS += -m32
+LFLAGS += -m32
+STRIP :=  $(CROSS_COMPILE)$(STRIP)
+ifeq ($(NOGTK),)
+CFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --cflags)
+LFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --libs)
+FILEREQ_OBJ = filereq_gtk.o
+MSGBOX_OBJ = msgbox_gtk.o
+endif
+CFLAGS += -g $(SDL_CFLAGS) -D__OPENGL_AVAILABLE__ -DAUDIO_BUFLEN=1024 -D__CBCOPY__ -D__CBPASTE__
+LFLAGS += -lm -L/usr/$(BASELIBDIR) $(SDL_LFLAGS) -lGL -lX11
+CUSTOMOBJS = gui_x11.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o
+TARGET = $(TARGET_NAME)
+INSTALLDIR = /usr/local
+endif
+
+# Linux-cross 64
+ifeq ($(PLATFORM),lin-64)
+BASELIBDIR := lib64
+CFLAGS += -m64
+LFLAGS += -m64
+STRIP :=  $(CROSS_COMPILE)$(STRIP)
+ifeq ($(NOGTK),)
+CFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --cflags)
+LFLAGS += $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --libs)
+FILEREQ_OBJ = filereq_gtk.o
+MSGBOX_OBJ = msgbox_gtk.o
+endif
+CFLAGS += -g $(SDL_CFLAGS) -D__OPENGL_AVAILABLE__ -DAUDIO_BUFLEN=1024 -D__CBCOPY__ -D__CBPASTE__
+LFLAGS += -lm -L/usr/$(BASELIBDIR) $(SDL_LFLAGS) -lGL -lX11
+CUSTOMOBJS = gui_x11.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o
+TARGET = $(TARGET_NAME)
+INSTALLDIR = /usr/local
+endif
+
 
 # Linux no-OpenGL
 ifeq ($(PLATFORM),linux-nogl)
@@ -466,6 +538,7 @@ OBJECTS = \
 	$(MSGBOX_OBJ) \
 	$(EXTRAOBJS)
 
+LINKOBJECTS := $(subst plugins/ch376/,,$(OBJECTS) $(CUSTOMOBJS))
 
 all: $(TARGET)
 
@@ -476,8 +549,8 @@ install: install-$(PLATFORM) $(TARGET)
 
 package: package-$(PLATFORM) $(TARGET)
 
-$(TARGET): $(OBJECTS) $(CUSTOMOBJS) $(RESOURCES)
-	$(CXX) -o $(TARGET) $(OBJECTS) $(CUSTOMOBJS) $(LFLAGS)
+$(TARGET): $(LINKOBJECTS) $(RESOURCES)
+	$(CXX) -o $(TARGET) $(LINKOBJECTS) $(LFLAGS)
 ifeq ($(PLATFORMTYPE),beos)
 	$(BEOS_XRES) -o $(TARGET) $(RSRC_BEOS)
 	$(BEOS_SETVER) $(TARGET) \
@@ -492,18 +565,22 @@ endif
 
 # Rules based build for standard *.c to *.o compilation
 $(OBJECTS): %.o: %.c
-	$(CC) -c $(CFLAGS) $< -o $@
-	@$(CC) -MM $(CFLAGS) $< > $*.d
+	$(CC) -c $(CFLAGS) $< -o $(notdir $@)
+	@$(CC) -MM $(CFLAGS) $< > $(notdir $*).d
+
+%.o: %.c
+	$(CC) -c $(CFLAGS) $< -o $(notdir $@)
+	@$(CC) -MM $(CFLAGS) $< > $(notdir $*).d
 
 # Overide the default C rule for C++
 %.o: %.cpp
-	$(CXX) -c $(CFLAGS) $< -o $@
-	@$(CXX) -MM $(CFLAGS) $< > $*.d
+	$(CXX) -c $(CFLAGS) $< -o $(notdir $@)
+	@$(CXX) -MM $(CFLAGS) $< > $(notdir $*).d
 
 # Overide the default C rule for ObjC
 %.o: %.m
-	$(CC) -c $(CFLAGS) $< -o $@
-	@$(CC) -MM $(CFLAGS) $< > $*.d
+	$(CC) -c $(CFLAGS) $< -o $(notdir $@)
+	@$(CC) -MM $(CFLAGS) $< > $(notdir $*).d
 
 winicon.o: $(SRC_DIR)/winicon.ico $(SRC_DIR)/oricutron.rc
 	$(WINDRES) $(DEFINES) -i $(SRC_DIR)/oricutron.rc -o winicon.o
@@ -628,6 +705,6 @@ package-mint package-mint-cf:
 
 
 .PHONY: mrproper
-PLATFORMS := os4 morphos win32 win32-gcc win64-gcc beos haiku osx linux linux-nogl gphwiz aitouchbook aros rpi mint mint-cf
+PLATFORMS := aitouchbook aros beos gphwiz haiku lin-32 lin-64 linux linux-nogl mint mint-cf morphos os4 osx pandora rpi win32 win32-gcc win64-gcc 
 mrproper:
-	@for plat in $(PLATFORMS); do $(MAKE) -f $(SRC_DIR)/Makefile clean PLATFORM=$${plat} ; done
+	@for plat in $(PLATFORMS); do $(MAKE) -f $(SRC_DIR)/Makefile clean PLATFORM=$${plat}; done

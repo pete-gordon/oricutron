@@ -382,7 +382,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
   char tbtmp[32];
   char keymap_file[4096];
 
-            f = fopen( FILEPREFIX"oricutron.cfg", "r" );
+  f = fopen( FILEPREFIX"oricutron.cfg", "r" );
   if( !f ) return;
 
   while( !feof( f ) )
@@ -439,6 +439,8 @@ static void load_config( struct start_opts *sto, struct machine *oric )
       if( read_config_string( &sto->lctmp[i], tbtmp, telebankfiles[j], 1024 ) ) break;
     }
     if( read_config_bool(   &sto->lctmp[i], "lightpen",     &oric->lightpen ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "printenable",  &oric->printenable ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "printfilter",  &oric->printfilter ) ) continue;
     if( read_config_int(    &sto->lctmp[i], "serial_address", &oric->aciaoffset, 0x310, 0x3fc ) ) continue;
     if( read_config_string( &sto->lctmp[i], "serial",       oric->aciabackendname, ACIA_BACKEND_NAME_LEN ) )
     {
@@ -576,7 +578,7 @@ static void usage( int ret )
 }
 
 // Print a formatted string into a textzone
-static void error_printf( char *fmt, ... )
+void error_printf( char *fmt, ... )
 {
   static char str[256];  // Stupid MinGW32 not having vasprintf...
 
@@ -1406,11 +1408,11 @@ int main( int argc, char *argv[] )
     needrender = SDL_TRUE;
     framedone = SDL_FALSE;
 
-      if(load_keymap) {
-          load_keyboard_mapping( &oric, keymap_path );
-          load_keymap = SDL_FALSE;
-      }
-
+    if(load_keymap)
+    {
+      load_keyboard_mapping( &oric, keymap_path );
+      load_keymap = SDL_FALSE;
+    }
 
     while( !done )
     {
@@ -1487,7 +1489,9 @@ int main( int argc, char *argv[] )
         }
 
         if( !SDL_PollEvent( &event ) ) continue;
-      } else {
+      }
+      else
+      {
         ay_unlockaudio( &oric.ay );
         if( needrender )
         {
@@ -1502,7 +1506,8 @@ int main( int argc, char *argv[] )
         {
           case SDL_COMPAT_ACTIVEEVENT:
             {
-                if(SDL_COMPAT_IsAppActive(&event)) {
+                if(SDL_COMPAT_IsAppActive(&event))
+                {
                     oric.shut_render(&oric);
                     oric.init_render(&oric);
                     needrender = SDL_TRUE;
@@ -1531,6 +1536,7 @@ int main( int argc, char *argv[] )
         }
         if (oric.show_keyboard)
             keyboard_event( &event, &oric, &needrender );
+
       } while( SDL_PollEvent( &event ) );
     }
     ay_unlockaudio( &oric.ay );

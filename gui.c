@@ -391,14 +391,14 @@ SDL_bool gimg_load( struct guiimg *gi )
   f = SDL_RWFromFile( gi->filename, "rb" );
   if( !f )
   {
-    printf( "Unable to open '%s'\n", gi->filename );
+    error_printf( "Unable to open '%s'\n", gi->filename );
     return SDL_FALSE;
   }
 
   // Read the header
   if( SDL_RWread( f, hdrbuf, 54, 1 ) != 1 )
   {
-    printf( "Error reading '%s'\n", gi->filename );
+    error_printf( "Error reading '%s'\n", gi->filename );
     SDL_RWclose( f );
     return SDL_FALSE;
   }
@@ -413,7 +413,7 @@ SDL_bool gimg_load( struct guiimg *gi )
 
   if( !fileok )
   {
-    printf( "'%s' needs to be a %dx%d, uncompressed, 24-bit BMP image\n", gi->filename, gi->w, gi->h );
+    error_printf( "'%s' needs to be a %dx%d, uncompressed, 24-bit BMP image\n", gi->filename, gi->w, gi->h );
     SDL_RWclose( f );
     return SDL_FALSE;
   }
@@ -424,7 +424,7 @@ SDL_bool gimg_load( struct guiimg *gi )
 
   if( !gi->buf )
   {
-    printf( "Out of memory\n" );
+    error_printf( "Out of memory\n" );
     SDL_RWclose( f );
     return SDL_FALSE;
   }
@@ -2123,7 +2123,7 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
   // Go SDL!
   if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
   {
-    printf( "SDL init failed\n" );
+    error_printf( "SDL init failed\n" );
     oric->emu_mode = EM_PLEASEQUIT;
     return;
   }
@@ -2189,7 +2189,7 @@ void preinit_gui( struct machine *oric )
   strcpy( mdiscromfile, ROMPREFIX"microdis" );
   strcpy( jasmnromfile, ROMPREFIX"jasmin" );
   strcpy( pravetzromfile[0], ROMPREFIX"pravetzt" );
-  strcpy( pravetzromfile[1], ROMPREFIX"8dos" );
+  strcpy( pravetzromfile[1], ROMPREFIX"8dos2" );
   telebankfiles[0][0] = 0;
   telebankfiles[1][0] = 0;
   telebankfiles[2][0] = 0;

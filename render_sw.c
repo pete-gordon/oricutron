@@ -252,7 +252,6 @@ void render_gimgpart_sw( int img_id, Sint32 xp, Sint32 yp, Sint32 ox, Sint32 oy,
 
   for( i=h; i!=0; --i, src_scanline+=pixel_size*gi->w, dst_scanline+=screen->pitch )
     memcpy( dst_scanline, src_scanline, pixel_size*w );
-
 }
 
 // Copy the video output buffer to the SDL surface, assuming 16bpp video mode
@@ -459,19 +458,19 @@ void render_sw_detectvideo( struct machine *oric )
   oric->sw_depth = 16;
 
   switch( BitsPerPixel )
-    {
-      // Great, cases we handle
-      case 8:
-      case 16:
-      case 24:
-      case 32:
-      oric->sw_depth = BitsPerPixel;
-        break;
-      // Damn, cases we don't handle. Let's say 16 bpp gonna be ok
-      default:
-        break;
-    }
+  {
+    // Great, cases we handle
+    case 8:
+    case 16:
+    case 24:
+    case 32:
+    oric->sw_depth = BitsPerPixel;
+      break;
+    // Damn, cases we don't handle. Let's say 16 bpp gonna be ok
+    default:
+      break;
   }
+}
 
 void preinit_render_sw( struct machine *oric )
 {

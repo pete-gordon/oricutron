@@ -44,7 +44,7 @@ PROJECT_NUMBER         = 1.2.0
 # for a project that appears at the top of each page and should give viewer a
 # quick idea about the purpose of the project. Keep the description short.
 
-PROJECT_BRIEF          = "Oricutron (formerly known as Oriculator) is an emulator for the Oric series of computers written in plain C and using SDL. Copyright (C) 2009-2016 Peter Gordon"
+PROJECT_BRIEF          = "Oricutron (formerly known as Oriculator) is an emulator for the Oric series of computers written in plain C and using SDL. Copyright (C) 2009-2019 Peter Gordon"
 
 # With the PROJECT_LOGO tag one can specify a logo or an icon that is included
 # in the documentation. The maximum height of the logo should not exceed 55

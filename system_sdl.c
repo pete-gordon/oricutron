@@ -20,11 +20,15 @@
  */
 
 
-#ifndef __APPLE__
 #define WANT_WMINFO
-#else
-#define SDL_SysWMinfo void
-#endif
+
+// NOTE: SDL/SDL2 for macos have SDL_SysWMinfo
+// NOTE: check this code before removing
+// #ifndef __APPLE__
+// #define WANT_WMINFO
+// #else
+// #define SDL_SysWMinfo void
+// #endif
 
 #include "system.h"
 
@@ -119,7 +123,9 @@ static void FreeResources(void)
 #if SDL_MAJOR_VERSION == 1
 int SDL_COMPAT_GetWMInfo(SDL_SysWMinfo *info)
 {
-  #if defined(__MORPHOS__)|defined(__APPLE__)
+  // NOTE: see above for SDL_GetWMInfo in macos
+  // #if defined(__MORPHOS__)|defined(__APPLE__)
+  #if defined(__MORPHOS__)
   return 0;
   #else
   return SDL_GetWMInfo(info);
@@ -128,10 +134,7 @@ int SDL_COMPAT_GetWMInfo(SDL_SysWMinfo *info)
 #else
 int SDL_COMPAT_GetWMInfo(SDL_SysWMinfo *info)
 {
-  if(g_window)
-    return SDL_GetWindowWMInfo(g_window, info);
-
-  return -1;
+  return g_window? SDL_GetWindowWMInfo(g_window, info) : -1;
 }
 #endif
 
@@ -237,7 +240,66 @@ SDL_COMPAT_KEY SDL_COMPAT_GetKeysymUnicode(SDL_KEYSYM keysym)
 {
   return keysym.unicode;
 }
+SDL_COMPAT_KEY SDL_COMPAT_TranslateUnicode(SDL_KEYSYM keysym)
+{
+  return keysym.unicode;
+}
 #else
+SDL_COMPAT_KEY SDL_COMPAT_TranslateUnicode(SDL_KEYSYM keysym)
+{
+  if(keysym.mod & KMOD_SHIFT)
+  {
+    switch(keysym.sym)
+    {
+      case '0':
+        return ')';
+      case '1':
+        return '!';
+      case '2':
+        return '@';
+      case '3':
+        return '#';
+      case '4':
+        return '$';
+      case '5':
+        return '%';
+      case '6':
+        return '^';
+      case '7':
+        return '&'; 
+      case '8':
+        return '*';
+      case '9':
+        return '(';
+      case ';':
+        return ':';
+      case '\'':
+        return '"';
+      case '\\':
+        return '|';
+      case ',':
+        return '<';
+      case '.':
+        return '>';
+      case '/':
+        return '?';
+      case '`':
+        return '~';
+      case '-':
+        return '_';
+      case '=':
+        return '+';
+      case '[':
+        return '{';
+      case ']':
+        return '}';
+      default:
+        keysym.sym = toupper(keysym.sym);
+        break;
+    }
+  }
+  return keysym.sym;
+}
 SDL_COMPAT_KEY SDL_COMPAT_GetKeysymUnicode(SDL_KEYSYM keysym)
 {
   return keysym.sym;

@@ -138,6 +138,7 @@ SDL_bool SDL_COMPAT_IsAppFocused(SDL_Event* event);
 int SDL_COMPAT_EnableKeyRepeat(int delay, int interval);
 int SDL_COMPAT_EnableUNICODE(int enable);
 SDL_COMPAT_KEY SDL_COMPAT_GetKeysymUnicode(SDL_KEYSYM keysym);
+SDL_COMPAT_KEY SDL_COMPAT_TranslateUnicode(SDL_KEYSYM keysym);
 int SDL_COMPAT_Flip(SDL_Surface* screen);
 int SDL_COMPAT_GetBitsPerPixel(void);
 int SDL_COMPAT_WM_ToggleFullScreen(SDL_Surface *surface);
@@ -150,5 +151,7 @@ void SDL_COMPAT_TakeScreenshot(char *fname);
 #ifdef __OPENGL_AVAILABLE__
 void SDL_COMPAT_GL_SwapBuffers(void);
 #endif
+
+void error_printf( char *fmt, ... );
 
 #endif /* ORICUTRON_SYSTEM_SDL_H */

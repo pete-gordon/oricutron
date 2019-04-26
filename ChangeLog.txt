@@ -1,4 +1,18 @@
 Oricutron ChangeLog
+===================
+
+pre-release changes (work in progress)
+--------------------------------------
+* Added missing chars (@,&) in monitor font
+* Fixed typing upper case chars and syms in debugger window
+* Added case insensitive file extensions for GTK file selector dialog
+* Fixed loading of rom/pch files in Telestrat mode
+* Added 'pravdiskautoboot' option in .cfg file
+* Added 'printenable' option in .cfg file
+* Added 'printfilter' option in .cfg file
+
+
+
 
 1.2 (01-Nov-2014)
 -----------------
@@ -386,7 +400,7 @@ Debugger/Monitor:
  * Implemented help command (?)
  * F11 traces code without going into subroutines
    (or Shift+F10 on Amiga keyboards)
- * F12 now skips instructions 
+ * F12 now skips instructions
  * Breakpoints now survive any reset unless the machine type
    is changes.
  * You can now set breakpoints on memory accesses as well

@@ -79,35 +79,35 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
     case FR_DISKLOAD:
       filter = gtk_file_filter_new();
       gtk_file_filter_set_name(filter, "Disk images");
-      gtk_file_filter_add_pattern(filter, "*.dsk");
+      gtk_file_filter_add_pattern(filter, "*.[Dd][Ss][Kk]");
       break;
 
     case FR_TAPESAVETAP:
       action = GTK_FILE_CHOOSER_ACTION_SAVE;
       filter = gtk_file_filter_new();
       gtk_file_filter_set_name(filter, ".tap files");
-      gtk_file_filter_add_pattern(filter, "*.tap");
+      gtk_file_filter_add_pattern(filter, "*.[Tt][Aa][Pp]");
       break;
 
     case FR_TAPESAVEORT:
       action = GTK_FILE_CHOOSER_ACTION_SAVE;
       filter = gtk_file_filter_new();
       gtk_file_filter_set_name(filter, ".ort files");
-      gtk_file_filter_add_pattern(filter, "*.ort");
+      gtk_file_filter_add_pattern(filter, "*.[Oo][Rr][Tt]");
       break;
 
     case FR_TAPELOAD:
       filter = gtk_file_filter_new();
       gtk_file_filter_set_name(filter, "Tape images");
-      gtk_file_filter_add_pattern(filter, "*.tap");
-      gtk_file_filter_add_pattern(filter, "*.wav");
-      gtk_file_filter_add_pattern(filter, "*.ort");
+      gtk_file_filter_add_pattern(filter, "*.[Tt][Aa][Pp]");
+      gtk_file_filter_add_pattern(filter, "*.[Ww][Aa][Vv]");
+      gtk_file_filter_add_pattern(filter, "*.[Oo][Rr][Tt]");
       break;
 
     case FR_ROMS:
       filter = gtk_file_filter_new();
       gtk_file_filter_set_name(filter, "ROM images");
-      gtk_file_filter_add_pattern(filter, "*.rom");
+      gtk_file_filter_add_pattern(filter, "*.[Rr][Oo][Mm]");
       break;
 
     case FR_SNAPSHOTSAVE:
@@ -115,7 +115,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
     case FR_SNAPSHOTLOAD:
       filter = gtk_file_filter_new();
       gtk_file_filter_set_name(filter, "Snapshot files");
-      gtk_file_filter_add_pattern(filter, "*.sna");
+      gtk_file_filter_add_pattern(filter, "*.[Ss][Nn][Aa]");
       break;
 
     case FR_KEYMAPPINGSAVE:
@@ -123,7 +123,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
     case FR_KEYMAPPINGLOAD:
       filter = gtk_file_filter_new();
       gtk_file_filter_set_name(filter, "Keyboard Mapping files");
-      gtk_file_filter_add_pattern(filter, "*.kma");
+      gtk_file_filter_add_pattern(filter, "*.[Kk][Mm][Aa]");
       break;
 
     default:
