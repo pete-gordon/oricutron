@@ -677,14 +677,14 @@ static int socket_accept(int sock, int* sck)
 
 static int socket_write(int sock, const unsigned char* data, int len)
 {
-  if(send(sock, (unsigned char*)data, len, 0) == -1)
+  if(send(sock, (void*)data, len, 0) == -1)
     return 0;
   return 1;
 }
 
 static int socket_read(int sock, unsigned char* data, int* len)
 {
-  int ret = (int)_recvdata(sock, (unsigned char*)data, *len);
+  int ret = (int)_recvdata(sock, (void*)data, *len);
   *len = 0;
   if(0 == ret)
     return 0;
