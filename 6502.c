@@ -1935,19 +1935,28 @@ SDL_bool m6502_inst( struct m6502 *cpu )
     case 0xD4: // { "DOP", AM_IMM },  // D4 (illegal)
     case 0xE2: // { "DOP", AM_IMM },  // E2 (illegal)
     case 0xF4: // { "DOP", AM_IMM },  // F4 (illegal)
+      READ_IMM;
+      break;
+
     case 0x1A: // { "NOP", AM_IMP },  // 1A (illegal)
     case 0x3A: // { "NOP", AM_IMP },  // 3A (illegal)
     case 0x5A: // { "NOP", AM_IMP },  // 5A (illegal)
     case 0x7A: // { "NOP", AM_IMP },  // 7A (illegal)
     case 0xDA: // { "NOP", AM_IMP },  // DA (illegal)
     case 0xFA: // { "NOP", AM_IMP },  // FA (illegal)
+      break;
+
     case 0x0C: // { "TOP", AM_ABS },  // 0C (illegal)
+      READ_ABS;
+      break;
+
     case 0x1C: // { "TOP", AM_ABX },  // 1C (illegal)
     case 0x3C: // { "TOP", AM_ABX },  // 3C (illegal)
     case 0x5C: // { "TOP", AM_ABX },  // 5C (illegal)
     case 0x7C: // { "TOP", AM_ABX },  // 7C (illegal)
     case 0xDC: // { "TOP", AM_ABX },  // DC (illegal)
     case 0xFC: // { "TOP", AM_ABX },  // FC (illegal)
+      READ_ABX;
       break;
 
     case 0xE7: // { "ISC", AM_ZP  },  // E7 (illegal)
