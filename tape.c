@@ -88,7 +88,7 @@ void toggletapecap( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 
   /* Add .ort extension, if necessary */
   if( (strlen(tmptapename)<4) || (strcasecmp(&tmptapename[strlen(tmptapename)-4], ".ort")!=0) )
-    strncat(tmptapename, ".ort", 4096);
+    strncat(tmptapename, ".ort", 4095);
   tmptapename[4095] = 0;
 
   joinpath( tapepath, tmptapename );
@@ -1239,7 +1239,8 @@ void tape_patches( struct machine *oric )
         tape_stop_savepatch( oric );
         if( justtap )
         {
-          snprintf( filetmp, 32, "\x0f\x10 Saved to %s", tmptapename );
+          // filetmp defined in gui.c as filetmp[4096+512+4]
+          snprintf( filetmp, 4096+512+4-1, "\x0f\x10 Saved to %s", tmptapename );
           filetmp[31] = 0;
           if (strlen(tmptapename) > 20)
           {

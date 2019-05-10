@@ -1670,8 +1670,9 @@ void mon_update_mwatch( struct machine *oric )
     sprintf( vsptmp, "%04X  ", addr );
     for( k=0; k<8; k++ )
     {
-      sprintf( &vsptmp[128], "%02X ", mon_read( oric, addr+k ) );
-      strcat( vsptmp, &vsptmp[128] );
+      char tmp[8];
+      snprintf( tmp, 7, "%02X ", mon_read( oric, addr+k ) );
+      strcat( vsptmp, tmp );
     }
     l = (int)strlen( vsptmp );
     vsptmp[l++] = 32;
@@ -2996,8 +2997,9 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
             sprintf( vsptmp, "%04X  ", mon_addr );
             for( k=0; k<8; k++ )
             {
-              sprintf( &vsptmp[128], "%02X ", mon_read( oric, mon_addr+k ) );
-              strcat( vsptmp, &vsptmp[128] );
+              char tmp[8];
+              snprintf( tmp, 7, "%02X ", mon_read( oric, mon_addr+k ) );
+              strcat( vsptmp, tmp );
             }
             l = (int)strlen( vsptmp );
             vsptmp[l++] = 32;
