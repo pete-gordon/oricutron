@@ -1136,6 +1136,8 @@ void tape_patches( struct machine *oric )
 {
   Sint32 i, j;
 
+  setromon( oric) ;
+
   if( oric->romon )
   {
     if( oric->pch_fd_available )
