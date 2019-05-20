@@ -288,6 +288,10 @@ void setromon( struct machine *oric )
   else if( oric->drivetype == DRV_PRAVETZ )
   {
     oric->romon = !oric->pravetz.olay;
+  }
+  else if ( oric->type == MACH_TELESTRAT )
+  {
+    oric->romon = ( oric->tele_banktype == TELEBANK_ROM );
   } else {
     oric->romon = !oric->romdis;
   }
