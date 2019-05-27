@@ -391,7 +391,8 @@ SDL_bool gimg_load( struct guiimg *gi )
   f = SDL_RWFromFile( gi->filename, "rb" );
   if( !f )
   {
-    error_printf( "Unable to open '%s'\n", gi->filename );
+    error_printf( "Unable to open '%s' SDL_Error: %s\n", gi->filename, SDL_GetError() );
+
     return SDL_FALSE;
   }
 
