@@ -318,7 +318,7 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
   oric->mem[addr] = data;
 }
 
-// 16k oric-1 CPU write
+// Oric-1 16k CPU write
 void o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
@@ -397,7 +397,7 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
   oric->mem[addr] = data;
 }
 
-// Atmos + jasmin
+// Oric Atmos + jasmin
 void jasmin_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
@@ -431,7 +431,7 @@ void jasmin_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char da
   oric->mem[addr] = data;
 }
 
-// 16k + jasmin
+// Oric-1 16k + jasmin
 void jasmin_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
@@ -466,7 +466,7 @@ void jasmin_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char dat
   oric->mem[addr&0x3fff] = data;
 }
 
-// Atmos + microdisc
+// Oric Atmos + microdisc
 void microdisc_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
@@ -496,7 +496,7 @@ void microdisc_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char
   oric->mem[addr] = data;
 }
 
-// Atmos + microdisc
+// Oric-1 16k + microdisc
 void microdisc_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
@@ -705,7 +705,7 @@ unsigned char telestratread( struct m6502 *cpu, unsigned short addr )
   return oric->mem[addr];
 }
 
-// Atmos + jasmin
+// Oric Atmos + jasmin
 unsigned char jasmin_atmosread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
@@ -737,7 +737,7 @@ unsigned char jasmin_atmosread( struct m6502 *cpu, unsigned short addr )
   return oric->mem[addr];
 }
 
-// 16k + jasmin
+// Oric 16k + jasmin
 unsigned char jasmin_o16kread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
@@ -769,7 +769,7 @@ unsigned char jasmin_o16kread( struct m6502 *cpu, unsigned short addr )
   return oric->mem[addr&0x3fff];
 }
 
-// Atmos + microdisc
+// Oric Atmos + microdisc
 unsigned char microdisc_atmosread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
@@ -800,7 +800,7 @@ unsigned char microdisc_atmosread( struct m6502 *cpu, unsigned short addr )
   return oric->mem[addr];
 }
 
-// Atmos + microdisc
+// Oric-1 16k + microdisc
 unsigned char microdisc_o16kread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;

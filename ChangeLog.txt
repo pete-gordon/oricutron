@@ -3,6 +3,7 @@ Oricutron ChangeLog
 
 pre-release changes (work in progress)
 --------------------------------------
+* Fixed CSAVE/CLOAD with Sedoric
 * Added missing chars (@,&) in monitor font
 * Fixed typing upper case chars and syms in debugger window
 * Added case insensitive file extensions for GTK file selector dialog
