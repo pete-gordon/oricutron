@@ -487,7 +487,7 @@ void microdisc_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char
 
     else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
       ch376_oric_write(oric->ch376, addr, data);
-    
+
     else
       via_write( &oric->via, addr, data );
 
@@ -998,12 +998,14 @@ void preinit_machine( struct machine *oric )
   oric->kbjoy1[3] = SDLK_KP6;
   oric->kbjoy1[4] = SDLK_KP_ENTER;
   oric->kbjoy1[5] = SDLK_KP_PLUS;
+  oric->kbjoy1[6] = SDLK_KP_MINUS;
   oric->kbjoy2[0] = 'w';
   oric->kbjoy2[1] = 's';
   oric->kbjoy2[2] = 'a';
   oric->kbjoy2[3] = 'd';
   oric->kbjoy2[4] = SDLK_SPACE;
   oric->kbjoy2[5] = 'n';
+  oric->kbjoy2[5] = SDLK_LALT;
 
   oric->drivetype = DRV_NONE;
   for( i=0; i<MAX_DRIVES; i++ )
@@ -1018,10 +1020,10 @@ void preinit_machine( struct machine *oric )
   oric->lightpenx = 0;
   oric->lightpeny = 0;
   oric->read_not_lightpen = NULL;
-  
+
   oric->printenable = SDL_TRUE;
   oric->printfilter = SDL_TRUE;
-  
+
   oric->aciabackend = ACIA_TYPE_NONE;
   oric->aciaoffset = 0x31c;
 
@@ -1031,7 +1033,7 @@ void preinit_machine( struct machine *oric )
   oric->show_keyboard = SDL_FALSE;
   oric->define_mapping = SDL_FALSE;
   oric->sticky_mod_keys = SDL_FALSE;
-  
+
   oric->pravdiskautoboot = SDL_TRUE;
 }
 

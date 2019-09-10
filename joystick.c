@@ -88,7 +88,7 @@ static struct keyjoydef keyjoytab[] = { { "BACKSPACE",   SDLK_BACKSPACE },
                                         { NULL,          0 } };
 
 static SDL_bool joysubinited = SDL_FALSE;
-Uint8 joystate_a[6], joystate_b[6];
+Uint8 joystate_a[7], joystate_b[7];
 
 static SDL_bool is_real_joystick( Sint16 joymode )
 {
@@ -108,7 +108,7 @@ static void close_joysticks( struct machine *oric )
         oric->sdljoy_b = NULL;
       oric->sdljoy_a = NULL;
     }
-    if( oric->sdljoy_b ) 
+    if( oric->sdljoy_b )
     {
       SDL_JoystickClose( oric->sdljoy_b );
       oric->sdljoy_b = NULL;
@@ -161,7 +161,7 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
       switch( ev->type )
       {
         case SDL_KEYDOWN:
-          for( i=0; i<6; i++ )
+          for( i=0; i<7; i++ )
           {
             if( ev->key.keysym.sym == kbtab[i] )
             {
@@ -170,9 +170,9 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
             }
           }
           break;
-        
+
         case SDL_KEYUP:
-          for( i=0; i<6; i++ )
+          for( i=0; i<7; i++ )
           {
             if( ev->key.keysym.sym == kbtab[i] )
             {
@@ -183,7 +183,7 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
           break;
       }
       break;
-    
+
     case JOYMODE_SDL0:
     case JOYMODE_SDL1:
     case JOYMODE_SDL2:
@@ -216,7 +216,7 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
                 joystate[3] = 0;
               }
               break;
-            
+
             case 1: // up/down
               if( ev->jaxis.value < -3200 )
               {
@@ -254,74 +254,120 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
 void joy_buildmask( struct machine *oric )
 {
   Uint8 mkmask = 0xff;
+  Uint8 mkmask_f = 0xff;
   Uint8 joysel = oric->via.read_port_a( &oric->via );
+  Uint8 telestrat_joysel = oric->tele_via.read_port_b( &oric->tele_via );
   SDL_bool gimme_port_a = SDL_FALSE;
+  SDL_bool gimme_port_b = SDL_FALSE;
 
-  switch( oric->joy_iface )
+  if (oric->type == MACH_TELESTRAT)
   {
-    case JOYIFACE_ALTAI:
-      if( joysel & 0x80 )
-      {
-        if( joystate_a[0] ) mkmask &= 0xef;
-        if( joystate_a[1] ) mkmask &= 0xf7;
-        if( joystate_a[2] ) mkmask &= 0xfe;
-        if( joystate_a[3] ) mkmask &= 0xfd;
-        if( joystate_a[4] ) mkmask &= 0xdf;
-        gimme_port_a = SDL_TRUE;
-      }
+    if ( telestrat_joysel & 0x80 )
+    {
+      // Right Port
+      if( joystate_a[0] ) mkmask &= 0xef;
+      if( joystate_a[1] ) mkmask &= 0xf7;
+      if( joystate_a[2] ) mkmask &= 0xfd;
+      if( joystate_a[3] ) mkmask &= 0xfe;
+      if( joystate_a[4] ) mkmask &= 0xfb;
 
-      if( joysel & 0x40 )
-      {
-        if( joystate_b[0] ) mkmask &= 0xef; // 0x10  - up
-        if( joystate_b[1] ) mkmask &= 0xf7; // 0x08  - down
-        if( joystate_b[2] ) mkmask &= 0xfe; // 0x01  - left
-        if( joystate_b[3] ) mkmask &= 0xfd; // 0x02  - right
-        if( joystate_b[4] ) mkmask &= 0xdf; // 0x20  - fire
-        gimme_port_a = SDL_TRUE;
-      }
-      break;
-    
-    case JOYIFACE_IJK:
-      mkmask &= 0xdf;
+      if( joystate_a[5] ) mkmask_f &= 0x7f;  // PA7 - fire 2
+      if( joystate_a[6] ) mkmask_f &= 0xdf;  // PA5 - fire 3
 
-      if( ((oric->via.ddrb & 0x10)==0) ||
-          ((oric->via.read_port_b( &oric->via )&0x10)!=0) )
-        break;
-      
       gimme_port_a = SDL_TRUE;
+      gimme_port_b = SDL_TRUE;
+    }
 
-      if( ( joysel & 0xc0 ) == 0xc0 ) break;
+    if ( telestrat_joysel & 0x40 )
+    {
+      // Left Port
+      if( joystate_b[0] ) mkmask &= 0xef;  // 0x10  - up
+      if( joystate_b[1] ) mkmask &= 0xf7;  // 0x08  - down
+      if( joystate_b[2] ) mkmask &= 0xfd;  // 0x02  - left
+      if( joystate_b[3] ) mkmask &= 0xfe;  // 0x01  - right
+      if( joystate_b[4] ) mkmask &= 0xfb;  // 0x04  - fire
+      gimme_port_b = SDL_TRUE;
+    }
 
-      if( joysel & 0x40 )
-      {
-        if( joystate_a[0] ) mkmask &= 0xef;
-        if( joystate_a[1] ) mkmask &= 0xf7;
-        if( joystate_a[2] ) mkmask &= 0xfd;
-        if( joystate_a[3] ) mkmask &= 0xfe;
-        if( joystate_a[4] ) mkmask &= 0xfb;
-      }
+    if( gimme_port_a )
+    {
+      oric->tele_via.write_port_a( &oric->tele_via, 0xff, mkmask_f );
+    }
 
-      if( joysel & 0x80 )
-      {
-        if( joystate_b[0] ) mkmask &= 0xef;  // 0x10  - up
-        if( joystate_b[1] ) mkmask &= 0xf7;  // 0x08  - down
-        if( joystate_b[2] ) mkmask &= 0xfd;  // 0x02  - left
-        if( joystate_b[3] ) mkmask &= 0xfe;  // 0x01  - right
-        if( joystate_b[4] ) mkmask &= 0xfb;  // 0x04  - fire
-      }
-      break;
+    if( gimme_port_b )
+    {
+      oric->tele_via.write_port_b( &oric->tele_via, 0xff, mkmask );
+    }
   }
 
-  oric->porta_joy = mkmask;
-  if( gimme_port_a )
+  else
   {
-    oric->via.write_port_a( &oric->via, 0xff, mkmask );
-    oric->porta_is_ay = SDL_FALSE;
-  } else {
-    if( !oric->porta_is_ay )
+    switch( oric->joy_iface )
     {
-      oric->via.write_port_a( &oric->via, 0xff, oric->porta_ay );
-      oric->porta_is_ay = SDL_TRUE;
+      case JOYIFACE_ALTAI:
+        if( joysel & 0x80 )
+        {
+          if( joystate_a[0] ) mkmask &= 0xef;
+          if( joystate_a[1] ) mkmask &= 0xf7;
+          if( joystate_a[2] ) mkmask &= 0xfe;
+          if( joystate_a[3] ) mkmask &= 0xfd;
+          if( joystate_a[4] ) mkmask &= 0xdf;
+          gimme_port_a = SDL_TRUE;
+        }
+
+        if( joysel & 0x40 )
+        {
+          if( joystate_b[0] ) mkmask &= 0xef; // 0x10  - up
+          if( joystate_b[1] ) mkmask &= 0xf7; // 0x08  - down
+          if( joystate_b[2] ) mkmask &= 0xfe; // 0x01  - left
+          if( joystate_b[3] ) mkmask &= 0xfd; // 0x02  - right
+          if( joystate_b[4] ) mkmask &= 0xdf; // 0x20  - fire
+          gimme_port_a = SDL_TRUE;
+        }
+        break;
+
+      case JOYIFACE_IJK:
+         mkmask &= 0xdf;
+
+        if( ((oric->via.ddrb & 0x10)==0) ||
+            ((oric->via.read_port_b( &oric->via )&0x10)!=0) )
+          break;
+
+        gimme_port_a = SDL_TRUE;
+
+        if( ( joysel & 0xc0 ) == 0xc0 ) break;
+
+        if( joysel & 0x40 )
+        {
+          if( joystate_a[0] ) mkmask &= 0xef;
+          if( joystate_a[1] ) mkmask &= 0xf7;
+          if( joystate_a[2] ) mkmask &= 0xfd;
+          if( joystate_a[3] ) mkmask &= 0xfe;
+          if( joystate_a[4] ) mkmask &= 0xfb;
+        }
+
+        if( joysel & 0x80 )
+        {
+          if( joystate_b[0] ) mkmask &= 0xef;  // 0x10  - up
+          if( joystate_b[1] ) mkmask &= 0xf7;  // 0x08  - down
+          if( joystate_b[2] ) mkmask &= 0xfd;  // 0x02  - left
+          if( joystate_b[3] ) mkmask &= 0xfe;  // 0x01  - right
+          if( joystate_b[4] ) mkmask &= 0xfb;  // 0x04  - fire
+        }
+        break;
+    }
+
+    oric->porta_joy = mkmask;
+    if( gimme_port_a )
+    {
+      oric->via.write_port_a( &oric->via, 0xff, mkmask );
+      oric->porta_is_ay = SDL_FALSE;
+    } else {
+      if( !oric->porta_is_ay )
+      {
+       oric->via.write_port_a( &oric->via, 0xff, oric->porta_ay );
+        oric->porta_is_ay = SDL_TRUE;
+      }
     }
   }
 }
