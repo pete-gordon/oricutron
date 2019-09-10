@@ -154,7 +154,7 @@ struct machine
   char diskname[MAX_DRIVES][32];
   SDL_bool diskautosave;
   SDL_bool auto_jasmin_reset;
-  
+
   FILE *prf;
   int prclose, prclock;
 
@@ -237,7 +237,7 @@ struct machine
   Sint32 joy_iface;
   Sint32 joymode_a, joymode_b;
   Sint32 telejoymode_a, telejoymode_b;
-  SDL_COMPAT_KEY kbjoy1[6], kbjoy2[6];
+  SDL_COMPAT_KEY kbjoy1[7], kbjoy2[7];
 
   SDL_bool printenable;
   SDL_bool printfilter;
