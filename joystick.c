@@ -235,13 +235,13 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
 
         case SDL_JOYBUTTONDOWN:
           if( ev->jbutton.which != (mode-JOYMODE_SDL0) ) return SDL_FALSE;
-          joystate[4+(ev->jbutton.button&1)] = 1;
+          joystate[4+(ev->jbutton.button % 3)] = 1;
           swallowit = SDL_TRUE;
           break;
 
         case SDL_JOYBUTTONUP:
           if( ev->jbutton.which != (mode-JOYMODE_SDL0) ) return SDL_FALSE;
-          joystate[4+(ev->jbutton.button&1)] = 0;
+          joystate[4+(ev->jbutton.button % 3)] = 0;
           swallowit = SDL_TRUE;
           break;
       }
