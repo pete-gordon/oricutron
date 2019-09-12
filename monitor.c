@@ -252,7 +252,7 @@ enum
 #define AMF_IND (1<<AM_IND)
 
 //                                          imp   imm    zp   zpx   zpy   abs   abx   aby   zix   ziy   rel   ind
-static struct asminf asmtab[] = { { "BRK", 0x00,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+static struct asminf asmtab[] = { { "BRK",  -1, 0x00,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
                                   { "ORA",   -1, 0x09, 0x05, 0x15,   -1, 0x0d, 0x1d, 0x19, 0x01, 0x11,   -1,   -1 },
                                   { "ASL", 0x0a,   -1, 0x06, 0x16,   -1, 0x0e, 0x1e,   -1,   -1,   -1,   -1,   -1 },
                                   { "PHP", 0x08,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
@@ -2748,7 +2748,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
             if( oric->cpu.breakpoints[j] != -1 )
             {
               mon_printf( "%02d: $%04X %s%s",
-                j, 
+                j,
                 oric->cpu.breakpoints[j],
                 (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLES) ? "z" : "",
                 (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLESCONTINUE) ? "c" : "");
@@ -2842,7 +2842,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           oric->cpu.anybp = SDL_TRUE;
 
           while( isws( cmd[i] ) ) i++;
-          
+
           for( ;; )
           {
             switch( cmd[i] )
@@ -2859,8 +2859,8 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
             break;
           }
 
-          mon_printf( "%02d: $%04X %s%s", 
-            j, 
+          mon_printf( "%02d: $%04X %s%s",
+            j,
             oric->cpu.breakpoints[j],
             (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLES) ? "z" : "",
             (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLESCONTINUE) ? "c" : "" );
