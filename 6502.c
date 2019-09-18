@@ -116,7 +116,7 @@ void m6502_reset( struct m6502 *cpu )
                  if( t > 9 ) t += 6;\
                  cpu->a = (r&0xf)|(t<<4);\
                  cpu->f_c = t>15 ? 1 : 0;\
-                 cpu->f_z = cpu->a!=0;\
+                 cpu->f_z = cpu->a==0;\
                  cpu->f_n = cpu->a&0x80;\
                } else {\
                  r = cpu->a + v + cpu->f_c;\
@@ -168,7 +168,7 @@ void m6502_reset( struct m6502 *cpu )
                  if( t&0x10 ) t -= 6;\
                  cpu->a = (r&0xf)|(t<<4);\
                  cpu->f_c = (t>15) ? 0 : 1;\
-                 cpu->f_z = cpu->a!=0;\
+                 cpu->f_z = cpu->a==0;\
                  cpu->f_n = cpu->a&0x80;\
                } else {\
                  r = (cpu->a - v) - (cpu->f_c^1);\

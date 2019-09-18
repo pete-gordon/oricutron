@@ -3,6 +3,10 @@ Oricutron ChangeLog
 
 pre-release changes (work in progress)
 --------------------------------------
+* Fixed Z-flag in BCD mode
+* Fixed embedded assembler: BRK is a 2 bytes instruction
+* Added 3rd button support with SDL Joystick
+* Added Telestrat Joysticks support
 * Fixed CSAVE/CLOAD with Sedoric
 * Added missing chars (@,&) in monitor font
 * Fixed typing upper case chars and syms in debugger window

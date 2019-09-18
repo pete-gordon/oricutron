@@ -252,7 +252,7 @@ enum
 #define AMF_IND (1<<AM_IND)
 
 //                                          imp   imm    zp   zpx   zpy   abs   abx   aby   zix   ziy   rel   ind
-static struct asminf asmtab[] = { { "BRK",  -1, 0x00,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+static struct asminf asmtab[] = { { "BRK",   -1, 0x00,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
                                   { "ORA",   -1, 0x09, 0x05, 0x15,   -1, 0x0d, 0x1d, 0x19, 0x01, 0x11,   -1,   -1 },
                                   { "ASL", 0x0a,   -1, 0x06, 0x16,   -1, 0x0e, 0x1e,   -1,   -1,   -1,   -1,   -1 },
                                   { "PHP", 0x08,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
