@@ -1,0 +1,5 @@
+Open Developer Command Prompt 2019
+mkdir build\default
+cd build\default
+cmake -GNinja ../..
+ninja
