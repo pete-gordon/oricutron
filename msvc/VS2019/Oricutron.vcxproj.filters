@@ -268,10 +268,16 @@
     <None Include="readme.md">
       <Filter>Source Files\msvc</Filter>
     </None>
-    <None Include="..\..\filereq_osx.m" />
-    <None Include="..\..\gui_osx.m" />
     <None Include="..\..\Makefile" />
-    <None Include="..\..\msgbox_osx.m" />
+    <None Include="..\..\filereq_osx.m">
+      <Filter>Source Files\filereq</Filter>
+    </None>
+    <None Include="..\..\msgbox_osx.m">
+      <Filter>Source Files\msgbox</Filter>
+    </None>
+    <None Include="..\..\gui_osx.m">
+      <Filter>Source Files\gui</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\winicon.ico">
