@@ -92,16 +92,16 @@ static void FreeResources(void)
     g_glcontext = NULL;
   }
 
-  if(g_renderer)
+	if (g_texture)
+	{
+		SDL_DestroyTexture(g_texture);
+		g_texture = NULL;
+	}
+
+	if(g_renderer)
   {
     SDL_DestroyRenderer(g_renderer);
     g_renderer = NULL;
-  }
-
-  if(g_texture)
-  {
-    SDL_DestroyTexture(g_texture);
-    g_texture = NULL;
   }
 
   if(g_screen)
