@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27428.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Oricutron", "Oricutron.vcxproj", "{89EA5DFF-F149-4A3C-9F9F-DD152D43934E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{89EA5DFF-F149-4A3C-9F9F-DD152D43934E}.Debug|x64.ActiveCfg = Debug|x64
+		{89EA5DFF-F149-4A3C-9F9F-DD152D43934E}.Debug|x64.Build.0 = Debug|x64
+		{89EA5DFF-F149-4A3C-9F9F-DD152D43934E}.Release|x64.ActiveCfg = Release|x64
+		{89EA5DFF-F149-4A3C-9F9F-DD152D43934E}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A01DCBAA-6E13-46A8-BF55-B03859482CD2}
+	EndGlobalSection
+EndGlobal

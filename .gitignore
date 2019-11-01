@@ -16,3 +16,4 @@ x64/
 /oricutron.aps
 /msvc/**/Oricutron.psess
 /msvc/**/*.user
+/msvc/**/vcpkg
