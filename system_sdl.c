@@ -379,12 +379,12 @@ SDL_Surface* SDL_COMPAT_SetVideoMode(int width, int height, int bitsperpixel, Ui
 
   g_window = SDL_CreateWindow("oricutron", g_lastx, g_lasty,
                               g_width, g_height, flags);
-	if (g_icon)
-	{
-		SDL_SetWindowIcon(g_window, g_icon);
-		// ...and the surface containing the icon pixel data is no longer required.
-		SDL_FreeSurface(g_icon);
-	}
+  if (g_icon)
+  {
+    SDL_SetWindowIcon(g_window, g_icon);
+    // ...and the surface containing the icon pixel data is no longer required.
+    SDL_FreeSurface(g_icon);
+  }
 
   if(flags & SDL_WINDOW_OPENGL)
   {
