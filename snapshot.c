@@ -1141,7 +1141,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
     case DRV_PRAVETZ:
     {
       Uint8 tmp[PRAV_TRACKS_PER_DISK*PRAV_RAW_TRACK_SIZE*2];
-      Uint32 offs;
+      Uint32 offs_;
 
       /* Get the pravetz block */
       blk = load_block(oric, "PRV\x00", f, SDL_TRUE, 9+2*10, SDL_TRUE);
@@ -1250,12 +1250,12 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
 
         sprintf(oric->wddisk.disk[i]->filename, "%s%cSNAPDISK%d.DSK", diskpath, PATHSEP, i);
 
-        offs = getu32(blk);
+        offs_ = getu32(blk);
         oric->pravetz.drv[i].pimg = oric->wddisk.disk[i];
-        if (offs == 0xffffffff)
+        if (offs_ == 0xffffffff)
           oric->pravetz.drv[i].sector_ptr = NULL;
         else
-          oric->pravetz.drv[i].sector_ptr = &oric->pravetz.drv[i].pimg->rawimage[offs];
+          oric->pravetz.drv[i].sector_ptr = &oric->pravetz.drv[i].pimg->rawimage[offs_];
 
         blk->id[0] = 0; // Don't find this one again
         free_block(blk);

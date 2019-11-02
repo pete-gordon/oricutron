@@ -783,10 +783,10 @@ void tzsettitle( struct textzone *ptz, char *title )
   ptz->py = oy;
 }
 
-SDL_bool in_textzone( struct textzone *tz, int x, int y )
+SDL_bool in_textzone( struct textzone *tz_, int x, int y )
 {
-  if( ( x >= tz->x ) && ( x < (tz->x+tz->w*8) ) &&
-      ( y >= tz->y ) && ( y < (tz->y+tz->h*12) ) )
+  if( ( x >= tz_->x ) && ( x < (tz_->x+tz_->w*8) ) &&
+      ( y >= tz_->y ) && ( y < (tz_->y+tz_->h*12) ) )
   {
     return SDL_TRUE;
   }

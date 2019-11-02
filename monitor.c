@@ -3987,18 +3987,18 @@ static unsigned int steppy_step( struct machine *oric )
   return oric->cpu.icycles;
 }
 
-static SDL_bool clickzone( struct textzone *tz, int *tx, int *ty, SDL_bool *dblclk )
+static SDL_bool clickzone( struct textzone *tz_, int *tx, int *ty, SDL_bool *dblclk )
 {
   int dx, dy;
 
-  if( !in_textzone( tz, leftclick[0].x, leftclick[0].y ) )
+  if( !in_textzone( tz_, leftclick[0].x, leftclick[0].y ) )
     return SDL_FALSE;
 
-  *tx = (leftclick[0].x - tz->x) / 8;
-  *ty = (leftclick[0].y - tz->y) / 12;
+  *tx = (leftclick[0].x - tz_->x) / 8;
+  *ty = (leftclick[0].y - tz_->y) / 12;
 
-  dx = (leftclick[1].x - tz->x) / 8;
-  dy = (leftclick[1].y - tz->y) / 12;
+  dx = (leftclick[1].x - tz_->x) / 8;
+  dy = (leftclick[1].y - tz_->y) / 12;
 
   if( ( (*tx) == dx ) && ( (*ty) == dy ) && ( (leftclick[0].time-leftclick[1].time) < 1000 ) )
   {

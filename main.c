@@ -1187,9 +1187,9 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
     }
     else
     {
-      int i = 0;
+      int off = 0;
       unsigned int addr;
-      if( !mon_getnum( oric, &addr, sto->start_breakpoint, &i, SDL_FALSE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+      if( !mon_getnum( oric, &addr, sto->start_breakpoint, &off, SDL_FALSE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
       {
         error_printf( "Invalid breakpoint" );
         free( sto );
