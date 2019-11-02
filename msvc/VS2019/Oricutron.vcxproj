@@ -70,7 +70,7 @@ if "$(Configuration.Contains('Release'))"=="True" ( copy "..\vcpkg\installed\x64
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>.;..\vcpkg\installed\x64-windows\include\SDL2\</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>SDL_MAIN_HANDLED=1;__OPENGL_AVAILABLE__;_MBCS;WIN32;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;__CBCOPY__;__CBPASTE__;APP_NAME_FULL="Oricutron 1.2";APP_YEAR="2015";VERSION_COPYRIGHTS="Oricutron 1.2.0 (c)2015 Peter Gordon (pete@petergordon.org.uk)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalOptions>/we4013 /we4115 /wd4100 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/we4013 /we4115 /wd4100 /wd4244 /wd4152 /wd4706 /wd4018 /wd4267 /wd4389 /wd4245 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>shlwapi.lib;SDL2.lib;ws2_32.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -95,7 +95,7 @@ if "$(Configuration.Contains('Release'))"=="True" ( copy "..\vcpkg\installed\x64
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <StringPooling>true</StringPooling>
-      <AdditionalOptions>/we4013 /we4115 /wd4100 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/we4013 /we4115 /wd4100 /wd4244 /wd4152 /wd4706 /wd4018 /wd4267 /wd4389 /wd4245 %(AdditionalOptions)</AdditionalOptions>
       <OmitFramePointers>true</OmitFramePointers>
     </ClCompile>
     <Link>
