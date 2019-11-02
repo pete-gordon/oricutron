@@ -6,20 +6,19 @@ Compiling Oricutron with Microsoft Visual Studio Community 2017 Version 15.6.0 P
 
 ### SDL 2
 
-Depends on SDL2 from vcpkg, see https://docs.microsoft.com/en-us/cpp/vcpkg
+Depends on SDL2 from vcpkg, see https://docs.microsoft.com/en-us/cpp/vcpkg.
+vspkg and SDL2 will be fetched automatically as long as git is accessible in the build environment.
+Otherwise, run "git submodule update --init" prior to building the solution.
 
 ## Build Oricutron
 
    1. Open the solution "Oricutron.sln"
-   2. Open "Build -> Batch Build..." press "Select All" and press "Rebuild"
-
+   2. Build through Visual Studio. Allow time on the first build to fetch dependencies.
+   
    or (alternative) to steps 1. and 2.:
       Execute
       "c:\Program Files (x86)\Microsoft Visual Studio\Preview\Community\VC\Auxiliary\Build\vcvars64.bat" and
       "msrebuild_all.cmd" from the "msvc" folder.
-
-   3. Call make_links.cmd from the "msvc" folder as Administrator to set the necassary links to vcpkg, roms, images and oricutron.cfg
-      to be able to debug / run Oricutron.
 
 ## Known Issues
 
