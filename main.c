@@ -82,6 +82,18 @@ extern char telebankfiles[8][1024];
 static char keymap_path[4096+32];
 static int  load_keymap = SDL_FALSE;
 
+struct context
+{
+  struct machine oric;
+  SDL_Event event;
+  Uint64 nextframe_us;
+  Uint32 nextframe_ms;
+  Uint32 now;
+  Uint32 then;
+  SDL_bool needrender;
+  SDL_bool framedone;
+};
+
 #ifdef __amigaos4__
 char __attribute__((used)) stackcookie[] = "$STACK: 1000000";
 #endif
@@ -1211,7 +1223,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   return SDL_TRUE;
 }
 
-void shut( struct machine *oric )
+static void shut( struct machine *oric )
 {
   if( vidcap ) avi_close( &vidcap );
 #if defined(DEBUG_CPU_TRACE) && DEBUG_CPU_TRACE > 0
@@ -1361,65 +1373,57 @@ void once_per_frame( struct machine *oric )
   }
 }
 
-void loop_handler( struct machine *oric )
+static void loop_handler( void* arg )
 {
-  Uint64 nextframe_us;
-  Uint32 nextframe_ms, now = 0, then;
-  SDL_bool done, needrender, framedone;
+  struct context* ctx = arg;
+  struct machine* oric = &ctx->oric;
+  SDL_Event* event = &ctx->event;
+
+  SDL_bool done = SDL_FALSE;
   Sint32 i;
-
-  now = SDL_GetTicks();
-  nextframe_ms = now;
-  nextframe_us = ((Uint64)nextframe_ms) * 1000;
-
-  done = SDL_FALSE;
-  needrender = SDL_TRUE;
-  framedone = SDL_FALSE;
 
   while (!done)
   {
-    SDL_Event event;
-
     if ( oric->emu_mode == EM_PLEASEQUIT )
       break;
 
     if ( oric->emu_mode == EM_RUNNING )
     {
       if (oric->overclockmult == 1)
-        frameloop_normal( oric, &framedone, &needrender );
+        frameloop_normal( oric, &ctx->framedone, &ctx->needrender );
       else
-        frameloop_overclock( oric, &framedone, &needrender );
+        frameloop_overclock( oric, &ctx->framedone, &ctx->needrender );
 
       ay_unlockaudio( &oric->ay );
 
-      if (framedone)
+      if (ctx->framedone)
       {
-        nextframe_us += oric->vid_freq ? 20000LL : 16667LL;
-        nextframe_ms = (Uint32)(nextframe_us / 1000LL);
+        ctx->nextframe_us += oric->vid_freq ? 20000LL : 16667LL;
+        ctx->nextframe_ms = (Uint32)(ctx->nextframe_us / 1000LL);
 
         if (warpspeed)
         {
           if ((oric->frames&3)==0)
-            needrender = SDL_TRUE;
+            ctx->needrender = SDL_TRUE;
         }
         else
         {
-          needrender = SDL_TRUE;
+          ctx->needrender = SDL_TRUE;
         }
       }
 
-      if (needrender)
+      if (ctx->needrender)
       {
         render( oric );
-        needrender = SDL_FALSE;
+        ctx->needrender = SDL_FALSE;
       }
 
-      if (framedone)
+      if (ctx->framedone)
       {
         once_per_frame( oric );
 
-        then = now;
-        now = SDL_GetTicks();
+        ctx->then = ctx->now;
+        ctx->now = SDL_GetTicks();
 
         frametimeave = 0;
         for (i = (FRAMES_TO_AVERAGE - 1); i > 0; i--)
@@ -1427,52 +1431,54 @@ void loop_handler( struct machine *oric )
           lastframetimes[i] = lastframetimes[i - 1];
           frametimeave += lastframetimes[i];
         }
-        lastframetimes[0] = now - then;
+        lastframetimes[0] = ctx->now - ctx->then;
         frametimeave = (frametimeave + lastframetimes[0]) / FRAMES_TO_AVERAGE;
 
         if (warpspeed)
         {
-          nextframe_ms = now;
-          nextframe_us = ((Uint64)nextframe_ms) * 1000;
+          ctx->nextframe_ms = ctx->now;
+          ctx->nextframe_us = ((Uint64)ctx->nextframe_ms) * 1000;
         }
         else
         {
-          if (now > nextframe_ms)
+          if (ctx->now > ctx->nextframe_ms)
           {
-            nextframe_ms = now;
-            nextframe_us = ((Uint64)nextframe_ms) * 1000;
+            ctx->nextframe_ms = ctx->now;
+            ctx->nextframe_us = ((Uint64)ctx->nextframe_ms) * 1000;
           }
           else
           {
-            SDL_Delay(nextframe_ms - now);
+            SDL_Delay(ctx->nextframe_ms - ctx->now);
           }
         }
-        framedone = SDL_FALSE;
+        ctx->framedone = SDL_FALSE;
       }
 
-      if (!SDL_PollEvent(&event)) continue;
+      if (!SDL_PollEvent(event))
+        continue;
     }
     else
     {
       ay_unlockaudio( &oric->ay );
-      if (needrender)
+      if (ctx->needrender)
       {
         render( oric );
-        needrender = SDL_FALSE;
+        ctx->needrender = SDL_FALSE;
       }
-      if (!SDL_WaitEvent(&event)) break;
+      if (!SDL_WaitEvent(event))
+        break;
     }
 
     do {
-      switch (event.type)
+      switch (event->type)
       {
         case SDL_COMPAT_ACTIVEEVENT:
         {
-          if (SDL_COMPAT_IsAppActive(&event))
+          if (SDL_COMPAT_IsAppActive(event))
           {
             oric->shut_render(oric);
             oric->init_render(oric);
-            needrender = SDL_TRUE;
+            ctx->needrender = SDL_TRUE;
           }
         }
         break;
@@ -1484,31 +1490,33 @@ void loop_handler( struct machine *oric )
           switch ( oric->emu_mode )
           {
             case EM_MENU:
-              done |= menu_event( &event, oric, &needrender );
+              done |= menu_event( event, oric, &ctx->needrender );
               break;
 
             case EM_RUNNING:
-              done |= emu_event( &event, oric, &needrender );
+              done |= emu_event( event, oric, &ctx->needrender );
               break;
 
             case EM_DEBUG:
-              done |= mon_event( &event, oric, &needrender );
+              done |= mon_event( event, oric, &ctx->needrender );
               break;
           }
       }
       if (oric->show_keyboard)
-        keyboard_event( &event, oric, &needrender );
+        keyboard_event( event, oric, &ctx->needrender );
 
-    } while ( SDL_PollEvent( &event ) );
+    } while ( SDL_PollEvent( event ) );
   }
 
-  ay_unlockaudio( &oric->ay );
-  shut( oric );
+  {
+    ay_unlockaudio(&oric->ay);
+    shut(oric);
+  }
 }
 
 int main( int argc, char *argv[] )
 {
-  static struct machine oric;
+  static struct context ctx;
 
 #ifdef _MSC_VER
   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -1537,21 +1545,26 @@ int main( int argc, char *argv[] )
     //printf("Current Path: %s\n", path);
 #endif
 
-  memset(&oric, 0, sizeof(oric));
+  memset(&ctx.oric, 0, sizeof(ctx.oric));
+  ctx.now = SDL_GetTicks();
+  ctx.nextframe_ms = ctx.now;
+  ctx.nextframe_us = ((Uint64)ctx.nextframe_ms) * 1000;
+  ctx.needrender = SDL_TRUE;
+  ctx.framedone = SDL_FALSE;
 
-  if (!init(&oric, argc, argv))
+  if (!init(&ctx.oric, argc, argv))
   {
-    shut(&oric);
+    shut(&ctx.oric);
     return EXIT_FAILURE;
   }
 
   if (load_keymap)
   {
-    load_keyboard_mapping(&oric, keymap_path);
+    load_keyboard_mapping(&ctx.oric, keymap_path);
     load_keymap = SDL_FALSE;
   }
 
-  loop_handler(&oric);
+  loop_handler(&ctx.oric);
 
   return EXIT_SUCCESS;
 }
