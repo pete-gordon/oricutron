@@ -1551,7 +1551,7 @@ int main( int argc, char *argv[] )
     shut(&ctx.oric);
     return EXIT_FAILURE;
   }
-
+  // call to SDL_GetTicks must be behind init
   ctx.now = SDL_GetTicks();
   ctx.nextframe_ms = ctx.now;
   ctx.nextframe_us = ((Uint64)ctx.nextframe_ms) * 1000;
