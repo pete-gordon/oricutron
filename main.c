@@ -1564,7 +1564,7 @@ int main( int argc, char *argv[] )
     load_keymap = SDL_FALSE;
   }
 
-  loop_handler(&ctx.oric);
+  loop_handler(&ctx);
 
   return EXIT_SUCCESS;
 }
