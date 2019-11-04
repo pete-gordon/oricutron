@@ -1546,17 +1546,17 @@ int main( int argc, char *argv[] )
 #endif
 
   memset(&ctx.oric, 0, sizeof(ctx.oric));
-  ctx.now = SDL_GetTicks();
-  ctx.nextframe_ms = ctx.now;
-  ctx.nextframe_us = ((Uint64)ctx.nextframe_ms) * 1000;
-  ctx.needrender = SDL_TRUE;
-  ctx.framedone = SDL_FALSE;
-
   if (!init(&ctx.oric, argc, argv))
   {
     shut(&ctx.oric);
     return EXIT_FAILURE;
   }
+
+  ctx.now = SDL_GetTicks();
+  ctx.nextframe_ms = ctx.now;
+  ctx.nextframe_us = ((Uint64)ctx.nextframe_ms) * 1000;
+  ctx.needrender = SDL_TRUE;
+  ctx.framedone = SDL_FALSE;
 
   if (load_keymap)
   {
@@ -1564,7 +1564,7 @@ int main( int argc, char *argv[] )
     load_keymap = SDL_FALSE;
   }
 
-  loop_handler(&ctx.oric);
+  loop_handler(&ctx);
 
   return EXIT_SUCCESS;
 }
