@@ -1864,7 +1864,11 @@ void shut_machine( struct machine *oric )
   mon_freesyms( &oric->tele_banksyms[7] );
 }
 
-void shut( void );
+static void shut(void)
+{
+
+}
+
 void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
 {
   if( oric->drivetype == type )
