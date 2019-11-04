@@ -1223,7 +1223,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   return SDL_TRUE;
 }
 
-static void shut( struct machine *oric )
+void shut( struct machine *oric )
 {
   if( vidcap ) avi_close( &vidcap );
 #if defined(DEBUG_CPU_TRACE) && DEBUG_CPU_TRACE > 0

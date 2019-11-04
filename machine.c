@@ -1864,11 +1864,6 @@ void shut_machine( struct machine *oric )
   mon_freesyms( &oric->tele_banksyms[7] );
 }
 
-static void shut(void)
-{
-
-}
-
 void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
 {
   if( oric->drivetype == type )
@@ -1899,7 +1894,7 @@ void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
   mon_state_reset( oric );
   if( !init_machine( oric, oric->type, SDL_FALSE ) )
   {
-    shut();
+    shut( oric );
     exit( EXIT_FAILURE );
   }
 
@@ -1928,7 +1923,7 @@ void swapmach( struct machine *oric, struct osdmenuitem *mitem, int which )
   mon_state_reset( oric );
   if( !init_machine( oric, which, which!=oric->type ) )
   {
-    shut();
+    shut( oric );
     exit( EXIT_FAILURE );
   }
 }

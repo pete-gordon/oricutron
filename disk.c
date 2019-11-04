@@ -1287,8 +1287,10 @@ unsigned char microdisc_read( struct microdisc *md, unsigned short addr )
       return md->drq|0x7f;
 
     default:
-      return via_read( &md->oric->via, addr );
+      break;
   }
+
+  return via_read( &md->oric->via, addr );
 }
 
 void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char data )
@@ -1396,10 +1398,11 @@ unsigned char jasmin_read( struct jasmin *j, unsigned short addr )
     case 0x3fb:
       return j->romdis;
 
-
     default:
-      return via_read( &j->oric->via, addr );
+      break;
   }
+
+  return via_read( &j->oric->via, addr );
 }
 
 void jasmin_write( struct jasmin *j, unsigned short addr, unsigned char data )
