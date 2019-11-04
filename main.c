@@ -63,6 +63,12 @@
 #include "snapshot.h"
 #include "keyboard.h"
 
+#ifdef _MSC_VER
+#if SDL_MAJOR_VERSION == 1
+#undef main
+#endif
+#endif
+
 #define FRAMES_TO_AVERAGE 8
 
 SDL_bool need_sdl_quit = SDL_FALSE;
