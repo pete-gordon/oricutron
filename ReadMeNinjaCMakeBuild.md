@@ -1,4 +1,4 @@
-# Nina + CMake Buildsystem for Oricutron
+# Ninja + CMake Buildsystem for Oricutron
 
 ## Dependencies
 
