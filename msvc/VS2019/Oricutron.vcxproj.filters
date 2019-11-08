@@ -260,6 +260,9 @@
     <ClInclude Include="..\..\6551.h">
       <Filter>Header Files\acia</Filter>
     </ClInclude>
+    <ClInclude Include="..\dirent.h">
+      <Filter>Header Files\msvc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="make_links.cmd">

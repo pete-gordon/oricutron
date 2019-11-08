@@ -24,6 +24,8 @@
 #include <string.h>
 #ifndef _MSC_VER
 #include <dirent.h>
+#else
+#include "msvc/dirent.h"
 #endif
 #include <sys/stat.h>
 

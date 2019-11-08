@@ -326,6 +326,7 @@ if "$(Configuration.Contains('Release'))"=="True" ( copy "..\vcpkg\installed\x64
     <ClInclude Include="..\..\tape.h" />
     <ClInclude Include="..\..\ula.h" />
     <ClInclude Include="..\..\via.h" />
+    <ClInclude Include="..\dirent.h" />
     <ClInclude Include="..\strcasecmp.h" />
     <ClInclude Include="..\unistd.h" />
   </ItemGroup>
