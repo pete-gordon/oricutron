@@ -60,7 +60,7 @@ extern char diskpath[], diskfile[], filetmp[];
 extern char telediskpath[], telediskfile[];
 extern char pravdiskpath[], pravdiskfile[];
 extern SDL_bool refreshstatus, refreshavi;
-extern int g_menu_scheme; // #InfoBadDesign - init g_menu_scheme should be done lesewher - machine.c should not depend on gui - but this is the only place I know
+extern int g_menu_scheme; // #InfoBadDesign - init g_menu_scheme should be done elsewhere - machine.c should not depend on gui - but this is the only place I know
 
 char atmosromfile[1024];
 char oric1romfile[1024];
