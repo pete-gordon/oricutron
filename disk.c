@@ -54,8 +54,6 @@ extern SDL_bool refreshdisks;
 
 #define GENERAL_DISK_DEBUG 0
 #define DEBUG_SECTOR_DUMP  0
-//#undef dbg_printf
-//#define dbg_printf(x...) { printf(x); printf("\n"); }
 
 #if DEBUG_SECTOR_DUMP
 static char sectordumpstr[64];
