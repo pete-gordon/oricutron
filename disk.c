@@ -1248,6 +1248,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
               dbg_printf( "\tCOP_WRITE_TRACK: %02X -> CRC -> %04X", wd->r_data, wd->crc);
 #endif
               wd->disk[wd->c_drive]->rawimage[(wd->c_side*wd->disk[wd->c_drive]->numtracks + wd->c_track)*6400+256 + wd->curroffs] = wd->crc >> 8;
+              wd->curroffs++;
               wd->r_data = wd->crc & 0xff;
               break;
 
