@@ -870,6 +870,26 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
           }
           break;
 
+        case COP_READ_TRACK:
+
+          wd->r_data = wd->disk[wd->c_drive]->rawimage[(wd->c_side*wd->disk[wd->c_drive]->numtracks + wd->c_track)*6400+256 + wd->curroffs];
+          wd->curroffs++;
+          wd->r_status &= ~WSF_DRQ;
+          wd->clrdrq( wd->drqarg );
+
+          // Has the whole track been read?
+          if( wd->curroffs >= 6400 )
+          {
+            wd->delayedint = 20;
+            wd->distatus   = 0;
+            wd->currentop = COP_NUFFINK;
+            refreshdisks = SDL_TRUE;
+          } else {
+            wd->delayeddrq = 32;
+          }
+
+          break;
+
         case COP_READ_ADDRESS:
           if( !wd->currsector )
           {
@@ -1125,6 +1145,10 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
 #if GENERAL_DISK_DEBUG
               dbg_printf( "DISK: (%04X) Read track", oric->cpu.pc-1 );
 #endif
+              wd->curroffs = 0;
+              wd->r_status   = WSF_BUSY|WSF_NOTREADY;
+              wd->delayeddrq = 60;
+
               wd->currentop = COP_READ_TRACK;
               refreshdisks = SDL_TRUE;
               break;
@@ -1321,6 +1345,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           wd->disk[wd->c_drive]->modified_time = 0;
           refreshdisks = SDL_TRUE;
 
+          // Has the whole track been written?
 	  if (wd->curroffs >= 6400)
 	  {
 #if GENERAL_DISK_DEBUG
