@@ -1134,8 +1134,11 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
               dbg_printf( "DISK: (%04X) Write track", oric->cpu.pc-1 );
 #endif
               wd->curroffs = 0;
-              wd->r_status = WSF_NOTREADY|WSF_BUSY|WSF_DRQ;
-              wd->setdrq( wd->drqarg );
+              wd->r_status = WSF_NOTREADY|WSF_BUSY;
+              wd->delayeddrq = 500;
+              wd->clrdrq( wd->drqarg );
+              wd->clrintrq( wd->intrqarg );
+              wd->delayedint = 0;
 
               wd->currentop = COP_WRITE_TRACK;
               refreshdisks = SDL_TRUE;
