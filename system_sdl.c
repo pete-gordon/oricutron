@@ -377,6 +377,12 @@ SDL_Surface* SDL_COMPAT_SetVideoMode(int width, int height, int bitsperpixel, Ui
 
   FreeResources();
 
+  // When leaving fullscreen mode, X and Y coordinates should be recentered relative to the display.
+  if (flags ^ SDL_WINDOW_FULLSCREEN) {
+      g_lastx = SDL_WINDOWPOS_CENTERED;
+      g_lasty = SDL_WINDOWPOS_CENTERED;
+  }
+
   g_window = SDL_CreateWindow("oricutron", g_lastx, g_lasty,
                               g_width, g_height, flags);
   if (g_icon)
