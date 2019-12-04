@@ -3,7 +3,9 @@ Oricutron ChangeLog
 
 pre-release changes (work in progress)
 --------------------------------------
-* Fixed Z-flag in BCD mode
+* Added read-track and write-track support for FDC (assinie)
+* Center windows on return from fullscreen mode (rzumer)
+* Fixed Z-flag in BCD mode (iss)
 * Fixed embedded assembler: BRK is a 2 bytes instruction
 * Added 3rd button support with SDL Joystick
 * Added Telestrat Joysticks support
