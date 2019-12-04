@@ -870,6 +870,26 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
           }
           break;
 
+        case COP_READ_TRACK:
+
+          wd->r_data = wd->disk[wd->c_drive]->rawimage[(wd->c_side*wd->disk[wd->c_drive]->numtracks + wd->c_track)*6400+256 + wd->curroffs];
+          wd->curroffs++;
+          wd->r_status &= ~WSF_DRQ;
+          wd->clrdrq( wd->drqarg );
+
+          // Has the whole track been read?
+          if( wd->curroffs >= 6400 )
+          {
+            wd->delayedint = 20;
+            wd->distatus   = 0;
+            wd->currentop = COP_NUFFINK;
+            refreshdisks = SDL_TRUE;
+          } else {
+            wd->delayeddrq = 32;
+          }
+
+          break;
+
         case COP_READ_ADDRESS:
           if( !wd->currsector )
           {
@@ -1125,6 +1145,10 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
 #if GENERAL_DISK_DEBUG
               dbg_printf( "DISK: (%04X) Read track", oric->cpu.pc-1 );
 #endif
+              wd->curroffs = 0;
+              wd->r_status   = WSF_BUSY|WSF_NOTREADY;
+              wd->delayeddrq = 60;
+
               wd->currentop = COP_READ_TRACK;
               refreshdisks = SDL_TRUE;
               break;
@@ -1133,6 +1157,13 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
 #if GENERAL_DISK_DEBUG
               dbg_printf( "DISK: (%04X) Write track", oric->cpu.pc-1 );
 #endif
+              wd->curroffs = 0;
+              wd->r_status = WSF_NOTREADY|WSF_BUSY;
+              wd->delayeddrq = 500;
+              wd->clrdrq( wd->drqarg );
+              wd->clrintrq( wd->intrqarg );
+              wd->delayedint = 0;
+
               wd->currentop = COP_WRITE_TRACK;
               refreshdisks = SDL_TRUE;
               break;
@@ -1212,6 +1243,123 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
           } else {
             wd->delayeddrq = 32;
           }
+          break;
+
+        case COP_WRITE_TRACK:
+          switch(data)
+          {
+            // All bytes > 0xF4 are control bytes
+            case 0xf5:
+              // MFM: Initialize CRC generator
+              // FM : Not allowed
+#if GENERAL_DISK_DEBUG
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> SYNC (clear crc) -> 0xA1", wd->r_data);
+#endif
+              wd->crc = 0x968b;
+              wd->r_data = 0xa1;
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              // wd->crc = 0xcdb4;
+              break;
+
+            case 0xf6:
+              // FM : Not allowed
+#if GENERAL_DISK_DEBUG
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> SYNC -> 0xC2", wd->r_data);
+#endif
+              wd->r_data = 0xc2;
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              break;
+
+            case 0xf7:
+#if GENERAL_DISK_DEBUG
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> CRC -> %04X", wd->r_data, wd->crc);
+#endif
+              wd->disk[wd->c_drive]->rawimage[(wd->c_side*wd->disk[wd->c_drive]->numtracks + wd->c_track)*6400+256 + wd->curroffs] = wd->crc >> 8;
+              wd->curroffs++;
+              wd->r_data = wd->crc & 0xff;
+              break;
+
+#if GENERAL_DISK_DEBUG
+            // MFM: 0xf8 -> 0xff: write control byte
+            // FM : 0xf8 -> 0xfe: Initialize CRC generator
+            case 0xf8:
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> Data Address Mark (deleted)", wd->r_data);
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              // next bytes: data, <CRC>;
+              break;
+
+            case 0xf9:
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> Data Mark", wd->r_data);
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              break;
+
+            case 0xfa:
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> Data Mark", wd->r_data);
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              break;
+
+            case 0xfb:
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> Data Address Mark (normal)", wd->r_data);
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              // next bytes: data, <CRC>;
+              break;
+
+            case 0xfc:
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> Data Mark", wd->r_data);
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              break;
+
+            case 0xfd:
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> Data Mark", wd->r_data);
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              break;
+
+            case 0xfe:
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> Index Address Mark", wd->r_data);
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              // next 6 bytes: track, side, sector, size, <CRC>;
+              break;
+
+            case 0xff:
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> ???", wd->r_data);
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              break;
+#endif
+
+            default:
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+
+          }
+
+         // Write byte to disk image
+#if GENERAL_DISK_DEBUG
+          dbg_printf("\tCOP_WRITE_TRACK: write byte: %02X '%c'", wd->r_data, wd->r_data);
+#endif
+          wd->disk[wd->c_drive]->rawimage[(wd->c_side*wd->disk[wd->c_drive]->numtracks + wd->c_track)*6400+256 + wd->curroffs] = wd->r_data;
+          wd->curroffs++;
+
+          wd->r_status &= ~WSF_DRQ;
+          wd->clrdrq( wd->drqarg );
+
+          wd->disk[wd->c_drive]->modified = SDL_TRUE;
+          wd->disk[wd->c_drive]->modified_time = 0;
+          refreshdisks = SDL_TRUE;
+
+          // Has the whole track been written?
+	  if (wd->curroffs >= 6400)
+	  {
+#if GENERAL_DISK_DEBUG
+            dbg_printf("\tCOP_WRITE_TRACK: track full (%d)", wd->curroffs);
+#endif
+            wd->delayedint = 32;
+            wd->currentop = COP_NUFFINK;
+            // wd->r_status &= (~WSF_DRQ);
+            wd->r_status = 0;
+            wd->clrdrq( wd->drqarg );
+	  }
+	  else
+            wd->delayeddrq = 64;
+
           break;
       }
       break;
