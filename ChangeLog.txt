@@ -3,6 +3,7 @@ Oricutron ChangeLog
 
 pre-release changes (work in progress)
 --------------------------------------
+* Fixed issue #116 no ACIA in Telestrat mode
 * Added read-track and write-track support for FDC (assinie)
 * Center windows on return from fullscreen mode (rzumer)
 * Fixed Z-flag in BCD mode (iss)
