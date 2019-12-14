@@ -67,12 +67,12 @@ void lprintchar( struct machine *oric, char c )
 
       // Put the char to the file, set up the timers
       fputc( c, oric->prf );
-      oric->prclock = 40;
       oric->prclose = 64*312*50*5;
     }
-    // emulate ack signal
-    via_write_CA1( &oric->via, 1 );
   }
+  // emulate ack signal
+  oric->prclock = 40;
+  via_write_CA1( &oric->via, 1 );
 }
 
 
