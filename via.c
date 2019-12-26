@@ -69,10 +69,10 @@ void lprintchar( struct machine *oric, char c )
       fputc( c, oric->prf );
       oric->prclose = 64*312*50*5;
     }
+    // emulate ack signal
+    oric->prclock = 40;
+    via_write_CA1( &oric->via, 1 );
   }
-  // emulate ack signal
-  oric->prclock = 40;
-  via_write_CA1( &oric->via, 1 );
 }
 
 
