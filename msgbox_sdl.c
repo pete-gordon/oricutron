@@ -142,7 +142,7 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
 
   for( j=0, k=30-i/2; j<i; j++, k++ )
     tz[TZ_MSGBOX]->tx[lines[0]+k] = msg[j];
-  
+
   while( (msg[i]=='\r')||(msg[i]=='\n') ) i++;
   if( msg[i] )
   {
@@ -163,7 +163,7 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
       btns = ocbuts;
       cbtn = 1;
       break;
-    
+
     case MSGBOX_OK:
       btns = obuts;
       cbtn = 0;
@@ -175,12 +175,8 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
   presson = -1;
   for( ;; )
   {
-    if( !SDL_WaitEvent( &event ) ) 
-    {
-      SDL_COMPAT_EnableUNICODE( wasunicode );
-      SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
-      return SDL_FALSE;
-    }
+    if( !SDL_WaitEvent( &event ) )
+      break;
 
     switch( event.type )
     {
@@ -202,7 +198,7 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
           msgbox_render( oric );
         }
         break;
-      
+
       case SDL_MOUSEBUTTONDOWN:
         if( event.button.button == SDL_BUTTON_LEFT )
         {
@@ -215,7 +211,7 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
           msgbox_render( oric );
         }
         break;
-      
+
       case SDL_MOUSEBUTTONUP:
         if( event.button.button == SDL_BUTTON_LEFT )
         {
@@ -244,7 +240,7 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
           presson = -1;
         }
         break;
-      
+
       case SDL_KEYDOWN:
         switch( event.key.keysym.sym )
         {
@@ -254,7 +250,7 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
             if( btns[cbtn].x == -1 ) cbtn = 0;
             msgbox_render( oric );
             break;
-          
+
           case SDLK_LEFT:
             cbtn--;
             if( cbtn < 0 )
@@ -264,7 +260,7 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
             }
             msgbox_render( oric );
             break;
-          
+
           case SDLK_RETURN:
           case SDLK_KP_ENTER:
             switch( type )
@@ -281,7 +277,7 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
                 return SDL_TRUE;
             }
             break;
-          
+
           default:
             break;
         }

@@ -335,11 +335,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   for( ;; )
   {
     if( !SDL_WaitEvent( &event ) )
-    {
-      SDL_COMPAT_EnableUNICODE( wasunicode );
-      SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
-      return SDL_FALSE;
-    }
+      break;
 
     mx = -1;
     my = -1;
@@ -373,7 +369,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       case SDL_MOUSEBUTTONDOWN:
         if( ( mx < 1 ) || ( mx > 38 ) )
           break;
-       
+
         if( ( my == 28 ) || ( my == 30 ) )
         {
           freqf_cgad = (my-28)/2;
@@ -456,18 +452,18 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
                 filereq_drawtbox( &freqf_tbox[1], freqf_cgad==1 );
                 filereq_render( oric );
                 break;
-              
+
               case 1:
                 SDL_COMPAT_EnableUNICODE( wasunicode );
                 SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
                 return SDL_TRUE;
-                
+
               case 2:
                 doaction = ACTION_SELECTITEM;
                 break;
             }
             break;
-          
+
           default:
             break;
         }
@@ -475,7 +471,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
 
       case SDL_KEYDOWN:
         switch( event.key.keysym.sym )
-        {          
+        {
           case SDLK_LSHIFT:
           case SDLK_RSHIFT:
             shifty = SDL_TRUE;
@@ -491,7 +487,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
             filereq_drawtbox( &freqf_tbox[1], freqf_cgad==1 );
             filereq_render( oric );
             break;
-          
+
           case SDLK_UP:
             if( freqf_cgad != 2 )
             {
@@ -516,7 +512,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
             filereq_drawtbox( &freqf_tbox[1], SDL_FALSE );
             filereq_render( oric );
             break;
-          
+
           case SDLK_DOWN:
             if( freqf_cgad != 2 )
             {
@@ -541,7 +537,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
             filereq_drawtbox( &freqf_tbox[1], SDL_FALSE );
             filereq_render( oric );
             break;
-          
+
           case SDLK_PAGEUP:
             if( freqf_cgad != 2 )
             {
@@ -555,7 +551,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
 
             doaction = ACTION_PAGEUP;
             break;
-          
+
           case SDLK_PAGEDOWN:
             if( freqf_cgad != 2 )
             {
@@ -569,7 +565,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
 
             doaction = ACTION_PAGEDOWN;
             break;
-          
+
           case SDLK_BACKSPACE:
             if( freqf_cgad == 2 ) break;
             tb = &freqf_tbox[freqf_cgad];
@@ -585,7 +581,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
 
           case SDLK_LEFT:
             if( freqf_cgad == 2 ) break;
-            tb = &freqf_tbox[freqf_cgad]; 
+            tb = &freqf_tbox[freqf_cgad];
             if( tb->cpos > 0 ) tb->cpos--;
             if( tb->cpos < tb->vpos ) tb->vpos = tb->cpos;
             if( tb->cpos >= (tb->vpos+tb->w) ) tb->vpos = tb->cpos-(tb->w-1);
@@ -596,14 +592,14 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
 
           case SDLK_RIGHT:
             if( freqf_cgad == 2 ) break;
-            tb = &freqf_tbox[freqf_cgad]; 
+            tb = &freqf_tbox[freqf_cgad];
             if( tb->cpos < tb->slen ) tb->cpos++;
             if( tb->cpos < tb->vpos ) tb->vpos = tb->cpos;
             if( tb->cpos >= (tb->vpos+tb->w) ) tb->vpos = tb->cpos-(tb->w-1);
             if( tb->vpos < 0 ) tb->vpos = 0;
             filereq_drawtbox( tb, SDL_TRUE );
             filereq_render( oric );
-            break;          
+            break;
 
           case SDLK_DELETE:
             if( freqf_cgad == 2 ) break;
@@ -626,7 +622,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
         }
 
         switch( SDL_COMPAT_GetKeysymUnicode( event.key.keysym ) )
-        {  
+        {
           default:
             if( freqf_cgad == 2 ) break;
 
@@ -649,11 +645,11 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
             break;
         }
         break;
-      
+
       case SDL_QUIT:
         setemumode( oric, NULL, EM_PLEASEQUIT );
         return SDL_FALSE;
-      
+
       default:
         break;
     }
@@ -674,7 +670,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
         filereq_drawtbox( &freqf_tbox[1], freqf_cgad==1 );
         filereq_render( oric );
         break;
-      
+
       case ACTION_PAGEDOWN:
         if( cfile < (top+25) )
         {
