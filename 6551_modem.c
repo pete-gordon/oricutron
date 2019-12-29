@@ -485,7 +485,7 @@ SDL_bool acia_init_modem( struct acia* acia )
 #define _closesocket close
 #if defined(__MORPHOS__)
 struct Library *SocketBase;
-typedef unsigned long socklen_t;
+typedef LONG socklen_t;
 char *inet_ntoa(struct in_addr n)
 {
   static char a[sizeof "XXX.XXX.XXX.XXX"];

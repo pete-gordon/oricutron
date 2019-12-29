@@ -138,3 +138,19 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   
   return SDL_TRUE;
 }
+
+#ifdef SDL_WINDOWPOS_UNDEFINED_MASK
+/* MorphOS missing SDL2 functions */
+SDL_GLContext SDL_GL_CreateContext(SDL_Window * window)
+{
+  return NULL;
+}
+
+void SDL_GL_DeleteContext(SDL_GLContext context)
+{
+}
+
+void SDL_GL_SwapWindow(SDL_Window * window)
+{
+}
+#endif

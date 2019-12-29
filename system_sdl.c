@@ -123,8 +123,8 @@ static void FreeResources(void)
 #if SDL_MAJOR_VERSION == 1
 int SDL_COMPAT_GetWMInfo(SDL_SysWMinfo *info)
 {
-  // NOTE: see above for SDL_GetWMInfo in macos
-  // #if defined(__MORPHOS__)|defined(__APPLE__)
+  // NOTE: see above for SDL_GetWMInfo in macros
+  // #if defined(__MORPHOS__)||defined(__APPLE__)
   #if defined(__MORPHOS__)
   return 0;
   #else

@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef __amigaos4__
+#if defined(__amigaos4__) || defined(__MORPHOS__) || defined(__AROS__)
 #include <proto/exec.h>
 #include <proto/dos.h>
 #endif
