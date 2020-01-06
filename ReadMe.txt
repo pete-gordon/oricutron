@@ -14,7 +14,7 @@ Current status
   AY:    99% done.
   Video: 100% done
   Tape:  99% done (.TAP, .ORT and .WAV supported)
-  Disk:  Reading/Writing sectors works. No track read/write.
+  Disk:  90% done (single-density mode not supported)
 
 
 
@@ -313,7 +313,7 @@ Commands:
 Breakpoints
 ===========
 
-There are two types of breakpoints. "Normal" breakpoints trigger when the CPU
+There are two types of breakpoint. "Normal" breakpoints trigger when the CPU
 is about to execute an instruction at the breakpoint address. "Memory" breakpoints
 trigger when the breakpoint address is accessed or modified.
 
@@ -324,7 +324,7 @@ bs $0c00 z         <-- Break when the CPU is about to execute code at $0c00
 bs $0c00 zc        <-- Set cycles counter to 0 and continues
 bs $0c00 c         <-- Continues execution (i.e. disabled breakpoint)
 
-Main purpose of this modifiers is to make cycle counting easier.
+The main purpose of these modifiers is to make cycle counting easier.
 If symbols are loaded, they can be used instead of absolute addresses.
 
 There are three ways a memory breakpoint can be triggered; when the CPU is about
@@ -350,7 +350,7 @@ and macOS. The best way to cope with them is to install an UK or US
 keyboard definition and to switch to it *before* starting oricutron.
 
 Under macOS you can do that in the "System Preferences", "Keyboard", "Input
-sources". Click on the + and search for the UK or US keyboard.
+Sources". Click on the + and search for the UK or US keyboard.
 
 Under Ubuntu you can do that in the System menu, select Preferences, and
 then select Keyboard. In the Keyboard Preferences dialog, select the
@@ -394,7 +394,7 @@ Oricutron can emulate ACIA at address #31C (standard address for Telestrat).
 The emulation works for Oric, Atmos, Telestrat and Pravetz and can be used
 together with any disk type.
 
-The emulated ACIA communicates with the out-side world trough back-ends.
+The emulated ACIA communicates with the out-side world through back-ends.
 Back-ends can be configured from 'oricutron.cfg' or from command line
 (see default 'oricutron.cfg' for usage).
 
