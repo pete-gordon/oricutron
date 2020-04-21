@@ -46,6 +46,8 @@
 #include "plugins/ch376/ch376.h"
 #include "plugins/ch376/oric_ch376_plugin.h"
 
+#include "plugins/twilighte_card/oric_twilighte_board_plugin.h"
+
 #include "machine.h"
 #include "avi.h"
 #include "filereq.h"
@@ -396,6 +398,7 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
             ch376_oric_write(oric->ch376, addr, data);
           break;
         }
+        
 
       default:
         via_write( &oric->via, addr, data );
@@ -637,6 +640,9 @@ unsigned char atmosread( struct m6502 *cpu, unsigned short addr )
 
     if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
       return ch376_oric_read(oric->ch376, addr);
+
+    if( (0x342 <= addr ) && ( addr < 0x344 ) )
+      return twilighteboard_oric_read(oric->twilighte,addr);
 
     return via_read( &oric->via, addr );
   }
@@ -1207,6 +1213,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             if (oric->ch376 != NULL)
               ch376_oric_config(oric->ch376);
           }
+          oric->twilighte=twilighte_oric_init();
 
           break;
 
@@ -1834,6 +1841,8 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
     oric->ch376 = ch376_oric_init();
     ch376_oric_config(oric->ch376);
   }
+
+  oric->twilighte = twilighte_oric_init();
 
   ay_init( &oric->ay, oric );
   joy_setup( oric );
