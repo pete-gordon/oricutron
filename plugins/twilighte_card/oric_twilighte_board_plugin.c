@@ -1,4 +1,7 @@
 
+#define TWILIGHTE_CARD_ORIC_EXTENSION_VDDRA            0x323
+#define TWILIGHTE_CARD_ORIC_EXTENSION_DDRA             0x321
+
 #define TWILIGHTE_CARD_ORIC_EXTENSION_REGISTER          0x342
 #define TWILIGHTE_CARD_ORIC_EXTENSION_BANKING_REGISTER  0x343
 
@@ -11,6 +14,30 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <string.h>
+
+
+struct twilbankinfo
+{
+  unsigned char type;
+  unsigned char *ptr;
+};
+
+struct twilighte
+{
+  
+  unsigned char t_register;
+  unsigned char t_banking_register;
+  char twilrombankfiles[32][1024];
+  char twilrombankdata[32][16834];
+  struct twilbankinfo rom_bank[32];
+  unsigned char VDDRA;
+  unsigned char DDRA;
+  unsigned current_bank;
+  //struct twilbankinfo ram_bank[32];
+};
+
+char twilrombankfiles[100][1024];
+
 
 
 #include "../../system.h"
@@ -72,25 +99,6 @@ static SDL_bool load_rom_twilighte(  char *fname, int size, unsigned char *where
   return SDL_TRUE;
 }
 
-struct twilbankinfo
-{
-  unsigned char type;
-  unsigned char *ptr;
-};
-
-struct twilighte
-{
-  
-  unsigned char t_register;
-  unsigned char t_banking_register;
-  char twilrombankfiles[32][1024];
-  char twilrombankdata[32][16834];
-  struct twilbankinfo rom_bank[32];
-  //struct twilbankinfo ram_bank[32];
-};
-
-char twilrombankfiles[100][1024];
-
 struct twilighte * twilighte_oric_init(void)
 {
 	//struct twilighte * temp;
@@ -149,7 +157,14 @@ struct twilighte * twilighte_oric_init(void)
 /* 
     
 */
+    twilighte->DDRA=7;
+	twilighte->VDDRA=7;
+	twilighte->current_bank=7;
 	return  twilighte;
+}
+
+unsigned char 	twilighteboard_oric_ROM_RAM(struct twilighte *twilighte, uint16_t addr) {
+	return twilighte->twilrombankdata[twilighte->current_bank][addr];
 }
 
 
@@ -158,6 +173,16 @@ unsigned char 	twilighteboard_oric_read(struct twilighte *twilighte, uint16_t ad
 	if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_REGISTER)
 	{
 		return twilighte->t_register;
+	}
+
+	if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_VDDRA)
+	{
+		return twilighte->VDDRA;
+	}
+
+	if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_DDRA)
+	{
+		return twilighte->DDRA;
 	}
 
 	if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_BANKING_REGISTER)
@@ -170,6 +195,19 @@ unsigned char 	twilighteboard_oric_read(struct twilighte *twilighte, uint16_t ad
 
 unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t addr, unsigned char data)
 {
+	if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_VDDRA)
+	{
+		twilighte->VDDRA=data;
+		
+	}
+
+	if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_DDRA)
+	{
+	    twilighte->DDRA=data;
+		twilighte->current_bank=data&0b00000111;
+	}
+
+
 	if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_REGISTER)
 	{
 		twilighte->t_register=data;

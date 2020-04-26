@@ -104,6 +104,7 @@ struct machine
   struct ch376        *ch376;
   struct twilighte    *twilighte;
   SDL_bool            ch376_activated;
+  SDL_bool            twilighteboard_activated;
   int                 tele_currbank;
   unsigned char       tele_banktype;
 
