@@ -27,11 +27,11 @@ struct twilighte
   
   unsigned char t_register;
   unsigned char t_banking_register;
-  char twilrombankfiles[32][1024];
-  char twilrombankdata[32][16834];
+  unsigned char twilrombankfiles[32][1024];
+  unsigned char twilrombankdata[32][16834];
 
 
-  char twilrambankdata[32][16834];
+  unsigned char twilrambankdata[32][16834];
 
   struct twilbankinfo rom_bank[32];
   unsigned char VDDRA;
@@ -96,7 +96,7 @@ static SDL_bool load_rom_twilighte(  char *fname, int size, unsigned char *where
 
   SDL_RWclose( f );
 
-  sprintf( tmpname, "%s.sym", fname );
+  //sprintf( tmpname, "%s.sym", fname );
   //mon_new_symbols( stab, oric, tmpname, symflags, SDL_FALSE, SDL_FALSE );
   free( tmpname );
 
@@ -122,7 +122,8 @@ struct twilighte * twilighte_oric_init(void)
 		  return NULL;
 	}
 
-	
+ for( j=1; j<31; j++ ) twilighte->twilrombankfiles[j][0]=0;
+
 	while( !feof( f ) )
 	  {
 		  fgets( line, 1024, f );
@@ -148,10 +149,15 @@ struct twilighte * twilighte_oric_init(void)
       {
 
 //        oric->rom = oric->tele_bank[i].ptr  = &oric->mem[0x0c000+(i*0x4000)];
-        if( twilighte->twilrombankfiles[i][0] )
+        if( twilighte->twilrombankfiles[i][0]!=0 )
         {
           //oric->tele_bank[i].type = TELEBANK_ROM;
-          if( !load_rom_twilighte( twilighte->twilrombankfiles[i], -16384, &twilighte->rom_bank[i].ptr  ) ) return SDL_FALSE;
+          if( !load_rom_twilighte( twilighte->twilrombankfiles[i], -16384, &twilighte->twilrombankdata[i]  ) ) {
+			  error_printf("Cannot load %s",twilighte->twilrombankfiles[i]);
+		  return SDL_FALSE;
+		  }
+		  else
+		  	error_printf("Load %s",twilighte->twilrombankfiles[i]);
           //load_patches( oric, telebankfiles[i] );
         //} else {
           //oric->tele_bank[i].type = TELEBANK_RAM;
@@ -169,12 +175,12 @@ struct twilighte * twilighte_oric_init(void)
 
 unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte *twilighte, uint16_t addr) {
 	unsigned char data;
-	error_printf( "%d",twilighte->current_bank); 
-	return 0;
-	 if (twilighte->current_bank==0) 
-	 	data=twilighte->twilrambankdata[twilighte->current_bank][addr];
-	 else
-		data=twilighte->twilrombankdata[twilighte->current_bank][addr];
+//	error_printf( "%d",twilighte->current_bank); 
+//	return 0;
+//	 if (twilighte->current_bank==0) 
+// 	data=twilighte->twilrambankdata[twilighte->current_bank][addr];
+//	 else
+		data=twilighte->twilrombankdata[7][addr];
 	error_printf( "addr : %u c000 : %x  value : %d\n",addr,0xc000+addr,data); 
 	return data;
 }
@@ -225,7 +231,7 @@ unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t a
 	if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_DDRA)
 	{
 	    twilighte->DDRA=data;
-		twilighte->current_bank=data&0b00000111;
+		//twilighte->current_bank=data&0b00000111;
 	}
 
 
