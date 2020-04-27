@@ -313,7 +313,13 @@ void setromon( struct machine *oric )
 void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
-  if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
+
+
+  if (oric->twilighteboard_activated &&  addr >= 0xc000  ) 
+       twilighteboard_oric_ROM_RAM_write(oric->twilighte,addr-0xc000,data);
+    else
+    if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
+  
   if( ( addr & 0xff00 ) == 0x0300 )
   {
     if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
@@ -323,7 +329,7 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
       ch376_oric_write(oric->ch376, addr, data);
     
     else if(oric->twilighteboard_activated && ((0x342 <= addr && addr < 0x344 ) || (0x320 <= addr && addr < 0x330 )))
-      return twilighteboard_oric_write(oric->twilighte,addr);
+     twilighteboard_oric_write(oric->twilighte,addr,data);
 
     else
       via_write( &oric->via, addr, data );
@@ -653,7 +659,8 @@ unsigned char atmosread( struct m6502 *cpu, unsigned short addr )
   if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) {
 
     if (oric->twilighteboard_activated)
-      return twilighteboard_oric_ROM_RAM(addr-0xc000);
+    
+      return twilighteboard_oric_ROM_RAM_read(oric->twilighte,addr-0xc000);
     else
     return oric->rom[addr-0xc000];
   }
