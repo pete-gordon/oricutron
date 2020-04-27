@@ -36,7 +36,7 @@ struct twilighte
   struct twilbankinfo rom_bank[32];
   unsigned char VDDRA;
   unsigned char DDRA;
-  unsigned current_bank;
+  unsigned char current_bank;
   //struct twilbankinfo ram_bank[32];
 };
 
@@ -169,21 +169,23 @@ struct twilighte * twilighte_oric_init(void)
 
 unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte *twilighte, uint16_t addr) {
 	unsigned char data;
-	error_printf( "addr : %u c000 : %x  value : %d\n",addr,0xc000+addr,data); 
+	error_printf( "%d",twilighte->current_bank); 
+	return 0;
 	 if (twilighte->current_bank==0) 
-	 data=twilighte->twilrambankdata[twilighte->current_bank][addr];
+	 	data=twilighte->twilrambankdata[twilighte->current_bank][addr];
 	 else
-	data=twilighte->twilrombankdata[twilighte->current_bank][addr];
-	
+		data=twilighte->twilrombankdata[twilighte->current_bank][addr];
+	error_printf( "addr : %u c000 : %x  value : %d\n",addr,0xc000+addr,data); 
 	return data;
 }
 
 unsigned char 	twilighteboard_oric_ROM_RAM_write(struct twilighte *twilighte, uint16_t addr, unsigned char data) {
-	error_printf( "addr : %x %d\n",0xc000+addr,data);
+
 	 if (twilighte->current_bank==0) 
-	twilighte->twilrambankdata[twilighte->current_bank][addr]=data;
-	 //else
-	//return twilighte->twilrombankdata[twilighte->current_bank][addr];
+		twilighte->twilrambankdata[twilighte->current_bank][addr]=data;
+	
+	error_printf( "addr : %x %d\n",0xc000+addr,data);
+	return 0;
 }
 
 
