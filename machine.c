@@ -1227,7 +1227,9 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             if (oric->ch376 != NULL)
               ch376_oric_config(oric->ch376);
           }
-          oric->twilighte=twilighte_oric_init();
+          if (oric->twilighteboard_activated)
+            oric->twilighte=twilighte_oric_init();
+          if (oric->twilighte==NULL) oric->twilighteboard_activated=SDL_FALSE;
 
           break;
 
@@ -1845,6 +1847,10 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   setromon( oric );
   oric->tapename[0] = 0;
   tape_rewind( oric );
+  if (oric->twilighteboard_activated)
+    oric->twilighte=twilighte_oric_init();
+  if (oric->twilighte==NULL) oric->twilighteboard_activated=SDL_FALSE;
+
   m6502_reset( &oric->cpu );
   via_init( &oric->via, oric, VIA_MAIN );
   via_init( &oric->tele_via, oric, VIA_TELESTRAT );
@@ -1856,7 +1862,7 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
     ch376_oric_config(oric->ch376);
   }
 
-  oric->twilighte = twilighte_oric_init();
+
 
   ay_init( &oric->ay, oric );
   joy_setup( oric );

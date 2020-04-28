@@ -32,7 +32,7 @@ struct twilighte
   unsigned char twilrombankdata[32][16834];
 
 
-  //unsigned char twilrambankdata[32][16834];
+  unsigned char twilrambankdata[32][16834];
 
   //struct twilbankinfo rom_bank[32];
   unsigned char VDDRA;
@@ -86,11 +86,11 @@ static SDL_bool load_rom_twilighte(  char *fname, int size, unsigned char where[
       return SDL_FALSE;
     }
 
-    //where += (-size)-filesize;
+    where += (-size)-filesize;
     size = filesize;
   }
 
-  if( SDL_RWread( f, &where, size, 1 ) != 1 )
+  if( SDL_RWread( f, where, size, 1 ) != 1 )
   {
     error_printf( "Unable to read '%s'\n", tmpname );
     SDL_RWclose( f );
@@ -160,14 +160,14 @@ struct twilighte * twilighte_oric_init(void)
 		  }
 	
 		}
-		for (j=0;j<16384;j++) twilighte->twilrombankdata[i][j]=0x57;   
+		//for (j=0;j<16384;j++) twilighte->twilrombankdata[i][j]=0x57;   
 	  }
 /* 
     
 */
-    //twilighte->DDRA=7;
-	//twilighte->VDDRA=7;
-	//twilighte->current_bank=7;
+    twilighte->DDRA=7;
+	twilighte->VDDRA=7;
+	twilighte->current_bank=7;
 	return  twilighte;
 }
 
@@ -175,12 +175,12 @@ unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte *twilighte, uin
 	unsigned char data;
 //	error_printf( "%d",twilighte->current_bank); 
 //	return 0;
-//	 if (twilighte->current_bank==0) 
- 	//data=twilighte->twilrombankdata[0][0];
-//	 else
+	 if (twilighte->current_bank==0) 
+ 	data=twilighte->twilrombankdata[0][addr];
+	 else
 //twilighte->twilrombankdata[0][0]=0;
-data=twilighte->twilrombankdata[1][1];
-error_printf( "addr : %u c000 : %x  value : %d\n",addr,0xc000+addr,data); 
+	data=twilighte->twilrombankdata[twilighte->current_bank][addr];
+//error_printf( "addr : %u c000 : %x  value : %d\n",addr,0xc000+addr,data); 
 //data=(unsigned char)twilighte->twilrombankdata[1][0];
 
 		
@@ -190,10 +190,10 @@ error_printf( "addr : %u c000 : %x  value : %d\n",addr,0xc000+addr,data);
 
 unsigned char 	twilighteboard_oric_ROM_RAM_write(struct twilighte *twilighte, uint16_t addr, unsigned char data) {
 
-	 //if (twilighte->current_bank==0) 
-		//twilighte->twilrambankdata[twilighte->current_bank][addr]=data;
+	 if (twilighte->current_bank==0) 
+		twilighte->twilrambankdata[twilighte->current_bank][addr]=data;
 	
-	error_printf( "addr : %x %d\n",0xc000+addr,data);
+	//error_printf( "addr : %x %d\n",0xc000+addr,data);
 	return 0;
 }
 
