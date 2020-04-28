@@ -30,8 +30,6 @@ struct twilighte
   char twilrombankfiles[32][1024];
  
   unsigned char twilrombankdata[32][16834];
-
-
   unsigned char twilrambankdata[32][16834];
 
   //struct twilbankinfo rom_bank[32];
@@ -176,10 +174,18 @@ unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte *twilighte, uin
 //	error_printf( "%d",twilighte->current_bank); 
 //	return 0;
 	 if (twilighte->current_bank==0) 
- 	data=twilighte->twilrombankdata[0][addr];
+	 {
+		//error_printf( "Read ram overlay %x",0xc000+addr); 		 
+ 		data=twilighte->twilrambankdata[0][addr];
+		//error_printf( "Read ram overlay %x data : %d",0xc000+addr,data); 		 
+		//getchar();
+	 }
 	 else
 //twilighte->twilrombankdata[0][0]=0;
-	data=twilighte->twilrombankdata[twilighte->current_bank][addr];
+     {
+		data=twilighte->twilrombankdata[twilighte->current_bank][addr];
+		//error_printf( "Read rom overlay addr %x\n",0xc000+addr); 		 
+	 }
 //error_printf( "addr : %u c000 : %x  value : %d\n",addr,0xc000+addr,data); 
 //data=(unsigned char)twilighte->twilrombankdata[1][0];
 
@@ -190,10 +196,15 @@ unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte *twilighte, uin
 
 unsigned char 	twilighteboard_oric_ROM_RAM_write(struct twilighte *twilighte, uint16_t addr, unsigned char data) {
 
-	 if (twilighte->current_bank==0) 
+	 if (twilighte->current_bank==0)
+	 {
+	  	//error_printf( "write ram overlay : %x %d\n",0xc000+addr,data);
 		twilighte->twilrambankdata[twilighte->current_bank][addr]=data;
+		//getchar();
 	
-	//error_printf( "addr : %x %d\n",0xc000+addr,data);
+	 }
+	
+	//
 	return 0;
 }
 
@@ -234,7 +245,9 @@ unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t a
 	if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_DDRA)
 	{
 	    twilighte->DDRA=data;
-		//twilighte->current_bank=data&0b00000111;
+		
+		twilighte->current_bank=data&7;
+		//error_printf( "current_bank %d addr : %x %d",twilighte->current_bank,addr,data);
 	}
 
 
