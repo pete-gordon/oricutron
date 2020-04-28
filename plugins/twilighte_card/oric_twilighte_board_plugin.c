@@ -158,11 +158,14 @@ struct twilighte * twilighte_oric_init(void)
 		  }
 	
 		}
-		//for (j=0;j<16384;j++) twilighte->twilrombankdata[i][j]=0x57;   
+		
 	  }
 /* 
     
 */
+	// Flush sram (first bank)
+	for (j=0;j<16384;j++) twilighte->twilrambankdata[0][j]=0;   
+   
     twilighte->DDRA=7;
 	twilighte->VDDRA=7;
 	twilighte->current_bank=7;
