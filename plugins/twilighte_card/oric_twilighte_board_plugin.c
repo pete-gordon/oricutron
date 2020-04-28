@@ -113,7 +113,7 @@ struct twilighte * twilighte_oric_init(void)
 	char line[1024];
 	struct twilighte *twilighte = malloc(sizeof(struct twilighte));
 	twilighte->t_banking_register=0;
-	twilighte->t_register=128+1;
+	twilighte->t_register=128+1; // Firmware
 
 	f = fopen( "plugins/twilighte_card/twilighte.cfg", "r" );
   	if( !f ) {
@@ -174,6 +174,7 @@ struct twilighte * twilighte_oric_init(void)
 
 unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte *twilighte, uint16_t addr) {
 	unsigned char data;
+	unsigned char bank;
 //	error_printf( "%d",twilighte->current_bank); 
 //	return 0;
 	 if (twilighte->current_bank==0) 
@@ -186,7 +187,15 @@ unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte *twilighte, uin
 	 else
 //twilighte->twilrombankdata[0][0]=0;
      {
-		data=twilighte->twilrombankdata[twilighte->current_bank][addr];
+		if (twilighte->current_bank<5)
+			bank=twilighte->current_bank*twilighte->t_banking_register;
+		else
+			bank=twilighte->current_bank;
+
+		//if (twilighte->t_register&32==32) // Is it a ram bank access ?
+			//data=twilighte->twilrambankdata[bank][addr];
+		//else
+			data=twilighte->twilrombankdata[bank][addr];
 		//error_printf( "Read rom overlay addr %x\n",0xc000+addr); 		 
 	 }
 //error_printf( "addr : %u c000 : %x  value : %d\n",addr,0xc000+addr,data); 
