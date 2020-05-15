@@ -89,10 +89,11 @@ void disk_popup( struct machine *oric, int drive )
 }
 
 // Free a disk image and clear the pointer to it
-void diskimage_free( struct machine *oric, struct diskimage **dimg )
+static void diskimage_free( struct machine *oric, struct diskimage **dimg )
 {
   char *dpath, *dfile;
 
+  if( !dimg ) return;
   if( !(*dimg) ) return;
 
   if( oric->type != MACH_TELESTRAT )
@@ -109,7 +110,9 @@ void diskimage_free( struct machine *oric, struct diskimage **dimg )
         dfile = diskfile;
         break;
     }
-  } else {
+  }
+  else
+  {
     dpath = telediskpath;
     dfile = telediskfile;
   }
@@ -129,13 +132,18 @@ void diskimage_free( struct machine *oric, struct diskimage **dimg )
     }
   }
 
-  if( (*dimg)->rawimage ) free( (*dimg)->rawimage );
+  if( (*dimg)->rawimage )
+  {
+    free( (*dimg)->rawimage );
+    (*dimg)->rawimage = NULL;
+  }
+
   free( *dimg );
-  (*dimg) = NULL;
+  *dimg = NULL;
 }
 
 // Read a raw integer from a disk image file
-Uint32 diskimage_rawint( struct diskimage *dimg, Uint32 offset )
+static Uint32 diskimage_rawint( struct diskimage *dimg, Uint32 offset )
 {
   if( !dimg ) return 0;
   if( ( !dimg->rawimage ) || ( dimg->rawimagelen < 4 ) ) return 0;
@@ -147,13 +155,16 @@ Uint32 diskimage_rawint( struct diskimage *dimg, Uint32 offset )
 // Allocate and initialise a disk image structure
 // If "rawimglen" isn't zero, it will also allocate
 // ram for a raw disk image
-struct diskimage *diskimage_alloc( Uint32 rawimglen )
+static struct diskimage *diskimage_alloc( Uint32 rawimglen )
 {
   struct diskimage *dimg;
-  Uint8 *buf=NULL;
+  Uint8 *buf = NULL;
 
   if( rawimglen )
   {
+    // FIXME: this is temporary solution to allow
+    // low-level formatting up to 128 track per side
+    if( rawimglen < 128*2*6400+256 ) rawimglen = 128*2*6400+256;
     buf = malloc( rawimglen );
     if( !buf ) return NULL;
   }
@@ -183,6 +194,8 @@ struct diskimage *diskimage_alloc( Uint32 rawimglen )
 void disk_eject( struct machine *oric, int drive )
 {
   diskimage_free( oric, &oric->wddisk.disk[drive] );
+  oric->wddisk.disk[drive] = NULL;
+
   oric->pravetz.drv[drive].pimg  = NULL;
   oric->pravetz.drv[drive].byte  = 0;
   oric->pravetz.drv[drive].dirty = SDL_FALSE;
@@ -1366,6 +1379,7 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
   }
 }
 
+// Microdisc interface handlers
 void microdisc_setdrq( void *md )
 {
   struct microdisc *mdp = (struct microdisc *)md;
@@ -1479,6 +1493,130 @@ void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char d
   }
 }
 
+// Byte Drive 500 interface handlers
+void bd500_setdrq( void *bd )
+{
+  struct bd500 *bdp = (struct bd500 *)bd;
+  bdp->drq = 0x80;
+}
+
+void bd500_clrdrq( void *bd )
+{
+  struct bd500 *bdp = (struct bd500 *)bd;
+  bdp->drq = 0;
+}
+
+void bd500_setintrq( void *bd )
+{
+  struct bd500 *bdp = (struct bd500 *)bd;
+  bdp->intrq = 0x40;
+}
+
+void bd500_clrintrq( void *bd )
+{
+  struct bd500 *bdp = (struct bd500 *)bd;
+  bdp->intrq = 0;
+}
+
+void bd500_init( struct bd500 *bd, struct wd17xx *wd, struct machine *oric )
+{
+  wd17xx_init( wd );
+  wd->setintrq = bd500_setintrq;
+  wd->clrintrq = bd500_clrintrq;
+  wd->intrqarg = (void*)bd;
+  wd->setdrq   = bd500_setdrq;
+  wd->clrdrq   = bd500_clrdrq;
+  wd->drqarg   = (void*)bd;
+
+  bd->status  = 0;
+  bd->intrq   = 0;
+  bd->drq     = 0;
+  bd->wd      = wd;
+  bd->oric    = oric;
+  bd->diskrom = SDL_TRUE;
+}
+
+void bd500_free( struct bd500 *bd )
+{
+  int i;
+  for( i=0; i<MAX_DRIVES; i++ )
+    disk_eject( bd->oric, i );
+}
+
+unsigned char bd500_read( struct bd500 *bd, unsigned short addr )
+{
+//  dbg_printf( "DISK: (%04X) Read from %04X", bd->oric->cpu.pc-1, addr );
+
+  if( ( addr >= 0x320 ) && ( addr < 0x324 ) )
+    return wd17xx_read( bd->wd, addr&3 );
+
+  switch( addr )
+  {
+    case 0x312:
+      return (bd->drq | bd->intrq);
+      break;
+
+    case 0x313:
+      bd->oric->romdis = SDL_FALSE;
+      break;
+
+    case 0x314:
+      bd->oric->romdis = SDL_TRUE;
+      break;
+
+    case 0x310:
+    case 0x311:
+    case 0x315:
+    case 0x316:
+      bd->diskrom = SDL_FALSE;
+      break;
+
+    case 0x317:
+      // 64k/56k mode depend on ROM chips
+      bd->diskrom = bd->oric->rom16? SDL_FALSE : SDL_TRUE;
+      break;
+
+    default:
+      break;
+  }
+
+  return 0xff;
+}
+
+void bd500_write( struct bd500 *bd, unsigned short addr, unsigned char data )
+{
+//  dbg_printf( "DISK: (%04X) Write %02X to %04X", bd->oric->cpu.pc-1, data, addr );
+
+  if( ( addr >= 0x320 ) && ( addr < 0x324 ) )
+  {
+    wd17xx_write( bd->oric, bd->wd, addr&3, data );
+    return;
+  }
+
+  switch( addr )
+  {
+    case 0x31a:
+      switch( data & 0xe0 )
+      {
+        default:
+        case 0x20:
+          bd->wd->c_drive = 0;
+          break;
+        case 0x40:
+          bd->wd->c_drive = 1;
+          break;
+        case 0x80:
+          bd->wd->c_drive = 2;
+          break;
+        case 0xc0:
+          bd->wd->c_drive = 3;
+          break;
+      }
+      break;
+  }
+}
+
+// Jasmin interface handlers
 void jasmin_setdrq( void *j )
 {
   struct jasmin *jp = (struct jasmin *)j;

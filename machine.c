@@ -65,6 +65,7 @@ extern int g_menu_scheme; // #InfoBadDesign - init g_menu_scheme should be done 
 char atmosromfile[1024];
 char oric1romfile[1024];
 char mdiscromfile[1024];
+char bd500romfile[1024];
 char jasmnromfile[1024];
 char pravetzromfile[2][1024];
 char telebankfiles[8][1024];
@@ -76,9 +77,9 @@ int vidcapcount = 0;
 char screencapname[128];
 int screencapcount = 0;
 
-unsigned char rom_microdisc[8912], rom_jasmin[2048], rom_pravetz[512];
-struct symboltable sym_microdisc, sym_jasmin, sym_pravetz;
-SDL_bool microdiscrom_valid, jasminrom_valid, pravetzrom_valid;
+unsigned char rom_microdisc[8912], rom_bd500[8912], rom_jasmin[2048], rom_pravetz[512];
+struct symboltable sym_microdisc, sym_bd500, sym_jasmin, sym_pravetz;
+SDL_bool microdiscrom_valid, bd500rom_valid, jasminrom_valid, pravetzrom_valid;
 extern struct osdmenuitem mainitems[];
 
 Uint8 oricpalette[] = { 0x00, 0x00, 0x00,
@@ -506,6 +507,36 @@ void microdisc_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char
   oric->mem[addr] = data;
 }
 
+// Oric Atmos + bd500
+void bd500_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
+{
+  struct machine *oric = (struct machine *)cpu->userdata;
+  if( oric->romdis )
+  {
+    if( ( oric->bd.diskrom ) && ( addr >= 0xc000 ) ) return; // Can't write to ROM!
+  } else {
+    if( addr >= 0xc000 ) return;
+  }
+
+  if( ( addr & 0xff00 ) == 0x0300 )
+  {
+    if( ( addr >= 0x310 ) && ( addr < 0x324 ) )
+      bd500_write( &oric->bd, addr, data );
+
+    else if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
+      acia_write( &oric->tele_acia, addr, data );
+
+    else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      ch376_oric_write(oric->ch376, addr, data);
+
+    else
+      via_write( &oric->via, addr, data );
+
+    return;
+  }
+  oric->mem[addr] = data;
+}
+
 // Oric-1 16k + microdisc
 void microdisc_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
@@ -521,6 +552,36 @@ void microdisc_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char 
   {
     if( ( addr >= 0x310 ) && ( addr < 0x31c ) )
       microdisc_write( &oric->md, addr, data );
+
+    else if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
+      acia_write( &oric->tele_acia, addr, data );
+
+    else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      ch376_oric_write(oric->ch376, addr, data);
+
+    else
+      via_write( &oric->via, addr, data );
+
+    return;
+  }
+  oric->mem[addr&0x3fff] = data;
+}
+
+// Oric-1 16k + bd500
+void bd500_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
+{
+  struct machine *oric = (struct machine *)cpu->userdata;
+  if( oric->romdis )
+  {
+    if( ( oric->bd.diskrom ) && ( addr >= 0xc000 ) ) return; // Can't write to ROM!
+  } else {
+    if( addr >= 0xc000 ) return;
+  }
+
+  if( ( addr & 0xff00 ) == 0x0300 )
+  {
+    if( ( addr >= 0x310 ) && ( addr < 0x324 ) )
+      bd500_write( &oric->bd, addr, data );
 
     else if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
       acia_write( &oric->tele_acia, addr, data );
@@ -609,6 +670,11 @@ SDL_bool isram( struct machine *oric, unsigned short addr )
     case DRV_MICRODISC:
       if( !oric->md.diskrom ) return SDL_TRUE;
       if( addr >= 0xe000 ) return SDL_FALSE;
+      break;
+
+    case DRV_BD500:
+      if( !oric->bd.diskrom ) return SDL_TRUE;
+      if( addr >= 0xc000 ) return SDL_FALSE;
       break;
 
     case DRV_JASMIN:
@@ -810,6 +876,37 @@ unsigned char microdisc_atmosread( struct m6502 *cpu, unsigned short addr )
   return oric->mem[addr];
 }
 
+// Oric Atmos + bd500
+unsigned char bd500_atmosread( struct m6502 *cpu, unsigned short addr )
+{
+  struct machine *oric = (struct machine *)cpu->userdata;
+
+  if( oric->romdis )
+  {
+    if( ( oric->bd.diskrom ) && ( addr >= 0xe000 ) )
+      return rom_bd500[addr-0xe000];
+  } else {
+    if( addr >= 0xc000 )
+      return oric->rom[addr-0xc000];
+  }
+
+  if( ( addr & 0xff00 ) == 0x0300 )
+  {
+    if( ( addr >= 0x310 ) && ( addr < 0x324 ) )
+      return bd500_read( &oric->bd, addr );
+
+    if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
+      return acia_read( &oric->tele_acia, addr );
+
+    if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      return ch376_oric_read(oric->ch376, addr);
+
+    return via_read( &oric->via, addr );
+  }
+
+  return oric->mem[addr];
+}
+
 // Oric-1 16k + microdisc
 unsigned char microdisc_o16kread( struct m6502 *cpu, unsigned short addr )
 {
@@ -828,6 +925,37 @@ unsigned char microdisc_o16kread( struct m6502 *cpu, unsigned short addr )
   {
     if( ( addr >= 0x310 ) && ( addr < 0x31c ) )
       return microdisc_read( &oric->md, addr );
+
+    if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
+      return acia_read( &oric->tele_acia, addr );
+
+    if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      return ch376_oric_read(oric->ch376, addr);
+
+    return via_read( &oric->via, addr );
+  }
+
+  return oric->mem[addr&0x3fff];
+}
+
+// Oric-1 16k + bd500
+unsigned char bd500_o16kread( struct m6502 *cpu, unsigned short addr )
+{
+  struct machine *oric = (struct machine *)cpu->userdata;
+
+  if( oric->romdis )
+  {
+    if( ( oric->bd.diskrom ) && ( addr >= 0xe000 ) )
+      return rom_bd500[addr-0xe000];
+  } else {
+    if( addr >= 0xc000 )
+      return oric->rom[addr-0xc000];
+  }
+
+  if( ( addr & 0xff00 ) == 0x0300 )
+  {
+    if( ( addr >= 0x310 ) && ( addr < 0x324 ) )
+      return bd500_read( &oric->bd, addr );
 
     if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
       return acia_read( &oric->tele_acia, addr );
@@ -888,7 +1016,6 @@ unsigned char lightpen_read( struct m6502 *cpu, unsigned short addr )
 
   return oric->read_not_lightpen( cpu, addr );
 }
-
 
 static SDL_bool load_rom( struct machine *oric, char *fname, int size, unsigned char *where, struct symboltable *stab, int symflags )
 {
@@ -991,6 +1118,7 @@ void preinit_machine( struct machine *oric )
   oric->tapecap = NULL;
   oric->tapenoise = SDL_FALSE;
   oric->rawtape = SDL_FALSE;
+  oric->rom16 = SDL_TRUE;
 
   oric->joy_iface = JOYIFACE_NONE;
   oric->joymode_a = JOYMODE_KB1;
@@ -1033,6 +1161,7 @@ void preinit_machine( struct machine *oric )
 
   oric->printenable = SDL_TRUE;
   oric->printfilter = SDL_TRUE;
+  oric->dcadjust = SDL_TRUE;
 
   oric->aciabackend = ACIA_TYPE_NONE;
   oric->aciaoffset = 0x31c;
@@ -1050,6 +1179,7 @@ void preinit_machine( struct machine *oric )
 void load_diskroms( struct machine *oric )
 {
   microdiscrom_valid = load_rom( oric, mdiscromfile, 8192, rom_microdisc, &sym_microdisc, SYMF_ROMDIS1|SYMF_MICRODISC );
+  bd500rom_valid     = load_rom( oric, bd500romfile, 8192, rom_bd500, &sym_bd500, SYMF_ROMDIS1|SYMF_BD500 );
   jasminrom_valid    = load_rom( oric, jasmnromfile, 2048, rom_jasmin,    &sym_jasmin,    SYMF_ROMDIS1|SYMF_JASMIN );
   pravetzrom_valid   = load_rom( oric, pravetzromfile[1], 512, rom_pravetz, &sym_pravetz,  SYMF_PRAVZ8D );
 }
@@ -1182,11 +1312,19 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
         case SDLK_F4:
           if( ( shifted ) && ( oric->drivetype == DRV_JASMIN ) )
-            oric->cpu.write( &oric->cpu, 0x3fb, 1 ); // ROMDIS
+          {
+            // ROMDIS
+            oric->cpu.write( &oric->cpu, 0x3fb, 1 );
+          }
           if( oric->drivetype == DRV_MICRODISC )
           {
             oric->romdis = SDL_TRUE;
             microdisc_init( &oric->md, &oric->wddisk, oric );
+          }
+          else if( oric->drivetype == DRV_BD500 )
+          {
+            oric->romdis = SDL_TRUE;
+            bd500_init( &oric->bd, &oric->wddisk, oric );
           }
           else if( oric->drivetype == DRV_PRAVETZ )
           {
@@ -1574,6 +1712,15 @@ static void setup_for_microdisc( struct machine *oric, void *readptr, void *writ
   oric->disksyms = &sym_microdisc;
 }
 
+static void setup_for_bd500( struct machine *oric, void *readptr, void *writeptr )
+{
+  oric->cpu.read = readptr;
+  oric->cpu.write = writeptr;
+  oric->romdis = SDL_TRUE;
+  bd500_init( &oric->bd, &oric->wddisk, oric );
+  oric->disksyms = &sym_bd500;
+}
+
 static void setup_for_jasmin( struct machine *oric, void *readptr, void *writeptr )
 {
   oric->cpu.read = readptr;
@@ -1654,6 +1801,10 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           setup_for_microdisc( oric, microdisc_o16kread, microdisc_o16kwrite);
           break;
 
+        case DRV_BD500:
+          setup_for_bd500( oric, bd500_o16kread, bd500_o16kwrite);
+          break;
+
         case DRV_JASMIN:
           setup_for_jasmin( oric, jasmin_o16kread, jasmin_o16kwrite);
           break;
@@ -1687,6 +1838,10 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           setup_for_microdisc( oric, microdisc_atmosread, microdisc_atmoswrite);
           break;
 
+        case DRV_BD500:
+          setup_for_bd500( oric, bd500_atmosread, bd500_atmoswrite);
+          break;
+
         case DRV_JASMIN:
           setup_for_jasmin( oric, jasmin_atmosread, jasmin_atmoswrite);
           break;
@@ -1718,6 +1873,10 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       {
         case DRV_MICRODISC:
           setup_for_microdisc( oric, microdisc_atmosread, microdisc_atmoswrite);
+          break;
+
+        case DRV_BD500:
+          setup_for_bd500( oric, bd500_atmosread, bd500_atmoswrite);
           break;
 
         case DRV_JASMIN:
@@ -1787,6 +1946,10 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           setup_for_microdisc( oric, microdisc_atmosread, microdisc_atmoswrite);
           break;
 
+        case DRV_BD500:
+          setup_for_bd500( oric, bd500_atmosread, bd500_atmoswrite);
+          break;
+
         case DRV_JASMIN:
           setup_for_jasmin( oric, jasmin_atmosread, jasmin_atmoswrite);
           break;
@@ -1853,8 +2016,9 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
 void shut_machine( struct machine *oric )
 {
   if( oric->drivetype == DRV_MICRODISC ) { microdisc_free( &oric->md ); oric->drivetype = DRV_NONE; }
+  if( oric->drivetype == DRV_BD500 )     { bd500_free( &oric->bd ); oric->drivetype = DRV_NONE; }
   if( oric->drivetype == DRV_JASMIN )    { jasmin_free( &oric->jasmin ); oric->drivetype = DRV_NONE; }
-  if( oric->drivetype == DRV_PRAVETZ )    { pravetz_free( &oric->pravetz ); oric->drivetype = DRV_NONE; }
+  if( oric->drivetype == DRV_PRAVETZ )   { pravetz_free( &oric->pravetz ); oric->drivetype = DRV_NONE; }
   if( oric->mem ) { free( oric->mem ); oric->mem = NULL; oric->rom = NULL; }
   if( oric->prf ) { fclose( oric->prf ); oric->prf = NULL; }
   if( oric->tsavf ) tape_stop_savepatch( oric );
@@ -1891,6 +2055,7 @@ void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
   switch( type )
   {
     case DRV_MICRODISC:
+    case DRV_BD500:
     case DRV_JASMIN:
     case DRV_PRAVETZ:
         oric->drivetype = type;

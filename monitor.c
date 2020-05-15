@@ -2958,7 +2958,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
           mon_set_modified( oric );
           oric->cpu.write( &oric->cpu, v, w );
-		  updatepreview = SDL_TRUE;
+          updatepreview = SDL_TRUE;
           break;
 
         case 'w':
@@ -3018,48 +3018,6 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
       break;
 
     case 'd':
-      if( cmd[i+1] == 'f' )
-      {
-        i+=2;
-
-        if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
-        {
-          mon_str( "Start address expected\n" );
-          break;
-        }
-
-        mon_addr = v;
-        if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
-        {
-          mon_str( "End address expected\n" );
-          break;
-        }
-
-        while( isws( cmd[i] ) ) i++;
-        if( !cmd[i] )
-        {
-          mon_str( "Filename expected" );
-          break;
-        }
-
-        f = fopen( &cmd[i], "w" );
-        if( !f )
-        {
-          mon_printf( "Unable to open '%s'", &cmd[i] );
-          break;
-        }
-
-        while( mon_addr <= v )
-        {
-          SDL_bool looped;
-          fprintf( f, "%s\n", mon_disassemble( oric, &mon_addr, &looped, SDL_TRUE ) );
-          if( looped ) break;
-        }
-
-        fclose( f );
-        break;
-      }
-
       lastcmd = cmd[i];
       i++;
       if( mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
@@ -3158,12 +3116,53 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
       setemumode( oric, NULL, EM_RUNNING );
       break;
 
-    case 'w':
+    case 'f':
       lastcmd = 0;
       i++;
       switch( cmd[i] )
       {
-        case 'm':
+        // fd - disassemble to file
+        case 'd':
+          i++;
+          if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+          {
+            mon_str( "Start address expected\n" );
+            break;
+          }
+
+          mon_addr = v;
+          if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+          {
+            mon_str( "End address expected\n" );
+            break;
+          }
+
+          while( isws( cmd[i] ) ) i++;
+          if( !cmd[i] )
+          {
+            mon_str( "Filename expected" );
+            break;
+          }
+
+          f = fopen( &cmd[i], "w" );
+          if( !f )
+          {
+            mon_printf( "Unable to open '%s'", &cmd[i] );
+            break;
+          }
+
+          while( mon_addr <= v )
+          {
+            SDL_bool looped;
+            fprintf( f, "%s\n", mon_disassemble( oric, &mon_addr, &looped, SDL_TRUE ) );
+            if( looped ) break;
+          }
+
+          fclose( f );
+          break;
+
+        // fw - write mem to bin file
+        case 'w':
           i++;
           if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_TRUE, SDL_TRUE, SDL_TRUE ) )
           {
@@ -3206,6 +3205,49 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           fclose( f );
           free( tmem );
           mon_printf( "Written %d bytes to '%s'", w, &cmd[i] );
+          break;
+
+        // ToDo: fw - write mem to tap file
+        // case 't':
+        //   break;
+
+        // fr - read file to mem
+        case 'r':
+          i++;
+          if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_TRUE, SDL_TRUE, SDL_TRUE ) )
+          {
+            mon_str( "Address expected" );
+            break;
+          }
+
+          while( isws( cmd[i] ) ) i++;
+          if( !cmd[i] )
+          {
+            mon_str( "Filename expected" );
+            break;
+          }
+
+          f = fopen( &cmd[i], "rb" );
+          if( !f )
+          {
+            mon_printf( "Unable to open '%s'", &cmd[i] );
+            break;
+          }
+
+          mon_set_modified( oric );
+          for( j=0; !feof( f ); )
+          {
+            w = fgetc(f);
+            if( -1 != w )
+            {
+              oric->cpu.write( &oric->cpu, v & 0xffff, w & 0xff );
+              v++;
+              j++;
+            }
+          }
+          fclose( f );
+          mon_printf( "%d bytes read from '%s'", j, &cmd[i] );
+          updatepreview = SDL_TRUE;
           break;
       }
       break;
@@ -3277,7 +3319,6 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           break;
 
         case 1:
-          mon_str( "  df <addr> <end> <file>- Disassemble to file" );
           mon_str( "  m <addr>              - Dump memory" );
           mon_str( "  mm <addr> <value>     - Modify memory" );
           mon_str( "  mw <addr>             - Memory watch at addr" );
@@ -3293,7 +3334,32 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "  sl <file>             - Load user symbols" );
           mon_str( "  sx <file>             - Export user symbols" );
           mon_str( "  sz                    - Zap user symbols" );
-          mon_str( "  wm <addr> <len> <file>- Write mem to disk" );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( "---- MORE" );
+          helpcount++;
+          break;
+
+        case 2:
+          mon_str( "  fd <addr> <end> <file>- Disassemble to file" );
+          mon_str( "  fw <addr> <len> <file>- Write mem to bin file" );
+// ToDo:  mon_str( "  ft <addr> <len> <file>- Write mem to tap file" );
+          mon_str( "  fr <addr> <file>      - Read bin file to mem" );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
           helpcount = 0;
           lastcmd = 0;
           break;

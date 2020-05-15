@@ -3,6 +3,14 @@ Oricutron ChangeLog
 
 pre-release changes (work in progress)
 --------------------------------------
+* Added Byte Drive BD-500 support
+* Added possibility to load more images from command line
+* Fixed memory leaks and improvements in disk support
+* Added monitor command 'fr' - fr <addr> <file> - Read BIN file to mem
+* Changed monitor command 'df' to 'fd' for better consistency
+* Changed monitor command 'wm' to 'fw' for better consistency
+* Added new 'dcadjust' option in .cfg file - toggles on/off audio DC adjustment
+* Added German translation of 'ReadMe.txt' - 'ReadMe-LiesMich_DE.txt'
 * Fixed issue #116 no ACIA in Telestrat mode
 * Added read-track and write-track support for FDC (assinie)
 * Center windows on return from fullscreen mode (rzumer)

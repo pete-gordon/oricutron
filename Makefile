@@ -1,6 +1,6 @@
-# 
+#
 # valid platforms in alphabetical order:
-# 
+#
 # PLATFORM = aitouchbook
 # PLATFORM = aros
 # PLATFORM = beos
@@ -32,8 +32,8 @@ VERSION_MAJ = 1
 VERSION_MIN = 2
 VERSION_REV = 0
 VERSION_FULL = $(VERSION_MAJ).$(VERSION_MIN).$(VERSION_REV)
-APP_INFO = 
-APP_NAME = Oricutron $(APP_INFO)
+APP_INFO =
+APP_NAME = $(strip Oricutron $(APP_INFO))
 APP_YEAR = 2019
 COPYRIGHTS = (c)$(APP_YEAR) Peter Gordon (pete@petergordon.org.uk)
 VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) $(COPYRIGHTS)"
@@ -706,6 +706,6 @@ package-mint package-mint-cf:
 
 
 .PHONY: mrproper
-PLATFORMS := aitouchbook aros beos gphwiz haiku lin-32 lin-64 linux linux-nogl mint mint-cf morphos os4 osx pandora rpi win32 win32-gcc win64-gcc 
+PLATFORMS := aitouchbook aros beos gphwiz haiku lin-32 lin-64 linux linux-nogl mint mint-cf morphos os4 osx pandora rpi win32 win32-gcc win64-gcc
 mrproper:
 	@for plat in $(PLATFORMS); do $(MAKE) -f $(SRC_DIR)/Makefile clean PLATFORM=$${plat}; done

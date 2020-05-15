@@ -146,6 +146,8 @@ Here are all the options:
 
                        "microdisc" or "m" for Microdisc
                        "jasmin" or "j" for Jasmin
+                       "bd500" or "b" for ByteDrive BD-500
+                       "pravetz" or "p" for Pravetz-8D FDC
 
   -s / --symbols     = Load symbols from a file
   -f / --fullscreen  = Run oricutron fullscreen
@@ -290,7 +292,9 @@ Commands:
   bz                    - Zap breakpoints
   bzm                   - Zap mem breakpoints
   d <addr>              - Disassemble
-  df <addr> <end> <file>- Disassemble to file
+  fd <addr> <end> <file>- Disassemble to file
+  fw <addr> <len> <file>- Write mem to BIN file
+  fr <addr> <file>      - Read BIN file to mem
   m <addr>              - Dump memory
   mm <addr> <value>     - Modify memory
   mw <addr>             - Memory watch at addr
@@ -306,7 +310,6 @@ Commands:
   sl <file>             - Load user symbols
   sx <file>             - Export user symbols
   sz                    - Zap user symbols
-  wm <addr> <len> <file>- Write mem to disk
 
 
 
@@ -453,10 +456,10 @@ CH376 command emulated :
 - CH376_CMD_BYTE_WR_GO
 - CH376_CMD_DISK_QUERY
 - CH376_CMD_DIR_CREATE (not emulated under linux)
-- CH376_CMD_DISK_RD_GO 
+- CH376_CMD_DISK_RD_GO
 
 Known bug :
-Under windows, API's file does not send "." and ".." entries when we read the content on the folder. It's a problem because ch376 chip send these 
+Under windows, API's file does not send "." and ".." entries when we read the content on the folder. It's a problem because ch376 chip send these
 entries, when we ask to this chip to read the content of a directory.
 
 If someone wants to emulate CH376_CMD_DIR_CREATE and CH376_CMD_FILE_ERASE. It's easy to do : it justs need to copy WIN32 function and replace DeleteFile
