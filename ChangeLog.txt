@@ -3,6 +3,7 @@ Oricutron ChangeLog
 
 pre-release changes (work in progress)
 --------------------------------------
+* Fixed crash with visual keyboard on/off
 * Added Byte Drive BD-500 support
 * Added possibility to load more images from command line
 * Fixed memory leaks and improvements in disk support

@@ -312,8 +312,8 @@ SDL_bool diskimage_save( struct machine *oric, char *fname, int drive )
   // If we are not just overwriting the original file, remember the new filename
   if( fname != oric->wddisk.disk[drive]->filename )
   {
-    strncpy( oric->wddisk.disk[drive]->filename, fname, 4096+512 );
-    oric->wddisk.disk[drive]->filename[4096+511] = 0;
+    strncpy( oric->wddisk.disk[drive]->filename, fname, 4096+512-1 );
+    oric->wddisk.disk[drive]->filename[4096+512-1] = 0;
   }
 
   // The image in memory is no longer different to the last saved version
@@ -448,8 +448,8 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
   oric->wddisk.disk[drive]->modified_time = 0;
 
   // Remember the filename of the image for this drive
-  strncpy( oric->wddisk.disk[drive]->filename, fname, 4096+512 );
-  oric->wddisk.disk[drive]->filename[4096+511] = 0;
+  strncpy( oric->wddisk.disk[drive]->filename, fname, 4096+512-1 );
+  oric->wddisk.disk[drive]->filename[4096+512-1] = 0;
 
   // Come up with a suitable short name for popups etc.
   if( strlen( fname ) > 31 )

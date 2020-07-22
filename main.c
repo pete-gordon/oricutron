@@ -802,7 +802,8 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
             else
             {
 #ifdef BACKEND_COM
-              strncpy(oric->aciabackendname, opt_arg, ACIA_BACKEND_NAME_LEN);
+              strncpy(oric->aciabackendname, opt_arg, ACIA_BACKEND_NAME_LEN-1);
+              oric->aciabackendname[ACIA_BACKEND_NAME_LEN-1] = 0;
               oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_COM;
 #endif
             }
