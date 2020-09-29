@@ -1329,7 +1329,9 @@ void frameloop_normal( struct machine *oric, SDL_bool *framedone, SDL_bool *need
         break;
       }
 
-      tape_patches( oric );
+      if (!oric->twilighteboard_activated)
+        tape_patches( oric );
+        
       via_clock( &oric->via, oric->cpu.icycles );
       ay_ticktock( &oric->ay, oric->cpu.icycles );
       if((oric->drivetype == DRV_MICRODISC) || (oric->drivetype == DRV_JASMIN)) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );

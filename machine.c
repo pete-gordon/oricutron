@@ -318,7 +318,7 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
   if (oric->twilighteboard_activated &&  addr >= 0xc000  ) 
        twilighteboard_oric_ROM_RAM_write(oric->twilighte,addr-0xc000,data);
     else
-    if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
+      if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
   
   if( ( addr & 0xff00 ) == 0x0300 )
   {
@@ -1221,15 +1221,27 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           via_init( &oric->tele_via, oric, VIA_TELESTRAT );
           acia_init( &oric->tele_acia, oric );
 
+
+          if (oric->twilighteboard_activated)
+          {
+            oric->ch376_activated=SDL_TRUE;
+            oric->twilighte=twilighte_oric_init();
+          }
+          if (oric->twilighte==NULL)
+          {
+            oric->twilighteboard_activated=SDL_FALSE;
+          }
+          else
+            oric->ch376_activated=SDL_TRUE;
+
           if (oric->ch376_activated)
           {
             oric->ch376 = ch376_oric_init();
             if (oric->ch376 != NULL)
               ch376_oric_config(oric->ch376);
           }
-          if (oric->twilighteboard_activated)
-            oric->twilighte=twilighte_oric_init();
-          if (oric->twilighte==NULL) oric->twilighteboard_activated=SDL_FALSE;
+          
+
 
           break;
 
@@ -1848,7 +1860,10 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   oric->tapename[0] = 0;
   tape_rewind( oric );
   if (oric->twilighteboard_activated)
+  {
     oric->twilighte=twilighte_oric_init();
+    oric->ch376_activated=SDL_TRUE;
+  }
   if (oric->twilighte==NULL) oric->twilighteboard_activated=SDL_FALSE;
 
   m6502_reset( &oric->cpu );
