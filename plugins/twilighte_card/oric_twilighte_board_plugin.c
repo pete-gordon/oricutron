@@ -187,14 +187,18 @@ unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte *twilighte, uin
 	 else
 //twilighte->twilrombankdata[0][0]=0;
      {
-		if (twilighte->current_bank<5)
-			bank=twilighte->current_bank*twilighte->t_banking_register;
+		if (twilighte->current_bank<5) 
+		{
+			
+			
+			bank=twilighte->current_bank*(twilighte->t_banking_register+1);
+		}
 		else
 			bank=twilighte->current_bank;
 
-		//if (twilighte->t_register&32==32) // Is it a ram bank access ?
-			//data=twilighte->twilrambankdata[bank][addr];
-		//else
+		if ((twilighte->t_register&32)==32 && twilighte->current_bank<5) // Is it a ram bank access ?
+			data=twilighte->twilrambankdata[bank][addr];
+		else
 			data=twilighte->twilrombankdata[bank][addr];
 		//error_printf( "Read rom overlay addr %x\n",0xc000+addr); 		 
 	 }
