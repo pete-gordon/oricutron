@@ -466,6 +466,30 @@ CH376 emulation added for :
 CH376_CMD_FILE_ERASE suppress a file
 CH376_CMD_DIR_CREATE create folder
 
+Twilighte board emulation 
+===============
+The twilighte board is working on atmos (and Oric-1). It disables internal Oric ROM and add 64 banks (by bank switching).
+It adds 32 banks of ROM (eeprom) and 32 banks of RAM (Static RAM saved with a battery).
+EEprom can be programmed from Orix command line.
+The board handles ch376 (sdcard/usbdrive/usb/hid controler).
+And the board adds 2 joysticks ports.
+
+
+The emulation, for instance, handles 32 ROM banks and 32 RAM banks. It emulates this bank switching. 
+
+Board is not working with a microdisc. But jasmin does (mainly because jasmin does not replace rom at boot).
+
+Anyway, on Telestrat, orix can start floppy disk because FDC is present. 
+
+Not emulated parts :
+* joysticks
+* eeprom programming sequence
+* loading ROM into RAM bank (which could emulate RAM saved with battery)
+* save on disk any modification into RAM bank (whic could emulate RAM saved with battery)
+* ch376 is not fully supported in the emulation mode. There is a lot of others functionnalities which are missing on ch376 emulation
+
+
+
 
 ROM patch files
 ===============
