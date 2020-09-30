@@ -136,13 +136,13 @@ struct twilighte * twilighte_oric_init(void)
 
   while( !feof( f ) )
   {
-	result=fgets( line, 1024, f );
-	for( j=1; j<31; j++ )
+    result=fgets( line, 1024, f );
+    for( j=1; j<31; j++ )
     {
 	  if (j>9)
-    	sprintf( tbtmp, "twilbankrom%d", j);
+        sprintf( tbtmp, "twilbankrom%d", j);
 	  else
-		sprintf( tbtmp, "twilbankrom0%d", j);
+	    sprintf( tbtmp, "twilbankrom0%d", j);
 			
 	  if (twilighte->twilrombankfiles[j][0]==0) 
 	  {
@@ -284,7 +284,7 @@ unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t a
   if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_DDRA)
   {
     twilighte->DDRA=data;
-	twilighte->current_bank=data&7;
+    twilighte->current_bank=data&7;
   }
 
   if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_VDDRB)
