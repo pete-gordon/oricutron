@@ -316,9 +316,9 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 
 
   if (oric->twilighteboard_activated &&  addr >= 0xc000  ) 
-       twilighteboard_oric_ROM_RAM_write(oric->twilighte,addr-0xc000,data);
-    else
-      if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
+    twilighteboard_oric_ROM_RAM_write(oric->twilighte,addr-0xc000,data);
+  else
+    if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
   
   if( ( addr & 0xff00 ) == 0x0300 )
   {
@@ -659,10 +659,9 @@ unsigned char atmosread( struct m6502 *cpu, unsigned short addr )
   if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) {
 
     if (oric->twilighteboard_activated)
-    
       return twilighteboard_oric_ROM_RAM_read(oric->twilighte,addr-0xc000);
     else
-    return oric->rom[addr-0xc000];
+      return oric->rom[addr-0xc000];
   }
   return oric->mem[addr];
 }
