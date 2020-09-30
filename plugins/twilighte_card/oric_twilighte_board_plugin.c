@@ -133,15 +133,20 @@ struct twilighte * twilighte_oric_init(void)
 	while( !feof( f ) )
 	{
 		fgets( line, 1024, f );
-		//error_printf( line );
 		for( j=1; j<31; j++ )
     	{
-      		sprintf( tbtmp, "twilbankrom%d", j);
-  
-			if( read_config_string( line, tbtmp, twilighte->twilrombankfiles[j], 1024 ) ) 
+			if (j>9)
+				sprintf( tbtmp, "twilbankrom%d", j);
+			else
+      			sprintf( tbtmp, "twilbankrom0%d", j);
+			
+			if (twilighte->twilrombankfiles[j][0]==0) 
 			{
-				 error_printf("File: A %d  %s",j,twilighte->twilrombankfiles[j]);
-				  break;
+				if( read_config_string( line, tbtmp, twilighte->twilrombankfiles[j], 1024 ) ) 
+				{
+			
+					break;
+				}
 			}
 			
     	}
