@@ -474,7 +474,6 @@ EEprom can be programmed from Orix command line.
 The board handles ch376 (sdcard/usbdrive/usb/hid controler).
 And the board adds 2 joysticks ports.
 
-
 The emulation, for instance, handles 32 ROM banks and 32 RAM banks. It emulates this bank switching. 
 
 Board is not working with a microdisc. But jasmin does (mainly because jasmin does not replace rom at boot).
@@ -488,7 +487,12 @@ Not emulated parts :
 * save on disk any modification into RAM bank (whic could emulate RAM saved with battery)
 * ch376 is not fully supported in the emulation mode. There is a lot of others functionnalities which are missing on ch376 emulation
 
+To activate the plugin, you must activate twilighte_board option in oricutron.cfg
 
+Update twilighte.cfg plugin in plugins/twilighte_card/twilighte.cfg if you want to load others roms.
+
+For basic11 rom which handles joysticks and .tap load from sdcard or usbdrive, you have to download basic.tgz here : http://repo.orix.oric.org/dists/official/tgz/6502/
+And you need to replace twilbankrom06 with the rom in basic11.tgz.
 
 
 ROM patch files
