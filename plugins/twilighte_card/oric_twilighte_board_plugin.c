@@ -27,7 +27,9 @@ struct twilighte
   
   unsigned char t_register;
   unsigned char t_banking_register;
-  char twilrombankfiles[32][1024];
+  unsigned char twilrombankfiles[32][1024];
+  
+  unsigned char twilrambankfiles[32][1024];
  
   unsigned char twilrombankdata[32][16834];
   unsigned char twilrambankdata[32][16834];
@@ -116,50 +118,50 @@ struct twilighte * twilighte_oric_init(void)
 	twilighte->t_register=128+1; // Firmware
 
 	f = fopen( "plugins/twilighte_card/twilighte.cfg", "r" );
-  	if( !f ) {
+  	if( !f )
+	{
 		  error_printf( "plugins/twilighte_card/twilighte.cfg not found\n" );
 		  return NULL;
 	}
 
- for( j=1; j<31; j++ ) twilighte->twilrombankfiles[j][0]=0;
+ for( j=1; j<31; j++ )
+ {
+ 	twilighte->twilrombankfiles[j][0]=0;
+	twilighte->twilrambankfiles[j][0]=0;
+ }
 
 	while( !feof( f ) )
-	  {
-		  fgets( line, 1024, f );
-		  //error_printf( line );
-		  for( j=1; j<31; j++ )
-    	  {
-      		sprintf( tbtmp, "twilbankrom%c", j+'0' );
-			  
-      		if( read_config_string( line, tbtmp, twilighte->twilrombankfiles[j], 1024 ) ) 
-			  {
-				  //error_printf( line );
-				 error_printf("File: %d %s",j,twilighte->twilrombankfiles[j]);
-				 
+	{
+		fgets( line, 1024, f );
+		//error_printf( line );
+		for( j=1; j<31; j++ )
+    	{
+      		sprintf( tbtmp, "twilbankrom%d", j);
+  
+			if( read_config_string( line, tbtmp, twilighte->twilrombankfiles[j], 1024 ) ) 
+			{
+				 error_printf("File: A %d  %s",j,twilighte->twilrombankfiles[j]);
 				  break;
-			  }
+			}
 			
-    	  }
-       }
+    	}
+    }
 
   fclose( f );
 
   // Now load rom 
     for( i=0; i<31; i++ )
-      {
-
-//        oric->rom = oric->tele_bank[i].ptr  = &oric->mem[0x0c000+(i*0x4000)];
- 
+    {
       if( twilighte->twilrombankfiles[i][0]!=0 )
-        { 
-            if( !load_rom_twilighte( twilighte->twilrombankfiles[i], -16384, twilighte->twilrombankdata[i]  ) ) {
+      { 
+	      if( !load_rom_twilighte( twilighte->twilrombankfiles[i], -16384, twilighte->twilrombankdata[i]  ) )
+		  {
 			  error_printf("Cannot load %s",twilighte->twilrombankfiles[i]);
-		  return NULL;
-		  }
+		  	return NULL;
+	  	  }
 	
-		}
-		
 	  }
+    }
 /* 
     
 */
@@ -175,23 +177,22 @@ struct twilighte * twilighte_oric_init(void)
 unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte *twilighte, uint16_t addr) {
 	unsigned char data;
 	unsigned char bank;
-//	error_printf( "%d",twilighte->current_bank); 
-//	return 0;
+
 	 if (twilighte->current_bank==0) 
 	 {
-		//error_printf( "Read ram overlay %x",0xc000+addr); 		 
- 		data=twilighte->twilrambankdata[0][addr];
-		//error_printf( "Read ram overlay %x data : %d",0xc000+addr,data); 		 
-		//getchar();
+		data=twilighte->twilrambankdata[0][addr];
+
 	 }
 	 else
-//twilighte->twilrombankdata[0][0]=0;
      {
 		if (twilighte->current_bank<5) 
 		{
+			if (twilighte->t_banking_register!=0)
+				bank=twilighte->current_bank+8+((twilighte->t_banking_register-1)*4);
+				
+			else
+				bank=twilighte->current_bank;
 			
-			
-			bank=twilighte->current_bank*(twilighte->t_banking_register+1);
 		}
 		else
 			bank=twilighte->current_bank;
@@ -200,25 +201,41 @@ unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte *twilighte, uin
 			data=twilighte->twilrambankdata[bank][addr];
 		else
 			data=twilighte->twilrombankdata[bank][addr];
-		//error_printf( "Read rom overlay addr %x\n",0xc000+addr); 		 
 	 }
-//error_printf( "addr : %u c000 : %x  value : %d\n",addr,0xc000+addr,data); 
-//data=(unsigned char)twilighte->twilrombankdata[1][0];
+
 
 		
 	
 	return data;
 }
 
-unsigned char 	twilighteboard_oric_ROM_RAM_write(struct twilighte *twilighte, uint16_t addr, unsigned char data) {
+unsigned char 	twilighteboard_oric_ROM_RAM_write(struct twilighte *twilighte, uint16_t addr, unsigned char data)
+{
 
-	 if (twilighte->current_bank==0)
-	 {
-	  	//error_printf( "write ram overlay : %x %d\n",0xc000+addr,data);
+	unsigned char bank;
+	if (twilighte->current_bank==0)
+	{
 		twilighte->twilrambankdata[twilighte->current_bank][addr]=data;
-		//getchar();
 	
-	 }
+	}
+	else
+	{
+		if (twilighte->current_bank<5) 
+		{
+			
+			if (twilighte->t_banking_register!=0)
+				bank=twilighte->current_bank+8+((twilighte->t_banking_register-1)*4);
+				
+			else
+				bank=twilighte->current_bank;
+		}
+		else
+			bank=twilighte->current_bank;
+
+		if ((twilighte->t_register&32)==32 && twilighte->current_bank<5) // Is it a ram bank access ?
+			twilighte->twilrambankdata[bank][addr]=data;
+		// ROM is readonly
+	}
 	
 	//
 	return 0;
