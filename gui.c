@@ -1539,7 +1539,15 @@ void toggletwilighte(struct machine *oric, struct osdmenuitem *mitem, int dummy)
 	oric->twilighteboard_activated = SDL_TRUE;
 	mitem->name = "\x0e""Twilighte board";
 	oric->twilighte = twilighte_oric_init();
-	if (oric->twilighte == NULL) oric->twilighteboard_activated = SDL_FALSE; // Impossible to create struct, we did not activate twilighteboard
+	if (oric->twilighte == NULL) 
+  {
+     oric->twilighteboard_activated = SDL_FALSE; // Impossible to create struct, we did not activate twilighteboard
+  }
+  else
+  {
+    oric->ch376_activated = SDL_TRUE;
+  }
+  
 		
 }
 
