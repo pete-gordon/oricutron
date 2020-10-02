@@ -260,7 +260,7 @@ unsigned char 	twilighteboard_oric_read(struct twilighte *twilighte, uint16_t ad
 	return twilighte->VDDRB;
   }
 
-  if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_DDRA)
+  if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_DDRB)
   {
 	return twilighte->DDRB;
   }
@@ -292,9 +292,13 @@ unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t a
 	twilighte->VDDRB=data;
   }
 
+
+
   if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_DDRB)
   {
+	  
     twilighte->DDRB=data;
+	return 0;
   }
 
   if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_REGISTER)
