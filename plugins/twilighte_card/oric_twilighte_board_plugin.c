@@ -14,8 +14,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <dirent.h>
-#include <unistd.h>
 #include <string.h>
 
 
@@ -65,7 +63,7 @@ static SDL_bool load_rom_twilighte(  char *fname, int size, unsigned char where[
   tmpname = malloc( strlen( fname ) + 10 );
   if( !tmpname ) {
 
-  return SDL_FALSE;
+    return SDL_FALSE;
   }
 
   sprintf( tmpname, "%s.rom", fname );
@@ -178,6 +176,7 @@ struct twilighte * twilighte_oric_init(void)
   twilighte->DDRA=7;
   twilighte->VDDRA=7;
   twilighte->current_bank=7;
+  twilighte->DDRB=0;
   return  twilighte;
 }
 
@@ -265,7 +264,6 @@ unsigned char 	twilighteboard_oric_read(struct twilighte *twilighte, uint16_t ad
 	return twilighte->DDRB;
   }
 
-
   if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_BANKING_REGISTER)
   {
 	return twilighte->t_banking_register;
@@ -274,7 +272,7 @@ unsigned char 	twilighteboard_oric_read(struct twilighte *twilighte, uint16_t ad
   return 0;
 }
 
-unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t addr, unsigned char data)
+unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t addr, unsigned char mask, unsigned char data)
 {
   if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_VDDRA)
   {
@@ -289,21 +287,28 @@ unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t a
 
   if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_VDDRB)
   {
-	twilighte->VDDRB=data;
+	  twilighte->VDDRB=data;
   }
-
-
 
   if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_DDRB)
   {
-	  
-    twilighte->DDRB=data;
-	return 0;
+      unsigned char lastpb6;
+      unsigned char lastpb7;
+
+      lastpb6 = twilighte->DDRB&0x40;
+
+      lastpb7 = twilighte->DDRB&0x80;
+      if ((lastpb6==0 || lastpb7==0) && (data&0x80 || data&0x40))
+        twilighte->DDRB=data|1|2|4|8|16;
+      else 
+        twilighte->DDRB=data;
+    
+
   }
 
   if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_REGISTER)
   {
-	twilighte->t_register=data;
+	  twilighte->t_register=data;
   }
 
   if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_BANKING_REGISTER)

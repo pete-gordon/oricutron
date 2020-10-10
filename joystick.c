@@ -301,12 +301,15 @@ void joy_buildmask( struct machine *oric )
 
     if( gimme_port_a )
     {
-      twilighteboard_oric_write(oric->twilighte, 0x321,mkmask_f);
+     // twilighteboard_oric_write(oric->twilighte, 0x321, 0xff,mkmask_f);
     }
 
     if( gimme_port_b )
     {
-      twilighteboard_oric_write(oric->twilighte, 0x320,mkmask);
+        // port B
+      Uint8 value=twilighteboard_oric_read(oric->twilighte, 0x320);
+      error_printf( "Value '%x' wvalue: %x mask: %x ",value,value,value);
+      twilighteboard_oric_write(oric->twilighte, 0x320, 0xff, mkmask);
     }
   }
   else

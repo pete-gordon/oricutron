@@ -329,7 +329,7 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
       ch376_oric_write(oric->ch376, addr, data);
     
     else if(oric->twilighteboard_activated && ((0x342 <= addr && addr < 0x344 ) || (0x320 <= addr && addr < 0x330 )))
-     twilighteboard_oric_write(oric->twilighte,addr,data);
+     twilighteboard_oric_write(oric->twilighte,addr,0x00,data);
 
     else
       via_write( &oric->via, addr, data );
