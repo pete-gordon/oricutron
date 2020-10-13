@@ -301,7 +301,7 @@ void joy_buildmask( struct machine *oric )
 
     if( gimme_port_a )
     {
-     // twilighteboard_oric_write(oric->twilighte, 0x321, 0xff,mkmask_f);
+      //twilighteboard_oric_write(oric->twilighte, 0x321, 0xff,mkmask_f);
     }
 
     if( gimme_port_b )
