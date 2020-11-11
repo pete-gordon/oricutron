@@ -173,10 +173,15 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
   msgbox_render( oric );
 
   presson = -1;
+#ifdef WWW
+  {
+      SDL_PollEvent( &event );
+#else
   for( ;; )
   {
     if( !SDL_WaitEvent( &event ) )
       break;
+#endif
 
     switch( event.type )
     {

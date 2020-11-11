@@ -1167,7 +1167,6 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
       }
       if( sto->start_disk[0] )
       {
-      printf("Counting disks ok\n");
         if( sto->start_disks_count < 4 )
         {
           strcpy( sto->start_disks[sto->start_disks_count], sto->start_disk );
@@ -1200,7 +1199,6 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
       // NOT SURE WHY I HAD TO DO THIS ???
       if( sto->start_disk[0] )
       {
-      printf( "Counting disks 1\n");
         if( sto->start_disks_count < 4 )
         {
           strcpy( sto->start_disks[sto->start_disks_count], sto->start_disk );
@@ -1478,9 +1476,6 @@ static void loop_handler( void* arg )
   SDL_Event* event = &ctx->event;
 
   SDL_bool done = SDL_FALSE;
-#ifdef WWW
-  SDL_bool sdl_quit = SDL_FALSE;
-#endif
   Sint32 i;
 
   while (!done)
@@ -1571,117 +1566,112 @@ static void loop_handler( void* arg )
         render( oric );
         ctx->needrender = SDL_FALSE;
       }
+#ifdef WWW
+      SDL_PollEvent( event );
+#else
       if (!SDL_WaitEvent(event))
         break;
+#endif
     }
 
     do {
-      switch (event->type)
-      {
-        case SDL_COMPAT_ACTIVEEVENT:
-        {
-          if (SDL_COMPAT_IsAppActive(event))
-          {
-            oric->shut_render(oric);
-            oric->init_render(oric);
-            ctx->needrender = SDL_TRUE;
-          }
+        switch (event->type) {
+            case SDL_COMPAT_ACTIVEEVENT: {
+                if (SDL_COMPAT_IsAppActive(event)) {
+                    oric->shut_render(oric);
+                    oric->init_render(oric);
+                    ctx->needrender = SDL_TRUE;
+                }
+            }
+                break;
+            case SDL_QUIT:
+                done = SDL_TRUE;
+                break;
+
+            default:
+                switch (oric->emu_mode) {
+                    case EM_MENU:
+                        done |= menu_event(event, oric, &ctx->needrender);
+                        break;
+
+                    case EM_RUNNING:
+                        done |= emu_event(event, oric, &ctx->needrender);
+                        break;
+
+                    case EM_DEBUG:
+                        done |= mon_event(event, oric, &ctx->needrender);
+                        break;
+                }
         }
-        break;
-        case SDL_QUIT:
-          done = SDL_TRUE;
+        if (oric->show_keyboard)
+            keyboard_event(event, oric, &ctx->needrender);
 #ifdef WWW
-          sdl_quit = SDL_TRUE;
+      } while (0);
+#else
+      } while ( SDL_PollEvent( event ) );
 #endif
-          break;
-
-        default:
-          switch ( oric->emu_mode )
-          {
-            case EM_MENU:
-              done |= menu_event( event, oric, &ctx->needrender );
-              break;
-
-            case EM_RUNNING:
-              done |= emu_event( event, oric, &ctx->needrender );
-              break;
-
-            case EM_DEBUG:
-              done |= mon_event( event, oric, &ctx->needrender );
-              break;
-          }
-      }
-      if (oric->show_keyboard)
-        keyboard_event( event, oric, &ctx->needrender );
-
-    } while ( SDL_PollEvent( event ) );
+    }
+#ifndef WWW
+      ay_unlockaudio(&oric->ay);
+      shut(oric);
+#endif
   }
-#ifdef WWW
-  if (sdl_quit)
+
+  int main( int argc, char *argv[] )
   {
-#endif
-    ay_unlockaudio(&oric->ay);
-    shut(oric);
-#ifdef WWW
-  }
-#endif
-}
-
-int main( int argc, char *argv[] )
-{
-  static struct context ctx;
+    static struct context ctx;
 
 #ifdef _MSC_VER
-  _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
-  // This should center SDL window
+    // This should center SDL window
 #ifndef __MORPHOS__
-  putenv("SDL_VIDEO_CENTERED=center");
+    putenv("SDL_VIDEO_CENTERED=center");
 #endif
 
-    // ----------------------------------------------------------------------------
-    // This makes relative paths work in C++ in Xcode by changing directory to the Resources folder inside the .app bundle
+      // ----------------------------------------------------------------------------
+      // This makes relative paths work in C++ in Xcode by changing directory to the Resources folder inside the .app bundle
 #ifdef __APPLE__
-    CFBundleRef mainBundle = CFBundleGetMainBundle();
-    CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
-    char path[PATH_MAX];
-    if (!CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8 *)path, PATH_MAX))
-    {
-        // error!
-    }
-    CFRelease(resourcesURL);
-    // this directory is something/Oricutron.app/Contents/Resources
-    // go down 3 times to find the app containing directory
-    strcat(path, "/../../..");
-    chdir(path);
-    //printf("Current Path: %s\n", path);
+      CFBundleRef mainBundle = CFBundleGetMainBundle();
+      CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
+      char path[PATH_MAX];
+      if (!CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8 *)path, PATH_MAX))
+      {
+          // error!
+      }
+      CFRelease(resourcesURL);
+      // this directory is something/Oricutron.app/Contents/Resources
+      // go down 3 times to find the app containing directory
+      strcat(path, "/../../..");
+      chdir(path);
+      //printf("Current Path: %s\n", path);
 #endif
 
-  memset(&ctx.oric, 0, sizeof(ctx.oric));
-  if (!init(&ctx.oric, argc, argv))
-  {
-    shut(&ctx.oric);
-    return EXIT_FAILURE;
-  }
-  // call to SDL_GetTicks must be behind init
-  ctx.now = SDL_GetTicks();
-  ctx.nextframe_ms = ctx.now;
-  ctx.nextframe_us = ((Uint64)ctx.nextframe_ms) * 1000;
-  ctx.needrender = SDL_TRUE;
-  ctx.framedone = SDL_FALSE;
+    memset(&ctx.oric, 0, sizeof(ctx.oric));
+    if (!init(&ctx.oric, argc, argv))
+    {
+      shut(&ctx.oric);
+      return EXIT_FAILURE;
+    }
+    // call to SDL_GetTicks must be behind init
+    ctx.now = SDL_GetTicks();
+    ctx.nextframe_ms = ctx.now;
+    ctx.nextframe_us = ((Uint64)ctx.nextframe_ms) * 1000;
+    ctx.needrender = SDL_TRUE;
+    ctx.framedone = SDL_FALSE;
 
-  if (load_keymap)
-  {
-    load_keyboard_mapping(&ctx.oric, keymap_path);
-    load_keymap = SDL_FALSE;
-  }
+    if (load_keymap)
+    {
+      load_keyboard_mapping(&ctx.oric, keymap_path);
+      load_keymap = SDL_FALSE;
+    }
 
 #ifdef WWW
-    emscripten_set_main_loop_arg(loop_handler, &ctx, -1, 1);
+      emscripten_set_main_loop_arg(loop_handler, &ctx, -1, 1);
 #else
-    loop_handler(&ctx);
+      loop_handler(&ctx);
 #endif
-    
-  return EXIT_SUCCESS;
-}
+
+    return EXIT_SUCCESS;
+  }

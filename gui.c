@@ -257,7 +257,9 @@ struct osdmenuitem mainitems[] = { { "Insert tape...",         "T",    't',     
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "About",                  NULL,   0,        gotomenu,        5, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
+#ifndef WWW
                                    { "Quit",                   NULL,   0,        setemumode,      EM_PLEASEQUIT, 0 },
+#endif
                                    { NULL, } };
 
 struct osdmenuitem hwopitems[] = { { " Oric-1",                "1",    SDLK_1,   swapmach,        (0xffff<<16)|MACH_ORIC1, 0 },
@@ -1731,7 +1733,6 @@ void gotomenu( struct machine *oric, struct osdmenuitem *mitem, int menunum )
         keyw = (int)strlen( cmenu->items[i].key )+1;
     }
   }
-
   w+=keyw+2; i+=2;
 
   if( !alloc_textzone( oric, TZ_MENU, 320-w*4, 240-i*6, w, i, cmenu->title ) )
@@ -1846,11 +1847,9 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 {
   SDL_bool done = SDL_FALSE;
   int i, x, y;
-
   // Wot, no menu?!
   if( ( !cmenu ) || ( !tz[TZ_MENU] ) )
     return done;
-
   x = -1;
   y = -1;
   switch( ev->type )

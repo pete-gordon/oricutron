@@ -332,10 +332,15 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   filereq_drawtbox( &freqf_tbox[1], freqf_cgad==1 );
   filereq_render( oric );
 
+#ifdef WWW
+  {
+      SDL_PollEvent( &event );
+#else
   for( ;; )
   {
     if( !SDL_WaitEvent( &event ) )
       break;
+#endif
 
     mx = -1;
     my = -1;
