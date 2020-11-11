@@ -24,6 +24,7 @@ Prepare your assets :
 ; create an assets directory
 mkdir assets
 ; copy the images directory
+; WARNING you'd better remove the gfx_atmoskbd.psd file as it is quite big and not used by Oricutron
 cp -r ../../images assets/
 ; copy the roms directory (after adding the actual roms - not included in the git repository)
 cp -r ../../roms assets/
