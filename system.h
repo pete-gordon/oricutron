@@ -51,6 +51,14 @@
 #define ROMPREFIX "roms\\"
 #define IMAGEPREFIX "images\\"
 
+#elif defined(WWW)
+
+#define PATHSEP '/'
+#define PATHSEPSTR "/"
+#define FILEPREFIX "assets/"
+#define ROMPREFIX "assets/roms/"
+#define IMAGEPREFIX "assets/images/"
+
 #else
 
 #define PATHSEP '/'

@@ -40,6 +40,8 @@
 		181F131918CA6378009690E0 /* msgbox_osx.m in Sources */ = {isa = PBXBuildFile; fileRef = 181F131618CA6378009690E0 /* msgbox_osx.m */; };
 		181F131B18CA63F0009690E0 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 181F131A18CA63F0009690E0 /* OpenGL.framework */; };
 		181F131D18CA6505009690E0 /* SDL.framework in Resources */ = {isa = PBXBuildFile; fileRef = 181F131118CA6219009690E0 /* SDL.framework */; };
+		1863CD96255BEA4300B1D09B /* oric_ch376_plugin.c in Sources */ = {isa = PBXBuildFile; fileRef = 1863CD92255BEA4300B1D09B /* oric_ch376_plugin.c */; };
+		1863CD97255BEA4300B1D09B /* ch376.c in Sources */ = {isa = PBXBuildFile; fileRef = 1863CD95255BEA4300B1D09B /* ch376.c */; };
 		18A21B171B5CD8EC00B1BF3F /* system_sdl.c in Sources */ = {isa = PBXBuildFile; fileRef = 18A21B161B5CD8EC00B1BF3F /* system_sdl.c */; };
 		18D270CA18D7346600467488 /* keyboard.c in Sources */ = {isa = PBXBuildFile; fileRef = 18D270C818D7346600467488 /* keyboard.c */; };
 		18DC24B119D010EA00C6BCBE /* 6551_com.c in Sources */ = {isa = PBXBuildFile; fileRef = 18DC24AE19D010EA00C6BCBE /* 6551_com.c */; };
@@ -65,7 +67,6 @@
 		181F128A18CA616A009690E0 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		181F128D18CA616A009690E0 /* Oricutron-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Oricutron-Info.plist"; sourceTree = "<group>"; };
 		181F128F18CA616A009690E0 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		181F129318CA616A009690E0 /* Oricutron-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Oricutron-Prefix.pch"; sourceTree = "<group>"; };
 		181F129518CA616A009690E0 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; name = en; path = en.lproj/Credits.rtf; sourceTree = "<group>"; };
 		181F129D18CA616A009690E0 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		181F12A318CA616A009690E0 /* OricutronTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OricutronTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -119,6 +120,11 @@
 		181F131518CA6378009690E0 /* gui_osx.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = gui_osx.m; path = ../../../gui_osx.m; sourceTree = "<group>"; };
 		181F131618CA6378009690E0 /* msgbox_osx.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = msgbox_osx.m; path = ../../../msgbox_osx.m; sourceTree = "<group>"; };
 		181F131A18CA63F0009690E0 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = ../../../../../../../System/Library/Frameworks/OpenGL.framework; sourceTree = "<group>"; };
+		1863CD8B255BE39500B1D09B /* Oricutron-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Oricutron-Prefix.pch"; sourceTree = "<group>"; };
+		1863CD92255BEA4300B1D09B /* oric_ch376_plugin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = oric_ch376_plugin.c; path = ../../../plugins/ch376/oric_ch376_plugin.c; sourceTree = "<group>"; };
+		1863CD93255BEA4300B1D09B /* ch376.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ch376.h; path = ../../../plugins/ch376/ch376.h; sourceTree = "<group>"; };
+		1863CD94255BEA4300B1D09B /* oric_ch376_plugin.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = oric_ch376_plugin.h; path = ../../../plugins/ch376/oric_ch376_plugin.h; sourceTree = "<group>"; };
+		1863CD95255BEA4300B1D09B /* ch376.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ch376.c; path = ../../../plugins/ch376/ch376.c; sourceTree = "<group>"; };
 		18A21B161B5CD8EC00B1BF3F /* system_sdl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = system_sdl.c; path = ../../../system_sdl.c; sourceTree = "<group>"; };
 		18A21B181B5CDAD100B1BF3F /* system_sdl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = system_sdl.h; path = ../../../system_sdl.h; sourceTree = "<group>"; };
 		18D270C818D7346600467488 /* keyboard.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = keyboard.c; path = ../../../keyboard.c; sourceTree = "<group>"; };
@@ -194,6 +200,10 @@
 		181F128B18CA616A009690E0 /* Oricutron */ = {
 			isa = PBXGroup;
 			children = (
+				1863CD95255BEA4300B1D09B /* ch376.c */,
+				1863CD93255BEA4300B1D09B /* ch376.h */,
+				1863CD92255BEA4300B1D09B /* oric_ch376_plugin.c */,
+				1863CD94255BEA4300B1D09B /* oric_ch376_plugin.h */,
 				18A21B181B5CDAD100B1BF3F /* system_sdl.h */,
 				18A21B161B5CD8EC00B1BF3F /* system_sdl.c */,
 				18D270C818D7346600467488 /* keyboard.c */,
@@ -259,8 +269,8 @@
 			children = (
 				181F128D18CA616A009690E0 /* Oricutron-Info.plist */,
 				181F128E18CA616A009690E0 /* InfoPlist.strings */,
-				181F129318CA616A009690E0 /* Oricutron-Prefix.pch */,
 				181F129418CA616A009690E0 /* Credits.rtf */,
+				1863CD8B255BE39500B1D09B /* Oricutron-Prefix.pch */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
@@ -309,7 +319,7 @@
 		181F127A18CA616A009690E0 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0500;
+				LastUpgradeCheck = 1210;
 				ORGANIZATIONNAME = "Peter Gordon";
 				TargetAttributes = {
 					181F12A218CA616A009690E0 = {
@@ -319,7 +329,7 @@
 			};
 			buildConfigurationList = 181F127D18CA616A009690E0 /* Build configuration list for PBXProject "Oricutron" */;
 			compatibilityVersion = "Xcode 3.2";
-			developmentRegion = English;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
@@ -377,6 +387,7 @@
 				181F130A18CA61C6009690E0 /* tape.c in Sources */,
 				18DC24B219D010EA00C6BCBE /* 6551_loopback.c in Sources */,
 				181F12EE18CA61C6009690E0 /* 6502.c in Sources */,
+				1863CD96255BEA4300B1D09B /* oric_ch376_plugin.c in Sources */,
 				18DC24B119D010EA00C6BCBE /* 6551_com.c in Sources */,
 				181F131918CA6378009690E0 /* msgbox_osx.m in Sources */,
 				181F12F118CA61C6009690E0 /* avi.c in Sources */,
@@ -386,6 +397,7 @@
 				181F131818CA6378009690E0 /* gui_osx.m in Sources */,
 				181F130918CA61C6009690E0 /* snapshot.c in Sources */,
 				18D270CA18D7346600467488 /* keyboard.c in Sources */,
+				1863CD97255BEA4300B1D09B /* ch376.c in Sources */,
 				181F12F318CA61C6009690E0 /* disk.c in Sources */,
 				181F12F018CA61C6009690E0 /* 8912.c in Sources */,
 				181F12FB18CA61C6009690E0 /* gui.c in Sources */,
@@ -435,21 +447,37 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
@@ -464,6 +492,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				ONLY_ACTIVE_ARCH = YES;
+				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -472,22 +501,37 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -496,6 +540,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				ONLY_ACTIVE_ARCH = YES;
+				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -505,6 +550,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = NO;
+				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -512,6 +560,7 @@
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Oricutron/Oricutron-Prefix.pch";
+				HEADER_SEARCH_PATHS = /opt/X11/include;
 				INFOPLIST_FILE = "Oricutron/Oricutron-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Resources/";
 				OTHER_CFLAGS = "";
@@ -527,6 +576,7 @@
 					"-D__OPENGL_AVAILABLE__",
 					"-DSDL_MAJOR_VERSION=1",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = "uk.org.petergordon.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
@@ -537,6 +587,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = NO;
+				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -544,6 +597,7 @@
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Oricutron/Oricutron-Prefix.pch";
+				HEADER_SEARCH_PATHS = /opt/X11/include;
 				INFOPLIST_FILE = "Oricutron/Oricutron-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Resources/";
 				OTHER_CFLAGS = "";
@@ -559,6 +613,7 @@
 					"-DBACKEND_COM",
 					"-DBACKEND_MODEM",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = "uk.org.petergordon.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
@@ -580,6 +635,7 @@
 					"$(inherited)",
 				);
 				INFOPLIST_FILE = "OricutronTests/OricutronTests-Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = "uk.org.petergordon.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_HOST = "$(BUNDLE_LOADER)";
 				WRAPPER_EXTENSION = xctest;
@@ -598,6 +654,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Oricutron/Oricutron-Prefix.pch";
 				INFOPLIST_FILE = "OricutronTests/OricutronTests-Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = "uk.org.petergordon.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_HOST = "$(BUNDLE_LOADER)";
 				WRAPPER_EXTENSION = xctest;

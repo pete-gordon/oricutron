@@ -18,6 +18,10 @@
 **
 */
 
+#ifdef WWW
+#include <emscripten.h>
+#endif
+
 #ifdef __APPLE__
 #include "CoreFoundation/CoreFoundation.h"
 #endif
@@ -537,7 +541,6 @@ static void load_config( struct start_opts *sto, struct machine *oric )
         continue;
     }
   }
-
   fclose( f );
 }
 
@@ -679,7 +682,6 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 #else
   hwsurface           = SDL_FALSE;
 #endif
-
   preinit_ula( oric );
   preinit_machine( oric );
   preinit_render_sw( oric );
@@ -1165,6 +1167,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
       }
       if( sto->start_disk[0] )
       {
+      printf("Counting disks ok\n");
         if( sto->start_disks_count < 4 )
         {
           strcpy( sto->start_disks[sto->start_disks_count], sto->start_disk );
@@ -1193,6 +1196,19 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 
   if( sto->start_disk[0] )
   {
+#ifdef WWW
+      // NOT SURE WHY I HAD TO DO THIS ???
+      if( sto->start_disk[0] )
+      {
+      printf( "Counting disks 1\n");
+        if( sto->start_disks_count < 4 )
+        {
+          strcpy( sto->start_disks[sto->start_disks_count], sto->start_disk );
+          sto->start_disks_count++;
+        }
+      }
+#endif
+      
     for( i=0; i<4; i++ )
     {
       disk_eject( oric, i );
@@ -1462,10 +1478,18 @@ static void loop_handler( void* arg )
   SDL_Event* event = &ctx->event;
 
   SDL_bool done = SDL_FALSE;
+#ifdef WWW
+  SDL_bool sdl_quit = SDL_FALSE;
+#endif
   Sint32 i;
 
   while (!done)
   {
+#ifdef WWW
+    // 1 loop only
+  	done = SDL_TRUE;
+#endif
+      
     if ( oric->emu_mode == EM_PLEASEQUIT )
       break;
 
@@ -1566,6 +1590,9 @@ static void loop_handler( void* arg )
         break;
         case SDL_QUIT:
           done = SDL_TRUE;
+#ifdef WWW
+          sdl_quit = SDL_TRUE;
+#endif
           break;
 
         default:
@@ -1589,11 +1616,15 @@ static void loop_handler( void* arg )
 
     } while ( SDL_PollEvent( event ) );
   }
-
+#ifdef WWW
+  if (sdl_quit)
   {
+#endif
     ay_unlockaudio(&oric->ay);
     shut(oric);
+#ifdef WWW
   }
+#endif
 }
 
 int main( int argc, char *argv[] )
@@ -1646,7 +1677,11 @@ int main( int argc, char *argv[] )
     load_keymap = SDL_FALSE;
   }
 
-  loop_handler(&ctx);
-
+#ifdef WWW
+    emscripten_set_main_loop_arg(loop_handler, &ctx, -1, 1);
+#else
+    loop_handler(&ctx);
+#endif
+    
   return EXIT_SUCCESS;
 }
