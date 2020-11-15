@@ -1480,11 +1480,6 @@ static void loop_handler( void* arg )
 
   while (!done)
   {
-#ifdef WWW
-    // 1 loop only
-  	done = SDL_TRUE;
-#endif
-      
     if ( oric->emu_mode == EM_PLEASEQUIT )
       break;
 
@@ -1555,8 +1550,13 @@ static void loop_handler( void* arg )
         ctx->framedone = SDL_FALSE;
       }
 
+#if defined(WWW)
+      if (!SDL_PollEvent(event))
+        break;
+#else
       if (!SDL_PollEvent(event))
         continue;
+#endif
     }
     else
     {
@@ -1566,8 +1566,9 @@ static void loop_handler( void* arg )
         render( oric );
         ctx->needrender = SDL_FALSE;
       }
-#ifdef WWW
-      SDL_PollEvent( event );
+#if defined(WWW)
+      if (!SDL_PollEvent(event))
+        break;
 #else
       if (!SDL_WaitEvent(event))
         break;
@@ -1605,13 +1606,16 @@ static void loop_handler( void* arg )
         }
         if (oric->show_keyboard)
             keyboard_event(event, oric, &ctx->needrender);
-#ifdef WWW
-      } while (0);
-#else
       } while ( SDL_PollEvent( event ) );
+
+#if defined(WWW)
+    // 1 loop only because emscripten will simulate the actual looping
+  	done = SDL_TRUE;
 #endif
-    }
-#ifndef WWW
+
+  }
+#if defined(WWW)
+#else
       ay_unlockaudio(&oric->ay);
       shut(oric);
 #endif

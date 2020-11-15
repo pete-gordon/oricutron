@@ -40,6 +40,10 @@
 #include "machine.h"
 #include "filereq.h"
 
+#ifdef WWW
+#include <emscripten.h>
+#endif
+
 // Externs
 extern SDL_Surface *screen;
 extern struct textzone *tz[NUM_TZ];
@@ -332,12 +336,14 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
   filereq_drawtbox( &freqf_tbox[1], freqf_cgad==1 );
   filereq_render( oric );
 
-#ifdef WWW
-  {
-      SDL_PollEvent( &event );
-#else
   for( ;; )
   {
+#ifdef WWW
+      if( !SDL_PollEvent( &event )) {
+          emscripten_sleep(10);
+          continue;
+      }
+#else
     if( !SDL_WaitEvent( &event ) )
       break;
 #endif

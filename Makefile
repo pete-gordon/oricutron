@@ -329,11 +329,11 @@ else
 CFLAGS += -D__OPENGL_AVAILABLE__ -D__CBCOPY__ -D__CBPASTE__ $(shell $(SDL_LIB)-config --cflags)
 endif
 ifneq (,$(CROSS_LFLAGS))
-LFLAGS += $(CROSS_LFLAGS) -s
+LFLAGS += $(CROSS_LFLAGS)
 else
-LFLAGS += $(shell $(SDL_LIB)-config --libs) -s
+LFLAGS += $(shell $(SDL_LIB)-config --libs)
 endif
-LFLAGS += -lm -Wl,-framework,OpenGL
+LFLAGS += -lm -Wl,-framework,OpenGL -framework CoreFoundation -framework AppKit
 TARGET = $(TARGET_NAME)
 FILEREQ_OBJ =
 MSGBOX_OBJ =

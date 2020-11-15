@@ -7,16 +7,13 @@ project(Oricutron)
   find_library(SDL2_LIBRARY NAME SDL2)
 
   include_directories(${SDL2_INCLUDE_DIRS})
-  add_definitions(-D__SPECIFY_SDL_DIR__=1 -DWWW -DAPP_NAME_FULL="Oricutron 1.2" -DAPP_YEAR="2015" -DVERSION_COPYRIGHTS="Oricutron 1.2.0 2016 Peter Gordon" -O2 -s USE_SDL=2 -s USE_SDL_IMAGE=2 )
+  add_definitions(-D__SPECIFY_SDL_DIR__=1 -DWWW -DAPP_NAME_FULL="Oricutron 1.2" -DAPP_YEAR="2015"
+          -DVERSION_COPYRIGHTS="Oricutron 1.2.0 2016 Peter Gordon"
+          -O3 -s USE_SDL=2 -s ASYNCIFY -s INITIAL_MEMORY=128mb
+          -fsanitize=undefined -fsanitize-minimal-runtime )
 
 include_directories(
   ${CMAKE_CURRENT_BINARY_DIR}
-)
-
-SET (SRCGTK
-  ../filereq_gtk.c
-  ../gui_x11.c
-  ../msgbox_gtk.c
 )
 
 SET (SRCSDL
@@ -57,5 +54,5 @@ SET (SRCS
 SET(CMAKE_EXECUTABLE_SUFFIX ".html")
 
   add_executable(Oricutron ${SRCS} ${SRCSDL})
-  set_target_properties(Oricutron PROPERTIES LINK_FLAGS "-O2 -s USE_SDL=2 -s USE_SDL_IMAGE=2 --preload-file assets")
+  set_target_properties(Oricutron PROPERTIES LINK_FLAGS "-O3 -s USE_SDL=2 -s ASYNCIFY --preload-file assets -fsanitize=undefined -fsanitize-minimal-runtime -s INITIAL_MEMORY=128mb")
   target_link_libraries(Oricutron ${SDL2_LIBRARIES})
