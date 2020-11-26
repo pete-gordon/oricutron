@@ -52,7 +52,6 @@ struct twilighte
 #include "../../system.h"
 
 extern SDL_bool read_config_string( char *buf, char *token, char *dest, Sint32 maxlen );
-///extern SDL_bool load_rom( struct machine *oric, char *fname, int size, unsigned char *where, struct symboltable *stab, int symflags );
  
 static SDL_bool load_rom_twilighte(  char *fname, int size, unsigned char where[] )
 {
@@ -126,7 +125,7 @@ struct twilighte * twilighte_oric_init(void)
     return NULL;
   }
 
-  for( j=1; j<31; j++ )
+  for( j=1; j<32; j++ )
   {
     twilighte->twilrombankfiles[j][0]=0;
     twilighte->twilrambankfiles[j][0]=0;
@@ -135,7 +134,7 @@ struct twilighte * twilighte_oric_init(void)
   while( !feof( f ) )
   {
     result=fgets( line, 1024, f );
-    for( j=1; j<31; j++ )
+    for( j=1; j<32; j++ )
     {
       if (j>9)
           sprintf( tbtmp, "twilbankrom%d", j);
@@ -155,7 +154,7 @@ struct twilighte * twilighte_oric_init(void)
   fclose( f );
 
   // Now load rom 
-  for( i=0; i<31; i++ )
+  for( i=0; i<32; i++ )
   {
     if( twilighte->twilrombankfiles[i][0]!=0 )
     { 
@@ -166,13 +165,10 @@ struct twilighte * twilighte_oric_init(void)
       }
 	}
   }
-/* 
-    
-*/
-	// Flush sram (first bank)
+
   for (j=0;j<16384;j++) twilighte->twilrambankdata[0][j]=0;   
    
-  twilighte->DDRA=0xff;
+  twilighte->DDRA=7+128+32;
   twilighte->VDDRA=7;
   twilighte->current_bank=7;
   twilighte->DDRB=0;
@@ -192,7 +188,7 @@ unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte *twilighte, uin
     if (twilighte->current_bank<5) 
     {
       if (twilighte->t_banking_register!=0)
-        bank=twilighte->current_bank+8+((twilighte->t_banking_register-1)*4);
+        bank=twilighte->current_bank+8-1+((twilighte->t_banking_register-1)*4);
       else
         bank=twilighte->current_bank;
     }
@@ -220,7 +216,7 @@ unsigned char 	twilighteboard_oric_ROM_RAM_write(struct twilighte *twilighte, ui
     if (twilighte->current_bank<5) 
 	  {
       if (twilighte->t_banking_register!=0)
-        bank=twilighte->current_bank+8+((twilighte->t_banking_register-1)*4);
+        bank=twilighte->current_bank+8-1+((twilighte->t_banking_register-1)*4);
       else
         bank=twilighte->current_bank;
 	  }
@@ -254,12 +250,16 @@ unsigned char 	twilighteboard_oric_read(struct twilighte *twilighte, uint16_t ad
 
   if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_VDDRB)
   {
-  	return twilighte->VDDRB;
+  	return twilighte->VDDRB;;
   }
 
   if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_DDRB)
   {
-	  return twilighte->DDRB;
+    unsigned char data;
+    data=twilighte->VDDRB;
+    //twilighte->DDRB=twilighte->DDRB|1|2|4|8|16;
+  	return data;
+
   }
 
   if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_BANKING_REGISTER)
@@ -279,9 +279,13 @@ unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t a
 
   if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_DDRA)
   {
-    if (mask==0)
-        twilighte->DDRA=data|128|32;
-    else
+
+    if (mask==0) 
+    { 
+    
+        twilighte->DDRA=data&(128+32+7);
+    }
+    if (mask==0xff)
         twilighte->DDRA = twilighte->DDRA&data;
     twilighte->current_bank=data&7;
   }
@@ -293,16 +297,55 @@ unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t a
 
   if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_DDRB)
   {
+    
+      //twilighte->DDRB= (twilighte->DDRB&~mask)|(data&mask);
+      //return 0;
+
+    //if (mask==0xFF) {
+        //twilighte->DDRB=twilighte->DDRB&data;
+        //error_printf( "DDRB '%x'", twilighte->DDRB );
+    //}
+
+
+    if (mask==0x00)
+    { 
       unsigned char lastpb6;
       unsigned char lastpb7;
 
-      lastpb6 = twilighte->DDRB&0x40;
+      data=data&0b11011111;
+      if (data==0) 
+      {
+        twilighte->DDRB=0;
+        return 0;
+      }
 
-      lastpb7 = twilighte->DDRB&0x80;
-      if ((lastpb6==0 || lastpb7==0) && (data&0x80 || data&0x40))
-        twilighte->DDRB=data|1|2|4|8|16;
-      else 
-        twilighte->DDRB=data;
+      lastpb6=twilighte->DDRB&64;
+      lastpb7=twilighte->DDRB&128;
+
+
+      if (lastpb6 && data==64) return 0;
+      if (lastpb7 && data==128) return 0;
+      if (lastpb7 && lastpb6 && data==128+64) return 0;
+
+      if (!lastpb6 && data==64) twilighte->DDRB=twilighte->DDRB+64;
+      if (!lastpb7 && data==128) twilighte->DDRB=twilighte->DDRB+128;
+      if (!lastpb7 && !lastpb6 && data==128+64) twilighte->DDRB=128+64;
+
+      /*
+      twilighte->DDRB=data&(255);
+
+      lastpb6=twilighte->DDRB&64;
+      lastpb7=twilighte->DDRB&128;
+
+      if (lastpb6 || lastpb7)
+      */
+        twilighte->DDRB=twilighte->DDRB|1|2|4|8|16;
+
+    }
+
+
+
+
   }
 
   if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_REGISTER)
