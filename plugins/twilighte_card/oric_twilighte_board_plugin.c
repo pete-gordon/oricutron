@@ -46,9 +46,6 @@ struct twilighte
 };
 
 
-
-
-
 #include "../../system.h"
 
 extern SDL_bool read_config_string( char *buf, char *token, char *dest, Sint32 maxlen );
@@ -60,8 +57,8 @@ static SDL_bool load_rom_twilighte(  char *fname, int size, unsigned char where[
 
   // MinGW doesn't have asprintf :-(
   tmpname = malloc( strlen( fname ) + 10 );
-  if( !tmpname ) {
-
+  if( !tmpname )
+  {
     return SDL_FALSE;
   }
 
@@ -148,7 +145,7 @@ struct twilighte * twilighte_oric_init(void)
           break;
         }
       }
-	 }
+	  }
   }
 
   fclose( f );
@@ -163,7 +160,7 @@ struct twilighte * twilighte_oric_init(void)
         error_printf("Cannot load %s",twilighte->twilrombankfiles[i]);
         return NULL;
       }
-	}
+	  }
   }
 
   for (j=0;j<16384;j++) twilighte->twilrambankdata[0][j]=0;   
@@ -282,7 +279,6 @@ unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t a
 
     if (mask==0) 
     { 
-    
         twilighte->DDRA=data&(128+32+7);
     }
     if (mask==0xff)
@@ -297,14 +293,6 @@ unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t a
 
   if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_DDRB)
   {
-    
-      //twilighte->DDRB= (twilighte->DDRB&~mask)|(data&mask);
-      //return 0;
-
-    //if (mask==0xFF) {
-        //twilighte->DDRB=twilighte->DDRB&data;
-        //error_printf( "DDRB '%x'", twilighte->DDRB );
-    //}
 
 
     if (mask==0x00)
