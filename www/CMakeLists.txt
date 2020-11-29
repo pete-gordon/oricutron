@@ -9,8 +9,8 @@ project(Oricutron)
   include_directories(${SDL2_INCLUDE_DIRS})
   add_definitions(-D__SPECIFY_SDL_DIR__=1 -DWWW -DAPP_NAME_FULL="Oricutron 1.2" -DAPP_YEAR="2015"
           -DVERSION_COPYRIGHTS="Oricutron 1.2.0 2016 Peter Gordon"
-          -O3 -s USE_SDL=2 -s ASYNCIFY -s INITIAL_MEMORY=128mb
-          -fsanitize=undefined -fsanitize-minimal-runtime )
+          -O3 -s USE_SDL=2 -s ASYNCIFY -s INITIAL_MEMORY=256mb
+          -fsanitize=undefined -fsanitize-minimal-runtime -s FETCH -s FORCE_FILESYSTEM=1 )
 
 include_directories(
   ${CMAKE_CURRENT_BINARY_DIR}
@@ -54,5 +54,5 @@ SET (SRCS
 SET(CMAKE_EXECUTABLE_SUFFIX ".html")
 
   add_executable(Oricutron ${SRCS} ${SRCSDL})
-  set_target_properties(Oricutron PROPERTIES LINK_FLAGS "-O3 -s USE_SDL=2 -s ASYNCIFY --preload-file assets -fsanitize=undefined -fsanitize-minimal-runtime -s INITIAL_MEMORY=128mb")
+  set_target_properties(Oricutron PROPERTIES LINK_FLAGS "-O3 -s USE_SDL=2 -s ASYNCIFY --preload-file assets -fsanitize=undefined -fsanitize-minimal-runtime -s INITIAL_MEMORY=256mb -s FETCH -s FORCE_FILESYSTEM=1 -lidbfs.js")
   target_link_libraries(Oricutron ${SDL2_LIBRARIES})

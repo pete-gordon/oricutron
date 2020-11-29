@@ -1984,6 +1984,12 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
         case SDLK_ESCAPE:
           setemumode( oric, NULL, EM_RUNNING );
+#ifdef WWW
+          if( oric->ay.soundon )
+          {
+            SDL_PauseAudio(0);
+          }
+#endif
           *needrender = SDL_TRUE;
           break;
 

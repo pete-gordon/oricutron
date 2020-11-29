@@ -92,7 +92,6 @@ static void filereq_render( struct machine *oric )
 
   oric->render_video( oric, SDL_TRUE );
   oric->render_textzone( oric, TZ_FILEREQ );
-
   oric->render_end( oric );
 }
 
@@ -378,8 +377,15 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
         break;
 
       case SDL_MOUSEBUTTONDOWN:
-        if( ( mx < 1 ) || ( mx > 38 ) )
+        if( ( mx < 1 ) || ( mx > 38 ) ) {
+#ifdef WWW
+          printf("out of window\n");
+          SDL_COMPAT_EnableUNICODE( wasunicode );
+          SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+          return SDL_FALSE;
+#endif
           break;
+        }
 
         if( ( my == 28 ) || ( my == 30 ) )
         {
@@ -391,8 +397,15 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
           break;
         }
 
-        if( ( my < 1 ) || ( my > 26 ) )
+        if( ( my < 1 ) || ( my > 26 ) ) {
+#ifdef WWW
+          printf("out of window\n");
+          SDL_COMPAT_EnableUNICODE( wasunicode );
+          SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+          return SDL_FALSE;
+#endif
           break;
+        }
 
         freqf_cgad = 2;
 

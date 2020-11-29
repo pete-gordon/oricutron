@@ -1,6 +1,26 @@
 // Web version of Oricutron
 
-Requirements :
+If you only want to host the provided version of Oricutron and some disks and tapes files :
+
+Requirement: have PHP running on your website.
+
+Copy the following files to your web directory
+dir.php
+index.html
+Oricutron.data
+oricutron.html
+Oricutron.js
+Oricutron.wasm
+
+Add all your .tap and .dsk files in the same directory.
+
+That's all folks!
+
+
+
+If you want to compile your own version of Oricutron :
+
+Requirements:
 
 Install Emscripten SDK from https://emscripten.org/
 

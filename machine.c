@@ -1278,12 +1278,18 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           break;
 
         case SDL_BUTTON_RIGHT:
+#ifdef WWW
+          if( oric->ay.soundon )
+          {
+            SDL_PauseAudio(1);
+            printf("Pausing Audio\n");
+          }
+#endif
           setemumode( oric, NULL, EM_MENU );
           *needrender = SDL_TRUE;
           break;
       }
       break;
-
     case SDL_MOUSEBUTTONUP:
       if( ev->button.button == SDL_BUTTON_LEFT )
         lightpendown = SDL_FALSE;
@@ -1293,7 +1299,20 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
       move_lightpen( oric, ev->motion.x, ev->motion.y );
       break;
 
-    case SDL_KEYUP:
+#ifdef WWW
+    case SDL_MULTIGESTURE:
+      {
+        SDL_MultiGestureEvent *m = (SDL_MultiGestureEvent*)ev;
+        if (m->numFingers == 2)
+        {
+          setemumode( oric, NULL, EM_MENU );
+          *needrender = SDL_TRUE;
+        }
+        break;
+      }
+#endif
+
+      case SDL_KEYUP:
       switch( ev->key.keysym.sym )
       {
         case SDLK_F1:

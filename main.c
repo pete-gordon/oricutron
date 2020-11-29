@@ -20,6 +20,7 @@
 
 #ifdef WWW
 #include <emscripten.h>
+#include <emscripten/fetch.h>
 #endif
 
 #ifdef __APPLE__
@@ -1206,7 +1207,51 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
         }
       }
 #endif
-      
+    switch (detect_image_type(sto->start_disk))
+    {
+      case IMG_ATMOS_MICRODISC:
+        if (!sto->start_machine_set)  sto->start_machine = MACH_ATMOS;
+        if (!sto->start_disktype_set) sto->start_disktype = DRV_MICRODISC;
+        break;
+
+      case IMG_ATMOS_JASMIN:
+        if (!sto->start_machine_set)  sto->start_machine = MACH_ATMOS;
+        if (!sto->start_disktype_set) sto->start_disktype = DRV_JASMIN;
+        break;
+
+      case IMG_TELESTRAT_DISK:
+        if (!sto->start_machine_set)  sto->start_machine = MACH_TELESTRAT;
+        if (!sto->start_disktype_set) sto->start_disktype = DRV_MICRODISC;
+        break;
+
+      case IMG_BD500_DISK:
+        if (!sto->start_machine_set)  sto->start_machine = MACH_ATMOS;
+        if (!sto->start_disktype_set) sto->start_disktype = DRV_BD500;
+        break;
+
+      case IMG_PRAVETZ_DISK:
+        if (!sto->start_machine_set)  sto->start_machine = MACH_PRAVETZ;
+        if (!sto->start_disktype_set) sto->start_disktype = DRV_PRAVETZ;
+        break;
+
+      case IMG_GUESS_MICRODISC:
+        if (!sto->start_disktype_set) sto->start_disktype = DRV_MICRODISC;
+        break;
+
+      case IMG_TAPE:
+        printf("'%s' seems to be a tape image.\n", sto->start_disk);
+        strcpy(sto->start_tape, sto->start_disk);
+        sto->start_disk[0] = 0;
+        break;
+
+      case IMG_SNAPSHOT:
+        printf("'%s' seems to be a snapshot file.\n", opt_arg);
+        strncpy( sto->start_snapshot, opt_arg, 1024);
+        sto->start_snapshot[1023] = 0;
+        sto->start_disk[0] = 0;
+        break;
+    }
+
     for( i=0; i<4; i++ )
     {
       disk_eject( oric, i );
@@ -1621,6 +1666,191 @@ static void loop_handler( void* arg )
 #endif
   }
 
+#ifdef WWW
+
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+
+struct context *gCtx = NULL;
+
+void success(char* path, const char* fileToLoad)
+{
+  int i;
+  printf("Loading disk %s\n", fileToLoad);
+  switch (detect_image_type(path))
+  {
+    case IMG_SNAPSHOT:
+      load_snapshot(&gCtx->oric, path);
+      break;
+
+    case IMG_ATMOS_MICRODISC:
+      if ((gCtx->oric.type != MACH_ATMOS) &&
+          (gCtx->oric.type != MACH_ORIC1) &&
+          (gCtx->oric.type != MACH_PRAVETZ))
+      {
+        swapmach( &gCtx->oric, NULL, (DRV_MICRODISC<<16)|MACH_ATMOS );
+        break;
+      }
+
+      if ((gCtx->oric.drivetype != DRV_MICRODISC) &&
+          (gCtx->oric.drivetype != DRV_NONE))
+      {
+        swapmach( &gCtx->oric, NULL, (DRV_MICRODISC<<16)|gCtx->oric.type );
+      }
+      break;
+
+    case IMG_ATMOS_JASMIN:
+      if ((gCtx->oric.type != MACH_ATMOS) &&
+          (gCtx->oric.type != MACH_ORIC1) &&
+          (gCtx->oric.type != MACH_PRAVETZ))
+      {
+        swapmach( &gCtx->oric, NULL, (DRV_JASMIN<<16)|MACH_ATMOS );
+        gCtx->oric.auto_jasmin_reset = SDL_TRUE;
+        break;
+      }
+
+      if (gCtx->oric.drivetype == DRV_NONE)
+      {
+        swapmach( &gCtx->oric, NULL, (DRV_JASMIN<<16)|gCtx->oric.type);
+        gCtx->oric.auto_jasmin_reset = SDL_TRUE;
+        break;
+      }
+
+      if (gCtx->oric.drivetype != DRV_JASMIN)
+      {
+        swapmach( &gCtx->oric, NULL, (DRV_JASMIN<<16)|gCtx->oric.type );
+        gCtx->oric.auto_jasmin_reset = SDL_TRUE;
+        break;
+      }
+      break;
+
+    case IMG_TELESTRAT_DISK:
+      if (gCtx->oric.type != MACH_TELESTRAT)
+      {
+        swapmach( &gCtx->oric, NULL, MACH_TELESTRAT );
+        break;
+      }
+      break;
+
+    case IMG_PRAVETZ_DISK:
+      if (gCtx->oric.type != MACH_PRAVETZ)
+      {
+        swapmach( &gCtx->oric, NULL, (DRV_PRAVETZ<<16)|MACH_PRAVETZ );
+        pravdiskboot( &gCtx->oric );
+        break;
+      }
+
+      if (gCtx->oric.drivetype == DRV_NONE)
+      {
+        swapmach( &gCtx->oric, NULL, (DRV_PRAVETZ<<16)|MACH_PRAVETZ );
+        pravdiskboot( &gCtx->oric );
+        break;
+      }
+
+      if (gCtx->oric.drivetype != DRV_PRAVETZ)
+      {
+        swapmach( &gCtx->oric, NULL, (DRV_PRAVETZ<<16)|MACH_PRAVETZ );
+        pravdiskboot( &gCtx->oric );
+        break;
+      }
+      break;
+
+    case IMG_GUESS_MICRODISC:
+      if (gCtx->oric.drivetype == DRV_PRAVETZ)
+      {
+        swapmach( &gCtx->oric, NULL, (DRV_MICRODISC<<16)|gCtx->oric.type );
+        break;
+      }
+      break;
+
+    case IMG_TAPE:
+      gCtx->oric.lasttapefile[0] = 0;
+      tape_load_tap( &(gCtx->oric), path );
+      if( gCtx->oric.symbolsautoload ) mon_new_symbols( &gCtx->oric.usersyms, &(gCtx->oric), "symbols", SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
+      queuekeys( "CLOAD\"\"\x0d" );
+      return;
+  }
+
+  diskimage_load( &(gCtx->oric), path, 0 );
+
+  if( gCtx->oric.drivetype == DRV_NONE )
+  {
+    swapmach( &(gCtx->oric), NULL, (DRV_MICRODISC<<16)|gCtx->oric.type );
+    return;
+  }
+}
+
+void downloadSucceeded(emscripten_fetch_t *fetch) {
+  int fd;
+  char path[1024];
+
+  printf("Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
+  // The data is now available at fetch->data[0] through fetch->data[fetch->numBytes-1];
+  printf("%s\n",fetch->data);
+  printf("status %d\n",fetch->status);
+
+  sprintf(path, "/readwritefs/%s", fetch->url),
+  fd = open(path, O_RDWR | O_CREAT, 0666);
+  if (fd == -1)
+    perror("Failing to create file");
+  else
+  {
+    if (write(fd, fetch->data, fetch->numBytes) != fetch->numBytes) {
+      perror("Failing to write to file");
+    } else if (close(fd) != 0) {
+      perror("Failing to close file");
+    } else {
+      success(path, fetch->url);
+    }
+  }
+
+    // sync from memory state to persisted
+    EM_ASM(
+        FS.syncfs(function (err) {
+          assert(!err);
+        });
+    );
+
+  emscripten_fetch_close(fetch); // Free data associated with the fetch.
+}
+
+void downloadFailed(emscripten_fetch_t *fetch) {
+  printf("Downloading %s failed, HTTP failure status code: %d.\n", fetch->url, fetch->status);
+  emscripten_fetch_close(fetch); // Also free data on failure.
+}
+
+  void EMSCRIPTEN_KEEPALIVE www_async_dload() {
+
+    // is the file here
+    char * fileToLoad = getenv("FILE");
+
+    printf("Downloading file %s\n", fileToLoad);
+
+    if(fileToLoad == NULL)
+      return;
+
+    char path[1024];
+    sprintf(path, "/readwritefs/%s", fileToLoad);
+
+    int fd = open(path, O_RDWR);
+    if (fd == -1)
+    {
+      emscripten_fetch_attr_t attr;
+      emscripten_fetch_attr_init(&attr);
+      strcpy(attr.requestMethod, "GET");
+      attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
+
+      attr.onsuccess = downloadSucceeded;
+      attr.onerror = downloadFailed;
+      emscripten_fetch(&attr, fileToLoad);
+    } else {
+      printf("%s is already downloaded!\n", fileToLoad);
+      success(path, fileToLoad);
+    }
+  }
+#endif
+
   int main( int argc, char *argv[] )
   {
     static struct context ctx;
@@ -1672,7 +1902,23 @@ static void loop_handler( void* arg )
     }
 
 #ifdef WWW
-      emscripten_set_main_loop_arg(loop_handler, &ctx, -1, 1);
+      // save the context to a global
+      gCtx = &ctx;
+      // create read-write fs
+      EM_ASM(
+        FS.mkdir('/readwritefs');
+        FS.mount(IDBFS, {}, '/readwritefs');
+
+        // sync from persisted state into memory and then
+        // run the 'www_async_dload' function
+        FS.syncfs(true, function (err) {
+          assert(!err);
+          // async download of space1999-fr.dsk
+          ccall('www_async_dload', 'v');
+        });
+      );
+
+      emscripten_set_main_loop_arg(loop_handler, &ctx, -1, 0);
 #else
       loop_handler(&ctx);
 #endif
