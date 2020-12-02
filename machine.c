@@ -1278,13 +1278,6 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           break;
 
         case SDL_BUTTON_RIGHT:
-#ifdef WWW
-          if( oric->ay.soundon )
-          {
-            SDL_PauseAudio(1);
-            printf("Pausing Audio\n");
-          }
-#endif
           setemumode( oric, NULL, EM_MENU );
           *needrender = SDL_TRUE;
           break;

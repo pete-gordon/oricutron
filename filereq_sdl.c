@@ -379,7 +379,6 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       case SDL_MOUSEBUTTONDOWN:
         if( ( mx < 1 ) || ( mx > 38 ) ) {
 #ifdef WWW
-          printf("out of window\n");
           SDL_COMPAT_EnableUNICODE( wasunicode );
           SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
           return SDL_FALSE;
@@ -399,7 +398,6 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
 
         if( ( my < 1 ) || ( my > 26 ) ) {
 #ifdef WWW
-          printf("out of window\n");
           SDL_COMPAT_EnableUNICODE( wasunicode );
           SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
           return SDL_FALSE;

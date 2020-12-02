@@ -4,6 +4,9 @@ If you only want to host the provided version of Oricutron and some disks and ta
 
 Requirement: have PHP running on your website.
 
+Note : If you don't have PHP you can use the index_nophp.html file and edit it by hand
+adding your .dsk and .tap names in the JavaScript lists.
+
 Copy the following files to your web directory
 dir.php
 index.html
