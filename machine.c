@@ -46,6 +46,8 @@
 #include "plugins/ch376/ch376.h"
 #include "plugins/ch376/oric_ch376_plugin.h"
 
+#include "plugins/twilighte_card/oric_twilighte_board_plugin.h"
+
 #include "machine.h"
 #include "avi.h"
 #include "filereq.h"
@@ -312,7 +314,13 @@ void setromon( struct machine *oric )
 void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
-  if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
+
+
+  if (oric->twilighteboard_activated &&  addr >= 0xc000  ) 
+    twilighteboard_oric_ROM_RAM_write(oric->twilighte,addr-0xc000,data);
+  else
+    if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
+  
   if( ( addr & 0xff00 ) == 0x0300 )
   {
     if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
@@ -320,6 +328,9 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 
     else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
       ch376_oric_write(oric->ch376, addr, data);
+    
+    else if(oric->twilighteboard_activated && ((0x342 <= addr && addr < 0x344 ) || (0x320 <= addr && addr < 0x330 )))
+     twilighteboard_oric_write(oric->twilighte,addr,0x00,data);
 
     else
       via_write( &oric->via, addr, data );
@@ -397,6 +408,7 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
             ch376_oric_write(oric->ch376, addr, data);
           break;
         }
+        
 
       default:
         via_write( &oric->via, addr, data );
@@ -704,12 +716,19 @@ unsigned char atmosread( struct m6502 *cpu, unsigned short addr )
     if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
       return ch376_oric_read(oric->ch376, addr);
 
+    if( oric->twilighteboard_activated && ((0x342 <= addr  && addr < 0x344 ) || (0x320 <= addr && addr < 0x330 )))
+      return twilighteboard_oric_read(oric->twilighte,addr);
+
     return via_read( &oric->via, addr );
   }
 
-  if( ( !oric->romdis ) && ( addr >= 0xc000 ) )
-    return oric->rom[addr-0xc000];
+  if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) {
 
+    if (oric->twilighteboard_activated)
+      return twilighteboard_oric_ROM_RAM_read(oric->twilighte,addr-0xc000);
+    else
+      return oric->rom[addr-0xc000];
+  }
   return oric->mem[addr];
 }
 
@@ -1339,12 +1358,27 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           via_init( &oric->tele_via, oric, VIA_TELESTRAT );
           acia_init( &oric->tele_acia, oric );
 
+
+          if (oric->twilighteboard_activated)
+          {
+            oric->ch376_activated=SDL_TRUE;
+            oric->twilighte=twilighte_oric_init();
+          }
+          if (oric->twilighte==NULL)
+          {
+            oric->twilighteboard_activated=SDL_FALSE;
+          }
+          else
+            oric->ch376_activated=SDL_TRUE;
+
           if (oric->ch376_activated)
           {
             oric->ch376 = ch376_oric_init();
             if (oric->ch376 != NULL)
               ch376_oric_config(oric->ch376);
           }
+          
+
 
           break;
 
@@ -1987,6 +2021,13 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   setromon( oric );
   oric->tapename[0] = 0;
   tape_rewind( oric );
+  if (oric->twilighteboard_activated)
+  {
+    oric->twilighte=twilighte_oric_init();
+    oric->ch376_activated=SDL_TRUE;
+  }
+  if (oric->twilighte==NULL) oric->twilighteboard_activated=SDL_FALSE;
+
   m6502_reset( &oric->cpu );
   via_init( &oric->via, oric, VIA_MAIN );
   via_init( &oric->tele_via, oric, VIA_TELESTRAT );
@@ -1997,6 +2038,8 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
     oric->ch376 = ch376_oric_init();
     ch376_oric_config(oric->ch376);
   }
+
+
 
   ay_init( &oric->ay, oric );
   joy_setup( oric );

@@ -35,6 +35,8 @@
 #include "machine.h"
 #include "joystick.h"
 
+#include "plugins/twilighte_card/oric_twilighte_board_plugin.h"
+
 struct keyjoydef
 {
   char *id;
@@ -257,8 +259,58 @@ void joy_buildmask( struct machine *oric )
   Uint8 mkmask_f = 0xff;
   Uint8 joysel = oric->via.read_port_a( &oric->via );
   Uint8 telestrat_joysel = oric->tele_via.read_port_b( &oric->tele_via );
+  Uint8 twilighteboard_joysel;
+
+  
   SDL_bool gimme_port_a = SDL_FALSE;
   SDL_bool gimme_port_b = SDL_FALSE;
+
+
+
+  if (oric->twilighteboard_activated)
+    twilighteboard_joysel= twilighteboard_oric_read(oric->twilighte,0x320);
+
+  if (oric->type == MACH_ATMOS && oric->twilighteboard_activated)
+  {
+    if ( twilighteboard_joysel & 0x80 )
+    {
+      // Right Port
+      if( joystate_a[0] ) mkmask &= 0xef;
+      if( joystate_a[1] ) mkmask &= 0xf7;
+      if( joystate_a[2] ) mkmask &= 0xfd;
+      if( joystate_a[3] ) mkmask &= 0xfe;
+      if( joystate_a[4] ) mkmask &= 0xfb;
+
+      if( joystate_a[5] ) mkmask_f &= 0x7f;  // PA7 - fire 2
+      if( joystate_a[6] ) mkmask_f &= 0xdf;  // PA5 - fire 3
+
+      gimme_port_a = SDL_TRUE;
+      gimme_port_b = SDL_TRUE;
+    }
+
+    if ( twilighteboard_joysel & 0x40 )
+    {
+      // Left Port
+      if( joystate_b[0] ) mkmask &= 0xef;  // 0x10  - up
+      if( joystate_b[1] ) mkmask &= 0xf7;  // 0x08  - down
+      if( joystate_b[2] ) mkmask &= 0xfd;  // 0x02  - left
+      if( joystate_b[3] ) mkmask &= 0xfe;  // 0x01  - right
+      if( joystate_b[4] ) mkmask &= 0xfb;  // 0x04  - fire
+      gimme_port_b = SDL_TRUE;
+    }
+
+    if( gimme_port_a )
+    {
+      //twilighteboard_oric_write(oric->twilighte, 0x321, 0xff,mkmask_f);
+    }
+
+    if( gimme_port_b )
+    {
+        // port B
+      twilighteboard_oric_write(oric->twilighte, 0x320, 0xff, mkmask);
+    }
+  }
+  else
 
   if (oric->type == MACH_TELESTRAT)
   {
@@ -376,8 +428,8 @@ SDL_bool joy_filter_event( SDL_Event *ev, struct machine *oric )
 {
   SDL_bool swallow_event;
 
-  swallow_event  = dojoyevent( ev, oric, (oric->type==MACH_TELESTRAT) ? oric->telejoymode_a : oric->joymode_a, joystate_a, oric->sdljoy_a );
-  swallow_event |= dojoyevent( ev, oric, (oric->type==MACH_TELESTRAT) ? oric->telejoymode_b : oric->joymode_b, joystate_b, oric->sdljoy_b );
+  swallow_event  = dojoyevent( ev, oric, (oric->type==MACH_TELESTRAT || (oric->twilighteboard_activated && oric->type==MACH_ATMOS)) ? oric->telejoymode_a : oric->joymode_a, joystate_a, oric->sdljoy_a );
+  swallow_event |= dojoyevent( ev, oric, (oric->type==MACH_TELESTRAT || (oric->twilighteboard_activated && oric->type==MACH_ATMOS)) ? oric->telejoymode_b : oric->joymode_b, joystate_b, oric->sdljoy_b );
 
   if( swallow_event )
   {
@@ -443,7 +495,7 @@ static void dojoysetup( struct machine *oric, Sint16 mode_a, Sint16 mode_b )
 
 void joy_setup( struct machine *oric )
 {
-  if( oric->type == MACH_TELESTRAT )
+  if( oric->type == MACH_TELESTRAT || ( oric->type == MACH_ATMOS && oric->twilighteboard_activated) )
     dojoysetup( oric, oric->telejoymode_a, oric->telejoymode_b );
   else
     dojoysetup( oric, oric->joymode_a, oric->joymode_b );

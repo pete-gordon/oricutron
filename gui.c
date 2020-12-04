@@ -64,6 +64,7 @@
 
 #include "plugins/ch376/ch376.h"
 #include "plugins/ch376/oric_ch376_plugin.h"
+#include "plugins/twilighte_card/oric_twilighte_board_plugin.h"
 
 extern SDL_bool fullscreen;
 
@@ -193,6 +194,7 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive );
 void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void toggletapeturbo( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglech376(struct machine *oric, struct osdmenuitem *mitem, int dummy);
+void toggletwilighte(struct machine *oric, struct osdmenuitem *mitem, int dummy);
 void toggleautowind( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void toggleautoinsrt( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglesymbolsauto( struct machine *oric, struct osdmenuitem *mitem, int dummy );
@@ -281,6 +283,7 @@ struct osdmenuitem hwopitems[] = { { " Oric-1",                "1",    SDLK_1,  
                                    { " Lightpen",              NULL,   0,        togglelightpen,  0, 0 },
                                    { " Serial none          ", NULL,   0,        toggleaciabackend, 0, 0 },
                                    { " CH376 (Telestrat)    ", NULL,   0,        togglech376, 0, 0 },
+                                   { " Twilighte board    ", NULL,   0,        toggletwilighte, 0, 0 },                                   
 //                                   { " Mouse",                 NULL,   0,        NULL,            0, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },
@@ -1524,6 +1527,32 @@ void togglech376(struct machine *oric, struct osdmenuitem *mitem, int dummy)
 		ch376_oric_config(oric->ch376);
 }
 
+// Toggle twilighte on/off
+void toggletwilighte(struct machine *oric, struct osdmenuitem *mitem, int dummy)
+{
+
+	if (oric->twilighteboard_activated)
+	{
+		oric->twilighteboard_activated = SDL_FALSE;
+		mitem->name = " Twilighte board";
+		return;
+	}
+
+	oric->twilighteboard_activated = SDL_TRUE;
+	mitem->name = "\x0e""Twilighte board";
+	oric->twilighte = twilighte_oric_init();
+	if (oric->twilighte == NULL) 
+  {
+     oric->twilighteboard_activated = SDL_FALSE; // Impossible to create struct, we did not activate twilighteboard
+  }
+  else
+  {
+    oric->ch376_activated = SDL_TRUE;
+  }
+  
+		
+}
+
 // Toggle symbols autoload
 void togglesymbolsauto( struct machine *oric, struct osdmenuitem *mitem, int dummy )
 {
@@ -2346,6 +2375,7 @@ void setmenutoggles( struct machine *oric )
      find_item_by_function(keopitems, togglestickykeys)->name = " Sticky mod keys";
 
   find_item_by_function(hwopitems, togglech376)->name = oric->ch376_activated ? "\x0e""CH376 (Telestrat)" : " CH376 (Telestrat)    ";
+  find_item_by_function(hwopitems, toggletwilighte)->name = oric->twilighteboard_activated ? "\x0e""Twilighte board" : " Twilighte board";
 }
 
 // Initialise the GUI
