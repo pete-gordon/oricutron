@@ -110,6 +110,7 @@ struct twilighte * twilighte_oric_init(void)
   unsigned int i, j;
   char *result;
   char tbtmp[32];
+  char tbtmpram[32];
   char line[1024];
   struct twilighte *twilighte = malloc(sizeof(struct twilighte));
   twilighte->t_banking_register=0;
@@ -133,10 +134,16 @@ struct twilighte * twilighte_oric_init(void)
     result=fgets( line, 1024, f );
     for( j=1; j<32; j++ )
     {
-      if (j>9)
-          sprintf( tbtmp, "twilbankrom%d", j);
+      if (j > 9)
+      {
+        sprintf(tbtmp, "twilbankrom%d", j);
+        sprintf(tbtmpram, "twilbankram%d", j);
+      }
       else
-        sprintf( tbtmp, "twilbankrom0%d", j);
+      {
+       sprintf(tbtmp, "twilbankrom0%d", j);
+       sprintf(tbtmpram, "twilbankram0%d", j);
+      }
         
       if (twilighte->twilrombankfiles[j][0]==0) 
       {
@@ -145,7 +152,14 @@ struct twilighte * twilighte_oric_init(void)
           break;
         }
       }
-	  }
+      if (twilighte->twilrambankfiles[j][0] == 0)
+      {
+          if (read_config_string(line, tbtmpram, twilighte->twilrambankfiles[j], 1024))
+          {
+              break;
+          }
+      }
+	}
   }
 
   fclose( f );
@@ -160,7 +174,15 @@ struct twilighte * twilighte_oric_init(void)
         error_printf("Cannot load %s",twilighte->twilrombankfiles[i]);
         return NULL;
       }
-	  }
+	}
+    if (twilighte->twilrambankfiles[i][0] != 0)
+    {
+        if (!load_rom_twilighte(twilighte->twilrambankfiles[i], -16384, twilighte->twilrambankdata[i]))
+        {
+            error_printf("Cannot load %s", twilighte->twilrambankfiles[i]);
+            return NULL;
+        }
+    }
   }
 
   for (j=0;j<16384;j++) twilighte->twilrambankdata[0][j]=0;   
