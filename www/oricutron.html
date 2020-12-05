@@ -131,9 +131,19 @@
 </head>
 <body>
 <div align="center">The Disks and Tapes files are in the /readwritefs/ directory!
-You may need to go up twice in the directory structure to find this directory.<br>
-Remember to save snapshots, tapes and dsk in this directory as it is the only one
-    that is saved in your browser's storage space.</div>
+    You may need to go up twice in the directory structure to find this directory.<br>
+    Remember to save snapshots, tapes and dsk in this directory as it is the only one
+    that is saved in your browser's storage space.
+    <br>
+    In order to download one tape or dsk file so that you can use it in an emulator
+    on your computer first click on this button and then on the name of the file
+    <br>
+    <button onclick="getFileList()">Get File List</button>
+    <br>
+    <div id="fileList">
+
+    </div>
+</div>
 <div class=spinner id=spinner></div>
 <div class=emscripten id=status>Downloading...</div>
 <div class=emscripten>
@@ -177,9 +187,71 @@ Module.setStatus("Downloading..."), window.onerror = function (e) {
 
 
 <script>
-    Module.preRun.push(function() {ENV.FILE=sessionStorage.file});
+    Module.preRun.push(function () {
+        ENV.FILE = sessionStorage.file
+    });
 </script>
 
 <script async src=Oricutron.js></script>
+
+<script>
+    var downloadBlob, downloadURL;
+
+    downloadBlob = function (data, fileName, mimeType) {
+        var blob, url;
+        blob = new Blob([data], {
+            type: mimeType
+        });
+        url = window.URL.createObjectURL(blob);
+        downloadURL(url, fileName);
+        setTimeout(function () {
+            var fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            return window.URL.revokeObjectURL(url);
+        }, 1000);
+    };
+
+    downloadURL = function (data, fileName) {
+        var a;
+        a = document.createElement('a');
+        a.href = data;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.style = 'display: none';
+        a.click();
+        a.remove();
+    };
+
+    function createLink(file) {
+        var newLink = document.createElement('a');
+        newLink.setAttribute('href', '');
+        newLink.addEventListener("click", function (event) {
+            event.preventDefault();
+            var ret = FS.readFile('/readwritefs/' + file, {flags: 'r'});
+            console.log(ret);
+            downloadBlob(ret, file, 'application/octet-stream');
+        });
+        var newText = document.createTextNode(file);
+        newLink.appendChild(newText);
+
+        return newLink;
+    }
+
+    function getFileList() {
+        var node = FS.readdir('/readwritefs/');
+
+        console.log(node);
+
+        var fileList = document.getElementById('fileList');
+        node.forEach(function (file) {
+            if (file !== '.' && file !== '..') {
+                var newLink = createLink(file);
+                fileList.appendChild(newLink);
+                fileList.appendChild(document.createElement('br'));
+            }
+        });
+    }
+</script>
+
 </body>
 </html>
