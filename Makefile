@@ -150,7 +150,7 @@ LFLAGS += `$(SDL_LIB)-config --libs` -s
 FILEREQ_OBJ = filereq_amiga.o
 MSGBOX_OBJ = msgbox_os2.o
 AMIGA_ICONS = pngicon
-EXTRAOBJS = plugins/ch376/oric_ch376_plugin.o plugins/ch376/ch376.o oric_plugins/twilighte_card/twilighte_board_plugin.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o
 endif
 
 # AROS
