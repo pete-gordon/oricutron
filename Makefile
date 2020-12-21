@@ -240,7 +240,7 @@ TARGET_DEPS = /usr/$(CROSS_PREFIX)/sys-root/mingw/bin/SDL.dll
 FILEREQ_OBJ = filereq_win32.o
 MSGBOX_OBJ = msgbox_win32.o
 CUSTOMOBJS = gui_win.o winicon.o
-EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_ch376_plugin.o oric_twilighte_board_plugin.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o
 endif
 
 # Windows 64bit GCC
