@@ -338,7 +338,7 @@ TARGET = $(TARGET_NAME)
 FILEREQ_OBJ =
 MSGBOX_OBJ =
 CUSTOMOBJS = gui_osx.o filereq_osx.o msgbox_osx.o
-EXTRAOBJS = plugins/ch376/oric_ch376_plugin.o plugins/ch376/ch376.o plugins/twilighte_card/oric_twilighte_board_plugin.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o
 endif
 
 
