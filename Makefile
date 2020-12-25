@@ -1,6 +1,6 @@
-# 
+#
 # valid platforms in alphabetical order:
-# 
+#
 # PLATFORM = aitouchbook
 # PLATFORM = aros
 # PLATFORM = beos
@@ -32,8 +32,8 @@ VERSION_MAJ = 1
 VERSION_MIN = 2
 VERSION_REV = 0
 VERSION_FULL = $(VERSION_MAJ).$(VERSION_MIN).$(VERSION_REV)
-APP_INFO = 
-APP_NAME = Oricutron $(APP_INFO)
+APP_INFO =
+APP_NAME = $(strip Oricutron $(APP_INFO))
 APP_YEAR = 2019
 COPYRIGHTS = (c)$(APP_YEAR) Peter Gordon (pete@petergordon.org.uk)
 VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) $(COPYRIGHTS)"
@@ -150,7 +150,7 @@ LFLAGS += `$(SDL_LIB)-config --libs` -s
 FILEREQ_OBJ = filereq_amiga.o
 MSGBOX_OBJ = msgbox_os2.o
 AMIGA_ICONS = pngicon
-EXTRAOBJS = plugins/ch376/oric_ch376_plugin.o plugins/ch376/ch376.o oric_plugins/twilighte_board/twilighte_board_plugin.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o
 endif
 
 # AROS
@@ -240,7 +240,7 @@ TARGET_DEPS = /usr/$(CROSS_PREFIX)/sys-root/mingw/bin/SDL.dll
 FILEREQ_OBJ = filereq_win32.o
 MSGBOX_OBJ = msgbox_win32.o
 CUSTOMOBJS = gui_win.o winicon.o
-EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_ch376_plugin.o oric_twilighte_board_plugin.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o
 endif
 
 # Windows 64bit GCC
@@ -338,7 +338,7 @@ TARGET = $(TARGET_NAME)
 FILEREQ_OBJ =
 MSGBOX_OBJ =
 CUSTOMOBJS = gui_osx.o filereq_osx.o msgbox_osx.o
-EXTRAOBJS = plugins/ch376/oric_ch376_plugin.o plugins/ch376/ch376.o plugins/twilighte_board/oric_twilighte_board_plugin.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o
 endif
 
 
@@ -706,6 +706,6 @@ package-mint package-mint-cf:
 
 
 .PHONY: mrproper
-PLATFORMS := aitouchbook aros beos gphwiz haiku lin-32 lin-64 linux linux-nogl mint mint-cf morphos os4 osx pandora rpi win32 win32-gcc win64-gcc 
+PLATFORMS := aitouchbook aros beos gphwiz haiku lin-32 lin-64 linux linux-nogl mint mint-cf morphos os4 osx pandora rpi win32 win32-gcc win64-gcc
 mrproper:
 	@for plat in $(PLATFORMS); do $(MAKE) -f $(SRC_DIR)/Makefile clean PLATFORM=$${plat}; done

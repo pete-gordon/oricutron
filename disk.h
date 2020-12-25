@@ -169,6 +169,16 @@ struct microdisc
   SDL_bool diskrom;       // TRUE if the diskrom is enabled
 };
 
+// Current state of the Byte Drive 500 hardware
+struct bd500
+{
+  Uint8 status;           // Status register (write to 0x314)
+  Uint8 intrq;            // intrq register (read from 0x314)
+  Uint8 drq;              // drq register (read/write 0x318)
+  struct wd17xx *wd;      // Pointer to the WD17xx structure
+  struct machine *oric;   // Pointer to the Oric structure
+  SDL_bool diskrom;       // TRUE if the diskrom is enabled
+};
 
 // Current state of the Jasmin hardware
 struct jasmin
@@ -204,8 +214,10 @@ struct pravetz
   struct pravetz_drive drv[MAX_DRIVES];
 };
 
+void disk_eject( struct machine *oric, int drive );
+
 // Functions to read/write diskimages
-SDL_bool diskimage_load( struct machine *oric, char *fname, int drive ); 
+SDL_bool diskimage_load( struct machine *oric, char *fname, int drive );
 SDL_bool diskimage_save( struct machine *oric, char *fname, int drive );
 void diskimage_cachetrack( struct diskimage *dimg, int track, int side );
 struct mfmsector *wd17xx_find_sector( struct wd17xx *wd, Uint8 secid );
@@ -218,6 +230,12 @@ void microdisc_init( struct microdisc *md, struct wd17xx *wd, struct machine *or
 void microdisc_free( struct microdisc *md );
 unsigned char microdisc_read( struct microdisc *md, unsigned short addr );
 void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char data );
+
+// Byte Drive 500 interface
+void bd500_init( struct bd500 *bd, struct wd17xx *wd, struct machine *oric );
+void bd500_free( struct bd500 *bd );
+unsigned char bd500_read( struct bd500 *bd, unsigned short addr );
+void bd500_write( struct bd500 *bd, unsigned short addr, unsigned char data );
 
 // Jasmin interface
 void jasmin_init( struct jasmin *j, struct wd17xx *wd, struct machine *oric );

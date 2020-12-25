@@ -414,7 +414,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
   if( (dcadjustmax-dcadjustave) > 32767 )
     dcadjustave = -(32767-dcadjustmax);
 
-  if( dcadjustave )
+  if( ay->oric->dcadjust && dcadjustave )
   {
     for( i=0, j=0; i<actual_length; i++ )
     {

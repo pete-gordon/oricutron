@@ -265,7 +265,7 @@ SDL_COMPAT_KEY SDL_COMPAT_TranslateUnicode(SDL_KEYSYM keysym)
       case '6':
         return '^';
       case '7':
-        return '&'; 
+        return '&';
       case '8':
         return '*';
       case '9':
@@ -388,8 +388,6 @@ SDL_Surface* SDL_COMPAT_SetVideoMode(int width, int height, int bitsperpixel, Ui
   if (g_icon)
   {
     SDL_SetWindowIcon(g_window, g_icon);
-    // ...and the surface containing the icon pixel data is no longer required.
-    SDL_FreeSurface(g_icon);
   }
 
   if(flags & SDL_WINDOW_OPENGL)
@@ -446,6 +444,12 @@ void SDL_COMPAT_Quit(void)
 void SDL_COMPAT_Quit(void)
 {
   FreeResources();
+  if (g_icon)
+  {
+    // ...and the surface containing the icon pixel data is no longer required.
+    SDL_FreeSurface(g_icon);
+    g_icon = NULL;
+  }
   SDL_Quit();
 }
 #endif

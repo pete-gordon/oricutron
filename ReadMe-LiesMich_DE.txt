@@ -140,6 +140,8 @@ Hier sind alle Optionen:
 
                        "microdisc" oder "m" für Microdisc
                        "jasmin" oder "j" für Jasmin
+                       "bd500" oder "b" für ByteDrive BD-500
+                       "pravetz" oder "p" für Pravetz-8D FDC
 
   -s / --symbols     = Lade Symbole aus einer Datei
   -f / --fullscreen  = Starte Oricutron im Vollbild-Modus
@@ -274,7 +276,9 @@ Befehle:
   bz                    - Zap Breakpoints
   bzm                   - Zap mem Breakpoints
   d <addr>              - Disassembliere
-  df <addr> <end> <file>- Disassembliere zu Datei
+  fd <addr> <end> <file>- Disassembliere zu Datei
+  fw <addr> <len> <file>- Schreibe Speicher zu Datei
+  fr <addr> <file>      - Lese Datei zu Speicher
   m <addr>              - Dump memory
   mm <addr> <value>     - Modifiziere Memory
   mw <addr>             - Beobachte Memory an addr
@@ -290,7 +294,6 @@ Befehle:
   sl <file>             - Lade user symbols
   sx <file>             - Exportiere user symbols
   sz                    - Zap user symbols
-  wm <addr> <len> <file>- Schreibe mem auf Disk
 
 
 
@@ -423,7 +426,7 @@ CH376 Befehl emuliert :
 - CH376_CMD_BYTE_WR_GO
 - CH376_CMD_DISK_QUERY
 - CH376_CMD_DIR_CREATE (unter Linux nicht emuliert)
-- CH376_CMD_DISK_RD_GO 
+- CH376_CMD_DISK_RD_GO
 
 Bekannter Fehler :
 Unter Windows sendet die API-Datei keine "." und "..."-Einträge, wenn der Inhalt des Ordners gelesen wird. Das ist ein Problem, weil der ch376-Chip diese Einträge sendet, wenn der Chip den Inhalt eines Verzeichnisses lesen soll.

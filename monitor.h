@@ -48,6 +48,8 @@
 #define SYMF_TELEBANK7 (1<<SYMB_TELEBANK7)
 #define SYMB_PRAVZ8D   12
 #define SYMF_PRAVZ8D   (1<<SYMB_PRAVZ8D)
+#define SYMB_BD500     13
+#define SYMF_BD500     (1<<SYMB_BD500)
 
 #define SYM_BESTGUESS  0xffff
 
