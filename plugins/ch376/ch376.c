@@ -18,6 +18,7 @@
  05.10.2017 - Assinie: Added support for CMD_DIR_CREATE and CMD_FILE_ERASE (Linux only)
  21.08.2017 - Jede   : Added support for CMD_DIR_CREATE and CMD_FILE_ERASE (WIN32 only)
  22.07.2017 - OffseT : Added support for CMD_DIR_CREATE and CMD_FILE_ERASE (Added related Amiga system APIs only)
+ 01.10.2021 - Assinie: Fix time struct (Linux Only)
 
  */
 /* /// "Portable includes" */
@@ -53,6 +54,7 @@ extern struct Library *SysBase;
 #include <string.h>
 #include <sys/statvfs.h>
 #include <sys/stat.h>
+#include <time.h>
 
 #else
 #error "FixMe!"
@@ -1280,6 +1282,10 @@ static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK
 {
     CH376_BOOL is_done = CH376_FALSE;
     struct stat file_stat;
+    struct tm *timeinfo;
+    CH376_U16 dos_cdate, dos_ctime;
+    CH376_U16 dos_adate;
+    CH376_U16 dos_mdate, dos_mtime;
     char *old_dir = NULL;
 
     if(dir_lock)
@@ -1298,25 +1304,63 @@ static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK
 
             if(S_ISDIR(file_stat.st_mode))
                 dir_info->DIR_Attr |= DIR_ATTR_DIRECTORY;
-            if((file_stat.st_mode & S_IRUSR) == 0)
+            if((file_stat.st_mode & S_IWUSR) == 0) {
                 dir_info->DIR_Attr |= DIR_ATTR_READ_ONLY;
+            dbg_printf("--- READ ONLY ---");
+            }
 
-            dbg_printf("system_go_examine_directory defined file attributes: %d\n", dir_info->DIR_Attr);
+            dbg_printf("system_go_examine_directory defined file attributes: %04o -> %02x\n", file_stat.st_mode, dir_info->DIR_Attr);
+            if (file_stat.st_ctim.tv_sec == 0)
+            {
+                dos_cdate = 0;
+                dos_ctime = 0;
+            }
+            else
+            {
+                timeinfo = localtime(&(file_stat.st_ctim.tv_sec));
+                dos_cdate = DIR_MAKE_FILE_DATE((timeinfo->tm_year + 1900), (timeinfo->tm_mon + 1), timeinfo->tm_mday);
+                dos_ctime = DIR_MAKE_FILE_TIME(timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+                dbg_printf("system_go_examine_directory defined file cdate/time: %s", asctime(timeinfo));
+            }
+
+            if (file_stat.st_atim.tv_sec == 0)
+            {
+                dos_adate = 0;
+            }
+            else
+            {
+                timeinfo = localtime(&(file_stat.st_atim.tv_sec));
+                dos_adate = DIR_MAKE_FILE_DATE((timeinfo->tm_year + 1900), (timeinfo->tm_mon + 1), timeinfo->tm_mday);
+                dbg_printf("system_go_examine_directory defined file adate/time: %s", asctime(timeinfo));
+            }
+
+            if (file_stat.st_mtim.tv_sec == 0)
+            {
+                dos_mdate = 0;
+                dos_mtime = 0;
+            }
+            else
+            {
+                timeinfo = localtime(&(file_stat.st_mtim.tv_sec));
+                dos_mdate = DIR_MAKE_FILE_DATE((timeinfo->tm_year + 1900), (timeinfo->tm_mon + 1), timeinfo->tm_mday);
+                dos_mtime = DIR_MAKE_FILE_TIME(timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+                dbg_printf("system_go_examine_directory defined file mdate/time: %s", asctime(timeinfo));
+            }
 
             dir_info->DIR_NTRes = 0;
             dir_info->DIR_CrtTimeTenth = 0;
-            dir_info->DIR_CrtTime[0] = 0;
-            dir_info->DIR_CrtTime[1] = 0;
-            dir_info->DIR_CrtDate[0] = 0;
-            dir_info->DIR_CrtDate[1] = 0;
-            dir_info->DIR_LstAccDate[0] = 0;
-            dir_info->DIR_LstAccDate[1] = 0;
+            dir_info->DIR_CrtTime[0] = (dos_ctime & 0x00ff);
+            dir_info->DIR_CrtTime[1] = (dos_ctime >> 8);
+            dir_info->DIR_CrtDate[0] = (dos_cdate & 0x00ff);
+            dir_info->DIR_CrtDate[1] = (dos_cdate >> 8);
+            dir_info->DIR_LstAccDate[0] = (dos_adate & 0x00ff);
+            dir_info->DIR_LstAccDate[1] = (dos_adate >> 8);
             dir_info->DIR_FstClusHI[0] = 0;
             dir_info->DIR_FstClusHI[1] = 0;
-            dir_info->DIR_WrtTime[0] = 0;
-            dir_info->DIR_WrtTime[1] = 0;
-            dir_info->DIR_WrtDate[0] = 0;
-            dir_info->DIR_WrtDate[1] = 0;
+            dir_info->DIR_WrtTime[0] = (dos_mtime & 0x00ff);
+            dir_info->DIR_WrtTime[1] = (dos_mtime >> 8);
+            dir_info->DIR_WrtDate[0] = (dos_mdate & 0x00ff);
+            dir_info->DIR_WrtDate[1] = (dos_mdate >> 8);
             dir_info->DIR_FstClusLO[0] = 0;
             dir_info->DIR_FstClusLO[1] = 0;
             dir_info->DIR_FileSize[0] = (file_stat.st_size & 0x000000ff) >>  0;
