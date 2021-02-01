@@ -42,7 +42,7 @@ VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) $(COPYRIGHTS)"
 ####### DEFAULT SETTINGS HERE #######
 
 SRC_DIR = .
-VPATH = $(SRC_DIR) $(SRC_DIR)/plugins/ch376 $(SRC_DIR)/plugins/twilighte_card
+VPATH = $(SRC_DIR) $(SRC_DIR)/plugins/ch376 $(SRC_DIR)/plugins/twilighte_board
 
 ### extract git/svn revision
 GITREVISION = $(shell git rev-parse --short HEAD || svnversion -n $(SRC_DIR))
@@ -311,7 +311,7 @@ INSTALLDIR = /boot/apps/Oricutron
 FILEREQ_OBJ =
 MSGBOX_OBJ =
 CUSTOMOBJS = gui_beos.o msgbox_beos.o filereq_beos.o
-EXTRAOBJS = plugins/ch376/oric_ch376_plugin.o plugins/twilighte_card/oric_twilighte_board_plugin.o
+EXTRAOBJS = plugins/ch376/oric_ch376_plugin.o plugins/twilighte_board/oric_twilighte_board_plugin.o
 BEOS_BERES := beres
 BEOS_RC := rc
 BEOS_XRES := xres

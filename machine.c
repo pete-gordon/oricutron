@@ -46,7 +46,7 @@
 #include "plugins/ch376/ch376.h"
 #include "plugins/ch376/oric_ch376_plugin.h"
 
-#include "plugins/twilighte_card/oric_twilighte_board_plugin.h"
+#include "plugins/twilighte_board/oric_twilighte_board_plugin.h"
 
 #include "machine.h"
 #include "avi.h"
