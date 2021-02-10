@@ -1596,10 +1596,25 @@ void bd500_write( struct bd500 *bd, unsigned short addr, unsigned char data )
   switch( addr )
   {
     case 0x31a:
-      switch( data & 0xe0 )
+
+      // NOTE: Ray030471:
+      // For V2.2 of the Byte Drive operating system, this should be
+      // "switch( data & 0xc0 )". Only bits 6 & 7 are used in address 0x31a for the disk
+      // drive number. Bit 5 of 0x31a is the carry which has been rolled in by "ROR A:ROR
+      // A:ROR A" (2 occasions) and is determined by the comparison of old drive number
+      // to new drive number. I have patched this in my Byte Drive V2.2 operating system
+      // by replacing "ROR A:ROR A:ROR A" by "LSR A:ROR A:ROR A" but it would be better
+      // to update Oricutron as I suggest in my first line here. I don't think that the
+      // actual hardware supports double-sided disk drives but it would be nice of
+      // Oricutron used bit 0 of 0x31a to select the disk side on the floppy disk
+      // controller.
+
+      bd->wd->c_side = data&1;
+
+      switch( data & 0xc0 )
       {
         default:
-        case 0x20:
+        case 0x00:
           bd->wd->c_drive = 0;
           break;
         case 0x40:
