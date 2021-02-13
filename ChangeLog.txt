@@ -3,6 +3,7 @@ Oricutron ChangeLog
 
 pre-release changes (work in progress)
 --------------------------------------
+* Added option to disable menu color scheme
 * Updated BD500 support
 * Fixed crash with visual keyboard on/off
 * Added Byte Drive BD-500 support

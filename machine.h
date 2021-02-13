@@ -260,6 +260,8 @@ struct machine
   SDL_bool define_mapping;
   SDL_bool sticky_mod_keys;
 
+  SDL_bool disable_menuscheme;
+
   int aciaoffset;
   int aciabackend;
   int aciabackendcfg;
