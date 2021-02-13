@@ -1494,6 +1494,41 @@ void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char d
 }
 
 // Byte Drive 500 interface handlers
+// NOTE: Info by Ray McLaughlin
+//
+// 0x310 MOTOFF  R   switches the disk drive motor off.
+// 0x311 MOTON   R   switches the disk drive motor on.
+//                     NOTE: (probably)the motor is switched on
+//                     by (electronic) default on first powering up
+//                     the BD interface but it is safer to switch it
+//                     on in the boot sector (page 4) code.
+//
+// 0x312 DSTATS  R   on read (BIT instruction) to obtain the
+//                   FDC's DRQ in bit 7 and IRQ in bit 6.
+//
+// 0x313 MAPOFF  R/W enables the ORIC ROM and disables the overlay RAM.
+//
+// 0x314 MAPON   R/W disables the ORIC ROM and enables the overlay RAM.
+//
+// 0x315 PRECMP  R   (probably) forwrite compensation on the FDC.
+//                     NOTE: maybe it's used in the DOS versions V2.2 & V3.1
+//                     of the BD software but not in Ray's latest version,
+//                     perhaps it will be included.
+//
+// 0x316 SDEN    R/W enables the the lower 8k of the ORIC's EPROM
+//                   (used where the ORIC has 2x8k EPROMS) and therefore
+//                   disables the overlay RAM in that memory area.
+//                   This overrides MAPON (see above).
+//
+// 0x317 DDEN    R/W disables the lower 8k of the ORIC's EPROM
+//                   (used where the ORIC has 1x16k EPROM or ROM)
+//                   and therefore enables the overlay RAM when MAPON
+//                   has been accessed.
+//
+// 0x0380        R/W disables the BD interface ROM which covers addresses
+//                   0xE000 to 0xFFFF but before that is done, it takes
+//                   precedence over the above for that memory space.
+
 void bd500_setdrq( void *bd )
 {
   struct bd500 *bdp = (struct bd500 *)bd;
@@ -1566,14 +1601,28 @@ unsigned char bd500_read( struct bd500 *bd, unsigned short addr )
 
     case 0x310:
     case 0x311:
+      // MOTOFF = 0
+      // MOTON  = 1
+      // or MOTOR = addr & 1;
+      break;
+
     case 0x315:
+      // PRECMP
+      break;
+
     case 0x316:
+      // SDEN
       bd->diskrom = SDL_FALSE;
       break;
 
     case 0x317:
+      // DDEN
       // 64k/56k mode depend on ROM chips
       bd->diskrom = bd->oric->rom16? SDL_FALSE : SDL_TRUE;
+      break;
+
+    case 0x0380:
+      bd->diskrom = SDL_FALSE;
       break;
 
     default:
@@ -1595,9 +1644,32 @@ void bd500_write( struct bd500 *bd, unsigned short addr, unsigned char data )
 
   switch( addr )
   {
+    case 0x313:
+      bd->oric->romdis = SDL_FALSE;
+      break;
+
+    case 0x314:
+      bd->oric->romdis = SDL_TRUE;
+      break;
+
+    case 0x316:
+      // SDEN
+      bd->diskrom = SDL_FALSE;
+      break;
+
+    case 0x317:
+      // DDEN
+      // 64k/56k mode depend on ROM chips
+      bd->diskrom = bd->oric->rom16? SDL_FALSE : SDL_TRUE;
+      break;
+
+    case 0x0380:
+      bd->diskrom = SDL_FALSE;
+      break;
+
     case 0x31a:
 
-      // NOTE: Ray030471:
+      // NOTE: by Ray McLaughlin:
       // For V2.2 of the Byte Drive operating system, this should be
       // "switch( data & 0xc0 )". Only bits 6 & 7 are used in address 0x31a for the disk
       // drive number. Bit 5 of 0x31a is the carry which has been rolled in by "ROR A:ROR
