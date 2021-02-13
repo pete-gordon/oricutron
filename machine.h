@@ -136,7 +136,7 @@ struct machine
   int vsync;
 
   SDL_bool vid_double;
-  SDL_bool romdis, romon, rom16;
+  SDL_bool romdis, romon, rom16, dos70;
   SDL_bool vsynchack;
 
   unsigned short vid_addr;

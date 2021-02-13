@@ -315,7 +315,7 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
   struct machine *oric = (struct machine *)cpu->userdata;
 
 
-  if (oric->twilighteboard_activated &&  addr >= 0xc000  ) 
+  if (oric->twilighteboard_activated &&  addr >= 0xc000  )
     twilighteboard_oric_ROM_RAM_write(oric->twilighte,addr-0xc000,data);
   else
   if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
@@ -327,7 +327,7 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 
     else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
       ch376_oric_write(oric->ch376, addr, data);
-    
+
     else if(oric->twilighteboard_activated && ((0x342 <= addr && addr < 0x344 ) || (0x320 <= addr && addr < 0x330 )))
      twilighteboard_oric_write(oric->twilighte,addr,0x00,data);
 
@@ -407,7 +407,7 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
             ch376_oric_write(oric->ch376, addr, data);
           break;
         }
-        
+
 
       default:
         via_write( &oric->via, addr, data );
@@ -1137,6 +1137,7 @@ void preinit_machine( struct machine *oric )
   oric->tapenoise = SDL_FALSE;
   oric->rawtape = SDL_FALSE;
   oric->rom16 = SDL_TRUE;
+  oric->dos70 = SDL_FALSE;
 
   oric->joy_iface = JOYIFACE_NONE;
   oric->joymode_a = JOYMODE_KB1;
@@ -1378,7 +1379,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             if (oric->ch376 != NULL)
               ch376_oric_config(oric->ch376);
           }
-          
+
 
 
           break;

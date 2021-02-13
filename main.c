@@ -423,6 +423,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_bool(   &sto->lctmp[i], "hstretch",     &oric->hstretch ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "palghosting",  &oric->palghost ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "rom16",        &oric->rom16 ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "dos70",        &oric->dos70 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "diskimage",    sto->start_disk, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "tapeimage",    sto->start_tape, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "symbols",      sto->start_syms, 1024 ) ) continue;
@@ -1399,7 +1400,7 @@ void frameloop_normal( struct machine *oric, SDL_bool *framedone, SDL_bool *need
 
       if (!oric->twilighteboard_activated)
       tape_patches( oric );
-        
+
       via_clock( &oric->via, oric->cpu.icycles );
       ay_ticktock( &oric->ay, oric->cpu.icycles );
 

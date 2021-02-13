@@ -1503,8 +1503,9 @@ void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char d
 //                     the BD interface but it is safer to switch it
 //                     on in the boot sector (page 4) code.
 //
-// 0x312 DSTATS  R   on read (BIT instruction) to obtain the
-//                   FDC's DRQ in bit 7 and IRQ in bit 6.
+// 0x312 DSTATS  R   bit 7 - DRQ
+//                   bit 6 - IRQ
+//                   bit 0 - motor status (): b0=0 ON, b0=1 OFF (NOTE: DOS7 only).
 //
 // 0x313 MAPOFF  R/W enables the ORIC ROM and disables the overlay RAM.
 //
@@ -1524,6 +1525,11 @@ void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char d
 //                   (used where the ORIC has 1x16k EPROM or ROM)
 //                   and therefore enables the overlay RAM when MAPON
 //                   has been accessed.
+//
+// 0x31a DRVSEL  R   bit 7,6 - current drive
+//                   bit 5   - current side
+//               W   bit 7,6 - select drive
+//                   bit 1   - select side
 //
 // 0x0380        R/W disables the BD interface ROM which covers addresses
 //                   0xE000 to 0xFFFF but before that is done, it takes
@@ -1569,6 +1575,7 @@ void bd500_init( struct bd500 *bd, struct wd17xx *wd, struct machine *oric )
   bd->wd      = wd;
   bd->oric    = oric;
   bd->diskrom = SDL_TRUE;
+  bd->motor   = SDL_FALSE;
 }
 
 void bd500_free( struct bd500 *bd )
@@ -1580,6 +1587,8 @@ void bd500_free( struct bd500 *bd )
 
 unsigned char bd500_read( struct bd500 *bd, unsigned short addr )
 {
+  unsigned char ret = 0xff;
+
 //  dbg_printf( "DISK: (%04X) Read from %04X", bd->oric->cpu.pc-1, addr );
 
   if( ( addr >= 0x320 ) && ( addr < 0x324 ) )
@@ -1588,7 +1597,8 @@ unsigned char bd500_read( struct bd500 *bd, unsigned short addr )
   switch( addr )
   {
     case 0x312:
-      return (bd->drq | bd->intrq);
+      ret = bd->drq | bd->intrq;
+      if( bd->oric->dos70 ) ret |= bd->motor? 0:1;
       break;
 
     case 0x313:
@@ -1600,10 +1610,12 @@ unsigned char bd500_read( struct bd500 *bd, unsigned short addr )
       break;
 
     case 0x310:
-    case 0x311:
       // MOTOFF = 0
+      bd->motor = SDL_FALSE;
+      break;
+    case 0x311:
       // MOTON  = 1
-      // or MOTOR = addr & 1;
+      bd->motor = SDL_TRUE;
       break;
 
     case 0x315:
@@ -1621,6 +1633,12 @@ unsigned char bd500_read( struct bd500 *bd, unsigned short addr )
       bd->diskrom = bd->oric->rom16? SDL_FALSE : SDL_TRUE;
       break;
 
+    case 0x31a:
+      // bits 7,6 current drive
+      // bit 5 current side
+      ret = ((bd->wd->c_drive&3)<<6) | ((bd->wd->c_side&1)<<5);
+      break;
+
     case 0x0380:
       bd->diskrom = SDL_FALSE;
       break;
@@ -1629,7 +1647,7 @@ unsigned char bd500_read( struct bd500 *bd, unsigned short addr )
       break;
   }
 
-  return 0xff;
+  return ret;
 }
 
 void bd500_write( struct bd500 *bd, unsigned short addr, unsigned char data )
