@@ -134,6 +134,7 @@ struct twilighte * twilighte_oric_init(void)
   char line[1024];
   struct twilighte *twilighte = malloc(sizeof(struct twilighte));
   twilighte->t_banking_register=0;
+  twilighte->battery_state=0;
   twilighte->t_register=128+1; // Firmware
 
   f = fopen( "plugins/twilighte_board/twilighte.cfg", "r" );
