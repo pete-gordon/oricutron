@@ -605,10 +605,16 @@ static void usage( int ret )
           "                                                 \"com:115200,8,N,1,/dev/ttyUSB0\"\n"
 #endif
           "\n");
+
+#ifdef __ANDROID__
+  error_printf("Bad command line.");
+#endif
+
   exit(ret);
 }
 
 // Print a formatted string into a textzone
+#ifndef __ANDROID__
 void error_printf( char *fmt, ... )
 {
   static char str[256];  // Stupid MinGW32 not having vasprintf...
@@ -626,6 +632,7 @@ void error_printf( char *fmt, ... )
   }
   va_end( ap );
 }
+#endif
 
 static SDL_bool on_or_off( char *arg, char *option, SDL_bool *storage )
 {

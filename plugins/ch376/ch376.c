@@ -51,7 +51,12 @@ extern struct Library *SysBase;
 #include <dirent.h>
 #include <unistd.h>
 #include <string.h>
+#ifdef __ANDROID__
+#include <sys/vfs.h>
+#define statvfs statfs
+#else
 #include <sys/statvfs.h>
+#endif
 #include <sys/stat.h>
 
 #else

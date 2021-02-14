@@ -3,6 +3,7 @@ Oricutron ChangeLog
 
 pre-release changes (work in progress)
 --------------------------------------
+* Added Android target platform
 * Updated BD500 for DOS70
 * Added option to disable menu color scheme
 * Updated BD500 support

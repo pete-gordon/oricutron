@@ -1462,6 +1462,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           break;
 
         case SDLK_F10:
+#ifndef __ANDROID__
            if( vidcap )
            {
              ay_lockaudio( &oric->ay );
@@ -1483,6 +1484,9 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
              do_popup( oric, vidcapname );
            }
            refreshavi = SDL_TRUE;
+#else
+           android_togglekeyboard( oric );
+#endif
            break;
 #ifdef __CBCOPY__
         case SDLK_F11:
@@ -2113,6 +2117,9 @@ void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
   if( !init_machine( oric, oric->type, SDL_FALSE ) )
   {
     shut( oric );
+#ifdef __ANDROID__
+    error_printf("'init_machine' failed");
+#endif
     exit( EXIT_FAILURE );
   }
 
@@ -2142,6 +2149,9 @@ void swapmach( struct machine *oric, struct osdmenuitem *mitem, int which )
   if( !init_machine( oric, which, which!=oric->type ) )
   {
     shut( oric );
+#ifdef __ANDROID__
+    error_printf("'init_machine' failed");
+#endif
     exit( EXIT_FAILURE );
   }
 }

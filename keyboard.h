@@ -53,4 +53,8 @@ SDL_bool save_keyboard_mapping( struct machine *oric, char *filename );
 
 SDL_bool load_keyboard_mapping( struct machine *oric, char *filename );
 
+#ifdef __ANDROID__
+void android_togglekeyboard(struct machine* oric);
+#endif
+
 #endif

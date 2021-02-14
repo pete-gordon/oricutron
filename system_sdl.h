@@ -152,6 +152,15 @@ void SDL_COMPAT_TakeScreenshot(char *fname);
 void SDL_COMPAT_GL_SwapBuffers(void);
 #endif
 
+
+#ifdef __ANDROID__
+#include <android/log.h>
+#define  LOG_TAG    "Oricutron"
+#define  debug_printf(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
+#define  error_printf(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
+#else
+#define  debug_printf(...)  fprintf(stdout,__VA_ARGS__)
 void error_printf( char *fmt, ... );
+#endif
 
 #endif /* ORICUTRON_SYSTEM_SDL_H */

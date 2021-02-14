@@ -383,8 +383,13 @@ SDL_Surface* SDL_COMPAT_SetVideoMode(int width, int height, int bitsperpixel, Ui
       g_lasty = SDL_WINDOWPOS_CENTERED;
   }
 
+#ifndef __ANDROID__
   g_window = SDL_CreateWindow("oricutron", g_lastx, g_lasty,
                               g_width, g_height, flags);
+#else
+  g_window = SDL_CreateWindow("oricutron", SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,
+                              0, 0, SDL_WINDOW_FULLSCREEN_DESKTOP);
+#endif
   if (g_icon)
   {
     SDL_SetWindowIcon(g_window, g_icon);
@@ -400,6 +405,10 @@ SDL_Surface* SDL_COMPAT_SetVideoMode(int width, int height, int bitsperpixel, Ui
     g_screen = SDL_CreateRGBSurface(0, g_width, g_height, g_bpp,
                                     RMASK, GMASK, BMASK, AMASK);
     g_renderer = SDL_CreateRenderer(g_window, -1, 0);
+#ifdef __ANDROID__
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best");//"linear");
+    SDL_RenderSetLogicalSize(g_renderer, g_width, g_height);
+#endif
     g_texture = SDL_CreateTexture(g_renderer,
                                   SDL_PIXELFORMAT_ABGR8888,
                                   SDL_TEXTUREACCESS_STREAMING,
