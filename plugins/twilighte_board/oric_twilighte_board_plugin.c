@@ -136,10 +136,10 @@ struct twilighte * twilighte_oric_init(void)
   twilighte->t_banking_register=0;
   twilighte->t_register=128+1; // Firmware
 
-  f = fopen( "plugins/twilighte_card/twilighte.cfg", "r" );
+  f = fopen( "plugins/twilighte_board/twilighte.cfg", "r" );
   if( !f )
   {
-    error_printf( "plugins/twilighte_card/twilighte.cfg not found\n" );
+    error_printf( "plugins/twilighte_board/twilighte.cfg not found\n" );
     return NULL;
   }
 
