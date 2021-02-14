@@ -1526,10 +1526,8 @@ void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char d
 //                   and therefore enables the overlay RAM when MAPON
 //                   has been accessed.
 //
-// 0x31a DRVSEL  R   bit 7,6 - current drive
-//                   bit 5   - current side
-//               W   bit 7,6 - select drive
-//                   bit 1   - select side
+// 0x31a DRVSEL  R/W bit 7,6 - get/set current drive
+//                   bit 5   - get/set current side
 //
 // 0x0380        R/W disables the BD interface ROM which covers addresses
 //                   0xE000 to 0xFFFF but before that is done, it takes
@@ -1612,10 +1610,13 @@ unsigned char bd500_read( struct bd500 *bd, unsigned short addr )
     case 0x310:
       // MOTOFF = 0
       bd->motor = SDL_FALSE;
+      bd->wd->currentop = COP_NUFFINK;
       break;
+
     case 0x311:
       // MOTON  = 1
       bd->motor = SDL_TRUE;
+      bd->wd->currentop = COP_READ_SECTOR;
       break;
 
     case 0x315:
@@ -1686,37 +1687,8 @@ void bd500_write( struct bd500 *bd, unsigned short addr, unsigned char data )
       break;
 
     case 0x31a:
-
-      // NOTE: by Ray McLaughlin:
-      // For V2.2 of the Byte Drive operating system, this should be
-      // "switch( data & 0xc0 )". Only bits 6 & 7 are used in address 0x31a for the disk
-      // drive number. Bit 5 of 0x31a is the carry which has been rolled in by "ROR A:ROR
-      // A:ROR A" (2 occasions) and is determined by the comparison of old drive number
-      // to new drive number. I have patched this in my Byte Drive V2.2 operating system
-      // by replacing "ROR A:ROR A:ROR A" by "LSR A:ROR A:ROR A" but it would be better
-      // to update Oricutron as I suggest in my first line here. I don't think that the
-      // actual hardware supports double-sided disk drives but it would be nice of
-      // Oricutron used bit 0 of 0x31a to select the disk side on the floppy disk
-      // controller.
-
-      bd->wd->c_side = data&1;
-
-      switch( data & 0xc0 )
-      {
-        default:
-        case 0x00:
-          bd->wd->c_drive = 0;
-          break;
-        case 0x40:
-          bd->wd->c_drive = 1;
-          break;
-        case 0x80:
-          bd->wd->c_drive = 2;
-          break;
-        case 0xc0:
-          bd->wd->c_drive = 3;
-          break;
-      }
+      bd->wd->c_side = (data>>5)&1;
+      bd->wd->c_drive = (data>>6)&3;
       break;
   }
 }
@@ -1874,6 +1846,6 @@ unsigned char pravetz_read( struct pravetz *p, unsigned short addr )
 void pravetz_write( struct pravetz *p, unsigned short addr, unsigned char data )
 {
   disk_pravetz_write( p->oric, addr, data );
-  p->oric->wddisk.currentop = p->drv[p->oric->wddisk.c_drive].motor_on ? COP_READ_SECTOR : COP_NUFFINK;
+  p->oric->wddisk.currentop = p->drv[p->oric->wddisk.c_drive].motor_on ? COP_WRITE_SECTOR : COP_NUFFINK;
 }
 
