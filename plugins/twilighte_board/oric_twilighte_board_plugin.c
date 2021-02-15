@@ -27,6 +27,9 @@
 #define DS1501_YEAR_REGISTER    0x366
 #define DS1501_CENTURY_REGISTER 0x367
 
+#define DS1501_ADDRESS_INTERNAL_RAM_REGISTER 0x370
+#define DS1501_DATA_INTERNAL_RAM_REGISTER 0x373
+
 #define DS1501_CTRLA_REGISTER   0x36E
 #define DS1501_CTRLB_REGISTER   0x36F
 
@@ -136,6 +139,7 @@ struct twilighte * twilighte_oric_init(void)
   twilighte->t_banking_register=0;
   twilighte->battery_state=0;
   twilighte->t_register=128+1; // Firmware
+  result=malloc(sizeof(unsigned char)*256);
 
   f = fopen( "plugins/twilighte_board/twilighte.cfg", "r" );
   if( !f )
@@ -342,7 +346,7 @@ unsigned char 	twilighteboard_oric_read(struct twilighte *twilighte, uint16_t ad
 
     if (addr==DS1501_DATE_REGISTER)
     {
-        return ds1501_get_date(twilighte->rtc_ds1501);
+      return ds1501_get_date(twilighte->rtc_ds1501);
     }
 
     if (addr==DS1501_MONTH_REGISTER)
@@ -359,6 +363,12 @@ unsigned char 	twilighteboard_oric_read(struct twilighte *twilighte, uint16_t ad
     {
       return ds1501_get_century(twilighte->rtc_ds1501);
     }
+
+    if (addr==DS1501_DATA_INTERNAL_RAM_REGISTER)
+    {
+      return ds1501_get_internal_ram(twilighte->rtc_ds1501);
+    }
+
 
   }
 
@@ -488,6 +498,15 @@ unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t a
       ds1501_write_century(twilighte->rtc_ds1501,data);
     }
 
+    if (addr==DS1501_ADDRESS_INTERNAL_RAM_REGISTER)
+    {
+      ds1501_set_internal_ram_adress_register(twilighte->rtc_ds1501,data);
+    }
+
+    if (addr==DS1501_DATA_INTERNAL_RAM_REGISTER)
+    {
+      ds1501_set_internal_ram(twilighte->rtc_ds1501,data);
+    }
   }
 
 

@@ -32,6 +32,7 @@ unsigned char ds1501_to_bcd(unsigned char binaryInput)
 
 struct ds1501 *ds1501_create(unsigned char battery_state)
 {
+    int i;
     struct ds1501 *ds1501 = malloc(sizeof(struct ds1501));
     ds1501->seconds_delta_from_system=0;
     ds1501->minutes_delta_from_system=0;
@@ -44,7 +45,25 @@ struct ds1501 *ds1501_create(unsigned char battery_state)
     ds1501->ctrlA_register=0;
     ds1501->ctrlB_register=0;
     ds1501_set_battery_state(ds1501,battery_state);
+    // initialize RAM
+    for (i=0;i<256;i++)
+      ds1501->internal_ram[i]=0;
     return ds1501;
+}
+
+void ds1501_set_internal_ram_adress_register(struct ds1501 *ds1501,unsigned char address)
+{
+    ds1501->internal_ram_adress_register=address;
+}
+
+unsigned char ds1501_get_internal_ram(struct ds1501 *ds1501)
+{
+    return ds1501->internal_ram[ds1501->internal_ram_adress_register];
+}
+
+void ds1501_set_internal_ram(struct ds1501 *ds1501,unsigned char value)
+{
+    ds1501->internal_ram[ds1501->internal_ram_adress_register]=value;
 }
 
 
@@ -140,7 +159,6 @@ unsigned char ds1501_get_year(struct ds1501 *ds1501)
     }
     else
         return ds1501->year_delta_from_system;
-    
 }
 
 unsigned char ds1501_get_century(struct ds1501 *ds1501)

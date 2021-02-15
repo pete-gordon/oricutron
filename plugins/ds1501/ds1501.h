@@ -16,7 +16,9 @@ void ds1501_write_month(struct ds1501 *ds1501,unsigned char month);
 void ds1501_write_year(struct ds1501 *ds1501,unsigned char year);
 void ds1501_write_century(struct ds1501 *ds1501,unsigned char century);
 void ds1501_set_battery_state(struct ds1501 *ds1501,unsigned char battery_state);
-
+void ds1501_set_internal_ram_adress_register(struct ds1501 *ds1501,unsigned char address);
+unsigned char ds1501_get_internal_ram(struct ds1501 *ds1501);
+void ds1501_set_internal_ram(struct ds1501 *ds1501,unsigned char value);
 
 #define DS1501_BATTERY_FULL  0
 #define DS1501_BATTERY_EMPTY 1
@@ -34,6 +36,8 @@ struct ds1501
     unsigned char  month_delta_from_system;
     unsigned char  year_delta_from_system;
     unsigned char  century_delta_from_system;
+    unsigned char  internal_ram_adress_register;
+    unsigned char  internal_ram[256];
 
 };
 
