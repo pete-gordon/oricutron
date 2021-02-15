@@ -1,7 +1,7 @@
 Oricutron 1.2
 -------------
 
-(c)2009-2014 Peter Gordon (pete@petergordon.org.uk)
+(c)2009-2014 Peter Gordon (pete@gordon.plus)
 
 This is a work in progress.
 
