@@ -1311,8 +1311,11 @@ static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK
                 dir_info->DIR_Attr |= DIR_ATTR_DIRECTORY;
             if((file_stat.st_mode & S_IWUSR) == 0) {
                 dir_info->DIR_Attr |= DIR_ATTR_READ_ONLY;
-            dbg_printf("--- READ ONLY ---");
+                dbg_printf("--- READ ONLY ---");
             }
+
+// FIXME: begin-of-implemented for Linux and Windows
+#if defined(__linux__) || defined(WIN32)
 
             dbg_printf("system_go_examine_directory defined file attributes: %04o -> %02x\n", file_stat.st_mode, dir_info->DIR_Attr);
             if (file_stat.st_ctim.tv_sec == 0)
@@ -1351,6 +1354,16 @@ static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK
                 dos_mtime = DIR_MAKE_FILE_TIME(timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
                 dbg_printf("system_go_examine_directory defined file mdate/time: %s", asctime(timeinfo));
             }
+#else
+            // silence compiler warnings
+            timeinfo = 0;
+            dos_ctime = 0;
+            dos_cdate = 0;
+            dos_mtime = 0;
+            dos_mdate = 0;
+            dos_adate = 0;
+#endif
+// FIXME: end-of-implemented for Linux and Windows
 
             dir_info->DIR_NTRes = 0;
             dir_info->DIR_CrtTimeTenth = 0;
@@ -2396,7 +2409,7 @@ void ch376_write_data_port(struct ch376 *ch376, CH376_U8 data)
 
             ch376->nb_bytes_in_cmd_data = sizeof(ch376->cmd_data.CMD_FileSize);
             ch376->pos_rw_in_cmd_data = 0;
-         
+
             dbg_printf("[WRITE][DATA][CH376_CMD_GET_FILE_SIZE] done, file size is %d, waiting for data read\n", file_size);
 
             // Lignes suivantes utiles?

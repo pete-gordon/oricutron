@@ -131,7 +131,7 @@ struct twilighte * twilighte_oric_init(void)
 
   while( !feof( f ) )
   {
-    result=fgets( line, 1024, f );
+    /* NOTE: 'result' is unused: result= */ fgets( line, 1024, f );
     for( j=1; j<32; j++ )
     {
       if (j > 9)
