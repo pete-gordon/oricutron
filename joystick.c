@@ -259,7 +259,7 @@ void joy_buildmask( struct machine *oric )
   Uint8 mkmask_f = 0xff;
   Uint8 joysel = oric->via.read_port_a( &oric->via );
   Uint8 telestrat_joysel = oric->tele_via.read_port_b( &oric->tele_via );
-  Uint8 twilighteboard_joysel;
+  Uint8 twilighteboard_joysel = 0;
 
   
   SDL_bool gimme_port_a = SDL_FALSE;

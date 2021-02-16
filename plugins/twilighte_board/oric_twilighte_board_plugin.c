@@ -322,7 +322,7 @@ unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t a
       unsigned char lastpb6;
       unsigned char lastpb7;
 
-      data=data&0b11011111;
+      data=data&0xdf;
       if (data==0) 
       {
         twilighte->DDRB=0;
