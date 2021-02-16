@@ -1567,15 +1567,10 @@ static void loop_handler( void* arg )
       switch (event->type)
       {
         case SDL_COMPAT_ACTIVEEVENT:
-        {
           if (SDL_COMPAT_IsAppActive(event))
-          {
-            oric->shut_render(oric);
-            oric->init_render(oric);
             ctx->needrender = SDL_TRUE;
-          }
-        }
-        break;
+          break;
+
         case SDL_QUIT:
           done = SDL_TRUE;
           break;
@@ -1602,10 +1597,8 @@ static void loop_handler( void* arg )
     } while ( SDL_PollEvent( event ) );
   }
 
-  {
-    ay_unlockaudio(&oric->ay);
-    shut(oric);
-  }
+  ay_unlockaudio(&oric->ay);
+  shut(oric);
 }
 
 int main( int argc, char *argv[] )
