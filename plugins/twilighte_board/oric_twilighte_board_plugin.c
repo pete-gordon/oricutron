@@ -25,31 +25,31 @@ struct twilbankinfo
 
 struct twilighte
 {
-  
+
   unsigned char t_register;
   unsigned char t_banking_register;
   char twilrombankfiles[32][1024];
-  
+
   unsigned char twilrambankfiles[32][1024];
- 
+
   unsigned char twilrombankdata[32][16834];
   unsigned char twilrambankdata[32][16834];
 
-  
+
   unsigned char VDDRA;
   unsigned char DDRA;
 
   unsigned char VDDRB;
-  unsigned char DDRB;  
+  unsigned char DDRB;
   unsigned char current_bank;
-  
+
 };
 
 
 #include "../../system.h"
 
 extern SDL_bool read_config_string( char *buf, char *token, char *dest, Sint32 maxlen );
- 
+
 static SDL_bool load_rom_twilighte(  char *fname, int size, unsigned char where[] )
 {
   SDL_RWops *f;
@@ -108,7 +108,7 @@ struct twilighte * twilighte_oric_init(void)
 
   FILE *f;
   unsigned int i, j;
-  char *result;
+  // char *result; FIXME: unused
   char tbtmp[32];
   char tbtmpram[32];
   char line[1024];
@@ -144,17 +144,17 @@ struct twilighte * twilighte_oric_init(void)
        sprintf(tbtmp, "twilbankrom0%d", j);
        sprintf(tbtmpram, "twilbankram0%d", j);
       }
-        
-      if (twilighte->twilrombankfiles[j][0]==0) 
+
+      if (twilighte->twilrombankfiles[j][0]==0)
       {
-        if( read_config_string( line, tbtmp, twilighte->twilrombankfiles[j], 1024 ) ) 
+        if( read_config_string( line, tbtmp, twilighte->twilrombankfiles[j], 1024 ) )
         {
           break;
         }
       }
       if (twilighte->twilrambankfiles[j][0] == 0)
       {
-          if (read_config_string(line, tbtmpram, twilighte->twilrambankfiles[j], 1024))
+          if (read_config_string(line, tbtmpram, (char*)twilighte->twilrambankfiles[j], 1024))
           {
               break;
           }
@@ -164,11 +164,11 @@ struct twilighte * twilighte_oric_init(void)
 
   fclose( f );
 
-  // Now load rom 
+  // Now load rom
   for( i=0; i<32; i++ )
   {
     if( twilighte->twilrombankfiles[i][0]!=0 )
-    { 
+    {
       if( !load_rom_twilighte( twilighte->twilrombankfiles[i], -16384, twilighte->twilrombankdata[i]  ) )
       {
         error_printf("Cannot load %s",twilighte->twilrombankfiles[i]);
@@ -177,7 +177,7 @@ struct twilighte * twilighte_oric_init(void)
 	}
     if (twilighte->twilrambankfiles[i][0] != 0)
     {
-        if (!load_rom_twilighte(twilighte->twilrambankfiles[i], -16384, twilighte->twilrambankdata[i]))
+        if (!load_rom_twilighte((char*)twilighte->twilrambankfiles[i], -16384, twilighte->twilrambankdata[i]))
         {
             error_printf("Cannot load %s", twilighte->twilrambankfiles[i]);
             return NULL;
@@ -185,8 +185,8 @@ struct twilighte * twilighte_oric_init(void)
     }
   }
 
-  for (j=0;j<16384;j++) twilighte->twilrambankdata[0][j]=0;   
-   
+  for (j=0;j<16384;j++) twilighte->twilrambankdata[0][j]=0;
+
   twilighte->DDRA=7+128+32;
   twilighte->VDDRA=7;
   twilighte->current_bank=7;
@@ -198,13 +198,13 @@ unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte *twilighte, uin
   unsigned char data;
   unsigned char bank;
 
-  if (twilighte->current_bank==0) 
+  if (twilighte->current_bank==0)
   {
 	  data=twilighte->twilrambankdata[0][addr];
   }
   else
   {
-    if (twilighte->current_bank<5) 
+    if (twilighte->current_bank<5)
     {
       if (twilighte->t_banking_register!=0)
         bank=twilighte->current_bank+8-1+((twilighte->t_banking_register-1)*4);
@@ -232,7 +232,7 @@ unsigned char 	twilighteboard_oric_ROM_RAM_write(struct twilighte *twilighte, ui
   }
   else
   {
-    if (twilighte->current_bank<5) 
+    if (twilighte->current_bank<5)
 	  {
       if (twilighte->t_banking_register!=0)
         bank=twilighte->current_bank+8-1+((twilighte->t_banking_register-1)*4);
@@ -299,8 +299,8 @@ unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t a
   if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_DDRA)
   {
 
-    if (mask==0) 
-    { 
+    if (mask==0)
+    {
         twilighte->DDRA=data&(128+32+7);
     }
     if (mask==0xff)
@@ -318,12 +318,12 @@ unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t a
 
 
     if (mask==0x00)
-    { 
+    {
       unsigned char lastpb6;
       unsigned char lastpb7;
 
       data=data&0xdf;
-      if (data==0) 
+      if (data==0)
       {
         twilighte->DDRB=0;
         return 0;
