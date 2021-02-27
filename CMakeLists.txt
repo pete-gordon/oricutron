@@ -33,10 +33,13 @@ endif (UNIX)
 
 include_directories(
   ${CMAKE_CURRENT_BINARY_DIR}
-if (WIN32)
-  "${PROJECT_SOURCE_DIR}/msvc"
-endif (WIN32)
 )
+
+if (WIN32)
+include_directories(
+  "${PROJECT_SOURCE_DIR}/msvc"
+)
+endif (WIN32)
 
 SET (SRCAMIGA
   filereq_amiga.c
