@@ -90,6 +90,7 @@ SET (SRCS
   main.c
   monitor.c
   plugins/ch376/oric_ch376_plugin.c
+  plugins/twilighte_board/oric_twilighte_board_plugin.c
   snapshot.c
   system_sdl.c
   tape.c
