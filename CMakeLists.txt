@@ -13,7 +13,7 @@ if (WIN32)
       INTERFACE_INCLUDE_DIRECTORIES "${PROJECT_SOURCE_DIR}/msvc/vcpkg/installed/x64-windows/include/SDL2"
     )
 
-  add_definitions(-DSDL_MAIN_HANDLED=1 -D__OPENGL_AVAILABLE__ -D_MBCS -DWIN32 -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS -D__CBCOPY__ -D__CBPASTE__ -DAPP_NAME_FULL="Oricutron 1.2" -DAPP_YEAR="2015" -DVERSION_COPYRIGHTS="Oricutron 1.2.0 2016 Peter Gordon")
+  add_definitions(-DSDL_MAIN_HANDLED=1 -D__OPENGL_AVAILABLE__ -D_MBCS -DWIN32 -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS -D__CBCOPY__ -D__CBPASTE__ -DAPP_NAME_FULL="Oricutron 1.2" -DAPP_YEAR="2015" -DVERSION_COPYRIGHTS="Oricutron 1.2.0 (c)2015 Peter Gordon (pete@gordon.plus)")
 endif (WIN32)
 
 if (UNIX)
@@ -28,7 +28,7 @@ if (UNIX)
   include_directories(${GTK3_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS})
   link_directories(${GTK3_LIBRARY_DIRS})
 
-  add_definitions(${GTK3_CFLAGS_OTHER} -D__SPECIFY_SDL_DIR__=1 -DAPP_NAME_FULL="Oricutron 1.2" -DAPP_YEAR="2015" -DVERSION_COPYRIGHTS="Oricutron 1.2.0 2016 Peter Gordon")
+  add_definitions(${GTK3_CFLAGS_OTHER} -D__SPECIFY_SDL_DIR__=1 -DAPP_NAME_FULL="Oricutron 1.2" -DAPP_YEAR="2015" -DVERSION_COPYRIGHTS="Oricutron 1.2.0 (c)2015 Peter Gordon (pete@gordon.plus)")
 endif (UNIX)
 
 include_directories(
