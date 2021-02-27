@@ -279,6 +279,7 @@ if "$(Configuration.Contains('Release'))"=="True" ( copy "..\vcpkg\installed\x64
     <ClCompile Include="..\..\msgbox_win32.c" />
     <ClCompile Include="..\..\plugins\ch376\ch376.c" />
     <ClCompile Include="..\..\plugins\ch376\oric_ch376_plugin.c" />
+    <ClCompile Include="..\..\plugins\twilighte_board\oric_twilighte_board_plugin.c" />
     <ClCompile Include="..\..\render_gl.c" />
     <ClCompile Include="..\..\render_null.c" />
     <ClCompile Include="..\..\render_sw.c">
