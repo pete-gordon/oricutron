@@ -232,7 +232,10 @@ unsigned char 	twilighteboard_oric_ROM_RAM_write(struct twilighte *twilighte, ui
     if (twilighte->current_bank<5)
 	  {
       if (twilighte->t_banking_register!=0)
-        bank=twilighte->current_bank+8-1+((twilighte->t_banking_register-1)*4);
+        if (twilighte->t_register&32==32) // It is ram ?
+          bank=twilighte->current_bank+(twilighte->t_banking_register*4)-1; // Yes
+        else
+          bank=twilighte->current_bank+8-1+((twilighte->t_banking_register-1)*4);
       else
         bank=twilighte->current_bank;
 	  }
