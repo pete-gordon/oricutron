@@ -1,4 +1,4 @@
-name: CMake
+name: Oricutron Release on ubuntu-latest - cmake SDL2 GTK3
 
 on: [push]
 
