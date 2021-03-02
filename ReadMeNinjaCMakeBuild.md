@@ -16,21 +16,36 @@ SDL2, GTK-3
 
 Open a Visual Studio Developer Command Prompt 2019
 
-`mkdir build\windows`
-`cd build\windows`
-`cmake -GNinja ../..`
-`ninja`
-`Oricutron.exe`
+```shell
+mkdir build\windows
+cd build\windows
+cmake -GNinja ..\.. [-DUSE_SDL2:BOOL=ON]
+ninja
+copy Oricutron.exe ..\..
+[copy Oricutron-sdl2.exe ..\..]
+cd ..\..
+mklink SDL.dll msvc\vcpkg\installed\x64-windows\bin\SDL.dll
+mklink SDL2.dll msvc\vcpkg\installed\x64-windows\bin\SDL2.dll
+Oricutron.exe
+[Oricutron-sdl2.exe]
+```
 
 ### Linux
 
 Open a terminal (on Windows you can use WSL + e.g. Ubuntu)
 
-`mkdir build/linux`
-`cd build/linux`
-`cmake -GNinja ../..`
-`ninja`
-`./oricutron`
+```shell
+mkdir -p build/linux
+cd build/linux
+cmake -GNinja ../..
+[cmake -GNinja ../.. -DUSE_SDL2:BOOL=ON]
+ninja
+cp Oricutron ../..
+[cp Oricutron-sdl2 ../..]
+cd ../..
+./Oricutron
+[./Oricutron-sdl2]
+```
 
 ### Linux + Windows
 
