@@ -3,6 +3,13 @@
 # define ORICUTRON_VERSION_MINOR 2
 # define ORICUTRON_VERSION_PATCH 0
 # define ORICUTRON_VERSION_NUMBER "1.2.0\0"
+# define ORICUTRON_COPYRIGHT "Oricutron 1.2.0 (c)2015 Peter Gordon (pete@gordon.plus)\0"
+# define ORICUTRON_APPNAME "Oricutron\0"
+# define ORICUTRON_EXE "Oricutron.exe\0"
+# define ORICUTRON_COMPANYNAME "pete-gordon/oricutron\0"
+# define ORICUTRON_LINK "https://github.com/pete-gordon/oricutron/\0"
+
+101 ICON "..\winicon.ico"
 
 #ifdef GCC_WINDRES
 VS_VERSION_INFO		VERSIONINFO
@@ -13,28 +20,28 @@ VS_VERSION_INFO		VERSIONINFO	MOVEABLE IMPURE LOADONCALL DISCARDABLE
   PRODUCTVERSION	ORICUTRON_VERSION_MAJOR,ORICUTRON_VERSION_MINOR,ORICUTRON_VERSION_PATCH,0
   FILEFLAGSMASK		VS_FFI_FILEFLAGSMASK
 #ifdef _DEBUG
-  FILEFLAGS		1
+  FILEFLAGS		0x1L
 #else
-  FILEFLAGS		0
+  FILEFLAGS		0x0L
 #endif
-  FILEOS		VOS__WINDOWS32
-  FILETYPE		VFT_DLL
-  FILESUBTYPE		0	// not used
+  FILEOS		VOS_NT_WINDOWS32
+  FILETYPE		VFT_APP
+  FILESUBTYPE		VFT2_UNKNOWN
 BEGIN
   BLOCK "StringFileInfo"
   BEGIN
     BLOCK "040904E4"
     //language ID = U.S. English, char set = Windows, Multilingual
     BEGIN
-      VALUE "CompanyName",	"pete-gordon/oricutron\0"
-      VALUE "FileDescription",	"Oricutron.exe\0"
+      VALUE "CompanyName",	ORICUTRON_COMPANYNAME
+      VALUE "FileDescription",	ORICUTRON_EXE
       VALUE "FileVersion",	ORICUTRON_VERSION_NUMBER
-      VALUE "InternalName",	"Oricutron.exe\0"
-      VALUE "LegalCopyright",	"Oricutron 1.2.0 (c)2015 Peter Gordon (pete@gordon.plus)\0"
-      VALUE "OriginalFilename",	"Oricutron.exe\0"
-      VALUE "ProductName",	"Oricutron\0"
+      VALUE "InternalName",	ORICUTRON_EXE
+      VALUE "LegalCopyright",	ORICUTRON_COPYRIGHT
+      VALUE "OriginalFilename",	ORICUTRON_EXE
+      VALUE "ProductName",	ORICUTRON_APPNAME
       VALUE "ProductVersion",	ORICUTRON_VERSION_NUMBER
-      VALUE "Comments",		"For more information visit https://github.com/pete-gordon/oricutron/\0"
+      VALUE "Comments",		ORICUTRON_LINK
     END
   END
   BLOCK "VarFileInfo"
