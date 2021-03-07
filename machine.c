@@ -2072,6 +2072,7 @@ void shut_machine( struct machine *oric )
   if( oric->tapecap ) toggletapecap( oric, find_item_by_function(mainitems, toggletapecap), 0 );
   if (oric->tapebuf) { free(oric->tapebuf); oric->tapebuf = NULL; }
   mon_freesyms( &sym_microdisc );
+  mon_freesyms( &sym_bd500 );
   mon_freesyms( &sym_jasmin );
   mon_freesyms( &sym_pravetz );
   mon_freesyms( &oric->romsyms );
