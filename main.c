@@ -710,10 +710,6 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   }
   need_sdl_quit = SDL_TRUE;
 
-#ifndef __APPLE__
-  SDL_COMPAT_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
-#endif
-
   render_sw_detectvideo( oric );
 
   load_config( sto, oric );
@@ -1313,7 +1309,8 @@ void shut( struct machine *oric )
     shut_msgbox( oric );
     shut_gui( oric );
   }
-  if( need_sdl_quit ) SDL_COMPAT_Quit();
+  if( need_sdl_quit )
+    SDL_COMPAT_Quit( SDL_TRUE );
 }
 
 void frameloop_overclock( struct machine *oric, SDL_bool *framedone, SDL_bool *needrender )

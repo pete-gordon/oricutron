@@ -2148,7 +2148,7 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
 
   shut_gui( oric );
   shut_joy( oric );
-  SDL_COMPAT_Quit();
+  SDL_COMPAT_Quit( SDL_FALSE );
   need_sdl_quit = SDL_FALSE;
 
   // Go SDL!
@@ -2160,16 +2160,6 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
   }
   need_sdl_quit = SDL_TRUE;
 
-#ifndef __APPLE__
-  SDL_COMPAT_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
-#endif
-
-  if( !init_joy( oric ) )
-  {
-    oric->emu_mode = EM_PLEASEQUIT;
-    return;
-  }
-
   if( !init_gui( oric, newrendermode ) )
   {
     oric->emu_mode = EM_PLEASEQUIT;
@@ -2177,6 +2167,12 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
   }
 
   if( !ay_init( &oric->ay, oric ) )
+  {
+    oric->emu_mode = EM_PLEASEQUIT;
+    return;
+  }
+
+  if( !init_joy( oric ) )
   {
     oric->emu_mode = EM_PLEASEQUIT;
     return;
@@ -2235,6 +2231,10 @@ void preinit_gui( struct machine *oric )
   strcpy( snapfile, "" );
   strcpy( mappingpath, FILEPREFIX"keymap" );
   strcpy( mappingfile, "" );
+
+#ifndef __APPLE__
+  SDL_COMPAT_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
+#endif
 }
 
 // Ensure the sanity of toggle menuitems
