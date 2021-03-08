@@ -77,10 +77,10 @@ unsigned char ds1501_get_seconds(struct ds1501 *ds1501)
 {
     struct tm *now_tm;
     if (ds1501->seconds_delta_from_system==0)
-        {
+    {
         now_tm=ds1501_get_system_time(ds1501->seconds_delta_from_system);
         return ds1501_to_bcd(now_tm->tm_sec);
-        }
+    }
     else
         return ds1501->seconds_delta_from_system;
     
@@ -129,7 +129,7 @@ unsigned char ds1501_get_day(struct ds1501 *ds1501)
     if (ds1501->day_delta_from_system==0)
     {
         now_tm=ds1501_get_system_time(ds1501->day_delta_from_system);
-        return ds1501_to_bcd(now_tm->tm_wday+1); // Because ds1501 return month between 1 and 12, but time.h returns 0 to 11
+        return ds1501_to_bcd(now_tm->tm_wday+1); 
     }
     else
         return ds1501->day_delta_from_system;
@@ -154,7 +154,7 @@ unsigned char ds1501_get_year(struct ds1501 *ds1501)
     if (ds1501->year_delta_from_system==0)
     {    
         now_tm=ds1501_get_system_time(ds1501->year_delta_from_system);
-        year=now_tm->tm_year & 0xFF;
+        year=now_tm->tm_year %100;
         return ds1501_to_bcd(year); 
     }
     else
@@ -168,8 +168,8 @@ unsigned char ds1501_get_century(struct ds1501 *ds1501)
     if (ds1501->century_delta_from_system==0)
     {    
         now_tm=ds1501_get_system_time(ds1501->century_delta_from_system);
-        century=now_tm->tm_year/100;
-        return ds1501_to_bcd(century); // Because ds1501 return month between 1 and 12, but time.h returns 0 to 11
+        century=now_tm->tm_year/100+19;
+        return ds1501_to_bcd(century); 
     }
     else 
         return ds1501->century_delta_from_system;
