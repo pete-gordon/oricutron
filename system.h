@@ -51,6 +51,14 @@
 #define ROMPREFIX "roms\\"
 #define IMAGEPREFIX "images\\"
 
+#elif defined(__ANDROID__)
+
+#define PATHSEP '/'
+#define PATHSEPSTR "/"
+#define FILEPREFIX "/data/data/com.emul.oricutron/files/"
+#define ROMPREFIX FILEPREFIX"roms/"
+#define IMAGEPREFIX FILEPREFIX"images/"
+
 #else
 
 #define PATHSEP '/'

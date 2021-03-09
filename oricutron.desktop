@@ -10,4 +10,4 @@ Exec=oricutron %U
 MimeType=application/x-oric-rom;application/x-oric-tape;application/x-oric-disk
 Icon=oricutron
 Categories=Emulator;Utility;
-Keywords=ORIC,Oric1,Atmos
+Keywords=ORIC,Oric1,Atmos,Pravetz-8D

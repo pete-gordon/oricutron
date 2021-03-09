@@ -389,3 +389,4 @@ unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t a
 
   return 0;
 }
+

@@ -35,9 +35,9 @@ VERSION_FULL = $(VERSION_MAJ).$(VERSION_MIN).$(VERSION_REV)
 APP_INFO =
 APP_NAME = $(strip Oricutron $(APP_INFO))
 APP_YEAR = 2019
-COPYRIGHTS = (c)$(APP_YEAR) Peter Gordon (pete@petergordon.org.uk)
+COPYRIGHTS = (c)$(APP_YEAR) Peter Gordon (pete@gordon.plus)
 VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) $(COPYRIGHTS)"
-#COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) ©$(APP_YEAR) Peter Gordon (pete@petergordon.org.uk)"
+#COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) ©$(APP_YEAR) Peter Gordon (pete@gordon.plus)"
 
 ####### DEFAULT SETTINGS HERE #######
 

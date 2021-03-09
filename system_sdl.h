@@ -145,13 +145,22 @@ int SDL_COMPAT_WM_ToggleFullScreen(SDL_Surface *surface);
 SDL_Surface* SDL_COMPAT_SetVideoMode(int width, int height, int bitsperpixel, Uint32 flags);
 int SDL_COMPAT_SetPalette(SDL_Surface *surface, int flags, SDL_Color *colors, int firstcolor, int ncolors);
 void SDL_COMPAT_SetEventFilter(SDL_EventFilter filter);
-void SDL_COMPAT_Quit(void);
+void SDL_COMPAT_Quit(SDL_bool freeall);
 void SDL_COMPAT_TakeScreenshot(char *fname);
 
 #ifdef __OPENGL_AVAILABLE__
 void SDL_COMPAT_GL_SwapBuffers(void);
 #endif
 
+
+#ifdef __ANDROID__
+#include <android/log.h>
+#define  LOG_TAG    "Oricutron"
+#define  debug_printf(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
+#define  error_printf(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
+#else
+#define  debug_printf(...)  fprintf(stdout,__VA_ARGS__)
 void error_printf( char *fmt, ... );
+#endif
 
 #endif /* ORICUTRON_SYSTEM_SDL_H */

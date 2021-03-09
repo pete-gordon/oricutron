@@ -283,7 +283,7 @@ struct osdmenuitem hwopitems[] = { { " Oric-1",                "1",    SDLK_1,  
                                    { " Lightpen",              NULL,   0,        togglelightpen,  0, 0 },
                                    { " Serial none          ", NULL,   0,        toggleaciabackend, 0, 0 },
                                    { " CH376 (Telestrat)    ", NULL,   0,        togglech376, 0, 0 },
-                                   { " Twilighte board    ", NULL,   0,        toggletwilighte, 0, 0 },                                   
+                                   { " Twilighte board    ", NULL,   0,        toggletwilighte, 0, 0 },
 //                                   { " Mouse",                 NULL,   0,        NULL,            0, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },
@@ -1541,7 +1541,7 @@ void toggletwilighte(struct machine *oric, struct osdmenuitem *mitem, int dummy)
 	oric->twilighteboard_activated = SDL_TRUE;
 	mitem->name = "\x0e""Twilighte board";
 	oric->twilighte = twilighte_oric_init();
-	if (oric->twilighte == NULL) 
+	if (oric->twilighte == NULL)
   {
      oric->twilighteboard_activated = SDL_FALSE; // Impossible to create struct, we did not activate twilighteboard
   }
@@ -1549,8 +1549,8 @@ void toggletwilighte(struct machine *oric, struct osdmenuitem *mitem, int dummy)
   {
     oric->ch376_activated = SDL_TRUE;
   }
-  
-		
+
+
 }
 
 // Toggle symbols autoload
@@ -2148,7 +2148,7 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
 
   shut_gui( oric );
   shut_joy( oric );
-  SDL_COMPAT_Quit();
+  SDL_COMPAT_Quit( SDL_FALSE );
   need_sdl_quit = SDL_FALSE;
 
   // Go SDL!
@@ -2160,16 +2160,6 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
   }
   need_sdl_quit = SDL_TRUE;
 
-#ifndef __APPLE__
-  SDL_COMPAT_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
-#endif
-
-  if( !init_joy( oric ) )
-  {
-    oric->emu_mode = EM_PLEASEQUIT;
-    return;
-  }
-
   if( !init_gui( oric, newrendermode ) )
   {
     oric->emu_mode = EM_PLEASEQUIT;
@@ -2177,6 +2167,12 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
   }
 
   if( !ay_init( &oric->ay, oric ) )
+  {
+    oric->emu_mode = EM_PLEASEQUIT;
+    return;
+  }
+
+  if( !init_joy( oric ) )
   {
     oric->emu_mode = EM_PLEASEQUIT;
     return;
@@ -2235,6 +2231,10 @@ void preinit_gui( struct machine *oric )
   strcpy( snapfile, "" );
   strcpy( mappingpath, FILEPREFIX"keymap" );
   strcpy( mappingfile, "" );
+
+#ifndef __APPLE__
+  SDL_COMPAT_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
+#endif
 }
 
 // Ensure the sanity of toggle menuitems
@@ -2373,6 +2373,8 @@ void setmenutoggles( struct machine *oric )
      find_item_by_function(keopitems, togglestickykeys)->name = "\x0e""Sticky mod keys";
   else
      find_item_by_function(keopitems, togglestickykeys)->name = " Sticky mod keys";
+
+  g_menu_scheme = oric->disable_menuscheme? 5 : oric->type;
 
   find_item_by_function(hwopitems, togglech376)->name = oric->ch376_activated ? "\x0e""CH376 (Telestrat)" : " CH376 (Telestrat)    ";
   find_item_by_function(hwopitems, toggletwilighte)->name = oric->twilighteboard_activated ? "\x0e""Twilighte board" : " Twilighte board";

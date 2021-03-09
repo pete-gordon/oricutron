@@ -452,6 +452,7 @@ void render_video_sw_32bpp( struct machine *oric, SDL_bool doublesize )
 
 void render_sw_detectvideo( struct machine *oric )
 {
+#ifndef __ANDROID__
   int BitsPerPixel = SDL_COMPAT_GetBitsPerPixel();
 
   // Guess the suitable video mode, either 16bpp or 32bpp
@@ -470,6 +471,9 @@ void render_sw_detectvideo( struct machine *oric )
     default:
       break;
   }
+#else
+  oric->sw_depth = 32;
+#endif
 }
 
 void preinit_render_sw( struct machine *oric )

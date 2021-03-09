@@ -178,6 +178,7 @@ struct bd500
   struct wd17xx *wd;      // Pointer to the WD17xx structure
   struct machine *oric;   // Pointer to the Oric structure
   SDL_bool diskrom;       // TRUE if the diskrom is enabled
+  SDL_bool motor;
 };
 
 // Current state of the Jasmin hardware

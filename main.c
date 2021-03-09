@@ -423,6 +423,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_bool(   &sto->lctmp[i], "hstretch",     &oric->hstretch ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "palghosting",  &oric->palghost ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "rom16",        &oric->rom16 ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "dos70",        &oric->dos70 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "diskimage",    sto->start_disk, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "tapeimage",    sto->start_tape, 1024 ) ) continue;
     if( read_config_string( &sto->lctmp[i], "symbols",      sto->start_syms, 1024 ) ) continue;
@@ -528,6 +529,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_bool(   &sto->lctmp[i], "ch376",        &oric->ch376_activated) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "twilighte_board",&oric->twilighteboard_activated) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "pravdiskautoboot", &oric->pravdiskautoboot ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "disable_menuscheme", &oric->disable_menuscheme ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "show_keyboard", &oric->show_keyboard ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "sticky_mod_keys", &oric->sticky_mod_keys ) )continue;
     if( read_config_string( &sto->lctmp[i], "autoload_keyboard_mapping", keymap_file, 4096 ) )
@@ -603,10 +605,16 @@ static void usage( int ret )
           "                                                 \"com:115200,8,N,1,/dev/ttyUSB0\"\n"
 #endif
           "\n");
+
+#ifdef __ANDROID__
+  error_printf("Bad command line.");
+#endif
+
   exit(ret);
 }
 
 // Print a formatted string into a textzone
+#ifndef __ANDROID__
 void error_printf( char *fmt, ... )
 {
   static char str[256];  // Stupid MinGW32 not having vasprintf...
@@ -624,6 +632,7 @@ void error_printf( char *fmt, ... )
   }
   va_end( ap );
 }
+#endif
 
 static SDL_bool on_or_off( char *arg, char *option, SDL_bool *storage )
 {
@@ -700,10 +709,6 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
     return SDL_FALSE;
   }
   need_sdl_quit = SDL_TRUE;
-
-#ifndef __APPLE__
-  SDL_COMPAT_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
-#endif
 
   render_sw_detectvideo( oric );
 
@@ -1304,7 +1309,8 @@ void shut( struct machine *oric )
     shut_msgbox( oric );
     shut_gui( oric );
   }
-  if( need_sdl_quit ) SDL_COMPAT_Quit();
+  if( need_sdl_quit )
+    SDL_COMPAT_Quit( SDL_TRUE );
 }
 
 void frameloop_overclock( struct machine *oric, SDL_bool *framedone, SDL_bool *needrender )
@@ -1397,8 +1403,8 @@ void frameloop_normal( struct machine *oric, SDL_bool *framedone, SDL_bool *need
       }
 
       if (!oric->twilighteboard_activated)
-        tape_patches( oric );
-        
+      tape_patches( oric );
+
       via_clock( &oric->via, oric->cpu.icycles );
       ay_ticktock( &oric->ay, oric->cpu.icycles );
 
@@ -1558,15 +1564,10 @@ static void loop_handler( void* arg )
       switch (event->type)
       {
         case SDL_COMPAT_ACTIVEEVENT:
-        {
           if (SDL_COMPAT_IsAppActive(event))
-          {
-            oric->shut_render(oric);
-            oric->init_render(oric);
             ctx->needrender = SDL_TRUE;
-          }
-        }
-        break;
+          break;
+
         case SDL_QUIT:
           done = SDL_TRUE;
           break;
@@ -1593,10 +1594,8 @@ static void loop_handler( void* arg )
     } while ( SDL_PollEvent( event ) );
   }
 
-  {
-    ay_unlockaudio(&oric->ay);
-    shut(oric);
-  }
+  ay_unlockaudio(&oric->ay);
+  shut(oric);
 }
 
 int main( int argc, char *argv[] )

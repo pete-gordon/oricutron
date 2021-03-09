@@ -136,7 +136,7 @@ struct machine
   int vsync;
 
   SDL_bool vid_double;
-  SDL_bool romdis, romon, rom16;
+  SDL_bool romdis, romon, rom16, dos70;
   SDL_bool vsynchack;
 
   unsigned short vid_addr;
@@ -259,6 +259,8 @@ struct machine
   SDL_bool show_keyboard;
   SDL_bool define_mapping;
   SDL_bool sticky_mod_keys;
+
+  SDL_bool disable_menuscheme;
 
   int aciaoffset;
   int aciabackend;

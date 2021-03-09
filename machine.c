@@ -62,7 +62,6 @@ extern char diskpath[], diskfile[], filetmp[];
 extern char telediskpath[], telediskfile[];
 extern char pravdiskpath[], pravdiskfile[];
 extern SDL_bool refreshstatus, refreshavi;
-extern int g_menu_scheme; // #InfoBadDesign - init g_menu_scheme should be done elsewhere - machine.c should not depend on gui - but this is the only place I know
 
 char atmosromfile[1024];
 char oric1romfile[1024];
@@ -316,11 +315,11 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
   struct machine *oric = (struct machine *)cpu->userdata;
 
 
-  if (oric->twilighteboard_activated &&  addr >= 0xc000  ) 
+  if (oric->twilighteboard_activated &&  addr >= 0xc000  )
     twilighteboard_oric_ROM_RAM_write(oric->twilighte,addr-0xc000,data);
   else
-    if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
-  
+  if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
+
   if( ( addr & 0xff00 ) == 0x0300 )
   {
     if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
@@ -328,7 +327,7 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 
     else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
       ch376_oric_write(oric->ch376, addr, data);
-    
+
     else if(oric->twilighteboard_activated && ((0x342 <= addr && addr < 0x344 ) || (0x320 <= addr && addr < 0x330 )))
      twilighteboard_oric_write(oric->twilighte,addr,0x00,data);
 
@@ -408,7 +407,7 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
             ch376_oric_write(oric->ch376, addr, data);
           break;
         }
-        
+
 
       default:
         via_write( &oric->via, addr, data );
@@ -1138,6 +1137,7 @@ void preinit_machine( struct machine *oric )
   oric->tapenoise = SDL_FALSE;
   oric->rawtape = SDL_FALSE;
   oric->rom16 = SDL_TRUE;
+  oric->dos70 = SDL_FALSE;
 
   oric->joy_iface = JOYIFACE_NONE;
   oric->joymode_a = JOYMODE_KB1;
@@ -1191,6 +1191,8 @@ void preinit_machine( struct machine *oric )
   oric->show_keyboard = SDL_FALSE;
   oric->define_mapping = SDL_FALSE;
   oric->sticky_mod_keys = SDL_FALSE;
+
+  oric->disable_menuscheme = SDL_FALSE;
 
   oric->pravdiskautoboot = SDL_TRUE;
 }
@@ -1377,7 +1379,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             if (oric->ch376 != NULL)
               ch376_oric_config(oric->ch376);
           }
-          
+
 
 
           break;
@@ -1460,6 +1462,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           break;
 
         case SDLK_F10:
+#ifndef __ANDROID__
            if( vidcap )
            {
              ay_lockaudio( &oric->ay );
@@ -1481,6 +1484,9 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
              do_popup( oric, vidcapname );
            }
            refreshavi = SDL_TRUE;
+#else
+           android_togglekeyboard( oric );
+#endif
            break;
 #ifdef __CBCOPY__
         case SDLK_F11:
@@ -1810,8 +1816,6 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
 
   clear_patches( oric );
 
-  g_menu_scheme = type;
-
   switch( type )
   {
     case MACH_ORIC1_16K:
@@ -2068,6 +2072,7 @@ void shut_machine( struct machine *oric )
   if( oric->tapecap ) toggletapecap( oric, find_item_by_function(mainitems, toggletapecap), 0 );
   if (oric->tapebuf) { free(oric->tapebuf); oric->tapebuf = NULL; }
   mon_freesyms( &sym_microdisc );
+  mon_freesyms( &sym_bd500 );
   mon_freesyms( &sym_jasmin );
   mon_freesyms( &sym_pravetz );
   mon_freesyms( &oric->romsyms );
@@ -2113,6 +2118,9 @@ void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
   if( !init_machine( oric, oric->type, SDL_FALSE ) )
   {
     shut( oric );
+#ifdef __ANDROID__
+    error_printf("'init_machine' failed");
+#endif
     exit( EXIT_FAILURE );
   }
 
@@ -2142,6 +2150,9 @@ void swapmach( struct machine *oric, struct osdmenuitem *mitem, int which )
   if( !init_machine( oric, which, which!=oric->type ) )
   {
     shut( oric );
+#ifdef __ANDROID__
+    error_printf("'init_machine' failed");
+#endif
     exit( EXIT_FAILURE );
   }
 }

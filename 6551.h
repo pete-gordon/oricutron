@@ -82,7 +82,9 @@ enum
 #endif
 
 #ifdef __LINUX__
+#ifndef __ANDROID__
 #define BACKEND_COM
+#endif
 #endif
 #ifdef WIN32
 #define BACKEND_COM

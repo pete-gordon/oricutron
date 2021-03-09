@@ -67,7 +67,12 @@
 #endif
 
 #if SDL_MAJOR_VERSION == 1
-/* NOP */
+static SDL_Surface* g_icon = NULL;
+
+static void FreeResources(void)
+{
+  // nope
+}
 #else
 static SDL_bool g_fullscreen = SDL_FALSE;
 static SDL_GLContext g_glcontext = NULL;
@@ -138,17 +143,7 @@ int SDL_COMPAT_GetWMInfo(SDL_SysWMinfo *info)
 }
 #endif
 
-
-#if SDL_MAJOR_VERSION == 1
-void SDL_COMPAT_WM_SetIcon(SDL_Surface *icon, Uint8 *mask)
-{
-  SDL_WM_SetIcon(icon, mask);
-}
-void SDL_COMPAT_WM_SetCaption(const char *title, const char *icon)
-{
-  SDL_WM_SetCaption(title, icon);
-}
-#else
+// NOTE: same for both SDL versions
 void SDL_COMPAT_WM_SetIcon(SDL_Surface *icon, Uint8 *mask)
 {
   if(g_icon)
@@ -157,10 +152,15 @@ void SDL_COMPAT_WM_SetIcon(SDL_Surface *icon, Uint8 *mask)
     g_icon = NULL;
   }
   if(icon)
-  {
     g_icon = icon;
-  }
 }
+
+#if SDL_MAJOR_VERSION == 1
+void SDL_COMPAT_WM_SetCaption(const char *title, const char *icon)
+{
+  SDL_WM_SetCaption(title, icon);
+}
+#else
 void SDL_COMPAT_WM_SetCaption(const char *title, const char *icon)
 {
   if(g_window)
@@ -366,6 +366,12 @@ int SDL_COMPAT_WM_ToggleFullScreen(SDL_Surface *surface)
 #if SDL_MAJOR_VERSION == 1
 SDL_Surface* SDL_COMPAT_SetVideoMode(int width, int height, int bitsperpixel, Uint32 flags)
 {
+  FreeResources();
+
+  // NOTE: SDL_WM_SetIcon function must be called before the first call to SDL_SetVideoMode.
+  if (g_icon)
+    SDL_WM_SetIcon(g_icon, NULL);
+
   return SDL_SetVideoMode(width, height, bitsperpixel, flags);
 }
 #else
@@ -383,12 +389,15 @@ SDL_Surface* SDL_COMPAT_SetVideoMode(int width, int height, int bitsperpixel, Ui
       g_lasty = SDL_WINDOWPOS_CENTERED;
   }
 
+#ifndef __ANDROID__
   g_window = SDL_CreateWindow("oricutron", g_lastx, g_lasty,
                               g_width, g_height, flags);
+#else
+  g_window = SDL_CreateWindow("oricutron", SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,
+                              0, 0, SDL_WINDOW_FULLSCREEN_DESKTOP);
+#endif
   if (g_icon)
-  {
     SDL_SetWindowIcon(g_window, g_icon);
-  }
 
   if(flags & SDL_WINDOW_OPENGL)
   {
@@ -400,6 +409,10 @@ SDL_Surface* SDL_COMPAT_SetVideoMode(int width, int height, int bitsperpixel, Ui
     g_screen = SDL_CreateRGBSurface(0, g_width, g_height, g_bpp,
                                     RMASK, GMASK, BMASK, AMASK);
     g_renderer = SDL_CreateRenderer(g_window, -1, 0);
+#ifdef __ANDROID__
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best");//"linear");
+    SDL_RenderSetLogicalSize(g_renderer, g_width, g_height);
+#endif
     g_texture = SDL_CreateTexture(g_renderer,
                                   SDL_PIXELFORMAT_ABGR8888,
                                   SDL_TEXTUREACCESS_STREAMING,
@@ -435,16 +448,11 @@ void SDL_COMPAT_SetEventFilter(SDL_EventFilter filter)
 }
 #endif
 
-#if SDL_MAJOR_VERSION == 1
-void SDL_COMPAT_Quit(void)
-{
-  SDL_Quit();
-}
-#else
-void SDL_COMPAT_Quit(void)
+// NOTE: same for both SDL versions
+void SDL_COMPAT_Quit(SDL_bool freeall)
 {
   FreeResources();
-  if (g_icon)
+  if (g_icon && freeall)
   {
     // ...and the surface containing the icon pixel data is no longer required.
     SDL_FreeSurface(g_icon);
@@ -452,7 +460,6 @@ void SDL_COMPAT_Quit(void)
   }
   SDL_Quit();
 }
-#endif
 
 #ifdef __OPENGL_AVAILABLE__
 #if SDL_MAJOR_VERSION == 1

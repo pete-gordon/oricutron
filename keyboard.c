@@ -587,3 +587,13 @@ SDL_bool load_keyboard_mapping( struct machine *oric, char *filename )
 
     return ok;
 }
+
+
+#ifdef __ANDROID__
+extern struct osdmenuitem keopitems[];
+void togglekeyboard( struct machine *oric, struct osdmenuitem *mitem, int dummy );
+void android_togglekeyboard(struct machine* oric)
+{
+    togglekeyboard( oric, &keopitems[0], 0 );
+}
+#endif

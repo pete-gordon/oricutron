@@ -1081,7 +1081,11 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *lo
 
       if( strlen( tmpsname ) > SNAME_LEN )
       {
-        sprintf( distmp, "%s\n", tmpsname );
+        int ln = strlen(tmpsname);
+        ln = (ln<127)? ln : 126;
+        memcpy( distmp, tmpsname, ln );
+        distmp[ln] = '\n';
+        distmp[ln+1] = 0;
         disptr = &distmp[strlen(distmp)];
         tmpsname = "";
       }
