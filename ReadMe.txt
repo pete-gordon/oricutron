@@ -471,6 +471,7 @@ CH376_CMD_DIR_CREATE create folder
 
 Twilighte board emulation 
 ===============
+
 The twilighte board is working on atmos (and Oric-1). It disables internal Oric ROM and add 64 banks (by bank switching).
 It adds 32 banks of ROM (eeprom) and 32 banks of RAM (Static RAM saved with a battery).
 EEprom can be programmed from Orix command line.
@@ -479,7 +480,7 @@ And the board adds 2 joysticks ports.
 
 The emulation, for instance, handles 32 ROM banks and 32 RAM banks. It emulates this bank switching. 
 
-Board is not working with a microdisc. But jasmin does (mainly because jasmin does not replace rom at boot).
+Board is working with a cumulus. Anyway, this part is not emulated and you need to switch to Telestrat mode to have this behavior.
 
 Anyway, on Telestrat, orix can start floppy disk because FDC is present. 
 
@@ -492,7 +493,17 @@ Not emulated parts :
 
 To activate the plugin, you must activate twilighte_board option in oricutron.cfg
 
-Update twilighte.cfg plugin in plugins/twilighte_card/twilighte.cfg if you want to load others roms.
+Update twilighte.cfg plugin in plugins/twilighte_card/twilighte.cfg if you want to load others roms. 
+
+In order to start at least, minimal configuration, kernel.rom must be set in twilbankrom07 and shell.rom in twilbankrom05. 
+
+Last roms can be found here : http://repo.orix.oric.org/dists/official/tgz/6502/
+* kernel.tgz contains kernel.rom
+* shell.tgz contains shell.rom 
+
+Under linux, sdcard folder and/or usbdrive folder must have uppercase filenames or else, no binaries can be started. You can mount a fat32 filesystem in sdcard or usbdrive.
+
+Filenames must be in uppercase, because usb chip manage by default FAT32 filesystem.
 
 For basic11 rom which handles joysticks and .tap load from sdcard or usbdrive, you have to download basic.tgz here : http://repo.orix.oric.org/dists/official/tgz/6502/
 And you need to replace twilbankrom06 with the rom in basic11.tgz.

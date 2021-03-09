@@ -96,6 +96,46 @@ static SDL_bool load_rom_twilighte(  char *fname, int size, unsigned char where[
   return SDL_TRUE;
 }
 
+int twilighte_oric_computebankid(struct twilighte *twilighte) 
+{
+
+  if (twilighte->t_register&32==32)  // RAM access
+  {
+    if (twilighte->current_bank<5)
+    {
+      if (twilighte->t_banking_register!=0)
+        if ((twilighte->t_register&32)==32) // It is ram ?
+          return twilighte->current_bank+(twilighte->t_banking_register*4)-1; // Yes
+        else
+        {
+          switch(twilighte->t_banking_register)
+          {
+            case 0:
+              return twilighte->current_bank;
+            case 4:
+              return twilighte->current_bank+4;
+            case 5:
+              return twilighte->current_bank+20;                            
+            case 6:
+              return twilighte->current_bank+24;
+            case 7:
+              return twilighte->current_bank+28;
+            default:
+              return twilighte->current_bank+twilighte->t_banking_register*4+4;
+          }
+
+        }
+      else
+        return twilighte->current_bank;
+    }
+    else
+        return twilighte->current_bank;
+  }
+ 
+  return 0;
+}
+
+
 struct twilighte * twilighte_oric_init(void)
 {
   FILE *f;
@@ -150,7 +190,7 @@ struct twilighte * twilighte_oric_init(void)
               break;
           }
       }
-	}
+	  }
   }
 
   fclose( f );
@@ -165,7 +205,8 @@ struct twilighte * twilighte_oric_init(void)
         error_printf("Cannot load %s",twilighte->twilrombankfiles[i]);
         return NULL;
       }
-	}
+	  }
+    
     if (twilighte->twilrambankfiles[i][0] != 0)
     {
         if (!load_rom_twilighte((char*)twilighte->twilrambankfiles[i], -16384, twilighte->twilrambankdata[i]))
@@ -186,6 +227,7 @@ struct twilighte * twilighte_oric_init(void)
 }
 
 unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte *twilighte, uint16_t addr) {
+  
   unsigned char data;
   unsigned char bank;
 
@@ -195,21 +237,7 @@ unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte *twilighte, uin
   }
   else
   {
-    if (twilighte->current_bank<5)
-    {
-      if (twilighte->t_banking_register!=0)
-        // There is 32 banks, set 0 to 7 have 4 banks
-        // when Set=7 and current_bank=4, it's means that it's the id bank 31
-        // Rom has another behavior
-        if (twilighte->t_register&32==32) // It is ram ?
-          bank=twilighte->current_bank+(twilighte->t_banking_register*4)-1; // Yes
-        else
-          bank=twilighte->current_bank+8-1+((twilighte->t_banking_register-1)*4);
-      else
-        bank=twilighte->current_bank;
-    }
-    else
-      bank=twilighte->current_bank;
+    bank=twilighte_oric_computebankid(twilighte) ;
 
     if ((twilighte->t_register&32)==32 && twilighte->current_bank<5) // Is it a ram bank access ?
       data=twilighte->twilrambankdata[bank][addr];
@@ -229,18 +257,7 @@ unsigned char 	twilighteboard_oric_ROM_RAM_write(struct twilighte *twilighte, ui
   }
   else
   {
-    if (twilighte->current_bank<5)
-	  {
-      if (twilighte->t_banking_register!=0)
-        if (twilighte->t_register&32==32) // It is ram ?
-          bank=twilighte->current_bank+(twilighte->t_banking_register*4)-1; // Yes
-        else
-          bank=twilighte->current_bank+8-1+((twilighte->t_banking_register-1)*4);
-      else
-        bank=twilighte->current_bank;
-	  }
-	  else
-	    bank=twilighte->current_bank;
+    bank=twilighte_oric_computebankid(twilighte) ;
 
   	if ((twilighte->t_register&32)==32 && twilighte->current_bank<5) // Is it a ram bank access ?
 	    twilighte->twilrambankdata[bank][addr]=data;
@@ -303,8 +320,10 @@ unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t a
     {
         twilighte->DDRA=data&(128+32+7);
     }
+
     if (mask==0xff)
         twilighte->DDRA = twilighte->DDRA&data;
+    
     twilighte->current_bank=data&7;
   }
 
