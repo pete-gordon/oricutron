@@ -28,6 +28,18 @@ sudo apt install libsdl1.2-dev
 sudo apt install libgtk-3-dev
 ```
 
+### openSUSE Leap-15-1
+
+```shell
+[sudo zypper refresh]
+sudo zypper update
+sudo zypper in cmake
+sudo zypper in ninja
+sudo zypper in libSDL-devel
+[sudo zypper in libSDL2-devel]
+sudo zypper in gtk3-devel
+```
+
 ## Building
 
 ### Windows + Visual Studio 2019 + cmake + Ninja
