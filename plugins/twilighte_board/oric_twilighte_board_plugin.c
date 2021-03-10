@@ -1,21 +1,18 @@
+#define TWILIGHTE_CARD_ORIC_EXTENSION_VDDRA             0x323
+#define TWILIGHTE_CARD_ORIC_EXTENSION_DDRA              0x321
 
-#define TWILIGHTE_CARD_ORIC_EXTENSION_VDDRA            0x323
-#define TWILIGHTE_CARD_ORIC_EXTENSION_DDRA             0x321
-
-#define TWILIGHTE_CARD_ORIC_EXTENSION_VDDRB            0x322
-#define TWILIGHTE_CARD_ORIC_EXTENSION_DDRB             0x320
+#define TWILIGHTE_CARD_ORIC_EXTENSION_VDDRB             0x322
+#define TWILIGHTE_CARD_ORIC_EXTENSION_DDRB              0x320
 
 #define TWILIGHTE_CARD_ORIC_EXTENSION_REGISTER          0x342
 #define TWILIGHTE_CARD_ORIC_EXTENSION_BANKING_REGISTER  0x343
-
-
 
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-
+#include "../../system.h"
 
 struct twilbankinfo
 {
@@ -35,7 +32,6 @@ struct twilighte
   unsigned char twilrombankdata[32][16834];
   unsigned char twilrambankdata[32][16834];
 
-
   unsigned char VDDRA;
   unsigned char DDRA;
 
@@ -44,9 +40,6 @@ struct twilighte
   unsigned char current_bank;
 
 };
-
-
-#include "../../system.h"
 
 extern SDL_bool read_config_string( char *buf, char *token, char *dest, Sint32 maxlen );
 
@@ -103,12 +96,50 @@ static SDL_bool load_rom_twilighte(  char *fname, int size, unsigned char where[
   return SDL_TRUE;
 }
 
-struct twilighte * twilighte_oric_init(void)
+int twilighte_oric_computebankid(struct twilighte *twilighte) 
 {
 
+  if (twilighte->t_register&32==32)  // RAM access
+  {
+    if (twilighte->current_bank<5)
+    {
+      if (twilighte->t_banking_register!=0)
+        if ((twilighte->t_register&32)==32) // It is ram ?
+          return twilighte->current_bank+(twilighte->t_banking_register*4)-1; // Yes
+        else
+        {
+          switch(twilighte->t_banking_register)
+          {
+            case 0:
+              return twilighte->current_bank;
+            case 4:
+              return twilighte->current_bank+4;
+            case 5:
+              return twilighte->current_bank+20;                            
+            case 6:
+              return twilighte->current_bank+24;
+            case 7:
+              return twilighte->current_bank+28;
+            default:
+              return twilighte->current_bank+twilighte->t_banking_register*4+4;
+          }
+
+        }
+      else
+        return twilighte->current_bank;
+    }
+    else
+        return twilighte->current_bank;
+  }
+ 
+  return 0;
+}
+
+
+struct twilighte * twilighte_oric_init(void)
+{
   FILE *f;
   unsigned int i, j;
-  // char *result; FIXME: unused
   char tbtmp[32];
   char tbtmpram[32];
   char line[1024];
@@ -159,7 +190,7 @@ struct twilighte * twilighte_oric_init(void)
               break;
           }
       }
-	}
+	  }
   }
 
   fclose( f );
@@ -174,7 +205,8 @@ struct twilighte * twilighte_oric_init(void)
         error_printf("Cannot load %s",twilighte->twilrombankfiles[i]);
         return NULL;
       }
-	}
+	  }
+    
     if (twilighte->twilrambankfiles[i][0] != 0)
     {
         if (!load_rom_twilighte((char*)twilighte->twilrambankfiles[i], -16384, twilighte->twilrambankdata[i]))
@@ -195,6 +227,7 @@ struct twilighte * twilighte_oric_init(void)
 }
 
 unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte *twilighte, uint16_t addr) {
+  
   unsigned char data;
   unsigned char bank;
 
@@ -204,15 +237,7 @@ unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte *twilighte, uin
   }
   else
   {
-    if (twilighte->current_bank<5)
-    {
-      if (twilighte->t_banking_register!=0)
-        bank=twilighte->current_bank+8-1+((twilighte->t_banking_register-1)*4);
-      else
-        bank=twilighte->current_bank;
-    }
-    else
-      bank=twilighte->current_bank;
+    bank=twilighte_oric_computebankid(twilighte) ;
 
     if ((twilighte->t_register&32)==32 && twilighte->current_bank<5) // Is it a ram bank access ?
       data=twilighte->twilrambankdata[bank][addr];
@@ -232,15 +257,7 @@ unsigned char 	twilighteboard_oric_ROM_RAM_write(struct twilighte *twilighte, ui
   }
   else
   {
-    if (twilighte->current_bank<5)
-	  {
-      if (twilighte->t_banking_register!=0)
-        bank=twilighte->current_bank+8-1+((twilighte->t_banking_register-1)*4);
-      else
-        bank=twilighte->current_bank;
-	  }
-	  else
-	    bank=twilighte->current_bank;
+    bank=twilighte_oric_computebankid(twilighte) ;
 
   	if ((twilighte->t_register&32)==32 && twilighte->current_bank<5) // Is it a ram bank access ?
 	    twilighte->twilrambankdata[bank][addr]=data;
@@ -303,8 +320,10 @@ unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t a
     {
         twilighte->DDRA=data&(128+32+7);
     }
+
     if (mask==0xff)
         twilighte->DDRA = twilighte->DDRA&data;
+    
     twilighte->current_bank=data&7;
   }
 
@@ -370,3 +389,4 @@ unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t a
 
   return 0;
 }
+
