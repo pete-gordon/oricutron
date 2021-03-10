@@ -10,6 +10,15 @@ SDL2, OpenGL
 
 SDL2, GTK-3
 
+e.g. UBUNTU 20.04
+``` cmake
+    ninja-build
+    libsdl1.2-dev
+    build-essential
+    libgtk-3-dev
+```
+
+
 ## Building
 
 ### Windows
