@@ -162,14 +162,17 @@ void m6502_reset( struct m6502 *cpu )
 // Macro to perform SBC logic
 #define DO_SBC if( cpu->f_d )\
                {\
-                 r = (cpu->a&0xf) - (v&0xf) - (cpu->f_c^1);\
-                 if( r&0x10 ) r -= 6;\
-                 t = (cpu->a>>4) - (v>>4) - ((r&0x10)>>4);\
-                 if( t&0x10 ) t -= 6;\
-                 cpu->a = (r&0xf)|(t<<4);\
-                 cpu->f_c = (t>15) ? 0 : 1;\
-                 cpu->f_z = cpu->a==0;\
-                 cpu->f_n = cpu->a&0x80;\
+                 r = (cpu->a - v) - (cpu->f_c^1);\
+                 cpu->f_v = ((cpu->a^v)&(cpu->a^r)) & FF_N ? 1 : 0;\
+                 cpu->f_z = (r & 0xff) == 0;\
+                 cpu->f_n = (r & 0x80) != 0;\
+                 t = v& 0xf0;\
+                 r = (cpu->a & 0xf) - (v & 0xf) - (cpu->f_c^1);\
+                 if( r & 0x80 ) {r = (r-6) & 0x0f; t += 0x10;};\
+                 r = r + (cpu->a & 0xf0);\
+                 if (t > r) t += 0x60;\
+                 cpu->f_c = (cpu->a >= (v+(cpu->f_c^1))) ? 1 : 0;\
+                 cpu->a = r-t;\
                } else {\
                  r = (cpu->a - v) - (cpu->f_c^1);\
                  cpu->f_v = ((cpu->a^v)&(cpu->a^r)) & FF_N ? 1 : 0;\
