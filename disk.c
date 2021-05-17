@@ -240,7 +240,7 @@ void diskimage_cachetrack( struct diskimage *dimg, int track, int side )
   while( ptr < eot )
   {
     // Search for ID mark
-    while( ((ptr+3)<eot) && !((ptr[0]==0xa1) && (ptr[1]==0xa1) && (ptr[2]==0xa1) && (ptr[3]==0xfe)) ) ptr++;
+    while( ((ptr+3)<eot) && (0xfea1a1a1!=((Uint32*)ptr)[0]) ) ptr++;
     ptr += 3;
 
     // Don't exceed the bounds of this track

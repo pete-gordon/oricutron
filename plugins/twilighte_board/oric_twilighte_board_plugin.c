@@ -96,10 +96,10 @@ static SDL_bool load_rom_twilighte(  char *fname, int size, unsigned char where[
   return SDL_TRUE;
 }
 
-int twilighte_oric_computebankid(struct twilighte *twilighte) 
+int twilighte_oric_computebankid(struct twilighte *twilighte)
 {
 
-  if (twilighte->t_register&32==32)  // RAM access
+  if ((twilighte->t_register&32)==32)  // RAM access
   {
     if (twilighte->current_bank<5)
     {
@@ -115,7 +115,7 @@ int twilighte_oric_computebankid(struct twilighte *twilighte)
             case 4:
               return twilighte->current_bank+4;
             case 5:
-              return twilighte->current_bank+20;                            
+              return twilighte->current_bank+20;
             case 6:
               return twilighte->current_bank+24;
             case 7:
@@ -131,7 +131,7 @@ int twilighte_oric_computebankid(struct twilighte *twilighte)
     else
         return twilighte->current_bank;
   }
- 
+
   return 0;
 }
 
@@ -206,7 +206,7 @@ struct twilighte * twilighte_oric_init(void)
         return NULL;
       }
 	  }
-    
+
     if (twilighte->twilrambankfiles[i][0] != 0)
     {
         if (!load_rom_twilighte((char*)twilighte->twilrambankfiles[i], -16384, twilighte->twilrambankdata[i]))
@@ -227,7 +227,7 @@ struct twilighte * twilighte_oric_init(void)
 }
 
 unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte *twilighte, uint16_t addr) {
-  
+
   unsigned char data;
   unsigned char bank;
 
@@ -323,7 +323,7 @@ unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t a
 
     if (mask==0xff)
         twilighte->DDRA = twilighte->DDRA&data;
-    
+
     twilighte->current_bank=data&7;
   }
 
