@@ -12,7 +12,26 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+
 #include "../../system.h"
+#include "../ds1501/ds1501.h"
+
+#define DS1501_SECONDS_REGISTER 0x360
+#define DS1501_MINUTES_REGISTER 0x361
+#define DS1501_HOUR_REGISTER    0x362
+#define DS1501_DAY_REGISTER     0x363
+#define DS1501_DATE_REGISTER    0x364
+#define DS1501_MONTH_REGISTER   0x365
+#define DS1501_YEAR_REGISTER    0x366
+#define DS1501_CENTURY_REGISTER 0x367
+
+#define DS1501_ADDRESS_INTERNAL_RAM_REGISTER 0x370
+#define DS1501_DATA_INTERNAL_RAM_REGISTER 0x373
+
+#define DS1501_CTRLA_REGISTER   0x36E
+#define DS1501_CTRLB_REGISTER   0x36F
+
+
 
 struct twilbankinfo
 {
@@ -32,6 +51,11 @@ struct twilighte
   unsigned char twilrombankdata[32][16834];
   unsigned char twilrambankdata[32][16834];
 
+  unsigned char firmware_version;
+
+  struct ds1501 *rtc_ds1501;
+  unsigned char battery_state;
+
   unsigned char VDDRA;
   unsigned char DDRA;
 
@@ -42,6 +66,10 @@ struct twilighte
 };
 
 extern SDL_bool read_config_string( char *buf, char *token, char *dest, Sint32 maxlen );
+
+extern SDL_bool read_config_int( char *buf, char *token, int *dest, int min, int max );
+
+
 
 static SDL_bool load_rom_twilighte(  char *fname, int size, unsigned char where[] )
 {
@@ -145,7 +173,9 @@ struct twilighte * twilighte_oric_init(void)
   char line[1024];
   struct twilighte *twilighte = malloc(sizeof(struct twilighte));
   twilighte->t_banking_register=0;
+  twilighte->battery_state=0;
   twilighte->t_register=128+1; // Firmware
+  result=malloc(sizeof(unsigned char)*256);
 
   f = fopen( "plugins/twilighte_board/twilighte.cfg", "r" );
   if( !f )
@@ -162,7 +192,17 @@ struct twilighte * twilighte_oric_init(void)
 
   while( !feof( f ) )
   {
+
     /* NOTE: 'result' is unused: result= */ fgets( line, 1024, f );
+
+    result=fgets( line, 1024, f );
+
+
+    if( read_config_int(    line, "twilighte_firmware",        &twilighte->firmware_version, 1, 3 ) ) 
+       twilighte->t_register=twilighte->t_register|twilighte->firmware_version;
+
+    if( read_config_bool(   line, "twilighte_battery_is_full",        &twilighte->battery_state ) ) continue;
+
     for( j=1; j<32; j++ )
     {
       if (j > 9)
@@ -223,6 +263,11 @@ struct twilighte * twilighte_oric_init(void)
   twilighte->VDDRA=7;
   twilighte->current_bank=7;
   twilighte->DDRB=0;
+
+  if (twilighte->firmware_version==3)
+    twilighte->rtc_ds1501=ds1501_create(twilighte->battery_state);
+    
+
   return  twilighte;
 }
 
@@ -293,14 +338,63 @@ unsigned char 	twilighteboard_oric_read(struct twilighte *twilighte, uint16_t ad
   {
     unsigned char data;
     data=twilighte->VDDRB;
-    //twilighte->DDRB=twilighte->DDRB|1|2|4|8|16;
   	return data;
-
   }
 
   if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_BANKING_REGISTER)
   {
 	  return twilighte->t_banking_register;
+  }
+  
+  // Firmware 3
+  if (twilighte->firmware_version>2) 
+  {
+    if (addr==DS1501_SECONDS_REGISTER)
+    {
+      return ds1501_get_seconds(twilighte->rtc_ds1501);
+    }
+
+    if (addr==DS1501_MINUTES_REGISTER)
+    {
+      return ds1501_get_minutes(twilighte->rtc_ds1501);
+    }
+
+    if (addr==DS1501_HOUR_REGISTER)
+    {
+      return ds1501_get_hours(twilighte->rtc_ds1501);
+    }
+
+    if (addr==DS1501_DAY_REGISTER)
+    {
+      return ds1501_get_day(twilighte->rtc_ds1501);
+    }
+
+    if (addr==DS1501_DATE_REGISTER)
+    {
+      return ds1501_get_date(twilighte->rtc_ds1501);
+    }
+
+    if (addr==DS1501_MONTH_REGISTER)
+    {
+      return ds1501_get_month(twilighte->rtc_ds1501);
+    }
+
+    if (addr==DS1501_YEAR_REGISTER)
+    {
+      return ds1501_get_year(twilighte->rtc_ds1501);
+    }
+
+    if (addr==DS1501_CENTURY_REGISTER)
+    {
+      return ds1501_get_century(twilighte->rtc_ds1501);
+    }
+
+    if (addr==DS1501_DATA_INTERNAL_RAM_REGISTER)
+    {
+      return ds1501_get_internal_ram(twilighte->rtc_ds1501);
+    }
+
+
   }
 
   return 0;
@@ -386,6 +480,62 @@ unsigned char 	twilighteboard_oric_write(struct twilighte *twilighte, uint16_t a
   {
     twilighte->t_banking_register=data;
   }
+
+
+  // Firmware 3
+  if (twilighte->firmware_version>2) 
+  {
+    if (addr==DS1501_SECONDS_REGISTER)
+    {
+      ds1501_write_seconds(twilighte->rtc_ds1501,data);
+    }
+
+    if (addr==DS1501_MINUTES_REGISTER)
+    {
+      ds1501_write_minutes(twilighte->rtc_ds1501,data);
+    }
+
+    if (addr==DS1501_HOUR_REGISTER)
+    {
+      ds1501_write_hours(twilighte->rtc_ds1501,data);
+    }
+
+    if (addr==DS1501_DAY_REGISTER)
+    {
+      ds1501_write_day(twilighte->rtc_ds1501,data);
+    }
+
+    if (addr==DS1501_DATE_REGISTER)
+    {
+      ds1501_write_date(twilighte->rtc_ds1501,data);
+    }
+
+    if (addr==DS1501_MONTH_REGISTER)
+    {
+      ds1501_write_month(twilighte->rtc_ds1501,data);
+    }
+
+    if (addr==DS1501_YEAR_REGISTER)
+    {
+      ds1501_write_year(twilighte->rtc_ds1501,data);
+    }
+
+    if (addr==DS1501_CENTURY_REGISTER)
+    {
+      ds1501_write_century(twilighte->rtc_ds1501,data);
+    }
+
+    if (addr==DS1501_ADDRESS_INTERNAL_RAM_REGISTER)
+    {
+      ds1501_set_internal_ram_adress_register(twilighte->rtc_ds1501,data);
+    }
+
+    if (addr==DS1501_DATA_INTERNAL_RAM_REGISTER)
+    {
+      ds1501_set_internal_ram(twilighte->rtc_ds1501,data);
+    }
+  }
+
 
   return 0;
 }

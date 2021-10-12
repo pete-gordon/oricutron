@@ -328,7 +328,8 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
     else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
       ch376_oric_write(oric->ch376, addr, data);
 
-    else if(oric->twilighteboard_activated && ((0x342 <= addr && addr < 0x344 ) || (0x320 <= addr && addr < 0x330 )))
+    else if(oric->twilighteboard_activated && ((0x342 <= addr && addr < 0x344 ) || (0x320 <= addr && addr < 0x330 ) || (0x360 <= addr && addr < 0x37F )))
+
      twilighteboard_oric_write(oric->twilighte,addr,0x00,data);
 
     else
@@ -715,7 +716,7 @@ unsigned char atmosread( struct m6502 *cpu, unsigned short addr )
     if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
       return ch376_oric_read(oric->ch376, addr);
 
-    if( oric->twilighteboard_activated && ((0x342 <= addr  && addr < 0x344 ) || (0x320 <= addr && addr < 0x330 )))
+    if( oric->twilighteboard_activated && ((0x342 <= addr  && addr < 0x344 ) || (0x320 <= addr && addr < 0x330 ) || (0x360 <= addr && addr < 0x37F )))
       return twilighteboard_oric_read(oric->twilighte,addr);
 
     return via_read( &oric->via, addr );
