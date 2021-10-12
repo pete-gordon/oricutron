@@ -15,7 +15,6 @@
 #include "ch376.h"
 #include "stdio.h"
 
-
 void dbg_printf(char *fmt, ...);
 
 #define CH376_ORIC_EXTENSION_DATA_PORT		0x340

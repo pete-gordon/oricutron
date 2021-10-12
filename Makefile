@@ -42,7 +42,7 @@ VERSION_COPYRIGHTS = "$(APP_NAME) $(VERSION_FULL) $(COPYRIGHTS)"
 ####### DEFAULT SETTINGS HERE #######
 
 SRC_DIR = .
-VPATH = $(SRC_DIR) $(SRC_DIR)/plugins/ch376 $(SRC_DIR)/plugins/twilighte_board $(SRC_DIR)/plugins/ds1501
+VPATH = $(SRC_DIR) $(SRC_DIR)/plugins/ch376 $(SRC_DIR)/plugins/twilighte_board
 
 ### extract git/svn revision
 GITREVISION = $(shell git rev-parse --short HEAD || svnversion -n $(SRC_DIR))
@@ -150,7 +150,7 @@ LFLAGS += `$(SDL_LIB)-config --libs` -s
 FILEREQ_OBJ = filereq_amiga.o
 MSGBOX_OBJ = msgbox_os2.o
 AMIGA_ICONS = pngicon
-EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o ds1501.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o
 endif
 
 # AROS
@@ -240,7 +240,7 @@ TARGET_DEPS = /usr/$(CROSS_PREFIX)/sys-root/mingw/bin/SDL.dll
 FILEREQ_OBJ = filereq_win32.o
 MSGBOX_OBJ = msgbox_win32.o
 CUSTOMOBJS = gui_win.o winicon.o
-EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o ds1501.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o
 endif
 
 # Windows 64bit GCC
@@ -287,7 +287,7 @@ TARGET_DEPS = /usr/$(CROSS_PREFIX)/sys-root/mingw/bin/SDL.dll
 FILEREQ_OBJ = filereq_win32.o
 MSGBOX_OBJ = msgbox_win32.o
 CUSTOMOBJS = gui_win.o winicon.o
-EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o ds1501.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o
 endif
 
 # BeOS / Haiku
@@ -311,7 +311,7 @@ INSTALLDIR = /boot/apps/Oricutron
 FILEREQ_OBJ =
 MSGBOX_OBJ =
 CUSTOMOBJS = gui_beos.o msgbox_beos.o filereq_beos.o
-EXTRAOBJS = plugins/ch376/oric_ch376_plugin.o plugins/twilighte_board/oric_twilighte_board_plugin.o plugins/ds1501/ds1501.o
+EXTRAOBJS = plugins/ch376/oric_ch376_plugin.o plugins/twilighte_board/oric_twilighte_board_plugin.o
 BEOS_BERES := beres
 BEOS_RC := rc
 BEOS_XRES := xres
@@ -338,7 +338,7 @@ TARGET = $(TARGET_NAME)
 FILEREQ_OBJ =
 MSGBOX_OBJ =
 CUSTOMOBJS = gui_osx.o filereq_osx.o msgbox_osx.o
-EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o ds1501.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o
 endif
 
 
@@ -379,7 +379,7 @@ endif
 CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --cflags) -D__OPENGL_AVAILABLE__ -DAUDIO_BUFLEN=1024 -D__CBCOPY__ -D__CBPASTE__
 LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --libs) -lGL -lX11
 CUSTOMOBJS = gui_x11.o
-EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o ds1501.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o
 TARGET = oricutron
 INSTALLDIR = /usr/local
 endif
@@ -399,7 +399,7 @@ endif
 CFLAGS += -g $(SDL_CFLAGS) -D__OPENGL_AVAILABLE__ -DAUDIO_BUFLEN=1024 -D__CBCOPY__ -D__CBPASTE__
 LFLAGS += -lm -L/usr/$(BASELIBDIR) $(SDL_LFLAGS) -lGL -lX11
 CUSTOMOBJS = gui_x11.o
-EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o ds1501.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o
 TARGET = $(TARGET_NAME)
 INSTALLDIR = /usr/local
 endif
@@ -419,7 +419,7 @@ endif
 CFLAGS += -g $(SDL_CFLAGS) -D__OPENGL_AVAILABLE__ -DAUDIO_BUFLEN=1024 -D__CBCOPY__ -D__CBPASTE__
 LFLAGS += -lm -L/usr/$(BASELIBDIR) $(SDL_LFLAGS) -lGL -lX11
 CUSTOMOBJS = gui_x11.o
-EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o ds1501.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o
 TARGET = $(TARGET_NAME)
 INSTALLDIR = /usr/local
 endif
@@ -440,7 +440,7 @@ STRIP :=  $(CROSS_COMPILE)$(STRIP)
 CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --cflags) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --cflags) -D__CBCOPY__ -D__CBPASTE__
 LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --libs) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config gtk+-3.0 --libs) -lX11
 CUSTOMOBJS = gui_x11.o
-EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o ds1501.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o
 FILEREQ_OBJ = filereq_gtk.o
 MSGBOX_OBJ = msgbox_gtk.o
 TARGET = oricutron
@@ -504,7 +504,7 @@ AR =  $(SDK_PREFIX)-ar
 RANLIB = $(SDK_PREFIX)-ranlib
 CFLAGS += `$(SDK_HOME)/env/bin/$(SDL_LIB)-config --cflags`
 LFLAGS += -Wl,--stack,256k -Wl,--msuper-memory -lm `$(SDK_HOME)/env/bin/$(SDL_LIB)-config --libs`
-EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o ds1501.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o
 endif
 
 ####### SHOULDN'T HAVE TO CHANGE THIS STUFF #######
