@@ -3381,11 +3381,12 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "  m <addr>              - Dump memory" );
           mon_str( "  mm <addr> <value>     - Modify memory" );
           mon_str( "  mw <addr>             - Memory watch at addr" );
+          mon_str( "  ms <addr> <value>     - Memory search" );
+          mon_str( "  mr <addr>             - Memory search refine" );
+          mon_str( "  mp <addr>             - Memory print search" );
           mon_str( "  nl <filename>         - Load snapshot" );
           mon_str( "  ns <filename>         - Save snapshot" );
           mon_str( "  r <reg> <val>         - Set <reg> to <val>" );
-          mon_str( "  q, x or qm            - Quit monitor" );
-          mon_str( "  qe                    - Quit emulator" );
           mon_str( "  sa <name> <addr>      - Add or move user sym." );
           mon_str( "  sk <name>             - Kill user symbol" );
           mon_str( "  sc                    - Symbols not case-sens." );
@@ -3394,18 +3395,16 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "  sx <file>             - Export user symbols" );
           mon_str( "  sz                    - Zap user symbols" );
           mon_str( " " );
-          mon_str( " " );
           mon_str( "---- MORE" );
           helpcount++;
           break;
 
         case 2:
-          mon_str( "  fd <addr> <end> <file>- Disassemble to file" );
+          mon_str( "  q, x or qm            - Quit monitor" );
+          mon_str( "  qe                    - Quit emulator" );          mon_str( "  fd <addr> <end> <file>- Disassemble to file" );
           mon_str( "  fw <addr> <len> <file>- Write mem to bin file" );
 // ToDo:  mon_str( "  ft <addr> <len> <file>- Write mem to tap file" );
           mon_str( "  fr <addr> <file>      - Read bin file to mem" );
-          mon_str( " " );
-          mon_str( " " );
           mon_str( " " );
           mon_str( " " );
           mon_str( " " );
