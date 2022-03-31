@@ -110,6 +110,8 @@ static struct via via2_old;
 static SDL_bool via2_oldvalid = SDL_FALSE;
 static SDL_bool modified = SDL_FALSE;
 
+static uint16_t memory_search[0x92ff];
+static int memory_hits= 0;
 //                                                             12345678901       12345678
 static struct msym defsym_tele[]  = { { 0x0300, 0,            "VIA_IORB"      , "VIA_IORB"   , "VIA_IORB" },
                                       { 0x0301, 0,            "VIA_IORA"      , "VIA_IORA"   , "VIA_IORA" },
@@ -2944,6 +2946,59 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
       switch( cmd[i] )
       {
+        case 's':
+          lastcmd = 0;
+          i++;
+
+          if( !mon_getnum( oric, &w, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+          {
+            mon_str( "Value expected" );
+            break;
+          }
+          uint16_t* collection = memory_search;
+          memory_hits = 0;
+          for (int j=0x500; j < 0x97FF; j++){
+            unsigned char byte = mon_read( oric, j );
+            if ((unsigned char)w == byte){
+                *collection++ = j;
+                memory_hits++;
+            }
+          }
+          sprintf( vsptmp, "Found %i match(es)", memory_hits );
+          mon_str(vsptmp);
+        break;
+
+        case 'r':
+          lastcmd = 0;
+          i++;
+
+          if( !mon_getnum( oric, &w, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+          {
+            mon_str( "Value expected" );
+            break;
+          }
+
+          int newhits = 0;
+          for (int j = 0; j < memory_hits; j++){
+            int16_t curr_mem_addr = memory_search[j];
+            unsigned char byte = mon_read( oric, curr_mem_addr );
+            if ((unsigned char)w == byte){
+              memory_search[newhits++] = curr_mem_addr;
+            }
+          }
+          memory_hits = newhits;
+
+          sprintf( vsptmp, "Refined match(es) : %i", memory_hits );
+          mon_str(vsptmp);
+          break;
+        case 'p':
+          for (int j = 0; j < memory_hits; j++){
+            unsigned char byte = mon_read( oric, memory_search[j] );
+            sprintf( vsptmp, "[%04X] [%02X]", memory_search[j], byte );
+            mon_str(vsptmp);
+          }
+          break;
+
         case 'm':
           lastcmd = 0;
           i++;
