@@ -301,7 +301,7 @@ Commands:
   mw <addr>             - Memory watch at addr
   ms <value>            - Search value in RAM memory
   mr <value>            - Refine search with new value
-  mp                    - Print memory search addresses
+  p                     - Print memory search addresses
   nl <file>             - Load snapshot
   ns <file>             - Save snapshot
   r <reg> <val>         - Set <reg> to <val>

@@ -87,6 +87,7 @@ static int ilen, iloff=0, cursx, histu=0, histp=-1;
 static unsigned short mon_addr, mon_asmmode = SDL_FALSE;
 static SDL_bool kshifted = SDL_FALSE, updatepreview = SDL_FALSE;
 static int helpcount=0;
+static int memory_search_pos=0;
 
 static struct symboltable defaultsyms;
 
@@ -2940,6 +2941,41 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
       }
       break;
 
+    case 'p':
+    {
+      lastcmd = cmd[i];
+      i++;
+
+      int lines = 0;
+      char tmp[16];
+      int j, k = 0;
+
+      vsptmp[0] = 0;
+      for (j = memory_search_pos; j < memory_hits; j++, k++){
+        unsigned char byte = mon_read( oric, memory_search[j] );
+        sprintf( tmp, "[%04X]:[%02X] ", memory_search[j], byte );
+        strcat( vsptmp, tmp );
+        if (k == 4){
+          mon_str( vsptmp );
+          vsptmp[0] = 0;
+          lines++;
+          k = 0;
+        }
+        if (lines > 16){
+            memory_search_pos = j;
+            break;
+        }
+      }
+      if (strlen( vsptmp )){
+        mon_str( vsptmp );
+      }
+      if ( j >= memory_hits ){
+        memory_search_pos = 0;
+        lastcmd = 0;
+      }
+      break;
+    }
+
     case 'm':
       lastcmd = cmd[i];
       i++;
@@ -2947,7 +2983,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
       switch( cmd[i] )
       {
         case 's':
-          lastcmd = 0;
+         lastcmd = 0;
           i++;
 
           if( !mon_getnum( oric, &w, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
@@ -2955,9 +2991,10 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
             mon_str( "Value expected" );
             break;
           }
+          memory_search_pos = 0;
           uint16_t* collection = memory_search;
           memory_hits = 0;
-          for (int j=0x500; j < 0x97FF; j++){
+          for (int j=0x500; j < 0x9800; j++){
             unsigned char byte = mon_read( oric, j );
             if ((unsigned char)w == byte){
                 *collection++ = j;
@@ -2978,6 +3015,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
             break;
           }
 
+          memory_search_pos = 0;
           int newhits = 0;
           for (int j = 0; j < memory_hits; j++){
             int16_t curr_mem_addr = memory_search[j];
@@ -2989,16 +3027,8 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           memory_hits = newhits;
 
           sprintf( vsptmp, "Refined match(es) : %i", memory_hits );
-          mon_str(vsptmp);
+          mon_str( vsptmp );
           break;
-        case 'p':
-          for (int j = 0; j < memory_hits; j++){
-            unsigned char byte = mon_read( oric, memory_search[j] );
-            sprintf( vsptmp, "[%04X] [%02X]", memory_search[j], byte );
-            mon_str(vsptmp);
-          }
-          break;
-
         case 'm':
           lastcmd = 0;
           i++;
@@ -3383,7 +3413,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "  mw <addr>             - Memory watch at addr" );
           mon_str( "  ms <addr> <value>     - Memory search" );
           mon_str( "  mr <addr>             - Memory search refine" );
-          mon_str( "  mp <addr>             - Memory print search" );
+          mon_str( "  p <addr>              - Memory print search" );
           mon_str( "  nl <filename>         - Load snapshot" );
           mon_str( "  ns <filename>         - Save snapshot" );
           mon_str( "  r <reg> <val>         - Set <reg> to <val>" );
@@ -3931,6 +3961,7 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
           case '?':
           case 'm':
           case 'd':
+          case 'p':
             ibuf[cursx++] = lastcmd;
             ibuf[cursx] = 0;
             ilen = 1;
