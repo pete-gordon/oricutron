@@ -467,6 +467,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_bool(   &sto->lctmp[i], "printenable",  &oric->printenable ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "printfilter",  &oric->printfilter ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "dcadjust",     &oric->dcadjust ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "soundloopon",  &oric->soundloopon ) ) continue;
     if( read_config_int(    &sto->lctmp[i], "serial_address", &oric->aciaoffset, 0x310, 0x3fc ) ) continue;
     if( read_config_string( &sto->lctmp[i], "serial",       oric->aciabackendname, ACIA_BACKEND_NAME_LEN ) )
     {

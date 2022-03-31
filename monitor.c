@@ -3417,6 +3417,8 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "  nl <filename>         - Load snapshot" );
           mon_str( "  ns <filename>         - Save snapshot" );
           mon_str( "  r <reg> <val>         - Set <reg> to <val>" );
+          mon_str( "  q, x or qm            - Quit monitor" );
+          mon_str( "  qe                    - Quit emulator" );
           mon_str( "  sa <name> <addr>      - Add or move user sym." );
           mon_str( "  sk <name>             - Kill user symbol" );
           mon_str( "  sc                    - Symbols not case-sens." );
@@ -3430,11 +3432,12 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           break;
 
         case 2:
-          mon_str( "  q, x or qm            - Quit monitor" );
-          mon_str( "  qe                    - Quit emulator" );          mon_str( "  fd <addr> <end> <file>- Disassemble to file" );
+          mon_str( "  fd <addr> <end> <file>- Disassemble to file" );
           mon_str( "  fw <addr> <len> <file>- Write mem to bin file" );
 // ToDo:  mon_str( "  ft <addr> <len> <file>- Write mem to tap file" );
           mon_str( "  fr <addr> <file>      - Read bin file to mem" );
+          mon_str( " " );
+          mon_str( " " );
           mon_str( " " );
           mon_str( " " );
           mon_str( " " );

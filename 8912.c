@@ -287,7 +287,7 @@ void ay_dowrite( struct ay8912 *ay, struct aywrite *aw )
       ay->regs[aw->reg] = aw->val;
       ay->toneper[2] = (((ay->regs[AY_CHC_PER_H]&0xf)<<8)|ay->regs[AY_CHC_PER_L]) * TONETIME;
       break;
-    
+
     case AY_STATUS:      // Status
       ay->regs[aw->reg] = aw->val;
       ay->tonebit[0]  = (aw->val&0x01)?1:0;
@@ -315,7 +315,7 @@ void ay_dowrite( struct ay8912 *ay, struct aywrite *aw )
         ay->vol[i] = voltab[aw->val&0xf];
       ay->newout |= (1<<i);
       break;
-    
+
     case AY_ENV_PER_L:
     case AY_ENV_PER_H:
       ay->regs[aw->reg] = aw->val;
@@ -369,7 +369,8 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
   dcadjustave = 0;
   dcadjustmax = soundsilence;
 
-  tapenoise = ay->oric->tapenoise && ((!ay->oric->tapeturbo)||(ay->oric->rawtape));
+  tapenoise = ay->soundloopon || (ay->oric->tapenoise && ((!ay->oric->tapeturbo)||(ay->oric->rawtape)));
+
   if( !tapenoise ) ay->tapeout = 0;
 
   out = (Uint16 *)stream;
@@ -378,7 +379,7 @@ void ay_callback( void *dummy, Sint8 *stream, int length )
   actual_length = length/(2*sizeof(Uint16));
   actual_length = (actual_length < AUDIO_BUFLEN)? actual_length : AUDIO_BUFLEN;
   actual_length = (actual_length < obtained.samples)? actual_length : obtained.samples;
-  
+
   for( i=0,j=0; i<actual_length; i++ )
   {
     ay->ccyc = ay->ccycle>>FPBITS;
@@ -494,7 +495,7 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
             ay->oric->cpu.calcop = ay->oric->cpu.read( &ay->oric->cpu, ay->oric->cpu.calcpc );
           }
           break;
-        
+
         case MACH_ORIC1:
         case MACH_ORIC1_16K:
           if( ( ay->oric->cpu.pc == 0xe905 ) && ( ay->oric->romon ) )
@@ -529,7 +530,7 @@ void ay_ticktock( struct ay8912 *ay, int cycles )
             ay->oric->auto_jasmin_reset = SDL_FALSE;
           }
           break;
-        
+
         case MACH_ORIC1:
         case MACH_ORIC1_16K:
           if( ( ay->oric->cpu.pc == 0xe905 ) && ( ay->oric->romon ) )
@@ -629,6 +630,7 @@ SDL_bool ay_init( struct ay8912 *ay, struct machine *oric )
   ay->creg    = 0;          // Current register to 0
   ay->oric    = oric;
   ay->soundon = soundavailable && soundon && (!warpspeed);
+  ay->soundloopon = oric->soundloopon;
   ay->currnoise = 0;
   ay->rndrack = 1;
   ay->logged  = 0;
@@ -726,7 +728,7 @@ void ay_modeset( struct ay8912 *ay )
       ay->oric->via.write_port_a( &ay->oric->via, 0xff, ay->oric->porta_ay );
       ay->oric->porta_is_ay = SDL_TRUE;
       break;
-    
+
     case AYBMF_BDIR: // Write AY register
       if( ay->creg >= NUM_AY_REGS ) break;
       v = ay->oric->via.read_port_a( &ay->oric->via );
@@ -790,7 +792,7 @@ void ay_modeset( struct ay8912 *ay )
           break;
       }
       break;
-    
+
     case AYBMF_BDIR|AYBMF_BC1: // Set register
       ay->creg = ay->oric->via.read_port_a( &ay->oric->via );
       break;
@@ -821,3 +823,27 @@ void ay_set_bdir( struct ay8912 *ay, unsigned char state )
   ay_modeset( ay );
 }
 
+void ay_soundloop( struct ay8912 *ay, unsigned char oldval, unsigned char newval)
+{
+  if( !ay->soundloopon )
+    return;
+
+  oldval &= 0x80;
+  newval &= 0x80;
+
+  if( oldval == newval )
+    return;
+
+  ay_lockaudio( ay );
+  if(ay->do_logcycle_reset)
+  {
+    ay->logcycle = ay->newlogcycle;
+    ay->do_logcycle_reset = SDL_FALSE;
+  }
+  if(ay->tlogged < TAPELOG_SIZE)
+  {
+    ay->tapelog[ay->tlogged].cycle = ay->logcycle;
+    ay->tapelog[ay->tlogged++].val = newval? 1 : 0;
+  }
+  ay_unlockaudio( ay );
+}

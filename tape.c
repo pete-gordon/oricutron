@@ -1381,8 +1381,6 @@ void tape_patches( struct machine *oric )
 // Emulate the specified cpu-cycles time for the tape
 void tape_ticktock( struct machine *oric, int cycles )
 {
-  Sint32 j;
-
   // Update the counter since last PB7 toggle
   if( ( oric->tapecap ) && ( oric->tapecapcount != -1 ) )
     oric->tapecapcount += cycles;
@@ -1399,7 +1397,7 @@ void tape_ticktock( struct machine *oric, int cycles )
   // is less 260.
   if( oric->vsynchack )
   {
-    j = (0 == oric->vsync || 260 < oric->vsync);
+    unsigned char j = (0 == oric->vsync || 260 < oric->vsync);
     if( oric->via.cb1 != j )
       via_write_CB1( &oric->via, j );
   }

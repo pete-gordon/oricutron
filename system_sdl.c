@@ -234,74 +234,104 @@ int SDL_COMPAT_EnableUNICODE(int enable)
 }
 #endif
 
+// NOTE: uncomment to have key codes in monitor mode
+// dumped to con and to 'key_dump.txt' file
+// #define DEBUG_KEY_DUMP
+#ifdef DEBUG_KEY_DUMP
+static FILE* fkd = 0;
+static const char* skd = "key_dump.txt";
+#define key_dump(x...) \
+{ printf(x); if(!fkd) fkd=fopen(skd, "a"); \
+  if(fkd) fprintf(fkd,x); }
+#endif
+
 #if SDL_MAJOR_VERSION == 1
 SDL_COMPAT_KEY SDL_COMPAT_GetKeysymUnicode(SDL_KEYSYM keysym)
 {
+  // FIXME
+#ifdef DEBUG_KEY_DUMP
+  char c = 0x7f & keysym.sym; c = (c < ' ')? ' ' : c;
+  key_dump("SDL : GetKeysymUnicode: "
+  "c=|%c| scancode=$%.4X, sym=$%.4X, mod=$%.4X, unicode=$%.4X -> unicode=$%.4X\n",
+  c, keysym.scancode, keysym.sym, keysym.mod, keysym.unicode, keysym.unicode);
+#endif
+  // FIXME
+
   return keysym.unicode;
 }
 SDL_COMPAT_KEY SDL_COMPAT_TranslateUnicode(SDL_KEYSYM keysym)
 {
+  // FIXME
+#ifdef DEBUG_KEY_DUMP
+  char c = 0x7f & keysym.sym; c = (c < ' ')? ' ' : c;
+  key_dump("SDL : TranslateUnicode: "
+  "c=|%c| scancode=$%.4X, sym=$%.4X, mod=$%.4X, unicode=$%.4X -> unicode=$%.4X\n",
+  c, keysym.scancode, keysym.sym, keysym.mod, keysym.unicode, keysym.unicode);
+#endif
+  // FIXME
   return keysym.unicode;
 }
 #else
+SDL_COMPAT_KEY SDL_COMPAT_GetKeysymUnicode(SDL_KEYSYM keysym)
+{
+  // FIXME
+#ifdef DEBUG_KEY_DUMP
+  char c = 0x7f & keysym.sym; c = (c < ' ')? ' ' : c;
+  key_dump("SDL2: GetKeysymUnicode: "
+  "c=|%c| scancode=$%.4X, sym=$%.4X, mod=$%.4X, unicode=----- -> keysym.sym=$%.4X\n",
+  c, keysym.scancode, keysym.sym, keysym.mod, keysym.sym);
+#endif
+  // FIXME
+  return keysym.sym;
+}
 SDL_COMPAT_KEY SDL_COMPAT_TranslateUnicode(SDL_KEYSYM keysym)
 {
+  // FIXME
+  SDL_COMPAT_KEY sym_out = keysym.sym;
+#ifdef DEBUG_KEY_DUMP
+  SDL_COMPAT_KEY sym_in = keysym.sym;
+#endif
+  // FIXME
   if(keysym.mod & KMOD_SHIFT)
   {
     switch(keysym.sym)
     {
-      case '0':
-        return ')';
-      case '1':
-        return '!';
-      case '2':
-        return '@';
-      case '3':
-        return '#';
-      case '4':
-        return '$';
-      case '5':
-        return '%';
-      case '6':
-        return '^';
-      case '7':
-        return '&';
-      case '8':
-        return '*';
-      case '9':
-        return '(';
-      case ';':
-        return ':';
-      case '\'':
-        return '"';
-      case '\\':
-        return '|';
-      case ',':
-        return '<';
-      case '.':
-        return '>';
-      case '/':
-        return '?';
-      case '`':
-        return '~';
-      case '-':
-        return '_';
-      case '=':
-        return '+';
-      case '[':
-        return '{';
-      case ']':
-        return '}';
+      case '0'  : sym_out = ')'; break;
+      case '1'  : sym_out = '!'; break;
+      case '2'  : sym_out = '@'; break;
+      case '3'  : sym_out = '#'; break;
+      case '4'  : sym_out = '$'; break;
+      case '5'  : sym_out = '%'; break;
+      case '6'  : sym_out = '^'; break;
+      case '7'  : sym_out = '&'; break;
+      case '8'  : sym_out = '*'; break;
+      case '9'  : sym_out = '('; break;
+      case ';'  : sym_out = ':'; break;
+      case '\'' : sym_out = '"'; break;
+      case '\\' : sym_out = '|'; break;
+      case ','  : sym_out = '<'; break;
+      case '.'  : sym_out = '>'; break;
+      case '/'  : sym_out = '?'; break;
+      case '`'  : sym_out = '~'; break;
+      case '-'  : sym_out = '_'; break;
+      case '='  : sym_out = '+'; break;
+      case '['  : sym_out = '{'; break;
+      case ']'  : sym_out = '}'; break;
       default:
-        keysym.sym = toupper(keysym.sym);
+        sym_out = keysym.sym = toupper(keysym.sym);
         break;
     }
   }
-  return keysym.sym;
-}
-SDL_COMPAT_KEY SDL_COMPAT_GetKeysymUnicode(SDL_KEYSYM keysym)
-{
-  return keysym.sym;
+  // FIXME
+#ifdef DEBUG_KEY_DUMP
+  char c = 0x7f & keysym.sym; c = (c < ' ')? ' ' : c;
+  key_dump("SDL2: TranslateUnicode: "
+  "c=|%c| scancode=$%.4X, sym=$%.4X, mod=$%.4X, unicode=----- -> keysym.sym=$%.4X\n",
+  c, keysym.scancode, sym_in, keysym.mod, sym_out);
+#endif
+  // FIXME
+
+  return sym_out;
 }
 #endif
 

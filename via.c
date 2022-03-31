@@ -687,6 +687,7 @@ void via_write( struct via *v, int offset, unsigned char data )
       }
       if( v->w_iorb ) v->w_iorb( v, tmp );
       if( v->orbchange ) v->orbchange( v );
+      ay_soundloop( &v->oric->ay, tmp, data );
       break;
     case VIA_IORA:
       v->ora = data;

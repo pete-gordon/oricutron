@@ -245,6 +245,7 @@ struct machine
   SDL_bool printenable;
   SDL_bool printfilter;
   SDL_bool dcadjust;
+  SDL_bool soundloopon;
 
   SDL_bool lightpen;
   Uint8  lightpenx, lightpeny;

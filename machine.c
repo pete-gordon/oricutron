@@ -1181,6 +1181,7 @@ void preinit_machine( struct machine *oric )
   oric->printenable = SDL_TRUE;
   oric->printfilter = SDL_TRUE;
   oric->dcadjust = SDL_TRUE;
+  oric->soundloopon = SDL_FALSE;
 
   oric->aciabackend = ACIA_TYPE_NONE;
   oric->aciaoffset = 0x31c;

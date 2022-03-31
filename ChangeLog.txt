@@ -3,6 +3,9 @@ Oricutron ChangeLog
 
 pre-release changes (work in progress)
 --------------------------------------
+* Added monitor memory search (#180) (@cedricp)
+* Added Sound loopback (useful to simulate speech software)
+* Properly #ifdef-ed key_dump routines (define DEBUG_KEY_DUMP when build)
 * Added Android target platform
 * Updated BD500 for DOS70
 * Added option to disable menu color scheme
