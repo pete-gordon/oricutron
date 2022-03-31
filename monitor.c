@@ -81,7 +81,8 @@ extern SDL_bool refreshstatus;
 
 static char distmp[128];
 static unsigned short disaddrs[10];
-static char ibuf[128], lastcmd;
+static char ibuf[128];
+unsigned char lastcmd;
 static char history[10][128];
 static int ilen, iloff=0, cursx, histu=0, histp=-1;
 static unsigned short mon_addr, mon_asmmode = SDL_FALSE;
@@ -113,6 +114,15 @@ static SDL_bool modified = SDL_FALSE;
 
 static uint16_t memory_search[0x9800-0x0500];
 static int memory_hits= 0;
+
+// auto repeat commands
+#define ARPT_HELP     '?'
+#define ARPT_MEMORY   'm'
+#define ARPT_DISASM   'd'
+#define ARPT_ASSEM    'a'
+#define ARPT_QUIT     'q'
+#define ARPT_SEARCH   0x80
+
 //                                                             12345678901       12345678
 static struct msym defsym_tele[]  = { { 0x0300, 0,            "VIA_IORB"      , "VIA_IORB"   , "VIA_IORB" },
                                       { 0x0301, 0,            "VIA_IORA"      , "VIA_IORA"   , "VIA_IORA" },
@@ -2576,7 +2586,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
   switch( cmd[i] )
   {
     case 'a':
-      lastcmd = cmd[i];
+      lastcmd = ARPT_ASSEM;
       i++;
 
       if( mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
@@ -2942,7 +2952,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
       break;
 
     case 'm':
-      lastcmd = cmd[i];
+      lastcmd = ARPT_MEMORY;
       i++;
 
       switch( cmd[i] )
@@ -2997,7 +3007,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
         case 'p':
         {
-          lastcmd = 0;
+          lastcmd = ARPT_SEARCH;
 
           int lines = 0;
           char tmp[16];
@@ -3107,7 +3117,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
       break;
 
     case 'd':
-      lastcmd = cmd[i];
+      lastcmd = ARPT_DISASM;
       i++;
       if( mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
         mon_addr = v;
@@ -3180,7 +3190,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
       return SDL_FALSE;
 
     case 'q':
-      lastcmd = cmd[i];
+      lastcmd = ARPT_QUIT;
       switch( cmd[i+1] )
       {
         case 32:
@@ -3381,7 +3391,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
       break;
 
     case '?':
-      lastcmd = cmd[i];
+      lastcmd = ARPT_HELP;
       switch( helpcount )
       {
         case 0:
@@ -3957,30 +3967,40 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
     case SDLK_KP_ENTER:
       mon_hide_curs();
       ibuf[ilen] = 0;
-      if( ilen == 0 )
+      if( 0 != lastcmd )
       {
         switch( lastcmd )
         {
-          case '?':
-          case 'm':
-          case 'd':
+          case ARPT_HELP:   // '?'
+          case ARPT_MEMORY: // 'm'
+          case ARPT_DISASM: // 'd'
             ibuf[cursx++] = lastcmd;
             ibuf[cursx] = 0;
             ilen = 1;
             break;
+          case ARPT_SEARCH: // 'mp'
+            ibuf[cursx++] = 'm';
+            ibuf[cursx++] = 'p';
+            ibuf[cursx] = 0;
+            ilen = 2;
+            break;
         }
-      } else {
-        if( ( histu > 0 ) && ( strcmp( &history[0][0], ibuf ) == 0 ) )
-        {
-        } else {
-          if( histu > 0 )
-          {
-            for( i=histu; i>0; i-- )
-              strcpy( &history[i][0], &history[i-1][0] );
 
+      } else {
+        if ( 0 < ilen )
+        {
+          if( ( histu > 0 ) && ( strcmp( &history[0][0], ibuf ) == 0 ) )
+          {
+          } else {
+            if( histu > 0 )
+            {
+              for( i=histu; i>0; i-- )
+                strcpy( &history[i][0], &history[i-1][0] );
+
+            }
+            strcpy( &history[0][0], ibuf );
+            if( histu < 10 ) histu++;
           }
-          strcpy( &history[0][0], ibuf );
-          if( histu < 10 ) histu++;
         }
       }
       histp = -1;
