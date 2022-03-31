@@ -40,19 +40,21 @@ if (WIN32)
 endif (WIN32)
 
 if (UNIX)
-  # Use the package PkgConfig to detect GTK+ headers/library files
-  find_package(PkgConfig REQUIRED)
-  PKG_CHECK_MODULES(GTK3 REQUIRED gtk+-3.0)
 
   if (USE_SDL2)
     find_package(SDL2 REQUIRED)
-
+    find_package(OpenGL)
     # Setup CMake to use GTK+ and SDL2, tell the compiler where to look for headers
     # and to the linker where to look for libraries
     include_directories(${GTK3_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS})
-    link_directories(${GTK3_LIBRARY_DIRS})
+    if (OPENGL_FOUND)
+      add_definitions(-D__OPENGL_AVAILABLE__)
+    endif(OPENGL_FOUND)
     add_definitions(${GTK3_CFLAGS_OTHER} -DSDL_MAJOR_VERSION=2 -D__SPECIFY_SDL_DIR__=1 -DAPP_NAME_FULL="${ORICUTRON_APPNAME_FULL}" -DAPP_YEAR="${ORICUTRON_APPYEAR}" -DVERSION_COPYRIGHTS="${ORICUTRON_VERSION_COPYRIGHTS}")
   else()
+    # Use the package PkgConfig to detect GTK+ headers/library files
+    find_package(PkgConfig REQUIRED)
+    PKG_CHECK_MODULES(GTK3 REQUIRED gtk+-3.0)
     find_package(SDL REQUIRED)
 
     # Setup CMake to use GTK+ and SDL, tell the compiler where to look for headers
@@ -92,8 +94,10 @@ SET (SRCGTK
 
 SET (SRCSDL
   filereq_sdl.c
+  gui_x11.c
   msgbox_sdl.c
 )
+
 
 SET (SRCSWIN
   filereq_win32.c
@@ -146,8 +150,8 @@ endif (WIN32)
 
 if (UNIX)
   if (USE_SDL2)
-    add_executable(Oricutron-sdl2 ${SRCS} ${SRCGTK})
-    target_link_libraries(Oricutron-sdl2 ${GTK3_LIBRARIES} ${SDL2_LIBRARIES})
+    add_executable(Oricutron-sdl2 ${SRCS} ${SRCSDL})
+    target_link_libraries(Oricutron-sdl2 ${OPENGL_LIBRARIES} ${SDL2_LIBRARIES})
   else()
     add_executable(Oricutron ${SRCS} ${SRCGTK})
     target_link_libraries(Oricutron ${GTK3_LIBRARIES} SDL GL X11)

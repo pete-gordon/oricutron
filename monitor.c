@@ -87,6 +87,7 @@ static int ilen, iloff=0, cursx, histu=0, histp=-1;
 static unsigned short mon_addr, mon_asmmode = SDL_FALSE;
 static SDL_bool kshifted = SDL_FALSE, updatepreview = SDL_FALSE;
 static int helpcount=0;
+static int memory_search_pos=0;
 
 static struct symboltable defaultsyms;
 
@@ -110,6 +111,8 @@ static struct via via2_old;
 static SDL_bool via2_oldvalid = SDL_FALSE;
 static SDL_bool modified = SDL_FALSE;
 
+static uint16_t memory_search[0x9800-0x0500];
+static int memory_hits= 0;
 //                                                             12345678901       12345678
 static struct msym defsym_tele[]  = { { 0x0300, 0,            "VIA_IORB"      , "VIA_IORB"   , "VIA_IORB" },
                                       { 0x0301, 0,            "VIA_IORA"      , "VIA_IORA"   , "VIA_IORA" },
@@ -2944,6 +2947,88 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
       switch( cmd[i] )
       {
+        case 's':
+         lastcmd = 0;
+          i++;
+
+          if( !mon_getnum( oric, &w, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+          {
+            mon_str( "Value expected" );
+            break;
+          }
+          memory_search_pos = 0;
+          uint16_t* collection = memory_search;
+          memory_hits = 0;
+          for (int j=0x500; j < 0x9800; j++){
+            unsigned char byte = mon_read( oric, j );
+            if ((unsigned char)w == byte){
+                *collection++ = j;
+                memory_hits++;
+            }
+          }
+          sprintf( vsptmp, "Found %i match(es)", memory_hits );
+          mon_str(vsptmp);
+        break;
+
+        case 'r':
+          lastcmd = 0;
+          i++;
+
+          if( !mon_getnum( oric, &w, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+          {
+            mon_str( "Value expected" );
+            break;
+          }
+
+          memory_search_pos = 0;
+          int newhits = 0;
+          for (int j = 0; j < memory_hits; j++){
+            int16_t curr_mem_addr = memory_search[j];
+            unsigned char byte = mon_read( oric, curr_mem_addr );
+            if ((unsigned char)w == byte){
+              memory_search[newhits++] = curr_mem_addr;
+            }
+          }
+          memory_hits = newhits;
+
+          sprintf( vsptmp, "Refined match(es) : %i", memory_hits );
+          mon_str( vsptmp );
+          break;
+
+        case 'p':
+        {
+          lastcmd = 0;
+
+          int lines = 0;
+          char tmp[16];
+          int j, k = 0;
+
+          vsptmp[0] = 0;
+          for (j = memory_search_pos; j < memory_hits; j++, k++){
+            unsigned char byte = mon_read( oric, memory_search[j] );
+            sprintf( tmp, "[%04X]:[%02X] ", memory_search[j], byte );
+            strcat( vsptmp, tmp );
+            if (k == 4){
+              mon_str( vsptmp );
+              vsptmp[0] = 0;
+              lines++;
+              k = 0;
+            }
+            if (lines > 16){
+                memory_search_pos = j;
+                break;
+            }
+          }
+          if (strlen( vsptmp )){
+            mon_str( vsptmp );
+          }
+          if ( j >= memory_hits ){
+            memory_search_pos = 0;
+            lastcmd = 0;
+          }
+          break;
+        }
+
         case 'm':
           lastcmd = 0;
           i++;
@@ -3326,11 +3411,12 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "  m <addr>              - Dump memory" );
           mon_str( "  mm <addr> <value>     - Modify memory" );
           mon_str( "  mw <addr>             - Memory watch at addr" );
+          mon_str( "  ms <addr> <value>     - Memory search" );
+          mon_str( "  mr <addr>             - Memory search refine" );
+          mon_str( "  mp                    - Memory print search" );
           mon_str( "  nl <filename>         - Load snapshot" );
           mon_str( "  ns <filename>         - Save snapshot" );
           mon_str( "  r <reg> <val>         - Set <reg> to <val>" );
-          mon_str( "  q, x or qm            - Quit monitor" );
-          mon_str( "  qe                    - Quit emulator" );
           mon_str( "  sa <name> <addr>      - Add or move user sym." );
           mon_str( "  sk <name>             - Kill user symbol" );
           mon_str( "  sc                    - Symbols not case-sens." );
@@ -3339,18 +3425,16 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "  sx <file>             - Export user symbols" );
           mon_str( "  sz                    - Zap user symbols" );
           mon_str( " " );
-          mon_str( " " );
           mon_str( "---- MORE" );
           helpcount++;
           break;
 
         case 2:
-          mon_str( "  fd <addr> <end> <file>- Disassemble to file" );
+          mon_str( "  q, x or qm            - Quit monitor" );
+          mon_str( "  qe                    - Quit emulator" );          mon_str( "  fd <addr> <end> <file>- Disassemble to file" );
           mon_str( "  fw <addr> <len> <file>- Write mem to bin file" );
 // ToDo:  mon_str( "  ft <addr> <len> <file>- Write mem to tap file" );
           mon_str( "  fr <addr> <file>      - Read bin file to mem" );
-          mon_str( " " );
-          mon_str( " " );
           mon_str( " " );
           mon_str( " " );
           mon_str( " " );
