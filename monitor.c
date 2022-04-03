@@ -81,8 +81,7 @@ extern SDL_bool refreshstatus;
 
 static char distmp[128];
 static unsigned short disaddrs[10];
-static char ibuf[128];
-unsigned char lastcmd;
+static char ibuf[128], lastcmd;
 static char history[10][128];
 static int ilen, iloff=0, cursx, histu=0, histp=-1;
 static unsigned short mon_addr, mon_asmmode = SDL_FALSE;
@@ -116,12 +115,16 @@ static uint16_t memory_search[0x9800-0x0500];
 static int memory_hits= 0;
 
 // auto repeat commands
-#define ARPT_HELP     '?'
-#define ARPT_MEMORY   'm'
-#define ARPT_DISASM   'd'
-#define ARPT_ASSEM    'a'
-#define ARPT_QUIT     'q'
-#define ARPT_SEARCH   0x80
+enum
+{
+  ARPT_NULL    = 0,
+  ARPT_SEARCH  = 1,
+  ARPT_HELP    = '?',
+  ARPT_MEMORY  = 'm',
+  ARPT_DISASM  = 'd',
+  ARPT_ASSEM   = 'a',
+  ARPT_QUIT    = 'q',
+};
 
 //                                                             12345678901       12345678
 static struct msym defsym_tele[]  = { { 0x0300, 0,            "VIA_IORB"      , "VIA_IORB"   , "VIA_IORB" },
@@ -2357,7 +2360,7 @@ SDL_bool mon_getnum( struct machine *oric, unsigned int *num, char *buf, int *of
     return SDL_TRUE;
   }
 
-  if( buf[i] == '$' )
+  if( buf[i] == '$' || buf[i] == '#' )
   {
     // Hex
     i++;
@@ -3967,13 +3970,15 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
     case SDLK_KP_ENTER:
       mon_hide_curs();
       ibuf[ilen] = 0;
-      if( 0 != lastcmd )
+      if( 0 == ilen && 0 != lastcmd )
       {
         switch( lastcmd )
         {
           case ARPT_HELP:   // '?'
           case ARPT_MEMORY: // 'm'
           case ARPT_DISASM: // 'd'
+          case ARPT_ASSEM:  // 'a'
+          case ARPT_QUIT:   // 'q',
             ibuf[cursx++] = lastcmd;
             ibuf[cursx] = 0;
             ilen = 1;
@@ -3984,25 +3989,27 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
             ibuf[cursx] = 0;
             ilen = 2;
             break;
-        }
-
-      } else {
-        if ( 0 < ilen )
-        {
-          if( ( histu > 0 ) && ( strcmp( &history[0][0], ibuf ) == 0 ) )
-          {
-          } else {
-            if( histu > 0 )
-            {
-              for( i=histu; i>0; i-- )
-                strcpy( &history[i][0], &history[i-1][0] );
-
-            }
-            strcpy( &history[0][0], ibuf );
-            if( histu < 10 ) histu++;
-          }
+          default:
+            lastcmd = 0;
+            ilen = 0;
+            break;
         }
       }
+
+      else if ( 0 < ilen )
+      {
+        if( !( ( histu > 0 ) && ( strcmp( &history[0][0], ibuf ) == 0 ) ) )
+        {
+          if( histu > 0 )
+          {
+            for( i=histu; i>0; i-- )
+              strcpy( &history[i][0], &history[i-1][0] );
+          }
+          strcpy( &history[0][0], ibuf );
+          if( histu < 10 ) histu++;
+        }
+      }
+
       histp = -1;
 
       tzsetcol( tz[TZ_MONITOR], 2, 3 );
