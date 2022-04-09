@@ -1,9 +1,9 @@
 
-#define TWILIGHTE_CARD_ORIC_EXTENSION_DDRA            0x323
+#define TWILIGHTE_CARD_ORIC_EXTENSION_DDRA              0x323
 #define TWILIGHTE_CARD_ORIC_EXTENSION_IORAh             0x321
 
-#define TWILIGHTE_CARD_ORIC_EXTENSION_DDRB            0x322
-#define TWILIGHTE_CARD_ORIC_EXTENSION_IORB             0x320
+#define TWILIGHTE_CARD_ORIC_EXTENSION_DDRB              0x322
+#define TWILIGHTE_CARD_ORIC_EXTENSION_IORB              0x320
 
 #define TWILIGHTE_CARD_ORIC_EXTENSION_REGISTER          0x342
 #define TWILIGHTE_CARD_ORIC_EXTENSION_BANKING_REGISTER  0x343
@@ -21,8 +21,8 @@
  *     +--> Fire 3
  * +------> Fire 2
  *
- * DDRx: bit à 0 => bit en entrée
- *       bit à 1 => bit en sortie
+ * DDRx: bit Ã  0 => bit en entrÃ©e
+ *       bit Ã  1 => bit en sortie
 */
 
 #include <stdlib.h>
@@ -210,7 +210,7 @@ struct twilighte* twilighte_oric_init(void)
     {
         if (twilighte->twilrombankfiles[i][0] != 0)
         {
-            error_printf("Load bank (ROM) #%d: %s", i, twilighte->twilrombankfiles[i]);
+            //error_printf("Load bank (ROM) #%d: %s", i, twilighte->twilrombankfiles[i]);
             if (!load_rom_twilighte(twilighte->twilrombankfiles[i], -16384, twilighte->twilrombankdata[i]))
             {
                 error_printf("Cannot load %s", twilighte->twilrombankfiles[i]);
@@ -220,7 +220,7 @@ struct twilighte* twilighte_oric_init(void)
 
         if (twilighte->twilrambankfiles[i][0] != 0)
         {
-            error_printf("Load bank (RAM) #%d: %s", i, twilighte->twilrambankfiles[i]);
+            //error_printf("Load bank (RAM) #%d: %s", i, twilighte->twilrambankfiles[i]);
             if (!load_rom_twilighte(twilighte->twilrambankfiles[i], -16384, twilighte->twilrambankdata[i]))
             {
                 error_printf("Cannot load %s", twilighte->twilrambankfiles[i]);
@@ -341,8 +341,8 @@ unsigned char 	twilighteboard_oric_read(struct twilighte* twilighte, uint16_t ad
 
 unsigned char 	twilighteboard_oric_write(struct twilighte* twilighte, uint16_t addr, unsigned char mask, unsigned char data)
 {
-    // mask: $00 => lecture/écriture via
-    // mask: $ff => mise à jour du port joystick
+    // mask: $00 => lecture/Ã©criture via
+    // mask: $ff => mise Ã  jour du port joystick
 
     if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_DDRA)
     {
