@@ -2967,21 +2967,24 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           if( !mon_getnum( oric, &w, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
           {
             mon_str( "Value expected" );
-            break;
           }
-          memory_search_pos = 0;
-          uint16_t* collection = memory_search;
-          memory_hits = 0;
-          for (int j=0x500; j < 0x9800; j++){
-            unsigned char byte = mon_read( oric, j );
-            if ((unsigned char)w == byte){
+          else
+          {
+            Uint16* collection = memory_search;
+            memory_search_pos = 0;
+            memory_hits = 0;
+            for ( j=0x500; j < 0x9800; j++ )
+            {
+              if ((unsigned char)w == mon_read( oric, j ) )
+              {
                 *collection++ = j;
                 memory_hits++;
+              }
             }
+            sprintf( vsptmp, "Found %i match(es)", memory_hits );
+            mon_str(vsptmp);
           }
-          sprintf( vsptmp, "Found %i match(es)", memory_hits );
-          mon_str(vsptmp);
-        break;
+          break;
 
         case 'r':
           lastcmd = 0;
@@ -2990,52 +2993,58 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           if( !mon_getnum( oric, &w, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
           {
             mon_str( "Value expected" );
-            break;
           }
-
-          memory_search_pos = 0;
-          int newhits = 0;
-          for (int j = 0; j < memory_hits; j++){
-            int16_t curr_mem_addr = memory_search[j];
-            unsigned char byte = mon_read( oric, curr_mem_addr );
-            if ((unsigned char)w == byte){
-              memory_search[newhits++] = curr_mem_addr;
+          else
+          {
+            int newhits = 0;
+            memory_search_pos = 0;
+            for ( j = 0; j < memory_hits; j++ )
+            {
+              Uint16 curr_mem_addr = memory_search[j];
+              if ( (unsigned char)w == mon_read( oric, curr_mem_addr ) )
+              {
+                memory_search[newhits++] = curr_mem_addr;
+              }
             }
-          }
-          memory_hits = newhits;
+            memory_hits = newhits;
 
-          sprintf( vsptmp, "Refined match(es) : %i", memory_hits );
-          mon_str( vsptmp );
+            sprintf( vsptmp, "Refined match(es) : %i", memory_hits );
+            mon_str( vsptmp );
+          }
           break;
 
         case 'p':
         {
-          lastcmd = ARPT_SEARCH;
-
-          int lines = 0;
           char tmp[16];
+          int lines = 0;
           int j, k = 0;
 
+          lastcmd = ARPT_SEARCH;
           vsptmp[0] = 0;
-          for (j = memory_search_pos; j < memory_hits; j++, k++){
-            unsigned char byte = mon_read( oric, memory_search[j] );
-            sprintf( tmp, "[%04X]:[%02X] ", memory_search[j], byte );
+
+          for ( j = memory_search_pos; j < memory_hits; j++, k++ )
+          {
+            sprintf( tmp, "[%04X]:[%02X] ", memory_search[j], mon_read( oric, memory_search[j] ) );
             strcat( vsptmp, tmp );
-            if (k == 4){
+            if (k == 4)
+            {
               mon_str( vsptmp );
               vsptmp[0] = 0;
               lines++;
               k = 0;
             }
-            if (lines > 16){
+            if (lines > 16)
+            {
                 memory_search_pos = j;
                 break;
             }
           }
-          if (strlen( vsptmp )){
+          if (strlen( vsptmp ))
+          {
             mon_str( vsptmp );
           }
-          if ( j >= memory_hits ){
+          if ( j >= memory_hits )
+          {
             memory_search_pos = 0;
             lastcmd = 0;
           }
