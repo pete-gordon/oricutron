@@ -492,11 +492,11 @@ Board is working with a cumulus. Anyway, this part is not emulated and you need 
 Anyway, on Telestrat, orix can start floppy disk because FDC is present.
 
 Not emulated parts :
-* joysticks
 * eeprom programming sequence
 * loading ROM into RAM bank (which could emulate RAM saved with battery)
-* save on disk any modification into RAM bank (whic could emulate RAM saved with battery)
+* save on disk any modification into RAM bank (which could emulate RAM saved with battery)
 * ch376 is not fully supported in the emulation mode. There is a lot of others functionnalities which are missing on ch376 emulation
+* firmware 2 of the board. Only firmware 1 of the board is supported
 
 To activate the plugin, you must activate twilighte_board option in oricutron.cfg
 
@@ -513,7 +513,9 @@ Under linux, sdcard folder and/or usbdrive folder must have uppercase filenames 
 Filenames must be in uppercase, because usb chip manage by default FAT32 filesystem.
 
 For basic11 rom which handles joysticks and .tap load from sdcard or usbdrive, you have to download basic.tgz here : http://repo.orix.oric.org/dists/official/tgz/6502/
-And you need to replace twilbankrom06 with the rom in basic11.tgz.
+And you need to replace twilbankrom06 with the rom in basic11.tgz. 
+
+Oricutron is provided with kernel (Orix) and shell (Orix) v2022.1 roms. For updates, see http://repo.orix.oric.org/dists/official/tgz/6502/
 
 
 ROM patch files
