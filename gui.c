@@ -2403,6 +2403,7 @@ SDL_bool init_gui( struct machine *oric, Sint32 rendermode )
   if( !alloc_textzone( oric, TZ_VIA2,     400, 228, 30, 21, "Telestrat VIA Status" ) ) return SDL_FALSE;
   if( !alloc_textzone( oric, TZ_AY,       400, 228, 30, 21, "AY Status"            ) ) return SDL_FALSE;
   if( !alloc_textzone( oric, TZ_DISK,     400, 228, 30, 21, "Disk Status"          ) ) return SDL_FALSE;
+  if( !alloc_textzone( oric, TZ_TWIL,     400, 228, 30, 21, "Twilighte Status"     ) ) return SDL_FALSE;
 
   // Set up SDL audio
   wanted.freq     = AUDIO_FREQ;
