@@ -160,6 +160,10 @@ struct twilighte* twilighte_oric_init(void)
     while (!feof(f))
     {
         result = fgets(line, 1024, f);
+        if( result )
+        {
+          // FIXME: do something to silence the compiler warning ...
+        }
 
 
         if (read_config_int(line, "twilighte_firmware", &twilighte->firmware_version, 1, 3))

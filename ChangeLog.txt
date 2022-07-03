@@ -3,6 +3,7 @@ Oricutron ChangeLog
 
 pre-release changes (work in progress)
 --------------------------------------
+* New breakpoint flag 't' to print current counter
 * Added monitor memory search (#180) (@cedricp)
 * Added Sound loopback (useful to simulate speech software)
 * Properly #ifdef-ed key_dump routines (define DEBUG_KEY_DUMP when build)

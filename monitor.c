@@ -1651,32 +1651,32 @@ void mon_update_twil( struct machine *oric )
     return;
 
 
-    if ( oric->twilighteboard_activated )
-    {
-      tzprintfpos( tz[TZ_TWIL], 2, 2, "Board version = %02X", (twilighteboard_oric_read(oric->twilighte, 0x342) & 0x07) );
-      tzprintfpos( tz[TZ_TWIL], 2, 4, "Bank set      = %02X", twilighteboard_oric_read(oric->twilighte, 0x343) );
-      tzprintfpos( tz[TZ_TWIL], 2, 5, "Bank number   = %02X", (twilighteboard_oric_read(oric->twilighte, 0x321) & 0x07));
-      tzprintfpos( tz[TZ_TWIL], 2, 6, "Bank type     = %s" , (twilighteboard_oric_read(oric->twilighte, 0x342) & 0x20) ? "SRAM  ": "EEPROM");
-      tzprintfpos( tz[TZ_TWIL], 2, 9, "Twil register = %02X", twilighteboard_oric_read(oric->twilighte, 0x342) );
-      tzprintfpos( tz[TZ_TWIL], 2, 10, "Bank register = %02X", twilighteboard_oric_read(oric->twilighte, 0x343) );
-      tzprintfpos( tz[TZ_TWIL], 2, 12, "IORB          = %02X", twilighteboard_oric_read(oric->twilighte, 0x320) );
-      tzprintfpos( tz[TZ_TWIL], 2, 13, "IORAh         = %02X", twilighteboard_oric_read(oric->twilighte, 0x321) );
-      tzprintfpos( tz[TZ_TWIL], 2, 14, "DDRB          = %02X", twilighteboard_oric_read(oric->twilighte, 0x322) );
-      tzprintfpos( tz[TZ_TWIL], 2, 15, "DDRA          = %02X", twilighteboard_oric_read(oric->twilighte, 0x323) );
+  if ( oric->twilighteboard_activated )
+  {
+    tzprintfpos( tz[TZ_TWIL], 2, 2, "Board version = %02X", (twilighteboard_oric_read(oric->twilighte, 0x342) & 0x07) );
+    tzprintfpos( tz[TZ_TWIL], 2, 4, "Bank set      = %02X", twilighteboard_oric_read(oric->twilighte, 0x343) );
+    tzprintfpos( tz[TZ_TWIL], 2, 5, "Bank number   = %02X", (twilighteboard_oric_read(oric->twilighte, 0x321) & 0x07));
+    tzprintfpos( tz[TZ_TWIL], 2, 6, "Bank type     = %s" , (twilighteboard_oric_read(oric->twilighte, 0x342) & 0x20) ? "SRAM  ": "EEPROM");
+    tzprintfpos( tz[TZ_TWIL], 2, 9, "Twil register = %02X", twilighteboard_oric_read(oric->twilighte, 0x342) );
+    tzprintfpos( tz[TZ_TWIL], 2, 10, "Bank register = %02X", twilighteboard_oric_read(oric->twilighte, 0x343) );
+    tzprintfpos( tz[TZ_TWIL], 2, 12, "IORB          = %02X", twilighteboard_oric_read(oric->twilighte, 0x320) );
+    tzprintfpos( tz[TZ_TWIL], 2, 13, "IORAh         = %02X", twilighteboard_oric_read(oric->twilighte, 0x321) );
+    tzprintfpos( tz[TZ_TWIL], 2, 14, "DDRB          = %02X", twilighteboard_oric_read(oric->twilighte, 0x322) );
+    tzprintfpos( tz[TZ_TWIL], 2, 15, "DDRA          = %02X", twilighteboard_oric_read(oric->twilighte, 0x323) );
 
-    }
+  }
 
-    int offs = 8*tz[TZ_TWIL]->w+1;
-    for( int k=0; k<28; k++ )
-    {
-      tz[TZ_TWIL]->tx[offs+k] = 2;
-      tz[TZ_TWIL]->bc[offs+k] = 3;
-      tz[TZ_TWIL]->fc[offs+k] = 2;
-    }
+  int offs = 8*tz[TZ_TWIL]->w+1;
+  for( int k=0; k<28; k++ )
+  {
+    tz[TZ_TWIL]->tx[offs+k] = 2;
+    tz[TZ_TWIL]->bc[offs+k] = 3;
+    tz[TZ_TWIL]->fc[offs+k] = 2;
+  }
 
-    if ( oric->ch376_activated )
-    {
-    }
+  if ( oric->ch376_activated )
+  {
+  }
 }
 
 void mon_state_reset( struct machine *oric )
@@ -2811,11 +2811,12 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           {
             if( oric->cpu.breakpoints[j] != -1 )
             {
-              mon_printf( "%02d: $%04X %s%s",
+              mon_printf( "%02d: $%04X %s%s%s",
                 j,
                 oric->cpu.breakpoints[j],
                 (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLES) ? "z" : "",
-                (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLESCONTINUE) ? "c" : "");
+                (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLESCONTINUE) ? "c" : "",
+                (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLESPRINT) ? "t" : "" );
               oric->cpu.anybp = SDL_TRUE;
             }
           }
@@ -2919,15 +2920,20 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
                 oric->cpu.breakpoint_flags[j] |= MBPF_RESETCYCLESCONTINUE;
                 i++;
                 continue;
+              case 't':
+                oric->cpu.breakpoint_flags[j] |= MBPF_RESETCYCLESPRINT;
+                i++;
+                continue;
             }
             break;
           }
 
-          mon_printf( "%02d: $%04X %s%s",
+          mon_printf( "%02d: $%04X %s%s%s",
             j,
             oric->cpu.breakpoints[j],
             (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLES) ? "z" : "",
-            (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLESCONTINUE) ? "c" : "" );
+            (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLESCONTINUE) ? "c" : "",
+            (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLESPRINT) ? "t" : "" );
           break;
 
         case 'c':
@@ -3464,7 +3470,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "  bcm <bp id>           - Clear mem breakpoint" );
           mon_str( "  bl                    - List breakpoints" );
           mon_str( "  blm                   - List mem breakpoints" );
-          mon_str( "  bs <addr> [zc]        - Set breakpoint/cycles" );
+          mon_str( "  bs <addr> [zct]       - Set breakpoint/cycles" );
           mon_str( "  bsm <addr> [rwc]      - Set mem breakpoint" );
           mon_str( "  bz                    - Zap breakpoints" );
           mon_str( "  bzm                   - Zap mem breakpoints" );

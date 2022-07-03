@@ -58,6 +58,8 @@
 #define MBPF_RESETCYCLES (1<<MBPB_RESETCYCLES)
 #define MBPB_RESETCYCLESCONTINUE 4
 #define MBPF_RESETCYCLESCONTINUE (1<<MBPB_RESETCYCLESCONTINUE)
+#define MBPB_RESETCYCLESPRINT    5
+#define MBPF_RESETCYCLESPRINT (1<<MBPB_RESETCYCLESPRINT)
 
 // Merge the seperate flag stores into a 6502 status register form
 #define MAKEFLAGS ((cpu->f_n<<7)|(cpu->f_v<<6)|(1<<5)|(cpu->f_b<<4)|(cpu->f_d<<3)|(cpu->f_i<<2)|(cpu->f_z<<1)|cpu->f_c)

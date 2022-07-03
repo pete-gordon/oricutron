@@ -288,7 +288,7 @@ Commands:
   bcm <bp id>           - Clear mem breakpoint
   bl                    - List breakpoints
   blm                   - List mem breakpoints
-  bs <addr> [zc]        - Set breakpoint
+  bs <addr> [zct]       - Set breakpoint
   bsm <addr> [rwc]      - Set mem breakpoint
   bz                    - Zap breakpoints
   bzm                   - Zap mem breakpoints
@@ -324,12 +324,15 @@ There are two types of breakpoint. "Normal" breakpoints trigger when the CPU
 is about to execute an instruction at the breakpoint address. "Memory" breakpoints
 trigger when the breakpoint address is accessed or modified.
 
-Normal breakpoints can use 'z' and/or 'c' modifiers.
+Normal breakpoints can use 'z','c' and 't' modifiers.
 bs $0c00           <-- Break when the CPU is about to execute code at $0c00
 bs $0c00 z         <-- Break when the CPU is about to execute code at $0c00
                        and set cycles counter to 0
 bs $0c00 zc        <-- Set cycles counter to 0 and continues
 bs $0c00 c         <-- Continues execution (i.e. disabled breakpoint)
+bs $0c00 zct       <-- Prints in console current counter,
+                       set cycles counter to 0 and continues
+
 
 The main purpose of these modifiers is to make cycle counting easier.
 If symbols are loaded, they can be used instead of absolute addresses.
@@ -473,7 +476,7 @@ CH376 emulation added for :
 CH376_CMD_FILE_ERASE suppress a file
 CH376_CMD_DIR_CREATE create folder
 
-Twilighte board emulation 
+Twilighte board emulation
 ===============
 
 The twilighte board is working on atmos (and Oric-1). It disables internal Oric ROM and add 64 banks (by bank switching).
@@ -482,11 +485,11 @@ EEprom can be programmed from Orix command line.
 The board handles ch376 (sdcard/usbdrive/usb/hid controler).
 And the board adds 2 joysticks ports.
 
-The emulation, for instance, handles 32 ROM banks and 32 RAM banks. It emulates this bank switching. 
+The emulation, for instance, handles 32 ROM banks and 32 RAM banks. It emulates this bank switching.
 
 Board is working with a cumulus. Anyway, this part is not emulated and you need to switch to Telestrat mode to have this behavior.
 
-Anyway, on Telestrat, orix can start floppy disk because FDC is present. 
+Anyway, on Telestrat, orix can start floppy disk because FDC is present.
 
 Not emulated parts :
 * joysticks
@@ -497,13 +500,13 @@ Not emulated parts :
 
 To activate the plugin, you must activate twilighte_board option in oricutron.cfg
 
-Update twilighte.cfg plugin in plugins/twilighte_card/twilighte.cfg if you want to load others roms. 
+Update twilighte.cfg plugin in plugins/twilighte_card/twilighte.cfg if you want to load others roms.
 
-In order to start at least, minimal configuration, kernel.rom must be set in twilbankrom07 and shell.rom in twilbankrom05. 
+In order to start at least, minimal configuration, kernel.rom must be set in twilbankrom07 and shell.rom in twilbankrom05.
 
 Last roms can be found here : http://repo.orix.oric.org/dists/official/tgz/6502/
 * kernel.tgz contains kernel.rom
-* shell.tgz contains shell.rom 
+* shell.tgz contains shell.rom
 
 Under linux, sdcard folder and/or usbdrive folder must have uppercase filenames or else, no binaries can be started. You can mount a fat32 filesystem in sdcard or usbdrive.
 

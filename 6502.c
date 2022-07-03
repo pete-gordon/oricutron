@@ -319,8 +319,14 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
       {
         if( ( cpu->breakpoints[i] != -1 ) && ( cpu->calcpc == cpu->breakpoints[i] ) )
         {
-          if( (cpu->breakpoint_flags[i] & MBPF_RESETCYCLES) ==  MBPF_RESETCYCLES ) cpu->cycles = 0;
-          if( (cpu->breakpoint_flags[i] & MBPF_RESETCYCLESCONTINUE) !=  MBPF_RESETCYCLESCONTINUE ) return SDL_TRUE;
+          if( (cpu->breakpoint_flags[i] & MBPF_RESETCYCLESPRINT) ==  MBPF_RESETCYCLESPRINT )
+            printf("%.4X: %d\n", cpu->breakpoints[i], cpu->cycles);
+
+          if( (cpu->breakpoint_flags[i] & MBPF_RESETCYCLES) ==  MBPF_RESETCYCLES )
+            cpu->cycles = 0;
+
+          if( (cpu->breakpoint_flags[i] & MBPF_RESETCYCLESCONTINUE) !=  MBPF_RESETCYCLESCONTINUE )
+            return SDL_TRUE;
         }
       }
     }

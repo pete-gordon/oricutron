@@ -261,7 +261,7 @@ void joy_buildmask( struct machine *oric )
   Uint8 telestrat_joysel = oric->tele_via.read_port_b( &oric->tele_via );
   Uint8 twilighteboard_joysel = 0;
 
-  
+
   SDL_bool gimme_port_a = SDL_FALSE;
   SDL_bool gimme_port_b = SDL_FALSE;
 
