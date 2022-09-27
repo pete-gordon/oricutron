@@ -1,4 +1,6 @@
 
+#define TWILIGHTE_CARD_ORIC_EXTENSION_MIRROR_314        0x314
+
 #define TWILIGHTE_CARD_ORIC_EXTENSION_DDRA              0x323
 #define TWILIGHTE_CARD_ORIC_EXTENSION_IORAh             0x321
 
@@ -58,6 +60,7 @@ struct twilighte
 
     int firmware_version;
 
+    unsigned char mirror_0x314;
 
     unsigned char DDRA;
     unsigned char IORAh;
@@ -245,7 +248,9 @@ struct twilighte* twilighte_oric_init(void)
     twilighte->IORB = 0;
     twilighte->DDRB = 0b11000000;
 
- 
+    if (twilighte->firmware_version==2)
+        twilighte->mirror_0x314=0;
+
 
     return  twilighte;
 }
@@ -253,6 +258,17 @@ struct twilighte* twilighte_oric_init(void)
 unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte* twilighte, uint16_t addr) {
     unsigned char data;
     unsigned char bank;
+
+    if (twilighte->firmware_version==2)
+    {
+        // If bit 1 of $314 is equal to 0 (romdis low), then send bank 0 value
+        if ((twilighte->mirror_0x314&2)==0) // Test bit 0
+        {
+            data = twilighte->twilrambankdata[0][addr];
+            return data;
+        }
+        // If bit 2 is equal to 1, then continue and current_bank is the right value to get bank data.
+    } // If it's not firmware version 2, continue
 
     if (twilighte->current_bank == 0)
     {
@@ -282,6 +298,19 @@ unsigned char 	twilighteboard_oric_ROM_RAM_write(struct twilighte* twilighte, ui
 {
 
     unsigned char bank;
+
+    if (twilighte->firmware_version==2)
+    {
+        // If bit 1 of $314 is equal to 0 (romdis low), then send bank 0 value
+        if ((twilighte->mirror_0x314&2)==0) // Test bit 0
+        {
+            twilighte->twilrambankdata[twilighte->current_bank][addr] = data;
+            return 0;
+        }
+        // If bit 2 is equal to 1, then continue and current_bank is the right value to get bank data.
+    } // If it's not firmware version 2, continue
+
+
     if (twilighte->current_bank == 0)
     {
         twilighte->twilrambankdata[twilighte->current_bank][addr] = data;
@@ -338,8 +367,6 @@ unsigned char 	twilighteboard_oric_read(struct twilighte* twilighte, uint16_t ad
         return twilighte->t_banking_register;
     }
 
-   
-
     return 0;
 }
 
@@ -371,7 +398,6 @@ unsigned char 	twilighteboard_oric_write(struct twilighte* twilighte, uint16_t a
 
     if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_IORB)
     {
-
         if (mask == 0)
             twilighte->IORB = data & twilighte->DDRB;
         else
@@ -388,7 +414,13 @@ unsigned char 	twilighteboard_oric_write(struct twilighte* twilighte, uint16_t a
         twilighte->t_banking_register = data;
     }
 
-
+    if (twilighte->firmware_version==2)
+    {
+        if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_MIRROR_314)
+        {
+            twilighte->mirror_0x314 = data;
+        }
+    }
 
     return 0;
 }
