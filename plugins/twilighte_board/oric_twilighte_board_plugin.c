@@ -249,7 +249,7 @@ struct twilighte* twilighte_oric_init(void)
     twilighte->DDRB = 0b11000000;
 
     if (twilighte->firmware_version==2)
-        twilighte->mirror_0x314=0;
+        twilighte->mirror_0x314=2;
 
 
     return  twilighte;
