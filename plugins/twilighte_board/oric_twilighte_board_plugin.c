@@ -135,9 +135,9 @@ static SDL_bool load_rom_twilighte(char* fname, int size, unsigned char where[])
     return SDL_TRUE;
 }
 
-SDL_bool get_twilighte_board_microdisc_connection()
+SDL_bool get_twilighte_board_microdisc_connection(struct twilighte* twilighte)
 {
-    return SDL_FALSE;
+    return twilighte->microdisc;
 }
 
 struct twilighte* twilighte_oric_init(void)
