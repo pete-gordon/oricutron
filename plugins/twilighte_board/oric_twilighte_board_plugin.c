@@ -60,6 +60,8 @@ struct twilighte
 
     int firmware_version;
 
+    SDL_bool microdisc;
+
     unsigned char mirror_0x314;
 
     unsigned char DDRA;
@@ -133,6 +135,11 @@ static SDL_bool load_rom_twilighte(char* fname, int size, unsigned char where[])
     return SDL_TRUE;
 }
 
+SDL_bool get_twilighte_board_microdisc_connection()
+{
+    return SDL_FALSE;
+}
+
 struct twilighte* twilighte_oric_init(void)
 {
 
@@ -143,8 +150,9 @@ struct twilighte* twilighte_oric_init(void)
     char tbtmpram[32];
     char line[1024];
     struct twilighte* twilighte = malloc(sizeof(struct twilighte));
-    twilighte->t_banking_register = 0;
 
+    twilighte->t_banking_register = 0;
+    twilighte->microdisc=SDL_FALSE;
     twilighte->t_register = 128 + 1; // Firmware
 
     f = fopen("plugins/twilighte_board/twilighte.cfg", "r");
@@ -169,11 +177,14 @@ struct twilighte* twilighte_oric_init(void)
         }
 
 
-        if (read_config_int(line, "twilighte_firmware", &twilighte->firmware_version, 1, 3))
+        if (read_config_int(line, "firmware", &twilighte->firmware_version, 1, 3))
         {
             twilighte->t_register = twilighte->t_register | twilighte->firmware_version;
             continue;
         }
+
+
+        if( read_config_bool(   line, "microdisc",     &twilighte->microdisc ) ) continue;
 
         for (j = 1; j < 32; j++)
         {
@@ -248,9 +259,9 @@ struct twilighte* twilighte_oric_init(void)
     twilighte->IORB = 0;
     twilighte->DDRB = 0b11000000;
 
+    // It's not really the behavior of the firmware 2, because it initialize 0X314 internal register of the twilighte board to 0
     if (twilighte->firmware_version==2)
         twilighte->mirror_0x314=2;
-
 
     return  twilighte;
 }

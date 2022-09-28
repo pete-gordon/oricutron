@@ -329,7 +329,10 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
       ch376_oric_write(oric->ch376, addr, data);
 
     else if(oric->twilighteboard_activated && ((0x342 <= addr && addr < 0x344 ) || (0x320 <= addr && addr < 0x330 )))
-     twilighteboard_oric_write(oric->twilighte,addr,0x00,data);
+      twilighteboard_oric_write(oric->twilighte,addr,0x00,data);
+
+    else if(oric->twilighteboard_activated && get_twilighte_board_microdisc_connection()==SDL_TRUE && (0x310 <= addr && addr < 0x319 ))
+      microdisc_read( &oric->md, addr );
 
     else
       via_write( &oric->via, addr, data );
@@ -715,8 +718,18 @@ unsigned char atmosread( struct m6502 *cpu, unsigned short addr )
     if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
       return ch376_oric_read(oric->ch376, addr);
 
-    if( oric->twilighteboard_activated && ((0x342 <= addr  && addr < 0x344 ) || (0x320 <= addr && addr < 0x330 )))
-      return twilighteboard_oric_read(oric->twilighte,addr);
+    if( oric->twilighteboard_activated)
+    {
+      if ((0x342 <= addr  && addr < 0x344 ) || (0x320 <= addr && addr < 0x330 ))
+        return twilighteboard_oric_read(oric->twilighte,addr);
+
+      if (get_twilighte_board_microdisc_connection()==SDL_TRUE)
+      {
+        if (0x310 <= addr  && addr < 0x319)
+          microdisc_read( &oric->md, addr );
+      }
+
+    }
 
     return via_read( &oric->via, addr );
   }
@@ -1367,6 +1380,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             oric->ch376_activated=SDL_TRUE;
             oric->twilighte=twilighte_oric_init();
           }
+
           if (oric->twilighte==NULL)
           {
             oric->twilighteboard_activated=SDL_FALSE;
@@ -2030,7 +2044,10 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   {
     oric->twilighte=twilighte_oric_init();
     oric->ch376_activated=SDL_TRUE;
+    if (get_twilighte_board_microdisc_connection()==SDL_TRUE)
+      microdisc_init( &oric->md, &oric->wddisk, oric );
   }
+
   if (oric->twilighte==NULL) oric->twilighteboard_activated=SDL_FALSE;
 
   m6502_reset( &oric->cpu );

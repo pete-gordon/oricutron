@@ -1320,7 +1320,8 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
 
   if( oric->drivetype == DRV_NONE )
   {
-    swapmach( oric, NULL, (DRV_MICRODISC<<16)|oric->type );
+    if (!oric->twilighteboard_activated)
+      swapmach( oric, NULL, (DRV_MICRODISC<<16)|oric->type );
 //    setemumode( oric, NULL, EM_DEBUG );
     return;
   }
