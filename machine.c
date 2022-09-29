@@ -332,7 +332,7 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
       twilighteboard_oric_write(oric->twilighte,addr,0x00,data);
 
     else if(oric->twilighteboard_activated && get_twilighte_board_microdisc_connection(oric->twilighte)==SDL_TRUE && (0x310 <= addr && addr < 0x319 ))
-      microdisc_read( &oric->md, addr );
+      microdisc_write( &oric->md, addr, data );
 
     else
       via_write( &oric->via, addr, data );
@@ -725,8 +725,9 @@ unsigned char atmosread( struct m6502 *cpu, unsigned short addr )
 
       if (get_twilighte_board_microdisc_connection(oric->twilighte)==SDL_TRUE)
       {
-        if (0x310 <= addr  && addr < 0x319)
-          microdisc_read( &oric->md, addr );
+        if (0x310 <= addr && addr < 0x319)
+          return microdisc_read( &oric->md, addr );
+          //printf("Hello");
       }
 
     }
@@ -2044,8 +2045,10 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   {
     oric->twilighte=twilighte_oric_init();
     oric->ch376_activated=SDL_TRUE;
-    if (get_twilighte_board_microdisc_connection()==SDL_TRUE)
+    if (get_twilighte_board_microdisc_connection(oric->twilighte)==SDL_TRUE)
+    {
       microdisc_init( &oric->md, &oric->wddisk, oric );
+    }
   }
 
   if (oric->twilighte==NULL) oric->twilighteboard_activated=SDL_FALSE;
