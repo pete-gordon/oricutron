@@ -1,6 +1,6 @@
 
-
 #define TWILIGHTE_CARD_ORIC_EXTENSION_MIRROR_314        0x314
+
 #define TWILIGHTE_CARD_ORIC_EXTENSION_DDRA              0x323
 #define TWILIGHTE_CARD_ORIC_EXTENSION_IORAh             0x321
 
@@ -34,9 +34,11 @@
 #include <string.h>
 
 #include "../../system_sdl.h"
-
 SDL_bool read_config_int(char* buf, char* token, int* dest, int min, int max);
 SDL_bool read_config_bool(char* buf, char* token, SDL_bool* dest);
+
+
+void dbg_printf(char *fmt, ...);
 
 
 #include "../../system.h"
@@ -97,6 +99,11 @@ static SDL_bool load_rom_twilighte(char* fname, int size, unsigned char where[])
     return SDL_TRUE;
 }
 
+SDL_bool get_twilighte_board_microdisc_connection(struct twilighte* twilighte)
+{
+    return SDL_TRUE;
+}
+
 struct twilighte* twilighte_oric_init(void)
 {
 
@@ -107,9 +114,9 @@ struct twilighte* twilighte_oric_init(void)
     char tbtmpram[32];
     char line[1024];
     struct twilighte* twilighte = malloc(sizeof(struct twilighte));
+
     twilighte->t_banking_register = 0;
     twilighte->microdisc=SDL_FALSE;
-
     twilighte->t_register = 128 + 1; // Firmware
 
     f = fopen("plugins/twilighte_board/twilighte.cfg", "r");
@@ -119,7 +126,7 @@ struct twilighte* twilighte_oric_init(void)
         return NULL;
     }
 
-    for (j = 0; j < 32; j++)
+    for (j = 1; j < 32; j++)
     {
         twilighte->twilrombankfiles[j][0] = 0;
         twilighte->twilrambankfiles[j][0] = 0;
@@ -133,18 +140,20 @@ struct twilighte* twilighte_oric_init(void)
           // FIXME: do something to silence the compiler warning ...
         }
 
+
         if (read_config_int(line, "firmware", &twilighte->firmware_version, 1, 3))
         {
             twilighte->t_register = twilighte->t_register | twilighte->firmware_version;
             continue;
         }
 
+
         if( read_config_bool(   line, "microdisc",     &twilighte->microdisc ) ) continue;
 
-        for (j = 0; j < 32; j++)
+        for (j = 1; j < 32; j++)
         {
-            sprintf(tbtmp, "twilbankrom%02d", j+1);
-            sprintf(tbtmpram, "twilbankram%02d", j+1);
+            sprintf(tbtmp, "twilbankrom%02d", j);
+            sprintf(tbtmpram, "twilbankram%02d", j);
 
             if (twilighte->twilrombankfiles[j][0] == 0)
             {
@@ -192,12 +201,12 @@ struct twilighte* twilighte_oric_init(void)
 
     }
 
-    // Flush sram (first bank)
-    // for (j = 0; j < 16384; j++) twilighte->twilrambankdata[0][j] = 0;
 
     twilighte->IORAh = 0x07;
     twilighte->DDRA = 0b10100111;
     twilighte->current_bank = 7;
+    twilighte->save_current_bank=twilighte->current_bank;
+
     twilighte->IORB = 0;
     twilighte->DDRB = 0b11000000;
 
@@ -207,6 +216,7 @@ struct twilighte* twilighte_oric_init(void)
 
     return  twilighte;
 }
+
 
 unsigned char twilighte_board_mapping_bank(struct twilighte *twilighte) {
     unsigned char bank;
@@ -238,18 +248,27 @@ unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte* twilighte, uin
     unsigned char data;
     unsigned char bank;
 
+
     if (twilighte->current_bank == 0)
     {
-        data = twilighte->twilrambankdata[7][addr];
+        data = twilighte->twilrambankdata[0][addr];
     }
     else
     {
-        bank=twilighte_board_mapping_bank(twilighte);
-
-        if ((twilighte->t_register&32)==32 && twilighte->current_bank<5) // Is it a ram bank access ?
-            data=twilighte->twilrambankdata[bank][addr];
+        if (twilighte->current_bank < 5)
+        {
+            if (twilighte->t_banking_register != 0)
+                bank = twilighte->current_bank + 8 + ((twilighte->t_banking_register - 1) * 4);
+            else
+                bank = twilighte->current_bank;
+        }
         else
-            data=twilighte->twilrombankdata[bank][addr];
+            bank = twilighte->current_bank;
+
+        if ((twilighte->t_register & 32) == 32 && twilighte->current_bank < 5) // Is it a ram bank access ?
+            data = twilighte->twilrambankdata[bank][addr];
+        else
+            data = twilighte->twilrombankdata[bank][addr];
     }
     return data;
 }
@@ -258,20 +277,40 @@ unsigned char 	twilighteboard_oric_ROM_RAM_write(struct twilighte* twilighte, ui
 {
 
     unsigned char bank;
+
+    if (twilighte->firmware_version==2)
+    {
+        // If bit 1 of $314 is equal to 0 (romdis low), then send bank 0 value
+        /*
+        if ((twilighte->mirror_0x314&2)==0) // Test bit 0
+        {
+            twilighte->twilrambankdata[twilighte->current_bank][addr] = data;
+            return 0;
+        }
+        */
+        // If bit 2 is equal to 1, then continue and current_bank is the right value to get bank data.
+    } // If it's not firmware version 2, continue
+
+
     if (twilighte->current_bank == 0)
     {
-        twilighte->twilrambankdata[7][addr] = data;
+        twilighte->twilrambankdata[twilighte->current_bank][addr] = data;
     }
     else
     {
-        bank=twilighte_board_mapping_bank(twilighte);
+        if (twilighte->current_bank < 5)
+        {
+            if (twilighte->t_banking_register != 0)
+                bank = twilighte->current_bank + 8 + ((twilighte->t_banking_register - 1) * 4);
+            else
+                bank = twilighte->current_bank;
+        }
+        else
+            bank = twilighte->current_bank;
 
-        if ((twilighte->t_register&32)==32 && twilighte->current_bank<5) // Is it a ram bank access ?
-            twilighte->twilrambankdata[bank][addr]=data;
-
+        if ((twilighte->t_register & 32) == 32 && twilighte->current_bank < 5) // Is it a ram bank access ?
+            twilighte->twilrambankdata[bank][addr] = data;
         // ROM is readonly
-        //else
-        //  error_printf("Flash write: set=%d, bank=%d ram/rom=%x => %d, address=%04x, data=%02x", twilighte->t_banking_register, twilighte->current_bank, (twilighte->t_register >> 5) & 1, bank, addr, data);
     }
     return 0;
 }
@@ -310,9 +349,9 @@ unsigned char 	twilighteboard_oric_read(struct twilighte* twilighte, uint16_t ad
     }
 
     // In firmware mode 2, $314 is not returned by the twilighte board
-    // $314 is only writen in order to have information of the state of the overlay ram
-    // $314 register is returned by the disk controler
-    // That is why, it never returns here $314 register from the twilighte board register
+    // $314 is only writen in order to have twilighte board aware of the state of the overlay ram
+    // It's returned by the disk controler
+    // That is why, it never returns here $314 from the twilighte board regiter
 
     return 0;
 }
@@ -345,7 +384,6 @@ unsigned char 	twilighteboard_oric_write(struct twilighte* twilighte, uint16_t a
 
     if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_IORB)
     {
-
         if (mask == 0)
             twilighte->IORB = data & twilighte->DDRB;
         else
@@ -370,6 +408,7 @@ unsigned char 	twilighteboard_oric_write(struct twilighte* twilighte, uint16_t a
             // If bit 1 of $314 is equal to 0 (romdis low), then send bank 0 value
             if ((twilighte->mirror_0x314&2)==0) // Test bit 1
             {
+                twilighte->save_current_bank=twilighte->current_bank;
                 twilighte->current_bank=0;
             }
             else
@@ -380,5 +419,6 @@ unsigned char 	twilighteboard_oric_write(struct twilighte* twilighte, uint16_t a
         } // If it's not firmware version 2, continue
 
     }
+
     return 0;
 }

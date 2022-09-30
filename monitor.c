@@ -1653,10 +1653,12 @@ void mon_update_twil( struct machine *oric )
 
   if ( oric->twilighteboard_activated )
   {
+    int current_bank = oric->twilighte->current_bank & 0x07;
+    int is_ram = (current_bank == 0) || ((twilighteboard_oric_read(oric->twilighte, 0x342) & 0x20) && (current_bank < 5));
     tzprintfpos( tz[TZ_TWIL], 2, 2, "Board version = %02X", (twilighteboard_oric_read(oric->twilighte, 0x342) & 0x07) );
     tzprintfpos( tz[TZ_TWIL], 2, 4, "Bank set      = %02X", twilighteboard_oric_read(oric->twilighte, 0x343) );
-    tzprintfpos( tz[TZ_TWIL], 2, 5, "Bank number   = %02X", (twilighteboard_oric_read(oric->twilighte, 0x321) & 0x07));
-    tzprintfpos( tz[TZ_TWIL], 2, 6, "Bank type     = %s" , (twilighteboard_oric_read(oric->twilighte, 0x342) & 0x20) ? "SRAM  ": "EEPROM");
+    tzprintfpos( tz[TZ_TWIL], 2, 5, "Bank number   = %02X", twilighte_board_mapping_bank(oric->twilighte) );
+    tzprintfpos( tz[TZ_TWIL], 2, 6, "Bank type     = %s" , is_ram ? "SRAM  ": "EEPROM");
     tzprintfpos( tz[TZ_TWIL], 2, 9, "Twil register = %02X", twilighteboard_oric_read(oric->twilighte, 0x342) );
     tzprintfpos( tz[TZ_TWIL], 2, 10, "Bank register = %02X", twilighteboard_oric_read(oric->twilighte, 0x343) );
     tzprintfpos( tz[TZ_TWIL], 2, 12, "IORB          = %02X", twilighteboard_oric_read(oric->twilighte, 0x320) );

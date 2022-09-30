@@ -331,8 +331,12 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
     else if(oric->twilighteboard_activated && ((0x342 <= addr && addr < 0x344 ) || (0x320 <= addr && addr < 0x330 )))
       twilighteboard_oric_write(oric->twilighte,addr,0x00,data);
 
-    else if(oric->twilighteboard_activated && get_twilighte_board_microdisc_connection(oric->twilighte)==SDL_TRUE && (0x310 <= addr && addr < 0x319 ))
+    else if(oric->twilighteboard_activated && oric->twilighte->microdisc==SDL_TRUE && (0x310 <= addr && addr < 0x319 ))
+      {
+      if (addr==0x314)
+        twilighteboard_oric_write(oric->twilighte,addr,0x00,data);
       microdisc_write( &oric->md, addr, data );
+      }
 
     else
       via_write( &oric->via, addr, data );
@@ -723,11 +727,10 @@ unsigned char atmosread( struct m6502 *cpu, unsigned short addr )
       if ((0x342 <= addr  && addr < 0x344 ) || (0x320 <= addr && addr < 0x330 ))
         return twilighteboard_oric_read(oric->twilighte,addr);
 
-      if (get_twilighte_board_microdisc_connection(oric->twilighte)==SDL_TRUE)
+      if (oric->twilighte->microdisc==SDL_TRUE)
       {
         if (0x310 <= addr && addr < 0x319)
           return microdisc_read( &oric->md, addr );
-          //printf("Hello");
       }
 
     }
@@ -1380,6 +1383,12 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           {
             oric->ch376_activated=SDL_TRUE;
             oric->twilighte=twilighte_oric_init();
+            if (oric->twilighte->microdisc==SDL_TRUE)
+            {
+              oric->drivetype = DRV_MICRODISC;
+              oric->disksyms = NULL;
+              microdisc_init( &oric->md, &oric->wddisk, oric );
+            }
           }
 
           if (oric->twilighte==NULL)
@@ -2045,10 +2054,14 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   {
     oric->twilighte=twilighte_oric_init();
     oric->ch376_activated=SDL_TRUE;
-    if (get_twilighte_board_microdisc_connection(oric->twilighte)==SDL_TRUE)
+
+    if (oric->twilighte->microdisc==SDL_TRUE)
     {
+      oric->drivetype = DRV_MICRODISC;
+      oric->disksyms = NULL;
       microdisc_init( &oric->md, &oric->wddisk, oric );
     }
+
   }
 
   if (oric->twilighte==NULL) oric->twilighteboard_activated=SDL_FALSE;
