@@ -38,6 +38,8 @@ SDL_bool read_config_int(char* buf, char* token, int* dest, int min, int max);
 SDL_bool read_config_bool(char* buf, char* token, SDL_bool* dest);
 
 
+void dbg_printf(char *fmt, ...);
+
 
 
 struct twilbankinfo
@@ -70,6 +72,8 @@ struct twilighte
     unsigned char DDRB;
     unsigned char IORB;
     unsigned char current_bank;
+
+    unsigned char save_current_bank;
 
 };
 
@@ -137,7 +141,7 @@ static SDL_bool load_rom_twilighte(char* fname, int size, unsigned char where[])
 
 SDL_bool get_twilighte_board_microdisc_connection(struct twilighte* twilighte)
 {
-    return twilighte->microdisc;
+    return SDL_TRUE;
 }
 
 struct twilighte* twilighte_oric_init(void)
@@ -256,6 +260,8 @@ struct twilighte* twilighte_oric_init(void)
     twilighte->IORAh = 0x07;
     twilighte->DDRA = 0b10100111;
     twilighte->current_bank = 7;
+    twilighte->save_current_bank=twilighte->current_bank;
+
     twilighte->IORB = 0;
     twilighte->DDRB = 0b11000000;
 
@@ -270,16 +276,6 @@ unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte* twilighte, uin
     unsigned char data;
     unsigned char bank;
 
-    if (twilighte->firmware_version==2)
-    {
-        // If bit 1 of $314 is equal to 0 (romdis low), then send bank 0 value
-        if ((twilighte->mirror_0x314&2)==0) // Test bit 0
-        {
-            data = twilighte->twilrambankdata[0][addr];
-            return data;
-        }
-        // If bit 2 is equal to 1, then continue and current_bank is the right value to get bank data.
-    } // If it's not firmware version 2, continue
 
     if (twilighte->current_bank == 0)
     {
@@ -313,11 +309,13 @@ unsigned char 	twilighteboard_oric_ROM_RAM_write(struct twilighte* twilighte, ui
     if (twilighte->firmware_version==2)
     {
         // If bit 1 of $314 is equal to 0 (romdis low), then send bank 0 value
+        /*
         if ((twilighte->mirror_0x314&2)==0) // Test bit 0
         {
             twilighte->twilrambankdata[twilighte->current_bank][addr] = data;
             return 0;
         }
+        */
         // If bit 2 is equal to 1, then continue and current_bank is the right value to get bank data.
     } // If it's not firmware version 2, continue
 
@@ -378,6 +376,11 @@ unsigned char 	twilighteboard_oric_read(struct twilighte* twilighte, uint16_t ad
         return twilighte->t_banking_register;
     }
 
+    // In firmware mode 2, $314 is not returned by the twilighte board
+    // $314 is only writen in order to have twilighte board aware of the state of the overlay ram
+    // It's returned by the disk controler
+    // That is why, it never returns here $314 from the twilighte board regiter
+
     return 0;
 }
 
@@ -430,7 +433,19 @@ unsigned char 	twilighteboard_oric_write(struct twilighte* twilighte, uint16_t a
         if (addr == TWILIGHTE_CARD_ORIC_EXTENSION_MIRROR_314)
         {
             twilighte->mirror_0x314 = data;
-        }
+            // If bit 1 of $314 is equal to 0 (romdis low), then send bank 0 value
+            if ((twilighte->mirror_0x314&2)==0) // Test bit 1
+            {
+                twilighte->save_current_bank=twilighte->current_bank;
+                twilighte->current_bank=0;
+            }
+            else
+            {
+                twilighte->current_bank=6;
+            }
+            // If bit 2 is equal to 1, then continue and current_bank is the right value to get bank data.
+        } // If it's not firmware version 2, continue
+
     }
 
     return 0;
