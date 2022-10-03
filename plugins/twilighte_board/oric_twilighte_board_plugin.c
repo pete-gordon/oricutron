@@ -135,7 +135,12 @@ struct twilighte* twilighte_oric_init(void)
 
         if (read_config_int(line, "firmware", &twilighte->firmware_version, 1, 3))
         {
-            twilighte->t_register = twilighte->t_register | twilighte->firmware_version;
+             // because we initialize board version to 1. If firmware_version is set, then we have a look to firmware_version.
+             // If it's equal to 1, then do not overlap the value
+            if (twilighte->firmware_version!=1) {
+                twilighte->t_register=twilighte->t_register&0b11111110; // Remove bit 0 (firmware 1 which is the default when the .cfg does not contain firmware version)
+                twilighte->t_register = twilighte->t_register | (twilighte->firmware_version);
+                }
             continue;
         }
 
@@ -206,6 +211,32 @@ struct twilighte* twilighte_oric_init(void)
         twilighte->mirror_0x314=2;
 
     return  twilighte;
+}
+
+unsigned char twilighte_board_mapping_software_bank(struct twilighte *twilighte) {
+
+    unsigned char bank=0;
+    int current_bank = twilighte->IORAh & 0x07;
+    // RAM Overlay?
+    if (current_bank == 0)
+        bank = 0;
+    // Bank 7 downto 5 are always the same bank on any set
+    else if ( (current_bank >=5) && (current_bank <=7) )
+        bank = current_bank;
+    // ROM
+    else if ( (current_bank >=1) && (current_bank <=4) && (twilighteboard_oric_read(twilighte, 0x342) & 0x20)==0 && twilighteboard_oric_read(twilighte, 0x343)!=4) {
+        bank = current_bank*twilighteboard_oric_read(twilighte, 0x343);
+    }
+    // Special case for bank 8
+    else if ( (current_bank==4 ) && (twilighteboard_oric_read(twilighte, 0x342) & 0x20)==0 && twilighteboard_oric_read(twilighte, 0x343)==4) {
+        bank = 8;
+    }
+    // RAM
+    else if ( (current_bank >=1) && (current_bank <=4) && (twilighteboard_oric_read(twilighte, 0x342) & 0x20)==0x20)
+        bank = current_bank*twilighteboard_oric_read(twilighte, 0x343)+31;
+
+
+    return bank;
 }
 
 unsigned char twilighte_board_mapping_bank(struct twilighte *twilighte) {
