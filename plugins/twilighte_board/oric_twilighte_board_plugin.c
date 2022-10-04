@@ -140,7 +140,7 @@ struct twilighte* twilighte_oric_init(void)
             if (twilighte->firmware_version!=1) {
                 twilighte->t_register=twilighte->t_register&0b11111110; // Remove bit 0 (firmware 1 which is the default when the .cfg does not contain firmware version)
                 twilighte->t_register = twilighte->t_register | (twilighte->firmware_version);
-                }
+            }
             continue;
         }
 
@@ -224,16 +224,22 @@ unsigned char twilighte_board_mapping_software_bank(struct twilighte *twilighte)
     else if ( (current_bank >=5) && (current_bank <=7) )
         bank = current_bank;
     // ROM
-    else if ( (current_bank >=1) && (current_bank <=4) && (twilighteboard_oric_read(twilighte, 0x342) & 0x20)==0 && twilighteboard_oric_read(twilighte, 0x343)!=4) {
-        bank = current_bank*twilighteboard_oric_read(twilighte, 0x343);
+    else if ( (twilighteboard_oric_read(twilighte, 0x342) & 0x20)==0 && twilighteboard_oric_read(twilighte, 0x343)<=3 && twilighteboard_oric_read(twilighte, 0x343)>=1) {
+        bank = current_bank+4*(twilighteboard_oric_read(twilighte, 0x343)+1);
     }
-    // Special case for bank 8
-    else if ( (current_bank==4 ) && (twilighteboard_oric_read(twilighte, 0x342) & 0x20)==0 && twilighteboard_oric_read(twilighte, 0x343)==4) {
-        bank = 8;
+    else if ( (twilighteboard_oric_read(twilighte, 0x342) & 0x20)==0 && twilighteboard_oric_read(twilighte, 0x343)<=3 && twilighteboard_oric_read(twilighte, 0x343)==0) {
+        bank = current_bank;
+    }
+    else if ( (current_bank >=1) && (current_bank <=4) && (twilighteboard_oric_read(twilighte, 0x342) & 0x20)==0 && twilighteboard_oric_read(twilighte, 0x343)>4) {
+        bank = current_bank+4*twilighteboard_oric_read(twilighte, 0x343);
+    }
+    // Special case for bank 8,7,6,5
+    else if ( (twilighteboard_oric_read(twilighte, 0x342) & 0x20)==0 && twilighteboard_oric_read(twilighte, 0x343)==4) {
+        bank = current_bank+4;
     }
     // RAM
     else if ( (current_bank >=1) && (current_bank <=4) && (twilighteboard_oric_read(twilighte, 0x342) & 0x20)==0x20)
-        bank = current_bank*twilighteboard_oric_read(twilighte, 0x343)+31;
+        bank = current_bank+4*twilighteboard_oric_read(twilighte, 0x343)+32;
 
 
     return bank;
