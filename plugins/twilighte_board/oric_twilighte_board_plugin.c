@@ -203,10 +203,9 @@ struct twilighte* twilighte_oric_init(void)
     twilighte->IORAh = 0x07;
     twilighte->DDRA = 0b10100111;
     twilighte->current_bank = 7;
-    twilighte->saved_current_bank = twilighte->current_bank;
     twilighte->IORB = 0;
     twilighte->DDRB = 0b11000000;
-    //twilighte->mirror_0x314_write_detected=SDL_FALSE;
+    twilighte->mirror_0x314_write_detected=SDL_FALSE;
 
     // It's not really the behavior of the firmware 2, because it initialize 0X314 internal register of the twilighte board to 0
     if (twilighte->firmware_version==2)
@@ -312,6 +311,23 @@ unsigned char 	twilighteboard_oric_ROM_RAM_write(struct twilighte* twilighte, ui
 {
 
     unsigned char bank;
+
+    if (twilighte->firmware_version==2)
+    {
+        if (twilighte->mirror_0x314_write_detected==SDL_TRUE)
+        {
+            if ((twilighte->mirror_0x314&2)==0)
+                twilighte->current_bank = 0;
+            else
+            {
+                twilighte->current_bank = 6;
+                twilighte->t_banking_register=0;
+                twilighte->t_register=twilighte->t_register&0b1101111;
+            }
+        }
+    }
+
+
     if (twilighte->current_bank == 0)
     {
         twilighte->twilrambankdata[7][addr] = data;
