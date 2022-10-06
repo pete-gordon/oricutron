@@ -203,8 +203,10 @@ struct twilighte* twilighte_oric_init(void)
     twilighte->IORAh = 0x07;
     twilighte->DDRA = 0b10100111;
     twilighte->current_bank = 7;
+    twilighte->saved_current_bank = twilighte->current_bank;
     twilighte->IORB = 0;
     twilighte->DDRB = 0b11000000;
+    //twilighte->mirror_0x314_write_detected=SDL_FALSE;
 
     // It's not really the behavior of the firmware 2, because it initialize 0X314 internal register of the twilighte board to 0
     if (twilighte->firmware_version==2)
@@ -274,6 +276,21 @@ unsigned char twilighte_board_mapping_bank(struct twilighte *twilighte) {
 unsigned char 	twilighteboard_oric_ROM_RAM_read(struct twilighte* twilighte, uint16_t addr) {
     unsigned char data;
     unsigned char bank;
+
+    if (twilighte->firmware_version==2)
+    {
+        if (twilighte->mirror_0x314_write_detected==SDL_TRUE)
+        {
+            if ((twilighte->mirror_0x314&2)==0)
+                twilighte->current_bank = 0;
+            else
+            {
+                twilighte->current_bank = 6;
+                twilighte->t_banking_register=0;
+                twilighte->t_register=twilighte->t_register&0b1101111;
+            }
+        }
+    }
 
     if (twilighte->current_bank == 0)
     {
@@ -407,14 +424,9 @@ unsigned char 	twilighteboard_oric_write(struct twilighte* twilighte, uint16_t a
             // If bit 1 of $314 is equal to 0 (romdis low), then send bank 0 value
             if ((twilighte->mirror_0x314&2)==0) // Test bit 1
             {
-                twilighte->current_bank=0;
+                 twilighte->mirror_0x314_write_detected=SDL_TRUE;
             }
-            else
-            {
-                twilighte->current_bank=6;
-            }
-            // If bit 2 is equal to 1, then continue and current_bank is the right value to get bank data.
-        } // If it's not firmware version 2, continue
+        } 
 
     }
     return 0;

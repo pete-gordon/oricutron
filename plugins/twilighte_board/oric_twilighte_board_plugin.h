@@ -25,7 +25,9 @@ struct twilighte
     unsigned char DDRB;
     unsigned char IORB;
     unsigned char current_bank;
+    unsigned char saved_current_bank;
     unsigned char mirror_0x314;
+    unsigned char mirror_0x314_write_detected;
 };
 
 struct twilighte * twilighte_oric_init(void);
