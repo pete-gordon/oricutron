@@ -227,6 +227,7 @@ Keys
   F12      - Paste (BeOS, Linux & Windows)
   Help     - Show guide (Amiga, MorphOS and AROS)
   AltGr    - Additional modifier
+  PrtSc    - Save screen as BMP
 
 
   In menus
