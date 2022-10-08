@@ -415,7 +415,7 @@ Back-ends are:
 - com       - Oricutron uses any real or virtual COM port in the host machine and communicates with the hardware attached to this serial port
 - modem     - unites ACIA with attached modem linked to internet with server and client sockets
 
-In 'modem' mode are available folowing 'AT' commands:
+In 'modem' mode are available following 'AT' commands:
 AT          - returns 'OK'
 ATZ         - initialize the modem
 AT&F        - initialize the modem
@@ -443,7 +443,7 @@ emulation: contact Jede (jede@oric.org). Because this emulation is used
 also in ACE emulator (cpc emulation). Offset and me are trying to keep the
 same emulation. It's easier to work together than alone.
 
-CH376 command emulated :
+CH376 command emulated:
 - CH376_CMD_GET_IC_VER
 - CH376_CMD_CHECK_EXIST
 - CH376_CMD_SET_USB_MODE
@@ -466,24 +466,24 @@ CH376 command emulated :
 - CH376_CMD_DIR_CREATE (not emulated under linux)
 - CH376_CMD_DISK_RD_GO
 
-Known bug :
+Known bug:
 Under windows, API's file does not send "." and ".." entries when we read the content on the folder. It's a problem because ch376 chip send these
 entries, when we ask to this chip to read the content of a directory.
 
-If someone wants to emulate CH376_CMD_DIR_CREATE and CH376_CMD_FILE_ERASE. It's easy to do : it justs need to copy WIN32 function and replace DeleteFile
+If someone wants to emulate CH376_CMD_DIR_CREATE and CH376_CMD_FILE_ERASE. It's easy to do: it justs need to copy WIN32 function and replace DeleteFile
  and CreateDir with rm() and mkdir(). But it's not done because we are not able to test it.
 
-CH376 emulation added for :
+CH376 emulation added for:
 CH376_CMD_FILE_ERASE suppress a file
 CH376_CMD_DIR_CREATE create folder
 
 Twilighte board emulation
-===============
+=========================
 
 The twilighte board is working on atmos (and Oric-1). It disables internal Oric ROM and add 64 banks (by bank switching).
 It adds 32 banks of ROM (eeprom) and 32 banks of RAM (Static RAM saved with a battery).
 EEprom can be programmed from Orix command line.
-The board handles ch376 (sdcard/usbdrive/usb/hid controler).
+The board handles ch376 (sdcard/usbdrive/usb/hid controller).
 And the board adds 2 joysticks ports.
 
 The emulation, for instance, handles 32 ROM banks and 32 RAM banks. It emulates this bank switching.
@@ -492,11 +492,11 @@ Board is working with a cumulus. Anyway, this part is not emulated and you need 
 
 Anyway, on Telestrat, orix can start floppy disk because FDC is present.
 
-Not emulated parts :
+Not emulated parts:
 * eeprom programming sequence
 * loading ROM into RAM bank (which could emulate RAM saved with battery)
 * save on disk any modification into RAM bank (which could emulate RAM saved with battery)
-* ch376 is not fully supported in the emulation mode. There is a lot of others functionnalities which are missing on ch376 emulation
+* ch376 is not fully supported in the emulation mode. There is a lot of others functionalities which are missing on ch376 emulation
 * firmware 2 of the board. Only firmware 1 of the board is supported
 
 To activate the plugin, you must activate twilighte_board option in oricutron.cfg
@@ -505,7 +505,7 @@ Update twilighte.cfg plugin in plugins/twilighte_card/twilighte.cfg if you want 
 
 In order to start at least, minimal configuration, kernel.rom must be set in twilbankrom07 and shell.rom in twilbankrom05.
 
-Last roms can be found here : http://repo.orix.oric.org/dists/official/tgz/6502/
+Last roms can be found here: http://repo.orix.oric.org/dists/official/tgz/6502/
 * kernel.tgz contains kernel.rom
 * shell.tgz contains shell.rom
 
@@ -513,7 +513,7 @@ Under linux, sdcard folder and/or usbdrive folder must have uppercase filenames 
 
 Filenames must be in uppercase, because usb chip manage by default FAT32 filesystem.
 
-For basic11 rom which handles joysticks and .tap load from sdcard or usbdrive, you have to download basic.tgz here : http://repo.orix.oric.org/dists/official/tgz/6502/
+For basic11 rom which handles joysticks and .tap load from sdcard or usbdrive, you have to download basic.tgz here: http://repo.orix.oric.org/dists/official/tgz/6502/
 And you need to replace twilbankrom06 with the rom in basic11.tgz. 
 
 Oricutron is provided with kernel (Orix) and shell (Orix) v2022.1 roms. For updates, see http://repo.orix.oric.org/dists/official/tgz/6502/
@@ -524,7 +524,7 @@ ROM patch files
 
 For detailed usage see included '.pch' files in roms subdirectory.
 
-Additionaly unlimited number of binary patches can be added:
+Additionally unlimited number of binary patches can be added:
 
 $XXXX:00112233445566778899AABBCCDDEEFF....
 $YYYY:AA55AA55....
