@@ -125,6 +125,32 @@ static void FreeResources(void)
 }
 #endif
 
+int SDL_COMPAT_Init(Uint32 flags)
+{
+  int rc;
+
+#ifdef DEBUG_SDLINFO
+  SDL_version ver;
+  SDL_VERSION(&ver);
+  fprintf(stderr,"SDL version %u.%u.%u", ver.major, ver.minor, ver.patch);
+
+#if SDL_MAJOR_VERSION == 1
+  // SDL_GetVersion not defined in SDL-1.x
+#else
+  SDL_GetVersion(&ver);
+  fprintf(stderr,"/%u.%u.%u", ver.major, ver.minor, ver.patch);
+#endif
+
+  fprintf(stderr,"\n");
+#endif
+
+  rc = SDL_Init( flags );
+  if( rc < 0 )
+    error_printf( "SDL init failed: %s", SDL_GetError() );
+
+  return rc;
+}
+
 #if SDL_MAJOR_VERSION == 1
 int SDL_COMPAT_GetWMInfo(SDL_SysWMinfo *info)
 {
@@ -413,8 +439,10 @@ SDL_Surface* SDL_COMPAT_SetVideoMode(int width, int height, int bitsperpixel, Ui
 
   FreeResources();
 
-  // When leaving fullscreen mode, X and Y coordinates should be recentered relative to the display.
-  if (flags ^ SDL_WINDOW_FULLSCREEN) {
+  // When leaving fullscreen mode, X and Y coordinates
+  // should be recentered relative to the display.
+  if ( !(flags & SDL_WINDOW_FULLSCREEN) )
+  {
       g_lastx = SDL_WINDOWPOS_CENTERED;
       g_lasty = SDL_WINDOWPOS_CENTERED;
   }
@@ -433,6 +461,8 @@ SDL_Surface* SDL_COMPAT_SetVideoMode(int width, int height, int bitsperpixel, Ui
   {
     g_screen = SDL_GetWindowSurface(g_window);
     g_glcontext = SDL_GL_CreateContext(g_window);
+
+    SDL_GL_SetSwapInterval(1);
   }
   else
   {

@@ -52,7 +52,9 @@ static Uint8 mdm_cmd_buf[CMD_BUF_SIZE];
 // happen if you ran Oricutron for ~50 days solid
 static Uint32 mdm_time_buf[CMD_BUF_SIZE];
 
-#define DATA_BUF_SIZE   4096
+// FIXME: BUG: drops byte(s)... kind of buffer overflow ???
+#define DATA_BUF_SIZE   0x10000
+
 static int mdm_in = 0;
 static Uint8 mdm_in_buf[DATA_BUF_SIZE];
 static int mdm_out = 0;
@@ -158,11 +160,11 @@ static void mdm_connect(const char* s)
   char ip[1024];
   char* p = NULL;
   int port = 0;
-  
+
   strcpy(ip, s);
   trim(ip);
   p = strrchr(ip, ':');
-  
+
   if(p)
   {
     port = atoi(p+1);
@@ -170,7 +172,7 @@ static void mdm_connect(const char* s)
   }
   // default telnet port
   if(port == 0) port = ACIA_TYPE_MODEM_DEFAULT_PORT;
-  
+
   if( socket_create(&cnt_sck, oric->aciabackendcfgdomain) )
   {
     if(socket_connect(cnt_sck, ip, port, oric->aciabackendcfgdomain))
@@ -184,7 +186,7 @@ static void mdm_connect(const char* s)
   }
   else
     send_responce("NO DIALTINE");
-  
+
   mdm_hangup();
 }
 
@@ -192,7 +194,7 @@ static void parse_command(const char* s)
 {
   if(!s)
     return;
-  
+
   if( escaped )
   {
     if('\0' == s[0])
@@ -235,7 +237,7 @@ static void parse_command(const char* s)
       char* p = trim(strdup(s+5));
       int on = atoi(p);
       free(p);
-      
+
       if(0<on)
       {
         mdm_answeron();
@@ -291,10 +293,10 @@ static void parse_command(const char* s)
 static void modem_done( struct acia* acia )
 {
   mdm_hangup();
-  
+
   socket_close(srv_sck);
   srv_sck = -1;
-  
+
   socket_done();
   // acia_init_none( acia );
 }
@@ -315,7 +317,7 @@ static Uint8 modem_stat(Uint8 stat)
         mdm_out += len;
     }
   }
-  
+
   if( !connected && listening )
   {
     if(socket_accept(srv_sck, &cnt_sck))
@@ -324,13 +326,13 @@ static Uint8 modem_stat(Uint8 stat)
       connected = SDL_TRUE;
     }
   }
-  
+
   if( connected )
     return (stat & ~(ASTF_CARRIER|ASTF_DSR));
-  
+
   if( listening )
     return (stat & ~(ASTF_DSR));
-  
+
   return (stat | (ASTF_CARRIER|ASTF_DSR));
 }
 
@@ -341,7 +343,7 @@ static SDL_bool modem_has_byte(Uint8* data)
     *data = mdm_out_buf[0];
     return SDL_TRUE;
   }
-  
+
   return SDL_FALSE;
 }
 
@@ -354,7 +356,7 @@ static SDL_bool modem_get_byte(Uint8* data)
     mdm_out--;
     return SDL_TRUE;
   }
-  
+
   return SDL_FALSE;
 }
 
@@ -364,19 +366,19 @@ static void mdm_escape(Uint8 data)
   mdm_cmd_buf[1] = mdm_cmd_buf[2];
   mdm_cmd_buf[2] = mdm_cmd_buf[3];
   mdm_cmd_buf[3] = data;
-  
+
   mdm_time_buf[0] = mdm_time_buf[1];
   mdm_time_buf[1] = mdm_time_buf[2];
   mdm_time_buf[2] = mdm_time_buf[3];
   mdm_time_buf[3] = SDL_GetTicks();
-  
+
   if( mdm_cmd_buf[1] == '+' && mdm_cmd_buf[2] == '+' && mdm_cmd_buf[3] == '+')
   {
     if(1000 < (mdm_time_buf[3] - mdm_time_buf[0]))
     {
       escaped = SDL_TRUE;
     }
-  }  
+  }
 }
 
 static SDL_bool modem_put_byte(Uint8 data)
@@ -399,7 +401,7 @@ static SDL_bool modem_put_byte(Uint8 data)
       memmove(mdm_in_buf, mdm_in_buf+1, DATA_BUF_SIZE-1);
       mdm_in--;
     }
-    
+
     // including 0x7e as BACKSPACE:
     // this is tribute to Vagelis Blathras
     // for the  excellent terminal program
@@ -436,34 +438,34 @@ static SDL_bool modem_put_byte(Uint8 data)
 SDL_bool acia_init_modem( struct acia* acia )
 {
   oric = acia->oric;
-  
+
   mdm_in = 0;
   mdm_out = 0;
-  
+
   mdm_in_buf[0] = 0x00;
   mdm_out_buf[0] = 0x00;
   memset(mdm_cmd_buf, 0, sizeof(Uint8)*CMD_BUF_SIZE);
   memset(mdm_time_buf, 0, sizeof(Uint32)*CMD_BUF_SIZE);
-  
+
   acia->done = modem_done;
   acia->stat = modem_stat;
   acia->has_byte = modem_has_byte;
   acia->get_byte = modem_get_byte;
   acia->put_byte = modem_put_byte;
-  
+
   srv_sck = -1;
   cnt_sck = -1;
-  
+
   connected = SDL_FALSE;
   listening = SDL_FALSE;
   escaped = SDL_FALSE;
-  
+
   if(socket_init())
   {
     oric->aciabackend = ACIA_TYPE_MODEM;
     return SDL_TRUE;
   }
-  
+
   // fall-back to none
   acia_init_none( acia );
   return SDL_FALSE;
@@ -490,7 +492,7 @@ char *inet_ntoa(struct in_addr n)
 {
   static char a[sizeof "XXX.XXX.XXX.XXX"];
   char *p = (char *)&n;
-  
+
   snprintf(a, sizeof a, "%d.%d.%d.%d", p[0]&0xff, p[1]&0xff, p[2]&0xff, p[3]&0xff);
   return a;
 }
@@ -565,14 +567,14 @@ static int socket_create(int* sock, int domain)
   *sock = socket(domain, SOCK_STREAM, 0);
   if(*sock == -1)
     return 0;
-  
+
   if(setsockopt(*sock, SOL_SOCKET, SO_REUSEADDR, (const char*) &on, sizeof(on)) == -1)
     return 0;
 #ifdef __APPLE__
   if(setsockopt(*sock, SOL_SOCKET, SO_REUSEPORT, (const char*) &on, sizeof(on)) == -1)
     return 0;
 #endif
-  
+
   return 1;
 }
 
@@ -581,14 +583,14 @@ static int socket_create(int* sock, int domain)
 
 static int socket_bind(int sock, int port, int domain)
 {
-  
+
 #ifdef NO_GETADDRINFO
   struct sockaddr_in srv_addr;
   memset((void*)&srv_addr, 0, sizeof(srv_addr));
   srv_addr.sin_family = AF_INET;
   srv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
   srv_addr.sin_port = htons(port);
-  
+
   if(bind(sock, (struct sockaddr*) &srv_addr, sizeof(srv_addr)) == -1) {
     perror("socket_bind, bind error: ");
     return 0;
@@ -597,7 +599,7 @@ static int socket_bind(int sock, int port, int domain)
   struct addrinfo	hints, *res, *ressave;
   char service[NI_MAXSERV];
   int n;
-  
+
   memset(&hints, 0, sizeof(hints));
   hints.ai_flags = AI_PASSIVE;
   if (domain == 6)
@@ -605,34 +607,34 @@ static int socket_bind(int sock, int port, int domain)
   else
     hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
-  
+
   sprintf(service, "%d", port);
-  
+
   if ( (n = getaddrinfo(NULL, service, &hints, &res)) != 0)  {
     printf("socket_bind, getaddrinfo error: %s", gai_strerror(n));
     return 0;
   }
   ressave = res;
-  
+
   // loop through all the addresses that we got
   do {
     if (bind(sock, res->ai_addr, res->ai_addrlen) == 0)
       break;			/* success */
   } while ( (res = res->ai_next) != NULL);
-  
+
   freeaddrinfo(ressave);
-  
+
   if (res == NULL) {
     perror("socket_bind, bind error: ");
     return 0;
   }
 #endif
-  
-  
+
+
 #if defined(__LINUX__) || defined(__APPLE__) || defined(__amigaos4__) || defined(__MORPHOS__)
   fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
 #endif
-  
+
 #ifdef WIN32
   u_long imode = 1;
   ioctlsocket(sock, FIONBIO, &imode);
@@ -644,7 +646,7 @@ static int socket_listen(int sock)
 {
   if(listen(sock, 1) == -1)
     return 0;
-  
+
   return 1;
 }
 
@@ -656,7 +658,7 @@ static int socket_accept(int sock, int* sck)
   struct sockaddr_storage cli_addr;
 #endif
   socklen_t cli_addr_len = sizeof(cli_addr);
-  
+
   *sck = accept(sock, (struct sockaddr*) &cli_addr, (socklen_t*) &cli_addr_len);
   if(*sck == -1)
     return 0;
@@ -665,13 +667,13 @@ static int socket_accept(int sock, int* sck)
 #if defined(__LINUX__) || defined(__amigaos4__) || defined(__MORPHOS__)
     fcntl(*sck, F_SETFL, fcntl(*sck, F_GETFL, 0) | O_NONBLOCK);
 #endif
-    
+
 #if defined(WIN32)
     u_long imode = 1;
     ioctlsocket(*sck, FIONBIO, &imode);
 #endif
   }
-  
+
   return 1;
 }
 
@@ -717,10 +719,10 @@ static int socket_connect(int sock, const char* host, int port, int domain)
   struct sockaddr_in addr;
   addr.sin_family = AF_INET;
   addr.sin_port = htons(port);
-  
+
   hostname_to_ip(host, ip, 64);
   addr.sin_addr.s_addr = inet_addr((unsigned char*)ip);
-  
+
   if(connect(sock, (struct sockaddr*) &addr, sizeof(addr)) != 0) {
     perror("socket_connect, connect error: ");
     return 0;
@@ -729,45 +731,45 @@ static int socket_connect(int sock, const char* host, int port, int domain)
   struct addrinfo	hints, *res, *ressave;
   char service[NI_MAXSERV];
   int n;
-  
+
   memset(&hints, 0, sizeof(hints));
   if (domain == 6)
     hints.ai_family = AF_INET6;
   else
     hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
-  
+
   sprintf(service, "%d", port);
-  
+
   if ( (n = getaddrinfo(host, service, &hints, &res)) != 0)  {
     printf("socket_connect, getaddrinfo error: %s", gai_strerror(n));
     return 0;
   }
   ressave = res;
-  
+
   // loop through all the addresses that we got
   do {
     if (connect(sock, res->ai_addr, res->ai_addrlen) == 0)
       break;			/* success */
   } while ( (res = res->ai_next) != NULL);
-  
+
   freeaddrinfo(ressave);
-  
+
   if (res == NULL) {
     perror("socket_bind, connect error: ");
     return 0;
   }
 #endif
-  
+
 #if defined(__LINUX__) || defined(__APPLE__) || defined(__amigaos4__) || defined(__MORPHOS__)
   fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
 #endif
-  
+
 #ifdef WIN32
   u_long imode = 1;
   ioctlsocket(sock, FIONBIO, &imode);
 #endif
-  
+
   return 1;
 }
 
@@ -775,7 +777,7 @@ int socket_close(int sock)
 {
   if(_closesocket(sock) == -1)
     return 0;
-  
+
   return 1;
 }
 

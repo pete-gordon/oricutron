@@ -2152,9 +2152,8 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
   need_sdl_quit = SDL_FALSE;
 
   // Go SDL!
-  if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
+  if( SDL_COMPAT_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
   {
-    error_printf( "SDL init failed\n" );
     oric->emu_mode = EM_PLEASEQUIT;
     return;
   }

@@ -32,7 +32,6 @@
 #endif
 
 #ifndef __APPLE__
-
 #include <GL/gl.h>
 #else
 #include <OpenGL/gl.h>
@@ -525,18 +524,17 @@ static SDL_bool go_go_gadget_texture( int i, int w, int h, int blendtype, SDL_bo
 
 SDL_bool init_render_gl( struct machine *oric )
 {
-  int depth, i, x, y;
+  Uint32 flags = SDL_COMPAT_OPENGL | ( fullscreen? SDL_COMPAT_FULLSCREEN : 0 );
   int BitsPerPixel = SDL_COMPAT_GetBitsPerPixel();
+  int depth = 32;
+  int y = 480 + ( oric->show_keyboard? 240:0 );
+  int x = 640;
+  int i;
 
-  depth = 32;
   if( BitsPerPixel )
     depth = BitsPerPixel;
 
-  if (oric->show_keyboard) {
-      screen = SDL_COMPAT_SetVideoMode( 640, 480+240, depth, fullscreen ? SDL_COMPAT_OPENGL|SDL_COMPAT_FULLSCREEN : SDL_COMPAT_OPENGL );
-  } else {
-      screen = SDL_COMPAT_SetVideoMode( 640, 480, depth, fullscreen ? SDL_COMPAT_OPENGL|SDL_COMPAT_FULLSCREEN : SDL_COMPAT_OPENGL );
-  }
+  screen = SDL_COMPAT_SetVideoMode( x, y, depth, flags );
 
   if( !screen )
   {

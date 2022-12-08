@@ -165,7 +165,7 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
         case SDL_KEYDOWN:
           for( i=0; i<7; i++ )
           {
-            if( ev->key.keysym.sym == kbtab[i] )
+            if( (ev->key.keysym.sym&0xffff) == kbtab[i] )
             {
               joystate[i] = 1;
               swallowit = SDL_TRUE;
@@ -176,7 +176,7 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
         case SDL_KEYUP:
           for( i=0; i<7; i++ )
           {
-            if( ev->key.keysym.sym == kbtab[i] )
+            if( (ev->key.keysym.sym&0xffff) == kbtab[i] )
             {
               joystate[i] = 0;
               swallowit = SDL_TRUE;
@@ -261,11 +261,8 @@ void joy_buildmask( struct machine *oric )
   Uint8 telestrat_joysel = oric->tele_via.read_port_b( &oric->tele_via );
   Uint8 twilighteboard_joysel = 0;
 
-
   SDL_bool gimme_port_a = SDL_FALSE;
   SDL_bool gimme_port_b = SDL_FALSE;
-
-
 
   if (oric->twilighteboard_activated)
     twilighteboard_joysel= twilighteboard_oric_read(oric->twilighte,0x320);
@@ -306,13 +303,11 @@ void joy_buildmask( struct machine *oric )
 
     if( gimme_port_b )
     {
-        // port B
+      // port B
       //twilighteboard_oric_write(oric->twilighte, 0x320, 0xff, mkmask);
     }
   }
-  else
-
-  if (oric->type == MACH_TELESTRAT)
+  else if (oric->type == MACH_TELESTRAT)
   {
     if ( telestrat_joysel & 0x80 )
     {
@@ -351,7 +346,6 @@ void joy_buildmask( struct machine *oric )
       oric->tele_via.write_port_b( &oric->tele_via, 0xff, mkmask );
     }
   }
-
   else
   {
     switch( oric->joy_iface )
@@ -417,7 +411,7 @@ void joy_buildmask( struct machine *oric )
     } else {
       if( !oric->porta_is_ay )
       {
-       oric->via.write_port_a( &oric->via, 0xff, oric->porta_ay );
+        oric->via.write_port_a( &oric->via, 0xff, oric->porta_ay );
         oric->porta_is_ay = SDL_TRUE;
       }
     }

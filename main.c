@@ -695,6 +695,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   preinit_machine( oric );
   preinit_render_sw( oric );
   preinit_render_sw8( oric );
+
 #ifdef __OPENGL_AVAILABLE__
   preinit_render_gl( oric );
 #endif
@@ -703,9 +704,8 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   kbd_init(oric);
 
   // Go SDL!
-  if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
+  if( SDL_COMPAT_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
   {
-    error_printf( "SDL init failed" );
     free( sto );
     return SDL_FALSE;
   }

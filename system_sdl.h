@@ -131,6 +131,7 @@ typedef SDL_RendererInfo SDL_COMPAT_VideoInfo;
 int SDL_COMPAT_GetWMInfo(SDL_SysWMinfo *info);
 #endif
 
+int SDL_COMPAT_Init(Uint32 flags);
 void SDL_COMPAT_WM_SetIcon(SDL_Surface *icon, Uint8 *mask);
 void SDL_COMPAT_WM_SetCaption(const char *title, const char *icon);
 SDL_bool SDL_COMPAT_IsAppActive(SDL_Event* event);

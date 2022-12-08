@@ -388,7 +388,6 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
   {
     switch( addr & 0x0f0 )
     {
-
       case 0x20:
         via_write( &oric->tele_via, addr, data );
         break;
@@ -407,7 +406,6 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
             ch376_oric_write(oric->ch376, addr, data);
           break;
         }
-
 
       default:
         via_write( &oric->via, addr, data );
