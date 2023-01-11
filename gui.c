@@ -108,9 +108,14 @@ struct guiimg gimgs[NUM_GIMG]  = { { IMAGEPREFIX"statusbar.bmp",              64
                                    { IMAGEPREFIX"tape_stop.bmp",      GIMG_W_TAPE, 16, NULL },
                                    { IMAGEPREFIX"tape_record.bmp",    GIMG_W_TAPE, 16, NULL },
                                    { IMAGEPREFIX"avirec.bmp",         GIMG_W_AVIR, 16, NULL },
+#ifndef WWW_NO_ORIC1
                                    { IMAGEPREFIX"gfx_oric1kbd.bmp",   640, 240, NULL },
+#endif
                                    { IMAGEPREFIX"gfx_atmoskbd.bmp",   640, 240, NULL },
-                                   { IMAGEPREFIX"gfx_pravetzkbd.bmp", 640, 240, NULL }};
+#ifndef WWW_NO_PRAVETZ
+                                   { IMAGEPREFIX"gfx_pravetzkbd.bmp", 640, 240, NULL }
+#endif
+                                    };
 
 SDL_bool soundavailable, soundon;
 #if defined(__linux__)
@@ -250,7 +255,9 @@ struct osdmenuitem mainitems[] = { { "Insert tape...",         "T",    't',     
                                    { "Debug options...",       "D",    'd',      gotomenu,        3, 0 },
                                    { "Overclock options...",   "C",    'c',      gotomenu,        6, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
+#ifndef WWW_NO_MONITOR
                                    { "Monitor",                "[F2]", SDLK_F2,  setemumode,      EM_DEBUG, 0 },
+#endif
                                    { "Reset Button NMI",       "[F3]", SDLK_F3,  softresetoric,       0, 0 },
                                    { "Hard Reset",             "[F4]", SDLK_F4,  resetoric,       0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,setemumode, EM_RUNNING, 0 },
@@ -463,13 +470,17 @@ void draw_keyboard( struct machine *oric ) {
   if (oric->show_keyboard) {
     switch( oric->type )
     {
+#ifndef WWW_NO_PRAVETZ
        case MACH_PRAVETZ:
             oric->render_gimg( GIMG_PRAVETZ_KEYBOARD, 0, 480);
             break;
+#endif
+#ifndef WWW_NO_ORIC1
        case MACH_ORIC1:
        case MACH_ORIC1_16K:
             oric->render_gimg( GIMG_ORIC1_KEYBOARD, 0, 480);
             break;
+#endif
        default:
            oric->render_gimg( GIMG_ATMOS_KEYBOARD, 0, 480);
            break;
@@ -595,8 +606,10 @@ void render( struct machine *oric )
 {
   int perc, fps; //, i;
 
+#ifndef WWW_NO_MONITOR
   if( oric->emu_mode == EM_DEBUG )
     mon_update( oric );
+#endif
 
   oric->render_begin( oric );
 
@@ -638,9 +651,11 @@ void render( struct machine *oric )
       }
       break;
 
+#ifndef WWW_NO_MONITOR
     case EM_DEBUG:
       mon_render( oric );
       break;
+#endif
   }
 
   oric->render_end( oric );
@@ -1137,7 +1152,9 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   }
 
   tape_load_tap( oric, filetmp );
+#ifndef WWW_NO_MONITOR
   if( oric->symbolsautoload ) mon_new_symbols( &oric->usersyms, oric, "symbols", SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
+#endif
   setemumode( oric, NULL, EM_RUNNING );
 }
 
@@ -1308,7 +1325,9 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
       {
         oric->lasttapefile[0] = 0;
         tape_load_tap( oric, filetmp );
+#ifndef WWW_NO_MONITOR
         if( oric->symbolsautoload ) mon_new_symbols( &oric->usersyms, oric, "symbols", SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
+#endif
       }
       setemumode( oric, NULL, EM_RUNNING );
       return;
@@ -2171,7 +2190,9 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
   }
 
   joy_setup( oric );
+#ifdef WWW_MONITOR
   mon_warminit( oric );
+#endif
 
   setemumode( oric, NULL, EM_RUNNING );
 }

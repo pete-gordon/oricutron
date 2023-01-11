@@ -270,7 +270,7 @@ void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode )
       if( soundavailable )
         SDL_PauseAudio( 1 );
       break;
-
+#ifndef WWW_NO_MONITOR
     case EM_DEBUG:
       if( vidcap ) avi_close( &vidcap );
       mon_enter( oric );
@@ -280,6 +280,7 @@ void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode )
       if( soundavailable )
         SDL_PauseAudio( 1 );
       break;
+#endif
   }
 }
 
@@ -1063,10 +1064,11 @@ static SDL_bool load_rom( struct machine *oric, char *fname, int size, unsigned 
   }
 
   SDL_RWclose( f );
-
+#ifndef WWW_NO_MONITOR
   sprintf( tmpname, "%s.sym", fname );
   mon_new_symbols( stab, oric, tmpname, symflags, SDL_FALSE, SDL_FALSE );
   free( tmpname );
+#endif
 
   return SDL_TRUE;
 }
@@ -1074,7 +1076,7 @@ static SDL_bool load_rom( struct machine *oric, char *fname, int size, unsigned 
 void preinit_machine( struct machine *oric )
 {
   int i;
-
+#ifndef WWW_NO_MONITOR
   mon_init_symtab( &sym_microdisc );
   mon_init_symtab( &sym_jasmin );
   mon_init_symtab( &oric->romsyms );
@@ -1086,6 +1088,7 @@ void preinit_machine( struct machine *oric )
   mon_init_symtab( &oric->tele_banksyms[5] );
   mon_init_symtab( &oric->tele_banksyms[6] );
   mon_init_symtab( &oric->tele_banksyms[7] );
+#endif
 
   oric->mem = NULL;
   oric->rom = NULL;
@@ -2036,6 +2039,7 @@ void shut_machine( struct machine *oric )
   if( oric->tsavf ) tape_stop_savepatch( oric );
   if( oric->tapecap ) toggletapecap( oric, find_item_by_function(mainitems, toggletapecap), 0 );
   if (oric->tapebuf) { free(oric->tapebuf); oric->tapebuf = NULL; }
+#ifndef WWW_NO_MONITOR
   mon_freesyms( &sym_microdisc );
   mon_freesyms( &sym_jasmin );
   mon_freesyms( &sym_pravetz );
@@ -2048,6 +2052,7 @@ void shut_machine( struct machine *oric )
   mon_freesyms( &oric->tele_banksyms[5] );
   mon_freesyms( &oric->tele_banksyms[6] );
   mon_freesyms( &oric->tele_banksyms[7] );
+#endif
 }
 
 void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
@@ -2078,7 +2083,9 @@ void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
       break;
   }
 
+#ifndef WWW_NO_MONITOR
   mon_state_reset( oric );
+#endif
   if( !init_machine( oric, oric->type, SDL_FALSE ) )
   {
     shut( oric );
@@ -2107,7 +2114,9 @@ void swapmach( struct machine *oric, struct osdmenuitem *mitem, int which )
   /* Wipe it to prevent garbage. */
   clear_textzone( oric, TZ_DISK );
 
+#ifndef WWW_NO_MONITOR
   mon_state_reset( oric );
+#endif
   if( !init_machine( oric, which, which!=oric->type ) )
   {
     shut( oric );

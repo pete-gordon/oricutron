@@ -7,10 +7,10 @@ project(Oricutron)
   find_library(SDL2_LIBRARY NAME SDL2)
 
   include_directories(${SDL2_INCLUDE_DIRS})
-  add_definitions(-D__SPECIFY_SDL_DIR__=1 -DWWW -DAPP_NAME_FULL="Oricutron 1.2" -DAPP_YEAR="2015"
+  add_definitions(-D__SPECIFY_SDL_DIR__=1 -DWWW -DWWW_NO_MONITOR -DWWW_NO_PRAVETZ -DWWW_NO_ORIC1 -DAPP_NAME_FULL="Oricutron 1.2" -DAPP_YEAR="2015"
           -DVERSION_COPYRIGHTS="Oricutron 1.2.0 2016 Peter Gordon"
-          -O3 -s USE_SDL=2 -s ASYNCIFY -s INITIAL_MEMORY=256mb
-          -fsanitize=undefined -fsanitize-minimal-runtime -s FETCH -s FORCE_FILESYSTEM=1 )
+          -O3 -s USE_SDL=2 
+          -fsanitize=undefined -fsanitize-minimal-runtime )
 
 include_directories(
   ${CMAKE_CURRENT_BINARY_DIR}

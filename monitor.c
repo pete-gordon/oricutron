@@ -19,6 +19,8 @@
 **  Monitor/Debugger
 */
 
+#ifndef WWW_NO_MONITOR
+
 #define MAX_CONS_INPUT 127        // Max line length in console
 #define MAX_ASM_INPUT 36
 #define CONS_WIDTH 46             // Actual console width for input
@@ -29,7 +31,12 @@
 #include <stdarg.h>
 #include <ctype.h>
 
+#endif
+
 #include "system.h"
+
+#ifndef WWW_NO_MONITOR
+
 #undef REG_PC                     // MorphOS should not define REG_PC
 #define REG_PC _REG_PC
 #include "6502.h"
@@ -90,7 +97,11 @@ static int helpcount=0;
 
 static struct symboltable defaultsyms;
 
+#endif
+
 char mon_bpmsg[80];
+
+#ifndef WWW_NO_MONITOR
 
 static SDL_bool mw_split = SDL_FALSE;
 static int mw_which = 0;
@@ -592,6 +603,8 @@ static struct disinf distab[] = { { "BRK", AM_IMM },  // 00
                                   { "INC", AM_ABX },  // FE
                                   { "ISC", AM_ABX } };// FF (illegal)
 
+#endif
+
 SDL_bool isws( char c )
 {
   if( ( c == 9 ) || ( c == 32 ) ) return SDL_TRUE;
@@ -646,6 +659,8 @@ int hexit( char c )
   if( ( c >= 'A' ) && ( c <= 'F' ) ) return c-('A'-10);
   return -1;
 }
+
+#ifndef WWW_NO_MONITOR
 
 static int bp_at( struct machine *oric, unsigned short addr, int *xbp, int *mbp )
 {
@@ -4456,4 +4471,6 @@ void dump_cputrace(struct machine *oric)
     iter = iter->next;
   }
 }
+#endif
+
 #endif

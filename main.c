@@ -1277,6 +1277,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
       queuekeys( "CLOAD\"\"\x0d" );
   }
 
+#ifndef WWW_NO_MONITOR
   mon_init( oric );
   if( sto->start_syms[0] )
     mon_new_symbols( &oric->usersyms, oric, sto->start_syms, SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
@@ -1341,7 +1342,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 
   if( sto->start_debug )
     setemumode( oric, NULL, EM_DEBUG );
-
+#endif
   free( sto );
   return SDL_TRUE;
 }
@@ -1357,7 +1358,9 @@ void shut( struct machine *oric )
     shut_machine( oric );
     shut_joy( oric );
     shut_ula( oric );
+#ifndef WWW_NO_MONITOR
     mon_shut( oric );
+#endif
     shut_filerequester( oric );
     shut_msgbox( oric );
     shut_gui( oric );
@@ -1378,9 +1381,11 @@ void frameloop_overclock( struct machine *oric, SDL_bool *framedone, SDL_bool *n
       {
         if( m6502_set_icycles( &oric->cpu, SDL_TRUE, mon_bpmsg ) )
         {
+#ifndef WWW_NO_MONITOR
           // Hit breakpoint
           setemumode( oric, NULL, EM_DEBUG );
           *needrender = SDL_TRUE;
+#endif
           break;
         }
 
@@ -1425,9 +1430,11 @@ void frameloop_overclock( struct machine *oric, SDL_bool *framedone, SDL_bool *n
       if( m6502_inst( &oric->cpu ) )
       {
         // Hit JAM instruction
+#ifndef WWW_NO_MONITOR
         mon_printf_above( "Opcode %02X executed at %04X", oric->cpu.calcop, oric->cpu.lastpc );
         setemumode( oric, NULL, EM_DEBUG );
         *needrender = SDL_TRUE;
+#endif
         break;
       }
     }
@@ -1448,9 +1455,11 @@ void frameloop_normal( struct machine *oric, SDL_bool *framedone, SDL_bool *need
     {
       if( m6502_set_icycles( &oric->cpu, SDL_TRUE, mon_bpmsg ) )
       {
+#ifndef WWW_NO_MONITOR
         // Hit breakpoint
         setemumode( oric, NULL, EM_DEBUG );
         *needrender = SDL_TRUE;
+#endif
         break;
       }
 
@@ -1477,10 +1486,12 @@ void frameloop_normal( struct machine *oric, SDL_bool *framedone, SDL_bool *need
       oric->cpu.rastercycles -= oric->cpu.icycles;
       if( m6502_inst( &oric->cpu ) )
       {
+#ifndef WWW_NO_MONITOR
         // Hit JAM instruction
         mon_printf_above( "Opcode %02X executed at %04X", oric->cpu.calcop, oric->cpu.lastpc );
         setemumode( oric, NULL, EM_DEBUG );
         *needrender = SDL_TRUE;
+#endif
         break;
       }
     }
@@ -1643,10 +1654,11 @@ static void loop_handler( void* arg )
                     case EM_RUNNING:
                         done |= emu_event(event, oric, &ctx->needrender);
                         break;
-
+#ifndef WWW_NO_MONITOR
                     case EM_DEBUG:
                         done |= mon_event(event, oric, &ctx->needrender);
                         break;
+#endif
                 }
         }
         if (oric->show_keyboard)
@@ -1767,7 +1779,9 @@ void success(char* path, const char* fileToLoad)
     case IMG_TAPE:
       gCtx->oric.lasttapefile[0] = 0;
       tape_load_tap( &(gCtx->oric), path );
+#ifndef WWW_NO_MONITOR
       if( gCtx->oric.symbolsautoload ) mon_new_symbols( &gCtx->oric.usersyms, &(gCtx->oric), "symbols", SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
+#endif
       queuekeys( "CLOAD\"\"\x0d" );
       return;
   }
