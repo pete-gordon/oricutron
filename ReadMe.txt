@@ -470,7 +470,7 @@ Known bug:
 Under windows, API's file does not send "." and ".." entries when we read the content on the folder. It's a problem because ch376 chip send these
 entries, when we ask to this chip to read the content of a directory.
 
-If someone wants to emulate CH376_CMD_DIR_CREATE and CH376_CMD_FILE_ERASE. It's easy to do: it justs need to copy WIN32 function and replace DeleteFile
+If someone wants to emulate CH376_CMD_DIR_CREATE and CH376_CMD_FILE_ERASE. It's easy to do: it just needs to copy WIN32 function and replace DeleteFile
  and CreateDir with rm() and mkdir(). But it's not done because we are not able to test it.
 
 CH376 emulation added for:
