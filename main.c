@@ -1612,22 +1612,22 @@ int main( int argc, char *argv[] )
   putenv("SDL_VIDEO_CENTERED=center");
 #endif
 
-    // ----------------------------------------------------------------------------
-    // This makes relative paths work in C++ in Xcode by changing directory to the Resources folder inside the .app bundle
 #ifdef __APPLE__
-    CFBundleRef mainBundle = CFBundleGetMainBundle();
-    CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
-    char path[PATH_MAX];
-    if (!CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8 *)path, PATH_MAX))
-    {
-        // error!
-    }
-    CFRelease(resourcesURL);
+  // --------------------------------------------------------------------
+  // This makes relative paths work in C++ in Xcode by changing directory
+  // to the Resources folder inside the .app bundle
+  CFBundleRef mainBundle = CFBundleGetMainBundle();
+  CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
+  char path[PATH_MAX];
+  if (!CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8 *)path, PATH_MAX))
+  {
     // this directory is something/Oricutron.app/Contents/Resources
     // go down 3 times to find the app containing directory
     strcat(path, "/../../..");
     chdir(path);
-    //printf("Current Path: %s\n", path);
+  }
+  CFRelease(resourcesURL);
+  //printf("Current Path: %s\n", path);
 #endif
 
   memset(&ctx.oric, 0, sizeof(ctx.oric));
