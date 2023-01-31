@@ -637,7 +637,7 @@ package-beos package-haiku:
 	install -m 644 $(DOCFILES) $(PKGDIR)
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
 
-package-osx:
+package-osx: $(TARGET)
 	mkdir -p $(PKGDIR)/Oricutron.app/Contents/MacOS
 	mkdir -p $(PKGDIR)/Oricutron.app/Contents/Resources/images
 	mkdir -p $(PKGDIR)/Oricutron.app/Contents/Resources/roms
