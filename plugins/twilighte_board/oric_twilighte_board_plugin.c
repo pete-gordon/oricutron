@@ -1,4 +1,20 @@
+/********************************************************************
+ *                                                                  *
+ * Twilighte board emulation                                        *
+ *                                                                  *
+ * Code:                                                            *
+ *   Jérôme 'Jede' Debrune                                          *
+ *   Philippe 'OffseT' Rimauro                                      *
+ *   Christian 'Assinie' Lardière                                   *
+ *                                                                  *
+ ** ch376.c *********************************************************/
 
+/*
+ Changes:
+ XX.XX.2022 - Assinie: Fix bug in banking management
+ XX.12.2022 - Jede: Firmware 1 and Firmware 2 management.
+ XX.12.2022 - Now we can attach a microdisc controler with the Twilighte board (as on real hardware : microdisc or cumulus)
+*/
 
 #define TWILIGHTE_CARD_ORIC_EXTENSION_MIRROR_314        0x314
 #define TWILIGHTE_CARD_ORIC_EXTENSION_DDRA              0x323
