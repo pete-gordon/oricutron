@@ -49,7 +49,7 @@ enum
 SDL_bool init_joy( struct machine *oric );
 void shut_joy( struct machine *oric );
 
-Sint16 joy_keyname_to_sym( char *name );
+SDL_COMPAT_KEY joy_keyname_to_sym( char *name );
 void joy_setup( struct machine *oric );
 SDL_bool joy_filter_event( SDL_Event *ev, struct machine *oric );
 void joy_buildmask( struct machine *oric );

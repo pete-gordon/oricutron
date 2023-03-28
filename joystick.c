@@ -121,7 +121,7 @@ static void close_joysticks( struct machine *oric )
 }
 
 // Return an SDL keysym corresponding to the specified name (or 0)
-Sint16 joy_keyname_to_sym( char *name )
+SDL_COMPAT_KEY joy_keyname_to_sym( char *name )
 {
   Sint32 i;
   char c;
@@ -138,7 +138,10 @@ Sint16 joy_keyname_to_sym( char *name )
   for( i=0; keyjoytab[i].id; i++ )
   {
     if( strcasecmp( keyjoytab[i].id, name ) == 0 )
+    {
+      // dbg_printf("%s => %.8X\n", name, keyjoytab[i].sym);
       return keyjoytab[i].sym;
+    }
   }
 
   return 0;
@@ -146,11 +149,8 @@ Sint16 joy_keyname_to_sym( char *name )
 
 static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Uint8 *joystate, SDL_Joystick *sjoy )
 {
-  Sint32 i;
-  SDL_COMPAT_KEY *kbtab;
   SDL_bool swallowit = SDL_FALSE;
 
-  kbtab = oric->kbjoy2;
   switch( mode )
   {
     case JOYMODE_NONE:
@@ -158,33 +158,22 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
       return SDL_FALSE;
 
     case JOYMODE_KB1:
-      kbtab = oric->kbjoy1;
     case JOYMODE_KB2:
-      switch( ev->type )
+    {
+      SDL_COMPAT_KEY *kbtab = mode == JOYMODE_KB1? oric->kbjoy1 : oric->kbjoy2;
+      int st = ev->type == SDL_KEYDOWN? 1 : 0;
+      int i;
+      for( i=0; i<7; i++ )
       {
-        case SDL_KEYDOWN:
-          for( i=0; i<7; i++ )
-          {
-            if( (ev->key.keysym.sym&0xffff) == kbtab[i] )
-            {
-              joystate[i] = 1;
-              swallowit = SDL_TRUE;
-            }
-          }
-          break;
-
-        case SDL_KEYUP:
-          for( i=0; i<7; i++ )
-          {
-            if( (ev->key.keysym.sym&0xffff) == kbtab[i] )
-            {
-              joystate[i] = 0;
-              swallowit = SDL_TRUE;
-            }
-          }
-          break;
+        if( ev->key.keysym.sym == kbtab[i] )
+        {
+          // dbg_printf("%d: %.8X <> %.8X => %d\n", i, kbtab[i], ev->key.keysym.sym, st);
+          joystate[i] = st;
+          swallowit = SDL_TRUE;
+        }
       }
-      break;
+    }
+    break;
 
     case JOYMODE_SDL0:
     case JOYMODE_SDL1:
@@ -421,23 +410,23 @@ void joy_buildmask( struct machine *oric )
 SDL_bool joy_filter_event( SDL_Event *ev, struct machine *oric )
 {
   SDL_bool swallow_event;
+  SDL_bool mode = (oric->type==MACH_TELESTRAT || (oric->twilighteboard_activated && oric->type==MACH_ATMOS))? SDL_TRUE : SDL_FALSE;
 
-  swallow_event  = dojoyevent( ev, oric, (oric->type==MACH_TELESTRAT || (oric->twilighteboard_activated && oric->type==MACH_ATMOS)) ? oric->telejoymode_a : oric->joymode_a, joystate_a, oric->sdljoy_a );
-  swallow_event |= dojoyevent( ev, oric, (oric->type==MACH_TELESTRAT || (oric->twilighteboard_activated && oric->type==MACH_ATMOS)) ? oric->telejoymode_b : oric->joymode_b, joystate_b, oric->sdljoy_b );
+  swallow_event  = dojoyevent( ev, oric, mode ? oric->telejoymode_a : oric->joymode_a, joystate_a, oric->sdljoy_a );
+  swallow_event |= dojoyevent( ev, oric, mode ? oric->telejoymode_b : oric->joymode_b, joystate_b, oric->sdljoy_b );
 
   if( swallow_event )
   {
-//    char testytesttest[64];
-
     joy_buildmask( oric );
-/*
-    sprintf( testytesttest, "A: %d%d%d%d-%d%d B: %d%d%d%d-%d%d",
-      joystate_a[0], joystate_a[1], joystate_a[2], joystate_a[3],
-      joystate_a[4], joystate_a[5],
-      joystate_b[0], joystate_b[1], joystate_b[2], joystate_b[3],
-      joystate_b[4], joystate_b[5] );
-    SDL_WM_SetCaption( testytesttest, testytesttest );
-*/
+    // {
+    //   char testytesttest[64];
+    //   sprintf( testytesttest, "A: %d%d%d%d-%d%d B: %d%d%d%d-%d%d",
+    //     joystate_a[0], joystate_a[1], joystate_a[2], joystate_a[3],
+    //     joystate_a[4], joystate_a[5],
+    //     joystate_b[0], joystate_b[1], joystate_b[2], joystate_b[3],
+    //     joystate_b[4], joystate_b[5] );
+    //   SDL_WM_SetCaption( testytesttest, testytesttest );
+    // }
   }
 
   return swallow_event;

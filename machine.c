@@ -1359,7 +1359,6 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           via_init( &oric->tele_via, oric, VIA_TELESTRAT );
           acia_init( &oric->tele_acia, oric );
 
-
           if (oric->twilighteboard_activated)
           {
             oric->ch376_activated=SDL_TRUE;
@@ -1378,9 +1377,6 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
             if (oric->ch376 != NULL)
               ch376_oric_config(oric->ch376);
           }
-
-
-
           break;
 
         case SDLK_F5:
@@ -1391,14 +1387,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           break;
 
         case SDLK_F6:
-          if( vidcap )
-          {
-            warpspeed = SDL_FALSE;
-          }
-          else
-          {
-            warpspeed = warpspeed ? SDL_FALSE : SDL_TRUE;
-          }
+          warpspeed = ( vidcap || warpspeed )? SDL_FALSE : SDL_TRUE;
 
           if( soundavailable && soundon )
           {

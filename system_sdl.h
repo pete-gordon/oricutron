@@ -75,7 +75,7 @@
 /* SDL compatability definitions and macroses */
 #if SDL_MAJOR_VERSION == 1
 typedef Uint16 SDL_COMPAT_KEY;        /* Used in 8912.c */
-typedef SDL_keysym SDL_KEYSYM;
+typedef SDL_keysym SDL_COMPAT_KEYSYM;
 typedef SDL_VideoInfo SDL_COMPAT_VideoInfo;
 
 #define SDL_COMPAT_HWSURFACE          SDL_HWSURFACE
@@ -93,7 +93,7 @@ typedef SDL_VideoInfo SDL_COMPAT_VideoInfo;
 
 #else
 typedef Uint32 SDL_COMPAT_KEY;        /* Used in 8912.c */
-typedef SDL_Keysym SDL_KEYSYM;
+typedef SDL_Keysym SDL_COMPAT_KEYSYM;
 typedef SDL_RendererInfo SDL_COMPAT_VideoInfo;
 
 #define SDL_COMPAT_HWSURFACE          0 /* FIXME */
@@ -138,8 +138,8 @@ SDL_bool SDL_COMPAT_IsAppActive(SDL_Event* event);
 SDL_bool SDL_COMPAT_IsAppFocused(SDL_Event* event);
 int SDL_COMPAT_EnableKeyRepeat(int delay, int interval);
 int SDL_COMPAT_EnableUNICODE(int enable);
-SDL_COMPAT_KEY SDL_COMPAT_GetKeysymUnicode(SDL_KEYSYM keysym);
-SDL_COMPAT_KEY SDL_COMPAT_TranslateUnicode(SDL_KEYSYM keysym);
+SDL_COMPAT_KEY SDL_COMPAT_GetKeysymUnicode(SDL_COMPAT_KEYSYM keysym);
+SDL_COMPAT_KEY SDL_COMPAT_TranslateUnicode(SDL_COMPAT_KEYSYM keysym);
 int SDL_COMPAT_Flip(SDL_Surface* screen);
 int SDL_COMPAT_GetBitsPerPixel(void);
 int SDL_COMPAT_WM_ToggleFullScreen(SDL_Surface *surface);

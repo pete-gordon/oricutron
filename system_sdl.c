@@ -215,13 +215,13 @@ SDL_bool SDL_COMPAT_IsAppFocused(SDL_Event* event)
 #else
 SDL_bool SDL_COMPAT_IsAppActive(SDL_Event* event)
 {
-  /* NOTE: not needed wit SDL 2.0
+  /* NOTE: not needed with SDL 2.0
    *  return (event->window.event == SDL_WINDOWEVENT_FOCUS_GAINED)? SDL_TRUE : SDL_FALSE; */
   return SDL_FALSE;
 }
 SDL_bool SDL_COMPAT_IsAppFocused(SDL_Event* event)
 {
-  /* NOTE: not needed wit SDL 2.0
+  /* NOTE: not needed with SDL 2.0
    *  switch( event->window.event  )
    *  {
    *    case SDL_WINDOWEVENT_FOCUS_GAINED:
@@ -272,7 +272,7 @@ static const char* skd = "key_dump.txt";
 #endif
 
 #if SDL_MAJOR_VERSION == 1
-SDL_COMPAT_KEY SDL_COMPAT_GetKeysymUnicode(SDL_KEYSYM keysym)
+SDL_COMPAT_KEY SDL_COMPAT_GetKeysymUnicode(SDL_COMPAT_KEYSYM keysym)
 {
   // FIXME
 #ifdef DEBUG_KEY_DUMP
@@ -285,7 +285,7 @@ SDL_COMPAT_KEY SDL_COMPAT_GetKeysymUnicode(SDL_KEYSYM keysym)
 
   return keysym.unicode;
 }
-SDL_COMPAT_KEY SDL_COMPAT_TranslateUnicode(SDL_KEYSYM keysym)
+SDL_COMPAT_KEY SDL_COMPAT_TranslateUnicode(SDL_COMPAT_KEYSYM keysym)
 {
   // FIXME
 #ifdef DEBUG_KEY_DUMP
@@ -298,7 +298,7 @@ SDL_COMPAT_KEY SDL_COMPAT_TranslateUnicode(SDL_KEYSYM keysym)
   return keysym.unicode;
 }
 #else
-SDL_COMPAT_KEY SDL_COMPAT_GetKeysymUnicode(SDL_KEYSYM keysym)
+SDL_COMPAT_KEY SDL_COMPAT_GetKeysymUnicode(SDL_COMPAT_KEYSYM keysym)
 {
   // FIXME
 #ifdef DEBUG_KEY_DUMP
@@ -310,7 +310,7 @@ SDL_COMPAT_KEY SDL_COMPAT_GetKeysymUnicode(SDL_KEYSYM keysym)
   // FIXME
   return keysym.sym;
 }
-SDL_COMPAT_KEY SDL_COMPAT_TranslateUnicode(SDL_KEYSYM keysym)
+SDL_COMPAT_KEY SDL_COMPAT_TranslateUnicode(SDL_COMPAT_KEYSYM keysym)
 {
   // FIXME
   SDL_COMPAT_KEY sym_out = keysym.sym;
