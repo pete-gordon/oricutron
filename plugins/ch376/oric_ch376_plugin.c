@@ -55,7 +55,6 @@ void	ch376_oric_write(struct ch376 *ch376, Uint16 addr, Uint8 data)
 	ch376_write_command_port(ch376, data);
   }
 }
-	
 
 unsigned char 	ch376_oric_read(struct ch376 *ch376, Uint16 addr)
 {
