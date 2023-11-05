@@ -157,11 +157,11 @@ static Uint32 ayrand( struct ay8912 *ay )
 
 void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
 {
-  Sint32 i;
+  Sint32 t, i, sum = 0;
   Sint32 output;
 
   // For each clock cycle...
-  while( cycles > 0 )
+  for( t=0; t<cycles; t++ )
   {
     // Count for the noise cycle counter
     if( (++ay->ctn) >= ay->noiseper )
@@ -236,27 +236,23 @@ void ay_audioticktock( struct ay8912 *ay, Uint32 cycles )
       }
     }
 
-    // Done one cycle!
-    cycles--;
+    // Loop through the channels
+    for( i=0; i<3; i++ )
+    {
+      // Yep, calculate the squarewave signal...
+      if( ay->newout & (1<<i) )
+        ay->out[i] = ((ay->tonebit[i]|ay->sign[i])&(ay->noisebit[i]|ay->currnoise)) * ay->vol[i];
+
+      // Mix in the output of this channel
+      sum += ay->out[i];
+    }
+    ay->newout = 0;
   }
 
-  if( !ay->newout ) return;
+  if( !cycles ) return; // avoid div by zero
 
-  // "Output" accumulates the audio data from all sources
-  output = soundsilence;
-
-  // Loop through the channels
-  for( i=0; i<3; i++ )
-  {
-    // Yep, calculate the squarewave signal...
-    if( ay->newout & (1<<i) )
-      ay->out[i] = ((ay->tonebit[i]|ay->sign[i])&(ay->noisebit[i]|ay->currnoise)) * ay->vol[i];
-
-    // Mix in the output of this channel
-    output += ay->out[i];
-  }
-
-  ay->newout = 0;
+  // Reduce aliasing by averaging over the cycles in the sample interval
+  output = soundsilence + sum/cycles;
 
   // Clamp the output
   if( output > 32767 ) output = 32767;
