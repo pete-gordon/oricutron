@@ -333,7 +333,7 @@ LFLAGS += $(CROSS_LFLAGS) -s
 else
 LFLAGS += $(shell $(SDL_LIB)-config --libs) -s
 endif
-LFLAGS += -lm -Wl,-framework,OpenGL
+LFLAGS += -lm -Wl,-framework,OpenGL -Wl,-framework,Cocoa
 TARGET = $(TARGET_NAME)
 FILEREQ_OBJ =
 MSGBOX_OBJ =
