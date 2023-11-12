@@ -384,6 +384,16 @@ struct osdmenu menus[] = { { "Main Menu",        LAST_ITEM(mainitems)-4, mainite
                            { "Overclock",        LAST_ITEM(ovopitems),  ovopitems },
                            { "Keyboard options", LAST_ITEM(keopitems),  keopitems }};
 
+#define MKPATH_MAX (1024)
+
+// Prepend file prefix to filename
+static void mkpath( char buf[MKPATH_MAX], const char *filename )
+{
+  strncpy( buf, get_fileprefix(), MKPATH_MAX );
+  buf[MKPATH_MAX-1] = 0;
+  strncat( buf, filename, MKPATH_MAX-strlen(buf)-1 );
+}
+
 // Load a 24bit BMP for the GUI
 SDL_bool gimg_load( struct guiimg *gi )
 {
@@ -391,9 +401,11 @@ SDL_bool gimg_load( struct guiimg *gi )
   Uint8 hdrbuf[640*3];
   Sint32 x, y;
   SDL_bool fileok;
+  char path[MKPATH_MAX];
 
   // Get the file
-  f = SDL_RWFromFile( gi->filename, "rb" );
+  mkpath( path, gi->filename );
+  f = SDL_RWFromFile( path, "rb" );
   if( !f )
   {
     error_printf( "Unable to open '%s'\n", gi->filename );
@@ -2196,44 +2208,45 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
   setemumode( oric, NULL, EM_RUNNING );
 }
 
-
 // Set things to default that can't fail
 void preinit_gui( struct machine *oric )
 {
   int i;
   for( i=0; i<NUM_TZ; i++ ) tz[i] = NULL;
   for( i=0; i<NUM_GIMG; i++ ) gimgs[i].buf = NULL;
-  strcpy( tapepath, FILEPREFIX"tapes" );
+  mkpath( tapepath, "tapes" );
   strcpy( tapefile, "" );
-  strcpy( diskpath, FILEPREFIX"disks" );
+  mkpath( diskpath, "disks" );
   strcpy( diskfile, "" );
-  strcpy( telediskpath, FILEPREFIX"teledisks" );
+  mkpath( telediskpath, "teledisks" );
   strcpy( telediskfile, "" );
-  strcpy( pravdiskpath, FILEPREFIX"pravdisks" );
+  mkpath( pravdiskpath, "pravdisks" );
   strcpy( pravdiskfile, "" );
-  strcpy( atmosromfile, ROMPREFIX"basic11b" );
-  strcpy( oric1romfile, ROMPREFIX"basic10" );
-  strcpy( mdiscromfile, ROMPREFIX"microdis" );
-  strcpy( bd500romfile, ROMPREFIX"bd500" );
-  strcpy( jasmnromfile, ROMPREFIX"jasmin" );
-  strcpy( pravetzromfile[0], ROMPREFIX"pravetzt" );
-  strcpy( pravetzromfile[1], ROMPREFIX"8dos2" );
+  mkpath( atmosromfile, ROMPREFIX"basic11b" );
+  mkpath( oric1romfile, ROMPREFIX"basic10" );
+  mkpath( mdiscromfile, ROMPREFIX"microdis" );
+  mkpath( bd500romfile, ROMPREFIX"bd500" );
+  mkpath( jasmnromfile, ROMPREFIX"jasmin" );
+  mkpath( pravetzromfile[0], ROMPREFIX"pravetzt" );
+  mkpath( pravetzromfile[1], ROMPREFIX"8dos2" );
   telebankfiles[0][0] = 0;
   telebankfiles[1][0] = 0;
   telebankfiles[2][0] = 0;
   telebankfiles[3][0] = 0;
   telebankfiles[4][0] = 0;
-  strcpy( telebankfiles[5], ROMPREFIX"teleass" );
-  strcpy( telebankfiles[6], ROMPREFIX"hyperbas" );
-  strcpy( telebankfiles[7], ROMPREFIX"telmon24" );
+  mkpath( telebankfiles[5], ROMPREFIX"teleass" );
+  mkpath( telebankfiles[6], ROMPREFIX"hyperbas" );
+  mkpath( telebankfiles[7], ROMPREFIX"telmon24" );
   set_render_mode( oric, RENDERMODE_NULL );
-  strcpy( snappath, FILEPREFIX"snapshots" );
+  mkpath( snappath, "snapshots" );
   strcpy( snapfile, "" );
-  strcpy( mappingpath, FILEPREFIX"keymap" );
+  mkpath( mappingpath, "keymap" );
   strcpy( mappingfile, "" );
 
 #ifndef __APPLE__
-  SDL_COMPAT_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
+  char path[MKPATH_MAX];
+  mkpath( path, IMAGEPREFIX"winicon.bmp" );
+  SDL_COMPAT_WM_SetIcon( SDL_LoadBMP( path ), NULL );
 #endif
 }
 

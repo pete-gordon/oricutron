@@ -34,40 +34,18 @@
 /* Output audio frequency */
 #define AUDIO_FREQ   44100
 
-
-#if defined(__amigaos4__)
-
-#define PATHSEP '/'
-#define PATHSEPSTR "/"
-#define FILEPREFIX "PROGDIR:"
-#define ROMPREFIX "PROGDIR:roms/"
-#define IMAGEPREFIX "PROGDIR:images/"
-
-#elif defined(WIN32)
-
-#define PATHSEP '\\'
-#define PATHSEPSTR "\\"
-#define FILEPREFIX
-#define ROMPREFIX "roms\\"
-#define IMAGEPREFIX "images\\"
-
-#elif defined(__ANDROID__)
-
-#define PATHSEP '/'
-#define PATHSEPSTR "/"
-#define FILEPREFIX "/data/data/com.emul.oricutron/files/"
-#define ROMPREFIX FILEPREFIX"roms/"
-#define IMAGEPREFIX FILEPREFIX"images/"
-
+#if defined(WIN32)
+  #define PATHSEP '\\'
+  #define PATHSEPSTR "\\"
 #else
-
-#define PATHSEP '/'
-#define PATHSEPSTR "/"
-#define FILEPREFIX
-#define ROMPREFIX "roms/"
-#define IMAGEPREFIX "images/"
-
+  #define PATHSEP '/'
+  #define PATHSEPSTR "/"
 #endif
+
+#define ROMPREFIX "roms"PATHSEPSTR
+#define IMAGEPREFIX "images"PATHSEPSTR
+
+const char *get_fileprefix();
 
 /* SDL related stuff */
 #include "system_sdl.h"
