@@ -627,3 +627,14 @@ void SDL_COMPAT_TakeScreenshot(char *fname)
 }
 #endif
 #endif
+
+// This is an ugly hack for OSX will be removed
+#ifdef __APPLE__
+int32_t __isPlatformVersionAtLeast(int32_t Major, int32_t Minor, int32_t Subminor)
+{
+  (void) Major;
+  (void) Minor;
+  (void) Subminor;
+  return SDL_TRUE;
+}
+#endif
