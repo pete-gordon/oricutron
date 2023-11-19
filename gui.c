@@ -389,7 +389,7 @@ struct osdmenu menus[] = { { "Main Menu",        LAST_ITEM(mainitems)-4, mainite
 // Prepend file prefix to filename
 static void mkpath( char buf[MKPATH_MAX], const char *filename )
 {
-  strncpy( buf, get_fileprefix(), MKPATH_MAX );
+  strncpy( buf, get_fileprefix(), MKPATH_MAX-1 );
   buf[MKPATH_MAX-1] = 0;
   strncat( buf, filename, MKPATH_MAX-strlen(buf)-1 );
 }
