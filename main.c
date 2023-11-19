@@ -86,7 +86,7 @@ extern char jasmnromfile[];
 extern char pravetzromfile[2][1024];
 extern char telebankfiles[8][1024];
 
-static char keymap_path[4096+32];
+static char keymap_path[4096];
 static int  load_keymap = SDL_FALSE;
 
 struct context
@@ -178,6 +178,100 @@ static char *rendermodes[] = { "{{INVALID}}",
 
 static char *swdepths[] = { "8", "16", "32", NULL };
 
+static char *fileprefix = 0;
+
+// Initialize path prefix for locating program resources
+static void init_fileprefix( char *argv[] )
+{
+  (void) argv;
+#if defined(__amigaos4__)
+
+  fileprefix = "PROGDIR:";
+
+#elif defined(__ANDROID__)
+
+  fileprefix = "/data/data/com.emul.oricutron/files/";
+
+#elif defined(__linux__) || defined(__APPLE__)
+
+  // Find program directory
+  fileprefix = realpath( argv[0], 0 );           // convert to absolute path
+  int len = strlen( fileprefix );
+  while ( len && fileprefix[len-1] != PATHSEP )  // strip the program filename
+    len--;
+  fileprefix[len] = 0;
+
+#if defined(__APPLE__)
+  // When bundled, program is in <something>/Oricutron.app/Contents/MacOS/
+  // but data files are further up in the parent of Oricutron.app.
+  const char *suffix = ".app/Contents/MacOS/";
+  int suffix_len = strlen(suffix);
+  if ( len > suffix_len && !strcasecmp( fileprefix + len - suffix_len, suffix ) )
+  {
+     // Located in bundle - go to parent of .app dir
+     len -= suffix_len;                            // strip the suffix we matched
+     while ( len && fileprefix[len-1] != PATHSEP ) // strip the .app dir
+       len--;
+     fileprefix[len] = 0;
+  }
+  // else not bundled, stay in program directory
+#endif
+
+#else
+  fileprefix = "";
+#endif
+}
+
+// Get prefix string to locate program resources
+const char *get_fileprefix()
+{
+  return fileprefix;
+}
+
+// Check if filename looks to be absolute path
+SDL_bool is_abs_path( const char *filename )
+{
+  char c = *(filename++);
+
+  // Detect unix-style absolute path
+  if ( c == '/' || c == '\\' || c == '~' )
+    return SDL_TRUE;
+
+  // Detect Amiga style absolute path or DOS drive letter
+  while ( c )
+  {
+    if ( c == ':' )
+      return SDL_TRUE;
+    c = *(filename++);
+  }
+
+  return SDL_FALSE;
+}
+
+// Prepend file prefix to relative path, buffer of size maxlen
+void add_fileprefix( char *filename, int maxlen )
+{
+  const char *prefix = get_fileprefix();
+  Sint32 prefix_len = strlen( prefix );
+  if ( prefix_len == 0 )
+    return; // no file prefix on this platform
+
+  Sint32 filename_len = strlen( filename );
+  if ( prefix_len + filename_len + 1 > maxlen )
+    return; // won't fit in buffer
+
+  if ( is_abs_path ( filename ) )
+    return; // don't apply prefix to absolute path
+
+  // Move filename including terminating zero
+  for ( int i=filename_len+1; i>=0; i-- )
+    filename[prefix_len+i] = filename[i];
+
+  // Put the prefix before
+  for (int i=0; i<prefix_len; i++)
+    filename[i] = prefix[i];
+}
+
 static SDL_bool istokend( char c )
 {
   if( isws( c ) ) return SDL_TRUE;
@@ -229,6 +323,14 @@ SDL_bool read_config_string( char *buf, char *token, char *dest, Sint32 maxlen )
   }
 
   dest[d] = 0;
+  return SDL_TRUE;
+}
+
+SDL_bool read_config_path( char *buf, char *token, char *dest, Sint32 maxlen )
+{
+  if ( !read_config_string( buf, token, dest, maxlen ) )
+    return SDL_FALSE;
+  add_fileprefix( dest, maxlen );
   return SDL_TRUE;
 }
 
@@ -402,9 +504,11 @@ static void load_config( struct start_opts *sto, struct machine *oric )
   FILE *f;
   Sint32 i, j;
   char tbtmp[32];
-  char keymap_file[4096];
+  char config_path[4096];
 
-  f = fopen( FILEPREFIX"oricutron.cfg", "r" );
+  strcpy(config_path, "oricutron.cfg");
+  add_fileprefix(config_path, 4096);
+  f = fopen( config_path, "r" );
   if( !f ) return;
 
   while( !feof( f ) )
@@ -424,20 +528,20 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_bool(   &sto->lctmp[i], "palghosting",  &oric->palghost ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "rom16",        &oric->rom16 ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "dos70",        &oric->dos70 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "diskimage",    sto->start_disk, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "tapeimage",    sto->start_tape, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "symbols",      sto->start_syms, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "tapepath",     tapepath, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "diskpath",     diskpath, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "telediskpath", telediskpath, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "pravdiskpath", pravdiskpath, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "atmosrom",     atmosromfile, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "oric1rom",     oric1romfile, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "mdiscrom",     mdiscromfile, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "bd500rom",     bd500romfile, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "jasminrom",    jasmnromfile, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "pravetzrom",   pravetzromfile[0], 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "pravetz8drom", pravetzromfile[1], 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "diskimage",    sto->start_disk, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "tapeimage",    sto->start_tape, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "symbols",      sto->start_syms, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "tapepath",     tapepath, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "diskpath",     diskpath, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "telediskpath", telediskpath, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "pravdiskpath", pravdiskpath, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "atmosrom",     atmosromfile, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "oric1rom",     oric1romfile, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "mdiscrom",     mdiscromfile, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "bd500rom",     bd500romfile, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "jasminrom",    jasmnromfile, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "pravetzrom",   pravetzromfile[0], 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "pravetz8drom", pravetzromfile[1], 1024 ) ) continue;
     if( read_config_int(    &sto->lctmp[i], "rampattern",   &oric->rampattern, 0, 1 ) ) continue;
     if( read_config_option( &sto->lctmp[i], "swdepth",      &oric->sw_depth, swdepths ) )
     {
@@ -461,7 +565,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     for( j=0; j<8; j++ )
     {
       sprintf( tbtmp, "telebank%c", j+'0' );
-      if( read_config_string( &sto->lctmp[i], tbtmp, telebankfiles[j], 1024 ) ) break;
+      if( read_config_path( &sto->lctmp[i], tbtmp, telebankfiles[j], 1024 ) ) break;
     }
     if( read_config_bool(   &sto->lctmp[i], "lightpen",     &oric->lightpen ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "printenable",  &oric->printenable ) ) continue;
@@ -533,10 +637,8 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_bool(   &sto->lctmp[i], "disable_menuscheme", &oric->disable_menuscheme ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "show_keyboard", &oric->show_keyboard ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "sticky_mod_keys", &oric->sticky_mod_keys ) )continue;
-    if( read_config_string( &sto->lctmp[i], "autoload_keyboard_mapping", keymap_file, 4096 ) )
+    if( read_config_path(   &sto->lctmp[i], "autoload_keyboard_mapping", keymap_path, 4096 ) )
     {
-        strcpy(keymap_path, FILEPREFIX"");
-        strcat(keymap_path, keymap_file);
         load_keymap = SDL_TRUE;
         continue;
     }
@@ -1612,23 +1714,7 @@ int main( int argc, char *argv[] )
   putenv("SDL_VIDEO_CENTERED=center");
 #endif
 
-#ifdef __APPLE__
-  // --------------------------------------------------------------------
-  // This makes relative paths work in C++ in Xcode by changing directory
-  // to the Resources folder inside the .app bundle
-  CFBundleRef mainBundle = CFBundleGetMainBundle();
-  CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
-  char path[PATH_MAX];
-  if (CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8 *)path, PATH_MAX))
-  {
-    // this directory is something/Oricutron.app/Contents/Resources
-    // go down 3 times to find the app containing directory
-    strcat(path, "/../../..");
-    chdir(path);
-  }
-  CFRelease(resourcesURL);
-  //printf("Current Path: %s\n", path);
-#endif
+  init_fileprefix( argv );
 
   memset(&ctx.oric, 0, sizeof(ctx.oric));
   if (!init(&ctx.oric, argc, argv))
