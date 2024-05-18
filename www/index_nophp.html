@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<!-- saved from url=(0025)https://torguet.net/oric/ -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Oricutron.js Launcher</title>
+</head>
+<body>
+<h1>Oricutron.js Launcher</h1>
+<p>Please click on one of those links:</p>
+<h2>Disks :</h2>
+<div id="dskList">
+
+<a href="https://torguet.net/oric/oricutron.html">BuggyBoy.dsk</a><br><a href="https://torguet.net/oric/oricutron.html">Pulsoids.dsk</a><br><a href="https://torguet.net/oric/oricutron.html">Quintessential.dsk</a><br><a href="https://torguet.net/oric/oricutron.html">SEDO40u.DSK</a><br><a href="https://torguet.net/oric/oricutron.html">ZipNZapE.dsk</a><br><a href="https://torguet.net/oric/oricutron.html">aigledor.dsk</a><br><a href="https://torguet.net/oric/oricutron.html">barbitoric.dsk</a><br><a href="https://torguet.net/oric/oricutron.html">space1999-fr.dsk</a><br></div>
+<h2>Tapes :</h2>
+<div id="tapList">
+
+<a href="https://torguet.net/oric/oricutron.html">ATMDEMm.tap</a><br><a href="https://torguet.net/oric/oricutron.html">Cyclotron.tap</a><br><a href="https://torguet.net/oric/oricutron.html">THEMm.tap</a><br><a href="https://torguet.net/oric/oricutron.html">defence-force.tap</a><br><a href="https://torguet.net/oric/oricutron.html">thehobbit.tap</a><br></div>
+<script>
+    // this lists dsk and tap files
+    var dskFiles = ["BuggyBoy.dsk","Pulsoids.dsk","Quintessential.dsk","SEDO40u.DSK","ZipNZapE.dsk","aigledor.dsk","barbitoric.dsk","space1999-fr.dsk"];
+    var tapFiles = ["ATMDEMm.tap","Cyclotron.tap","THEMm.tap","defence-force.tap","thehobbit.tap"];
+</script>
+<script>
+    function createLink(file) {
+        var newLink = document.createElement('a');
+        newLink.setAttribute('href','oricutron.html');
+        newLink.addEventListener("click", function(event) {
+            sessionStorage.file = file;
+        });
+        var newText = document.createTextNode(file);
+        newLink.appendChild(newText);
+
+        return newLink;
+    }
+
+    var dskDiv = document.getElementById('dskList');
+    for(var i=0; i<dskFiles.length; i++) {
+        var newLink = createLink(dskFiles[i]);
+        dskDiv.appendChild(newLink);
+        dskDiv.appendChild(document.createElement('br'));
+    }
+    var tapDiv = document.getElementById('tapList');
+    for(var i=0; i<tapFiles.length; i++) {
+        var newLink = createLink(tapFiles[i]);
+        tapDiv.appendChild(newLink);
+        tapDiv.appendChild(document.createElement('br'));
+    }
+</script>
+</body>
+</html>

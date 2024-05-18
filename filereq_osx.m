@@ -37,6 +37,13 @@
 #include "machine.h"
 #include "filereq.h"
 
+#ifndef MAC_OS_X_VERSION_10_9
+#define MAC_OS_X_VERSION_10_9 1090
+#endif
+
+#if MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_9
+#define NSModalResponseOK NSFileHandlingPanelOKButton
+#endif
 
 SDL_bool init_filerequester( struct machine *oric )
 {
@@ -128,7 +135,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
       }
   }
 
-  ret = [sp runModal] == NSAlertDefaultReturn;
+  ret = [sp runModal] == NSModalResponseOK;
   if (!ret)
     return ret;
 

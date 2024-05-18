@@ -40,6 +40,10 @@
 #include "machine.h"
 #include "filereq.h"
 
+#ifdef WWW
+#include <emscripten.h>
+#endif
+
 // Externs
 extern SDL_Surface *screen;
 extern struct textzone *tz[NUM_TZ];
@@ -88,7 +92,6 @@ static void filereq_render( struct machine *oric )
 
   oric->render_video( oric, SDL_TRUE );
   oric->render_textzone( oric, TZ_FILEREQ );
-
   oric->render_end( oric );
 }
 
@@ -334,8 +337,15 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
 
   for( ;; )
   {
+#ifdef WWW
+      if( !SDL_PollEvent( &event )) {
+          emscripten_sleep(10);
+          continue;
+      }
+#else
     if( !SDL_WaitEvent( &event ) )
       break;
+#endif
 
     mx = -1;
     my = -1;
@@ -367,8 +377,14 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
         break;
 
       case SDL_MOUSEBUTTONDOWN:
-        if( ( mx < 1 ) || ( mx > 38 ) )
+        if( ( mx < 1 ) || ( mx > 38 ) ) {
+#ifdef WWW
+          SDL_COMPAT_EnableUNICODE( wasunicode );
+          SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+          return SDL_FALSE;
+#endif
           break;
+        }
 
         if( ( my == 28 ) || ( my == 30 ) )
         {
@@ -380,8 +396,14 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
           break;
         }
 
-        if( ( my < 1 ) || ( my > 26 ) )
+        if( ( my < 1 ) || ( my > 26 ) ) {
+#ifdef WWW
+          SDL_COMPAT_EnableUNICODE( wasunicode );
+          SDL_COMPAT_EnableKeyRepeat( wasunicode ? SDL_DEFAULT_REPEAT_DELAY : 0, wasunicode ? SDL_DEFAULT_REPEAT_INTERVAL : 0 );
+          return SDL_FALSE;
+#endif
           break;
+        }
 
         freqf_cgad = 2;
 

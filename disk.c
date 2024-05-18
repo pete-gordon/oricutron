@@ -47,6 +47,10 @@
 #include "msgbox.h"
 #include "filereq.h"
 
+#ifdef WWW
+#include <emscripten.h>
+#endif
+
 extern char diskfile[], diskpath[], filetmp[];
 extern char telediskfile[], telediskpath[];
 extern char pravdiskfile[], pravdiskpath[];
@@ -320,6 +324,15 @@ SDL_bool diskimage_save( struct machine *oric, char *fname, int drive )
   // The image in memory is no longer different to the last saved version
   oric->wddisk.disk[drive]->modified = SDL_FALSE;
   oric->wddisk.disk[drive]->modified_time = 0;
+
+#ifdef WWW
+    // sync from memory state to persisted
+    EM_ASM(
+        FS.syncfs(function (err) {
+          assert(!err);
+        });
+    );
+#endif
 
   // Remember to update the GUI
   refreshdisks = SDL_TRUE;

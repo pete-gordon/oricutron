@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Oricutron.js Launcher</title>
+</head>
+<body>
+<h1>Oricutron.js Launcher</h1>
+<p>Please click on one of those links:</p>
+<h2>Disks :</h2>
+<div id='dskList'>
+
+</div>
+<h2>Tapes :</h2>
+<div id='tapList'>
+
+</div>
+<script src='dir.php'></script>
+<script>
+    function createLink(file) {
+        var newLink = document.createElement('a');
+        newLink.setAttribute('href','oricutron.html');
+        newLink.addEventListener("click", function(event) {
+            sessionStorage.file = file;
+        });
+        var newText = document.createTextNode(file);
+        newLink.appendChild(newText);
+
+        return newLink;
+    }
+
+    var dskDiv = document.getElementById('dskList');
+    for(var i=0; i<dskFiles.length; i++) {
+        var newLink = createLink(dskFiles[i]);
+        dskDiv.appendChild(newLink);
+        dskDiv.appendChild(document.createElement('br'));
+    }
+    var tapDiv = document.getElementById('tapList');
+    for(var i=0; i<tapFiles.length; i++) {
+        var newLink = createLink(tapFiles[i]);
+        tapDiv.appendChild(newLink);
+        tapDiv.appendChild(document.createElement('br'));
+    }
+</script>
+</body>
+</html>

@@ -41,6 +41,10 @@
 #include "machine.h"
 #include "msgbox.h"
 
+#ifdef WWW
+#include <emscripten.h>
+#endif
+
 struct msgboxbut
 {
   int x, y;
@@ -175,8 +179,15 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
   presson = -1;
   for( ;; )
   {
+#ifdef WWW
+    if( !SDL_PollEvent( &event )) {
+        emscripten_sleep(10);
+        continue;
+    }
+#else
     if( !SDL_WaitEvent( &event ) )
       break;
+#endif
 
     switch( event.type )
     {

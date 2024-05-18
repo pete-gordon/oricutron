@@ -36,6 +36,10 @@
 #include "tape.h"
 #include "msgbox.h"
 
+#ifdef WWW
+#include <emscripten.h>
+#endif
+
 extern char tapefile[], tapepath[];
 extern SDL_bool refreshtape;
 char tmptapename[4096];
@@ -67,6 +71,14 @@ void toggletapecap( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   if( oric->tapecap )
   {
     fclose( oric->tapecap );
+#ifdef WWW
+    // sync from memory state to persisted
+    EM_ASM(
+        FS.syncfs(function (err) {
+          assert(!err);
+        });
+    );
+#endif
     oric->tapecap = NULL;
     mitem->name = "Save tape output...";
     refreshtape = SDL_TRUE;
@@ -1126,6 +1138,14 @@ void tape_stop_savepatch( struct machine *oric )
   else
   {
     fclose( oric->tsavf );
+#ifdef WWW
+    // sync from memory state to persisted
+    EM_ASM(
+        FS.syncfs(function (err) {
+          assert(!err);
+        });
+    );
+#endif
   }
 
   oric->tsavf = NULL;
