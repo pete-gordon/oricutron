@@ -34,16 +34,38 @@
 /* Output audio frequency */
 #define AUDIO_FREQ   44100
 
-#if defined(WIN32)
-  #define PATHSEP '\\'
-  #define PATHSEPSTR "\\"
+
+#if defined(__amigaos4__)
+
+#define PATHSEP '/'
+#define PATHSEPSTR "/"
+#define FILEPREFIX "PROGDIR:"
+#define ROMPREFIX "PROGDIR:roms/"
+#define IMAGEPREFIX "PROGDIR:images/"
+
+#elif defined(WIN32)
+
+#define PATHSEP '\\'
+#define PATHSEPSTR "\\"
+#define FILEPREFIX
+#define ROMPREFIX "roms\\"
+#define IMAGEPREFIX "images\\"
+
+#elif defined(WWW)
+
+#define PATHSEP '/'
+#define PATHSEPSTR "/"
+#define FILEPREFIX "assets/"
+#define ROMPREFIX "assets/roms/"
+#define IMAGEPREFIX "assets/images/"
+
 #else
+
   #define PATHSEP '/'
   #define PATHSEPSTR "/"
+  #define ROMPREFIX "roms"PATHSEPSTR
+  #define IMAGEPREFIX "images"PATHSEPSTR
 #endif
-
-#define ROMPREFIX "roms"PATHSEPSTR
-#define IMAGEPREFIX "images"PATHSEPSTR
 
 const char *get_fileprefix();
 

@@ -1,0 +1,15 @@
+//
+//  Oricutron-Prefix.pch
+//  Oricutron
+//
+//  Created by Patrice Torguet on 11/11/2020.
+//  Copyright © 2020 Peter Gordon. All rights reserved.
+//
+
+#ifndef Oricutron_Prefix_pch
+#define Oricutron_Prefix_pch
+
+// Include any system framework and library headers here that should be included in all compilation units.
+// You will also need to set the Prefix Header build setting of one or more of your targets to reference this file.
+
+#endif /* Oricutron_Prefix_pch */

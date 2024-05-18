@@ -465,7 +465,7 @@ SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrend
     return done;
 }
 
-void release_sticky_keys()
+void release_sticky_keys(void)
 {
     release_keys = SDL_TRUE;
 }

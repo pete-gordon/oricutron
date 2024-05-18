@@ -41,6 +41,10 @@
 #include "tape.h"
 #include "msgbox.h"
 
+#ifdef WWW
+#include <emscripten.h>
+#endif
+
 extern char diskpath[];
 
 #define MAX_BLOCK (262144)
@@ -531,6 +535,15 @@ SDL_bool save_snapshot(struct machine *oric, char *filename)
 
   if (!ok)
     msgbox(oric, MSGBOX_OK, "Snapshot failed! (3)");
+
+#ifdef WWW
+  // sync from memory state to persisted
+    EM_ASM(
+        FS.syncfs(function (err) {
+          assert(!err);
+        });
+    );
+#endif
 
   return ok;
 }
@@ -1481,6 +1494,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
     free_block(blk);
   }
 
+#ifdef WWW_MONITOR
   /* Get the rom symbols block */
   if ((blk = load_block(oric, "SYR\x00", f, SDL_FALSE, -1, SDL_FALSE)))
   {
@@ -1531,6 +1545,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
 
     free_block(blk);
   }
+#endif
 
   free_blockheaders();
   fclose(f);
