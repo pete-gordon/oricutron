@@ -766,7 +766,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 {
   Sint32 i;
   struct start_opts *sto;
-  char opt_type, *opt_arg, *tmp;
+  char opt_type, *opt_arg = NULL, *tmp;
 
   sto = malloc( sizeof( struct start_opts ) );
   if( !sto ) return SDL_FALSE;

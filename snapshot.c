@@ -759,12 +759,14 @@ static Uint32 getu32(struct blockheader *blk)
   return val;
 }
 
+#ifdef WWW_MONITOR
 static Sint32 gets32(struct blockheader *blk)
 {
   Sint32 val = (blk->buf[blk->offs]<<24)|(blk->buf[blk->offs+1]<<16)|(blk->buf[blk->offs+2]<<8)|blk->buf[blk->offs+3];
   blk->offs+=4;
   return val;
 }
+#endif
 
 static Uint16 getu16(struct blockheader *blk)
 {
