@@ -233,7 +233,7 @@ struct machine
   char statusstr[40];
   SDL_bool newstatusstr;
 
-  int statusbar_mode;
+  Sint32 statusbar_mode;
 
   int rampattern;
 

@@ -78,7 +78,6 @@
 
 SDL_bool need_sdl_quit = SDL_FALSE;
 SDL_bool fullscreen, hwsurface;
-SDL_bool nostatusbar;
 extern SDL_bool warpspeed, soundon;
 Uint32 lastframetimes[FRAMES_TO_AVERAGE], frametimeave;
 extern char mon_bpmsg[];
@@ -183,6 +182,8 @@ static char *rendermodes[] = { "{{INVALID}}",
                                NULL };
 
 static char *swdepths[] = { "8", "16", "32", NULL };
+
+static char *sbarmodes[] = { "full", "nofps", "none", NULL };
 
 static char *fileprefix = 0;
 
@@ -523,34 +524,34 @@ static void load_config( struct start_opts *sto, struct machine *oric )
 
     for( i=0; isws( sto->lctmp[i] ); i++ ) ;
 
-    if( read_config_option( &sto->lctmp[i], "machine",      &sto->start_machine, machtypes ) ) continue;
-    if( read_config_option( &sto->lctmp[i], "disktype",     &sto->start_disktype, disktypes ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "debug",        &sto->start_debug ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "fullscreen",   &fullscreen ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "nostatusbar",  &nostatusbar) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "hwsurface",    &hwsurface ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "scanlines",    &oric->scanlines ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "aratio",       &oric->aratio ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "hstretch",     &oric->hstretch ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "palghosting",  &oric->palghost ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "rom16",        &oric->rom16 ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "dos70",        &oric->dos70 ) ) continue;
-    if( read_config_path(   &sto->lctmp[i], "diskimage",    sto->start_disk, 1024 ) ) continue;
-    if( read_config_path(   &sto->lctmp[i], "tapeimage",    sto->start_tape, 1024 ) ) continue;
-    if( read_config_path(   &sto->lctmp[i], "symbols",      sto->start_syms, 1024 ) ) continue;
-    if( read_config_path(   &sto->lctmp[i], "tapepath",     tapepath, 1024 ) ) continue;
-    if( read_config_path(   &sto->lctmp[i], "diskpath",     diskpath, 1024 ) ) continue;
-    if( read_config_path(   &sto->lctmp[i], "telediskpath", telediskpath, 1024 ) ) continue;
-    if( read_config_path(   &sto->lctmp[i], "pravdiskpath", pravdiskpath, 1024 ) ) continue;
-    if( read_config_path(   &sto->lctmp[i], "atmosrom",     atmosromfile, 1024 ) ) continue;
-    if( read_config_path(   &sto->lctmp[i], "oric1rom",     oric1romfile, 1024 ) ) continue;
-    if( read_config_path(   &sto->lctmp[i], "mdiscrom",     mdiscromfile, 1024 ) ) continue;
-    if( read_config_path(   &sto->lctmp[i], "bd500rom",     bd500romfile, 1024 ) ) continue;
-    if( read_config_path(   &sto->lctmp[i], "jasminrom",    jasmnromfile, 1024 ) ) continue;
-    if( read_config_path(   &sto->lctmp[i], "pravetzrom",   pravetzromfile[0], 1024 ) ) continue;
-    if( read_config_path(   &sto->lctmp[i], "pravetz8drom", pravetzromfile[1], 1024 ) ) continue;
-    if( read_config_int(    &sto->lctmp[i], "rampattern",   &oric->rampattern, 0, 1 ) ) continue;
-    if( read_config_option( &sto->lctmp[i], "swdepth",      &oric->sw_depth, swdepths ) )
+    if( read_config_option( &sto->lctmp[i], "machine",       &sto->start_machine, machtypes ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "disktype",      &sto->start_disktype, disktypes ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "debug",         &sto->start_debug ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "fullscreen",    &fullscreen ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "statusbarmode", &oric->statusbar_mode, sbarmodes) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "hwsurface",     &hwsurface ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "scanlines",     &oric->scanlines ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "aratio",        &oric->aratio ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "hstretch",      &oric->hstretch ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "palghosting",   &oric->palghost ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "rom16",         &oric->rom16 ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "dos70",         &oric->dos70 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "diskimage",     sto->start_disk, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "tapeimage",     sto->start_tape, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "symbols",       sto->start_syms, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "tapepath",      tapepath, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "diskpath",      diskpath, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "telediskpath",  telediskpath, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "pravdiskpath",  pravdiskpath, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "atmosrom",      atmosromfile, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "oric1rom",      oric1romfile, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "mdiscrom",      mdiscromfile, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "bd500rom",      bd500romfile, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "jasminrom",     jasmnromfile, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "pravetzrom",    pravetzromfile[0], 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "pravetz8drom",  pravetzromfile[1], 1024 ) ) continue;
+    if( read_config_int(    &sto->lctmp[i], "rampattern",    &oric->rampattern, 0, 1 ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "swdepth",       &oric->sw_depth, swdepths ) )
     {
       /* Convert index to depth */
       switch (oric->sw_depth)
@@ -677,7 +678,7 @@ static void usage( int ret )
           "\n"
           "  -s / --symbols     = Load symbols from a file\n"
           "  -f / --fullscreen  = Run oricutron fullscreen\n"
-          "  -n / --nostatusbar = Don't display statusbar\n"
+          "  --statusbar        = Set initial status bar mode: 'full', 'nofps' or 'none'\n"
           "  -w / --window      = Run oricutron in a window\n"
 #ifdef __OPENGL_AVAILABLE__
           "  -R / --rendermode  = Render mode. Valid modes are:\n"
@@ -794,7 +795,6 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   sto->start_breakpoint = NULL;
   oric->ch376_activated = SDL_FALSE;
   fullscreen          = SDL_FALSE;
-  nostatusbar 		  = SDL_FALSE;
 #ifdef WIN32
   hwsurface           = SDL_TRUE;
 #else
@@ -836,7 +836,6 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           tmp = &argv[i][2];
 
           if( strcasecmp( tmp, "fullscreen" ) == 0 ) { opt_type = 'f'; break; }
-          if( strcasecmp( tmp, "nostatusbar") == 0 ) { opt_type = 'n'; break; }
           if( strcasecmp( tmp, "window"     ) == 0 ) { opt_type = 'w'; break; }
           if( strcasecmp( tmp, "debug"      ) == 0 ) { opt_type = 'b'; break; }
           if( strcasecmp( tmp, "hwsurface"  ) == 0 ) { hwsurface = SDL_TRUE; break; }
@@ -937,6 +936,32 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           {
             if( !on_or_off( argv[i-1], opt_arg, &oric->scanlines ) ) exit( EXIT_FAILURE );
             continue;
+          }
+
+          if( strcasecmp( tmp, "statusbar" ) == 0 )
+          {
+            if( opt_arg )
+            {
+              if( strcasecmp( opt_arg, "none" ) == 0 )
+              {
+                oric->statusbar_mode = STATUSBARMODE_NONE;
+                continue;
+              }
+              if( strcasecmp( opt_arg, "full" ) == 0 )
+              {
+                oric->statusbar_mode = STATUSBARMODE_FULL;
+                continue;
+              }
+              if( strcasecmp( opt_arg, "nofps" ) == 0 )
+              {
+                oric->statusbar_mode = STATUSBARMODE_NOFPS;
+                continue;
+              }
+            }
+
+            error_printf( "Invalid statusbar mode" );
+            free( sto );
+            exit( EXIT_FAILURE );
           }
           break;
 
@@ -1180,11 +1205,6 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           fullscreen = SDL_TRUE;
 		  oric->statusbar_mode = STATUSBARMODE_NONE;
           break;
-
-		case 'n':
-		  nostatusbar = SDL_TRUE;
-		  oric->statusbar_mode = STATUSBARMODE_NONE;
-		  break;
 
         case 'w':
           fullscreen = SDL_FALSE;
