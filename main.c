@@ -78,6 +78,7 @@
 
 SDL_bool need_sdl_quit = SDL_FALSE;
 SDL_bool fullscreen, hwsurface;
+SDL_bool nostatusbar;
 extern SDL_bool warpspeed, soundon;
 Uint32 lastframetimes[FRAMES_TO_AVERAGE], frametimeave;
 extern char mon_bpmsg[];
@@ -526,6 +527,7 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_option( &sto->lctmp[i], "disktype",     &sto->start_disktype, disktypes ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "debug",        &sto->start_debug ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "fullscreen",   &fullscreen ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "nostatusbar",  &nostatusbar) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "hwsurface",    &hwsurface ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "scanlines",    &oric->scanlines ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "aratio",       &oric->aratio ) ) continue;
@@ -675,6 +677,7 @@ static void usage( int ret )
           "\n"
           "  -s / --symbols     = Load symbols from a file\n"
           "  -f / --fullscreen  = Run oricutron fullscreen\n"
+          "  -n / --nostatusbar = Don't display statusbar\n"
           "  -w / --window      = Run oricutron in a window\n"
 #ifdef __OPENGL_AVAILABLE__
           "  -R / --rendermode  = Render mode. Valid modes are:\n"
@@ -791,6 +794,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   sto->start_breakpoint = NULL;
   oric->ch376_activated = SDL_FALSE;
   fullscreen          = SDL_FALSE;
+  nostatusbar 		  = SDL_FALSE;
 #ifdef WIN32
   hwsurface           = SDL_TRUE;
 #else
@@ -832,6 +836,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           tmp = &argv[i][2];
 
           if( strcasecmp( tmp, "fullscreen" ) == 0 ) { opt_type = 'f'; break; }
+          if( strcasecmp( tmp, "nostatusbar") == 0 ) { opt_type = 'n'; break; }
           if( strcasecmp( tmp, "window"     ) == 0 ) { opt_type = 'w'; break; }
           if( strcasecmp( tmp, "debug"      ) == 0 ) { opt_type = 'b'; break; }
           if( strcasecmp( tmp, "hwsurface"  ) == 0 ) { hwsurface = SDL_TRUE; break; }
@@ -1173,7 +1178,13 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 
         case 'f':
           fullscreen = SDL_TRUE;
+		  oric->statusbar_mode = STATUSBARMODE_NONE;
           break;
+
+		case 'n':
+		  nostatusbar = SDL_TRUE;
+		  oric->statusbar_mode = STATUSBARMODE_NONE;
+		  break;
 
         case 'w':
           fullscreen = SDL_FALSE;
