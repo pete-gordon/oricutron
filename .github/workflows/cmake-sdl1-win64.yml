@@ -1,5 +1,7 @@
 name: Oricutron Release on windows-latest - cmake SDL1
 
+on: workflow_dispatch
+
 on: [push]
 
 env:
