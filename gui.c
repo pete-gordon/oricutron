@@ -67,7 +67,6 @@
 #include "plugins/twilighte_board/oric_twilighte_board_plugin.h"
 
 extern SDL_bool fullscreen;
-extern SDL_bool nostatusbar;
 
 char tapepath[4096], tapefile[512];
 char diskpath[4096], diskfile[512];
@@ -476,7 +475,7 @@ SDL_bool gimg_load( struct guiimg *gi )
 // Draw the statusbar at the bottom
 void draw_statusbar( struct machine *oric )
 {
-   if ((oric->statusbar_mode == STATUSBARMODE_NONE) || (nostatusbar))
+   if (oric->statusbar_mode == STATUSBARMODE_NONE)
      oric->render_clear_area( 0, GIMG_POS_SBARY, 640, 480-GIMG_POS_SBARY );
    else
      oric->render_gimg( GIMG_STATUSBAR, 0, GIMG_POS_SBARY );
