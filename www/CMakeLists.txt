@@ -9,7 +9,7 @@ project(Oricutron)
   include_directories(${SDL2_INCLUDE_DIRS})
   add_definitions(-D__SPECIFY_SDL_DIR__=1 -DWWW -DWWW_NO_MONITOR -DWWW_NO_PRAVETZ -DWWW_NO_ORIC1 -DAPP_NAME_FULL="Oricutron 1.2" -DAPP_YEAR="2015"
           -DVERSION_COPYRIGHTS="Oricutron 1.2.0 2016 Peter Gordon"
-          -O3 -s USE_SDL=2 
+          -O3 -s -DUSE_SDL=2 
           -fsanitize=undefined -fsanitize-minimal-runtime )
 
 include_directories(
