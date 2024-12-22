@@ -61,16 +61,16 @@ void lprintchar( struct machine *oric, char c )
           do_popup( oric, "Printing failed :-(" );
           return;
         }
-        
+
         do_popup( oric, "Printing to 'printer_out.txt'" );
       }
-      
+
       // Put the char to the file, set up the timers
       fputc( c, oric->prf );
-      oric->prclock = 40;
       oric->prclose = 64*312*50*5;
     }
     // emulate ack signal
+    oric->prclock = 40;
     via_write_CA1( &oric->via, 1 );
   }
 }
@@ -182,7 +182,7 @@ void via_main_w_pcr( struct via *v )
         break;
     }
   }
-      
+
   if( updateay ) ay_set_bcmode( &v->oric->ay, v->ca2, v->cb2 );
 }
 
@@ -196,7 +196,7 @@ void via_main_w_ca2ext( struct via *v )
     case 0x06:  // Independant positive transition
       ay_set_bc1( &v->oric->ay, v->ca2 );
       break;
-    
+
     // 0x08, 0x0a, 0x0c, 0x0e: output modes. Nothing to do :)
   }
 }
@@ -242,12 +242,20 @@ void via_main_cb2pulsed( struct via *v )
   ay_set_bdir( &v->oric->ay, v->cb2 );
 }
 
+// Telestrat VIA2
+void via_tele_w_iorb( struct via *v, unsigned char oldorb )
+{
+  joy_buildmask( v->oric );
+}
+
 void via_tele_w_iora( struct via *v )
 {
   int invddra = (v->ddra&7)^7;
   v->oric->tele_currbank = (v->oric->tele_currbank&invddra)|(v->ora&v->ddra&0x07);
   v->oric->tele_banktype = v->oric->tele_bank[v->oric->tele_currbank].type;
   v->oric->rom           = v->oric->tele_bank[v->oric->tele_currbank].ptr;
+
+  joy_buildmask( v->oric );
 }
 
 void via_tele_w_iora2( struct via *v )
@@ -256,6 +264,8 @@ void via_tele_w_iora2( struct via *v )
   v->oric->tele_currbank = (v->oric->tele_currbank&invddra)|(v->ora&v->ddra&0x07);
   v->oric->tele_banktype = v->oric->tele_bank[v->oric->tele_currbank].type;
   v->oric->rom           = v->oric->tele_bank[v->oric->tele_currbank].ptr;
+
+  joy_buildmask( v->oric );
 }
 
 void via_tele_w_ddra( struct via *v )
@@ -264,6 +274,13 @@ void via_tele_w_ddra( struct via *v )
   v->oric->tele_currbank = (v->oric->tele_currbank&invddra)|(v->ora&v->ddra&0x07);
   v->oric->tele_banktype = v->oric->tele_bank[v->oric->tele_currbank].type;
   v->oric->rom           = v->oric->tele_bank[v->oric->tele_currbank].ptr;
+
+  joy_buildmask( v->oric );
+}
+
+void via_tele_w_ddrb( struct via *v )
+{
+  joy_buildmask( v->oric );
 }
 
 // Read ports from external device
@@ -388,28 +405,26 @@ void via_init( struct via *v, struct machine *oric, int viatype )
       break;
 
     case VIA_TELESTRAT:
-      v->w_iorb     = NULL;
+      v->w_iorb     = via_tele_w_iorb;
       v->w_iora     = via_tele_w_iora;
       v->w_iora2    = via_tele_w_iora2;
       v->w_ddra     = via_tele_w_ddra;
-      v->w_ddrb     = NULL;
+      v->w_ddrb     = via_tele_w_ddrb;
       v->w_pcr      = NULL;
-      v->w_ca2ext   = NULL;
-      v->w_cb2ext   = NULL;
+      v->w_ca2ext   = NULL;  // CA2: Not Connected
+      v->w_cb2ext   = NULL;  // MIDI Port
       v->r_iora     = NULL;
       v->r_iora2    = NULL;
       v->r_iorb     = NULL;
-      v->ca2pulsed  = NULL;
-      v->cb2pulsed  = NULL;
-      v->cb2shifted = NULL;
+      v->ca2pulsed  = NULL;  // CA2: Not Connected
+      v->cb2pulsed  = NULL;  // MIDI Port
+      v->cb2shifted = NULL;  // MIDI Port
       v->orbchange  = NULL;
       v->irqbit     = IRQF_VIA2;
       v->read_port_a  = via_read_porta;
       v->read_port_b  = via_read_portb;
       v->write_port_a = via_tele_write_porta;
       v->write_port_b = via_write_portb;
-      v->ora = 7;
-      v->ddra = 7;
       break;
   }
 }
@@ -488,7 +503,7 @@ void via_clock( struct via *v, unsigned int cycles )
       }
       v->t1c -= cycles;
       break;
-    
+
     case 0x40: // Continuous, no output
     case 0xc0: // Continuous, output on PB7
       crem = cycles;
@@ -581,7 +596,7 @@ void via_clock( struct via *v, unsigned int cycles )
           if( v->cb2shifted ) v->cb2shifted( v );
 
           v->srcount = (v->srcount+1)%8;
-        }        
+        }
       }
       break;
 
@@ -639,8 +654,8 @@ void via_clock( struct via *v, unsigned int cycles )
           v->srtrigger = SDL_FALSE;
         }
       }
-      break;    
-  }   
+      break;
+  }
 }
 
 // Write VIA from CPU
@@ -652,7 +667,7 @@ void via_write( struct via *v, int offset, unsigned char data )
   switch( offset )
   {
     case VIA_IORB:
-      tmp = v->orb;    
+      tmp = v->orb;
       v->orb = data;
 
       via_clr_irq( v, VIRQF_CB1 );
@@ -662,7 +677,7 @@ void via_write( struct via *v, int offset, unsigned char data )
         case 0x40:
           via_clr_irq( v, VIRQF_CB2 );
           break;
-        
+
         case 0xa0:
           v->cb2pulse = SDL_TRUE;
         case 0x80:
@@ -672,6 +687,7 @@ void via_write( struct via *v, int offset, unsigned char data )
       }
       if( v->w_iorb ) v->w_iorb( v, tmp );
       if( v->orbchange ) v->orbchange( v );
+      ay_soundloop( &v->oric->ay, tmp, data );
       break;
     case VIA_IORA:
       v->ora = data;
@@ -682,7 +698,7 @@ void via_write( struct via *v, int offset, unsigned char data )
         case 0x04:
           via_clr_irq( v, VIRQF_CA2 );
           break;
-        
+
         case 0x0a:
           v->ca2pulse = SDL_TRUE;
         case 0x08:
@@ -748,7 +764,7 @@ void via_write( struct via *v, int offset, unsigned char data )
             v->cb2 = 0;
             v->cb2pulse = SDL_FALSE;
             break;
-        
+
           case 0xe0:
             v->cb2 = 1;
             break;
@@ -772,7 +788,7 @@ void via_write( struct via *v, int offset, unsigned char data )
           v->ca2 = 0;
           v->ca2pulse = SDL_FALSE;
           break;
-        
+
         case 0x0e:
           v->ca2 = 1;
           break;
@@ -786,7 +802,7 @@ void via_write( struct via *v, int offset, unsigned char data )
             v->cb2 = 0;
             v->cb2pulse = SDL_FALSE;
             break;
-        
+
           case 0xe0:
             v->cb2 = 1;
             break;
@@ -984,14 +1000,14 @@ void via_write_CA2( struct via *v, unsigned char data )
         via_set_irq( v, VIRQF_CA2 );
       v->ca2 = data != 0;
       break;
-    
+
     case 0x04:  // Interrupt on positive transition
     case 0x06:  // Independant positive transition
       if( ( !v->ca2 ) && ( data != 0 ) )
         via_set_irq( v, VIRQF_CA2 );
       v->ca2 = data != 0;
       break;
-    
+
     // 0x08, 0x0a, 0x0c, 0x0e: output modes. Nothing to do :)
   }
 
@@ -1022,7 +1038,7 @@ void via_write_CB2( struct via *v, unsigned char data )
         via_set_irq( v, VIRQF_CB2 );
       v->cb2 = data != 0;
       break;
-    
+
     case 0x40:
     case 0x60:
       if( ( !v->cb2 ) && ( data != 0 ) )

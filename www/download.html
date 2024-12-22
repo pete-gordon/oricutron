@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Oricutron.js Downloader</title>
+</head>
+<body>
+<h1>Oricutron.js Downloader</h1>
+<input type="number" id="recordToLoad">	<button id="select">Select</button>
+<div id="downloadlink"></div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelector('#select').addEventListener('click', doSelect);
+    });
+
+    function doSelect() {
+        console.log('doSelect');
+        let image = document.querySelector('#select');
+        let recordToLoad = parseInt(document.querySelector('#recordToLoad').value,10);
+        if(recordToLoad === '') recordToLoad = 1;
+        // TO FINISH
+    }
+</script>
+</body>
+</html>
+
+

@@ -18,9 +18,7 @@
 **
 **  Oric machine stuff
 */
-#ifdef _MSC_VER
 #include <stdio.h>
-#endif
 
 #include "keyboard.h"
 
@@ -29,7 +27,8 @@ enum
   DRV_NONE = 0,
   DRV_JASMIN,
   DRV_MICRODISC,
-  DRV_PRAVETZ
+  DRV_BD500,
+  DRV_PRAVETZ,
 };
 
 enum
@@ -72,6 +71,7 @@ enum
   IMG_ATMOS_MICRODISC,
   IMG_ATMOS_JASMIN,
   IMG_TELESTRAT_DISK,
+  IMG_BD500_DISK,
   IMG_PRAVETZ_DISK,
   IMG_GUESS_MICRODISC,
   IMG_SNAPSHOT,
@@ -104,7 +104,9 @@ struct machine
   struct via          tele_via;
   struct acia         tele_acia;
   struct ch376        *ch376;
+  struct twilighte    *twilighte;
   SDL_bool            ch376_activated;
+  SDL_bool            twilighteboard_activated;
   int                 tele_currbank;
   unsigned char       tele_banktype;
 
@@ -134,7 +136,7 @@ struct machine
   int vsync;
 
   SDL_bool vid_double;
-  SDL_bool romdis, romon;
+  SDL_bool romdis, romon, rom16, dos70;
   SDL_bool vsynchack;
 
   unsigned short vid_addr;
@@ -149,12 +151,13 @@ struct machine
   int drivetype;
   struct wd17xx    wddisk;
   struct microdisc md;
+  struct bd500     bd;
   struct jasmin    jasmin;
   struct pravetz   pravetz;
   char diskname[MAX_DRIVES][32];
   SDL_bool diskautosave;
   SDL_bool auto_jasmin_reset;
-  
+
   FILE *prf;
   int prclose, prclock;
 
@@ -230,17 +233,19 @@ struct machine
   char statusstr[40];
   SDL_bool newstatusstr;
 
-  int statusbar_mode;
+  Sint32 statusbar_mode;
 
   int rampattern;
 
   Sint32 joy_iface;
   Sint32 joymode_a, joymode_b;
   Sint32 telejoymode_a, telejoymode_b;
-  SDL_COMPAT_KEY kbjoy1[6], kbjoy2[6];
+  SDL_COMPAT_KEY kbjoy1[7], kbjoy2[7];
 
   SDL_bool printenable;
   SDL_bool printfilter;
+  SDL_bool dcadjust;
+  SDL_bool soundloopon;
 
   SDL_bool lightpen;
   Uint8  lightpenx, lightpeny;
@@ -255,6 +260,8 @@ struct machine
   SDL_bool show_keyboard;
   SDL_bool define_mapping;
   SDL_bool sticky_mod_keys;
+
+  SDL_bool disable_menuscheme;
 
   int aciaoffset;
   int aciabackend;

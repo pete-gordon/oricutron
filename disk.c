@@ -47,6 +47,10 @@
 #include "msgbox.h"
 #include "filereq.h"
 
+#ifdef WWW
+#include <emscripten.h>
+#endif
+
 extern char diskfile[], diskpath[], filetmp[];
 extern char telediskfile[], telediskpath[];
 extern char pravdiskfile[], pravdiskpath[];
@@ -89,10 +93,11 @@ void disk_popup( struct machine *oric, int drive )
 }
 
 // Free a disk image and clear the pointer to it
-void diskimage_free( struct machine *oric, struct diskimage **dimg )
+static void diskimage_free( struct machine *oric, struct diskimage **dimg )
 {
   char *dpath, *dfile;
 
+  if( !dimg ) return;
   if( !(*dimg) ) return;
 
   if( oric->type != MACH_TELESTRAT )
@@ -109,7 +114,9 @@ void diskimage_free( struct machine *oric, struct diskimage **dimg )
         dfile = diskfile;
         break;
     }
-  } else {
+  }
+  else
+  {
     dpath = telediskpath;
     dfile = telediskfile;
   }
@@ -129,13 +136,18 @@ void diskimage_free( struct machine *oric, struct diskimage **dimg )
     }
   }
 
-  if( (*dimg)->rawimage ) free( (*dimg)->rawimage );
+  if( (*dimg)->rawimage )
+  {
+    free( (*dimg)->rawimage );
+    (*dimg)->rawimage = NULL;
+  }
+
   free( *dimg );
-  (*dimg) = NULL;
+  *dimg = NULL;
 }
 
 // Read a raw integer from a disk image file
-Uint32 diskimage_rawint( struct diskimage *dimg, Uint32 offset )
+static Uint32 diskimage_rawint( struct diskimage *dimg, Uint32 offset )
 {
   if( !dimg ) return 0;
   if( ( !dimg->rawimage ) || ( dimg->rawimagelen < 4 ) ) return 0;
@@ -147,13 +159,16 @@ Uint32 diskimage_rawint( struct diskimage *dimg, Uint32 offset )
 // Allocate and initialise a disk image structure
 // If "rawimglen" isn't zero, it will also allocate
 // ram for a raw disk image
-struct diskimage *diskimage_alloc( Uint32 rawimglen )
+static struct diskimage *diskimage_alloc( Uint32 rawimglen )
 {
   struct diskimage *dimg;
-  Uint8 *buf=NULL;
+  Uint8 *buf = NULL;
 
   if( rawimglen )
   {
+    // FIXME: this is temporary solution to allow
+    // low-level formatting up to 128 track per side
+    if( rawimglen < 128*2*6400+256 ) rawimglen = 128*2*6400+256;
     buf = malloc( rawimglen );
     if( !buf ) return NULL;
   }
@@ -183,6 +198,8 @@ struct diskimage *diskimage_alloc( Uint32 rawimglen )
 void disk_eject( struct machine *oric, int drive )
 {
   diskimage_free( oric, &oric->wddisk.disk[drive] );
+  oric->wddisk.disk[drive] = NULL;
+
   oric->pravetz.drv[drive].pimg  = NULL;
   oric->pravetz.drv[drive].byte  = 0;
   oric->pravetz.drv[drive].dirty = SDL_FALSE;
@@ -227,7 +244,8 @@ void diskimage_cachetrack( struct diskimage *dimg, int track, int side )
   while( ptr < eot )
   {
     // Search for ID mark
-    while( (ptr<eot) && (ptr[0]!=0xfe) ) ptr++;
+    while( ((ptr+3)<eot) && !((ptr[0]==0xa1) && (ptr[1]==0xa1) && (ptr[2]==0xa1) && (ptr[3]==0xfe)) ) ptr++;
+    ptr += 3;
 
     // Don't exceed the bounds of this track
     if( ptr >= eot ) break;
@@ -299,13 +317,22 @@ SDL_bool diskimage_save( struct machine *oric, char *fname, int drive )
   // If we are not just overwriting the original file, remember the new filename
   if( fname != oric->wddisk.disk[drive]->filename )
   {
-    strncpy( oric->wddisk.disk[drive]->filename, fname, 4096+512 );
-    oric->wddisk.disk[drive]->filename[4096+511] = 0;
+    strncpy( oric->wddisk.disk[drive]->filename, fname, 4096+512-1 );
+    oric->wddisk.disk[drive]->filename[4096+512-1] = 0;
   }
 
   // The image in memory is no longer different to the last saved version
   oric->wddisk.disk[drive]->modified = SDL_FALSE;
   oric->wddisk.disk[drive]->modified_time = 0;
+
+#ifdef WWW
+    // sync from memory state to persisted
+    EM_ASM(
+        FS.syncfs(function (err) {
+          assert(!err);
+        });
+    );
+#endif
 
   // Remember to update the GUI
   refreshdisks = SDL_TRUE;
@@ -435,8 +462,8 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
   oric->wddisk.disk[drive]->modified_time = 0;
 
   // Remember the filename of the image for this drive
-  strncpy( oric->wddisk.disk[drive]->filename, fname, 4096+512 );
-  oric->wddisk.disk[drive]->filename[4096+511] = 0;
+  strncpy( oric->wddisk.disk[drive]->filename, fname, 4096+512-1 );
+  oric->wddisk.disk[drive]->filename[4096+512-1] = 0;
 
   // Come up with a suitable short name for popups etc.
   if( strlen( fname ) > 31 )
@@ -870,6 +897,26 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
           }
           break;
 
+        case COP_READ_TRACK:
+
+          wd->r_data = wd->disk[wd->c_drive]->rawimage[(wd->c_side*wd->disk[wd->c_drive]->numtracks + wd->c_track)*6400+256 + wd->curroffs];
+          wd->curroffs++;
+          wd->r_status &= ~WSF_DRQ;
+          wd->clrdrq( wd->drqarg );
+
+          // Has the whole track been read?
+          if( wd->curroffs >= 6400 )
+          {
+            wd->delayedint = 20;
+            wd->distatus   = 0;
+            wd->currentop = COP_NUFFINK;
+            refreshdisks = SDL_TRUE;
+          } else {
+            wd->delayeddrq = 32;
+          }
+
+          break;
+
         case COP_READ_ADDRESS:
           if( !wd->currsector )
           {
@@ -1125,6 +1172,10 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
 #if GENERAL_DISK_DEBUG
               dbg_printf( "DISK: (%04X) Read track", oric->cpu.pc-1 );
 #endif
+              wd->curroffs = 0;
+              wd->r_status   = WSF_BUSY|WSF_NOTREADY;
+              wd->delayeddrq = 60;
+
               wd->currentop = COP_READ_TRACK;
               refreshdisks = SDL_TRUE;
               break;
@@ -1133,6 +1184,13 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
 #if GENERAL_DISK_DEBUG
               dbg_printf( "DISK: (%04X) Write track", oric->cpu.pc-1 );
 #endif
+              wd->curroffs = 0;
+              wd->r_status = WSF_NOTREADY|WSF_BUSY;
+              wd->delayeddrq = 500;
+              wd->clrdrq( wd->drqarg );
+              wd->clrintrq( wd->intrqarg );
+              wd->delayedint = 0;
+
               wd->currentop = COP_WRITE_TRACK;
               refreshdisks = SDL_TRUE;
               break;
@@ -1213,11 +1271,129 @@ void wd17xx_write( struct machine *oric, struct wd17xx *wd, unsigned short addr,
             wd->delayeddrq = 32;
           }
           break;
+
+        case COP_WRITE_TRACK:
+          switch(data)
+          {
+            // All bytes > 0xF4 are control bytes
+            case 0xf5:
+              // MFM: Initialize CRC generator
+              // FM : Not allowed
+#if GENERAL_DISK_DEBUG
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> SYNC (clear crc) -> 0xA1", wd->r_data);
+#endif
+              wd->crc = 0x968b;
+              wd->r_data = 0xa1;
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              // wd->crc = 0xcdb4;
+              break;
+
+            case 0xf6:
+              // FM : Not allowed
+#if GENERAL_DISK_DEBUG
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> SYNC -> 0xC2", wd->r_data);
+#endif
+              wd->r_data = 0xc2;
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              break;
+
+            case 0xf7:
+#if GENERAL_DISK_DEBUG
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> CRC -> %04X", wd->r_data, wd->crc);
+#endif
+              wd->disk[wd->c_drive]->rawimage[(wd->c_side*wd->disk[wd->c_drive]->numtracks + wd->c_track)*6400+256 + wd->curroffs] = wd->crc >> 8;
+              wd->curroffs++;
+              wd->r_data = wd->crc & 0xff;
+              break;
+
+#if GENERAL_DISK_DEBUG
+            // MFM: 0xf8 -> 0xff: write control byte
+            // FM : 0xf8 -> 0xfe: Initialize CRC generator
+            case 0xf8:
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> Data Address Mark (deleted)", wd->r_data);
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              // next bytes: data, <CRC>;
+              break;
+
+            case 0xf9:
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> Data Mark", wd->r_data);
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              break;
+
+            case 0xfa:
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> Data Mark", wd->r_data);
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              break;
+
+            case 0xfb:
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> Data Address Mark (normal)", wd->r_data);
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              // next bytes: data, <CRC>;
+              break;
+
+            case 0xfc:
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> Data Mark", wd->r_data);
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              break;
+
+            case 0xfd:
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> Data Mark", wd->r_data);
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              break;
+
+            case 0xfe:
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> Index Address Mark", wd->r_data);
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              // next 6 bytes: track, side, sector, size, <CRC>;
+              break;
+
+            case 0xff:
+              dbg_printf( "\tCOP_WRITE_TRACK: %02X -> ???", wd->r_data);
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+              break;
+#endif
+
+            default:
+              wd->crc = calc_crc( wd->crc, wd->r_data );
+
+          }
+
+         // Write byte to disk image
+#if GENERAL_DISK_DEBUG
+          dbg_printf("\tCOP_WRITE_TRACK: write byte: %02X '%c'", wd->r_data, wd->r_data);
+#endif
+          wd->disk[wd->c_drive]->rawimage[(wd->c_side*wd->disk[wd->c_drive]->numtracks + wd->c_track)*6400+256 + wd->curroffs] = wd->r_data;
+          wd->curroffs++;
+
+          wd->r_status &= ~WSF_DRQ;
+          wd->clrdrq( wd->drqarg );
+
+          wd->disk[wd->c_drive]->modified = SDL_TRUE;
+          wd->disk[wd->c_drive]->modified_time = 0;
+          refreshdisks = SDL_TRUE;
+
+          // Has the whole track been written?
+	  if (wd->curroffs >= 6400)
+	  {
+#if GENERAL_DISK_DEBUG
+            dbg_printf("\tCOP_WRITE_TRACK: track full (%d)", wd->curroffs);
+#endif
+            wd->delayedint = 32;
+            wd->currentop = COP_NUFFINK;
+            // wd->r_status &= (~WSF_DRQ);
+            wd->r_status = 0;
+            wd->clrdrq( wd->drqarg );
+	  }
+	  else
+            wd->delayeddrq = 64;
+
+          break;
       }
       break;
   }
 }
 
+// Microdisc interface handlers
 void microdisc_setdrq( void *md )
 {
   struct microdisc *mdp = (struct microdisc *)md;
@@ -1287,10 +1463,10 @@ unsigned char microdisc_read( struct microdisc *md, unsigned short addr )
       return md->drq|0x7f;
 
     default:
-      return via_read( &md->oric->via, addr );
+      break;
   }
 
-  return 0;
+  return via_read( &md->oric->via, addr );
 }
 
 void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char data )
@@ -1331,6 +1507,207 @@ void microdisc_write( struct microdisc *md, unsigned short addr, unsigned char d
   }
 }
 
+// Byte Drive 500 interface handlers
+// NOTE: Info by Ray McLaughlin
+//
+// 0x310 MOTOFF  R   switches the disk drive motor off.
+// 0x311 MOTON   R   switches the disk drive motor on.
+//                     NOTE: (probably)the motor is switched on
+//                     by (electronic) default on first powering up
+//                     the BD interface but it is safer to switch it
+//                     on in the boot sector (page 4) code.
+//
+// 0x312 DSTATS  R   bit 7 - DRQ
+//                   bit 6 - IRQ
+//                   bit 0 - motor status (): b0=0 ON, b0=1 OFF (NOTE: DOS7 only).
+//
+// 0x313 MAPOFF  R/W enables the ORIC ROM and disables the overlay RAM.
+//
+// 0x314 MAPON   R/W disables the ORIC ROM and enables the overlay RAM.
+//
+// 0x315 PRECMP  R   (probably) forwrite compensation on the FDC.
+//                     NOTE: maybe it's used in the DOS versions V2.2 & V3.1
+//                     of the BD software but not in Ray's latest version,
+//                     perhaps it will be included.
+//
+// 0x316 SDEN    R/W enables the the lower 8k of the ORIC's EPROM
+//                   (used where the ORIC has 2x8k EPROMS) and therefore
+//                   disables the overlay RAM in that memory area.
+//                   This overrides MAPON (see above).
+//
+// 0x317 DDEN    R/W disables the lower 8k of the ORIC's EPROM
+//                   (used where the ORIC has 1x16k EPROM or ROM)
+//                   and therefore enables the overlay RAM when MAPON
+//                   has been accessed.
+//
+// 0x31a DRVSEL  R/W bit 7,6 - get/set current drive
+//                   bit 5   - get/set current side
+//
+// 0x0380        R/W disables the BD interface ROM which covers addresses
+//                   0xE000 to 0xFFFF but before that is done, it takes
+//                   precedence over the above for that memory space.
+
+void bd500_setdrq( void *bd )
+{
+  struct bd500 *bdp = (struct bd500 *)bd;
+  bdp->drq = 0x80;
+}
+
+void bd500_clrdrq( void *bd )
+{
+  struct bd500 *bdp = (struct bd500 *)bd;
+  bdp->drq = 0;
+}
+
+void bd500_setintrq( void *bd )
+{
+  struct bd500 *bdp = (struct bd500 *)bd;
+  bdp->intrq = 0x40;
+}
+
+void bd500_clrintrq( void *bd )
+{
+  struct bd500 *bdp = (struct bd500 *)bd;
+  bdp->intrq = 0;
+}
+
+void bd500_init( struct bd500 *bd, struct wd17xx *wd, struct machine *oric )
+{
+  wd17xx_init( wd );
+  wd->setintrq = bd500_setintrq;
+  wd->clrintrq = bd500_clrintrq;
+  wd->intrqarg = (void*)bd;
+  wd->setdrq   = bd500_setdrq;
+  wd->clrdrq   = bd500_clrdrq;
+  wd->drqarg   = (void*)bd;
+
+  bd->status  = 0;
+  bd->intrq   = 0;
+  bd->drq     = 0;
+  bd->wd      = wd;
+  bd->oric    = oric;
+  bd->diskrom = SDL_TRUE;
+  bd->motor   = SDL_FALSE;
+}
+
+void bd500_free( struct bd500 *bd )
+{
+  int i;
+  for( i=0; i<MAX_DRIVES; i++ )
+    disk_eject( bd->oric, i );
+}
+
+unsigned char bd500_read( struct bd500 *bd, unsigned short addr )
+{
+  unsigned char ret = 0xff;
+
+//  dbg_printf( "DISK: (%04X) Read from %04X", bd->oric->cpu.pc-1, addr );
+
+  if( ( addr >= 0x320 ) && ( addr < 0x324 ) )
+    return wd17xx_read( bd->wd, addr&3 );
+
+  switch( addr )
+  {
+    case 0x312:
+      ret = bd->drq | bd->intrq;
+      if( bd->oric->dos70 ) ret |= bd->motor? 0:1;
+      break;
+
+    case 0x313:
+      bd->oric->romdis = SDL_FALSE;
+      break;
+
+    case 0x314:
+      bd->oric->romdis = SDL_TRUE;
+      break;
+
+    case 0x310:
+      // MOTOFF = 0
+      bd->motor = SDL_FALSE;
+      bd->wd->currentop = COP_NUFFINK;
+      break;
+
+    case 0x311:
+      // MOTON  = 1
+      bd->motor = SDL_TRUE;
+      bd->wd->currentop = COP_READ_SECTOR;
+      break;
+
+    case 0x315:
+      // PRECMP
+      break;
+
+    case 0x316:
+      // SDEN
+      bd->diskrom = SDL_FALSE;
+      break;
+
+    case 0x317:
+      // DDEN
+      // 64k/56k mode depend on ROM chips
+      bd->diskrom = bd->oric->rom16? SDL_FALSE : SDL_TRUE;
+      break;
+
+    case 0x31a:
+      // bits 7,6 current drive
+      // bit 5 current side
+      ret = ((bd->wd->c_drive&3)<<6) | ((bd->wd->c_side&1)<<5);
+      break;
+
+    case 0x0380:
+      bd->diskrom = SDL_FALSE;
+      break;
+
+    default:
+      break;
+  }
+
+  return ret;
+}
+
+void bd500_write( struct bd500 *bd, unsigned short addr, unsigned char data )
+{
+//  dbg_printf( "DISK: (%04X) Write %02X to %04X", bd->oric->cpu.pc-1, data, addr );
+
+  if( ( addr >= 0x320 ) && ( addr < 0x324 ) )
+  {
+    wd17xx_write( bd->oric, bd->wd, addr&3, data );
+    return;
+  }
+
+  switch( addr )
+  {
+    case 0x313:
+      bd->oric->romdis = SDL_FALSE;
+      break;
+
+    case 0x314:
+      bd->oric->romdis = SDL_TRUE;
+      break;
+
+    case 0x316:
+      // SDEN
+      bd->diskrom = SDL_FALSE;
+      break;
+
+    case 0x317:
+      // DDEN
+      // 64k/56k mode depend on ROM chips
+      bd->diskrom = bd->oric->rom16? SDL_FALSE : SDL_TRUE;
+      break;
+
+    case 0x0380:
+      bd->diskrom = SDL_FALSE;
+      break;
+
+    case 0x31a:
+      bd->wd->c_side = (data>>5)&1;
+      bd->wd->c_drive = (data>>6)&3;
+      break;
+  }
+}
+
+// Jasmin interface handlers
 void jasmin_setdrq( void *j )
 {
   struct jasmin *jp = (struct jasmin *)j;
@@ -1398,12 +1775,11 @@ unsigned char jasmin_read( struct jasmin *j, unsigned short addr )
     case 0x3fb:
       return j->romdis;
 
-
     default:
-      return via_read( &j->oric->via, addr );
+      break;
   }
 
-  return 0;
+  return via_read( &j->oric->via, addr );
 }
 
 void jasmin_write( struct jasmin *j, unsigned short addr, unsigned char data )
@@ -1484,6 +1860,6 @@ unsigned char pravetz_read( struct pravetz *p, unsigned short addr )
 void pravetz_write( struct pravetz *p, unsigned short addr, unsigned char data )
 {
   disk_pravetz_write( p->oric, addr, data );
-  p->oric->wddisk.currentop = p->drv[p->oric->wddisk.c_drive].motor_on ? COP_READ_SECTOR : COP_NUFFINK;
+  p->oric->wddisk.currentop = p->drv[p->oric->wddisk.c_drive].motor_on ? COP_WRITE_SECTOR : COP_NUFFINK;
 }
 

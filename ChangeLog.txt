@@ -3,6 +3,31 @@ Oricutron ChangeLog
 
 pre-release changes (work in progress)
 --------------------------------------
+* New breakpoint flag 't' to print current counter
+* Added monitor memory search (#180) (@cedricp)
+* Added Sound loopback (useful to simulate speech software)
+* Properly #ifdef-ed key_dump routines (define DEBUG_KEY_DUMP when build)
+* Added Android target platform
+* Updated BD500 for DOS70
+* Added option to disable menu color scheme
+* Updated BD500 support
+* Fixed crash with visual keyboard on/off
+* Added Byte Drive BD-500 support
+* Added possibility to load more images from command line
+* Fixed memory leaks and improvements in disk support
+* Added monitor command 'fr' - fr <addr> <file> - Read BIN file to mem
+* Changed monitor command 'df' to 'fd' for better consistency
+* Changed monitor command 'wm' to 'fw' for better consistency
+* Added new 'dcadjust' option in .cfg file - toggles on/off audio DC adjustment
+* Added German translation of 'ReadMe.txt' - 'ReadMe-LiesMich_DE.txt'
+* Fixed issue #116 no ACIA in Telestrat mode
+* Added read-track and write-track support for FDC (assinie)
+* Center windows on return from fullscreen mode (rzumer)
+* Fixed Z-flag in BCD mode (iss)
+* Fixed embedded assembler: BRK is a 2 bytes instruction
+* Added 3rd button support with SDL Joystick
+* Added Telestrat Joysticks support
+* Fixed CSAVE/CLOAD with Sedoric
 * Added missing chars (@,&) in monitor font
 * Fixed typing upper case chars and syms in debugger window
 * Added case insensitive file extensions for GTK file selector dialog

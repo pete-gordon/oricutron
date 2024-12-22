@@ -18,8 +18,10 @@
  05.10.2017 - Assinie: Added support for CMD_DIR_CREATE and CMD_FILE_ERASE (Linux only)
  21.08.2017 - Jede   : Added support for CMD_DIR_CREATE and CMD_FILE_ERASE (WIN32 only)
  22.07.2017 - OffseT : Added support for CMD_DIR_CREATE and CMD_FILE_ERASE (Added related Amiga system APIs only)
-
- */
+ 01.02.2021 - Assinie: Fix time struct (Linux Only)
+ 02.04.2022 - Assinie: Added support for CMD_READ_VAR32 (FILE_SIZE and CURRENT_OFFSET only) (Linux Only)
+ 10.03.2023 - Assinie: Fix bug : . and .. was reading as right entry. Now, it's skipped
+*/
 /* /// "Portable includes" */
 
 
@@ -51,8 +53,14 @@ extern struct Library *SysBase;
 #include <dirent.h>
 #include <unistd.h>
 #include <string.h>
+#ifdef __ANDROID__
+#include <sys/vfs.h>
+#define statvfs statfs
+#else
 #include <sys/statvfs.h>
+#endif
 #include <sys/stat.h>
+#include <time.h>
 
 #else
 #error "FixMe!"
@@ -71,7 +79,7 @@ extern struct Library *SysBase;
 #define CH376_CMD_NONE          0x00
 #define CH376_CMD_GET_IC_VER    0x01
 #define CH376_CMD_CHECK_EXIST   0x06
-#define CH376_CMD_GET_FILE_SIZE 0x0c
+#define CH376_CMD_READ_VAR32    0x0c
 #define CH376_CMD_SET_USB_MODE  0x15
 #define CH376_CMD_GET_STATUS    0x22
 #define CH376_CMD_RD_USB_DATA0  0x27
@@ -97,13 +105,17 @@ extern struct Library *SysBase;
 #define CH376_ARG_SET_USB_MODE_SD_HOST  0x03
 #define CH376_ARG_SET_USB_MODE_USB_HOST 0x06
 
+// VAR32 offsets
+#define CH376_VAR_FILE_SIZE      0x68
+#define CH376_VAR_CURRENT_OFFSET 0x6c
+
 // Status & errors
 #define CH376_ERR_OPEN_DIR   0x41
 #define CH376_ERR_MISS_FILE  0x42
 #define CH376_ERR_FOUND_NAME 0x43
 
-#define CH376_RET_SUCCESS 0x51
-#define CH376_RET_ABORT   0x5f
+#define CH376_RET_SUCCESS    0x51
+#define CH376_RET_ABORT      0x5f
 
 #define CH376_INT_SUCCESS    0x14
 #define CH376_INT_DISK_READ  0x1d
@@ -113,7 +125,7 @@ extern struct Library *SysBase;
 
 /* /// "CH376 data structures" */
 
-#define CMD_DATA_REQ_SIZE 0xff
+#define CMD_DATA_REQ_SIZE  0xff
 
 // Attributes
 #define DIR_ATTR_READ_ONLY 0x01
@@ -178,7 +190,7 @@ union CommandData
     CH376_U8          CMD_FileReadWrite[2]; // [W/O] CH376_CMD_BYTE_READ, CH376_CMD_BYTE_WRITE
     CH376_U8          CMD_IOBuffer[255];    // [R/W] CH376_CMD_BYTE_READ, CH376_CMD_BYTE_RD_GO, CH376_CMD_BYTE_WRITE, CH376_CMD_BYTE_WR_GO
     CH376_U8          CMD_CheckByte;        // [R/W] CH376_CMD_CHECK_EXIST
-    CH376_U8          CMD_FileSize[4];       // [R/W] CH376_CMD_GET_FILE_SIZE, CH376_CMD_SET_FILE_SIZE
+    CH376_U8          CMD_VAR32[4];         // [R/W] CH376_CMD_GET_FILE_SIZE, CH376_CMD_SET_FILE_SIZE
 };
 
 #pragma pack()
@@ -303,6 +315,9 @@ static void system_finish_examine_directory(CH376_CONTEXT *context, CH376_DIR fi
 
 // Get the size of the current file
 static CH376_S32 system_get_file_size(CH376_CONTEXT *context, CH376_FILE file);
+
+// Get the offset position of the current file
+static CH376_S32 system_get_file_offset(CH376_CONTEXT *context, CH376_FILE file);
 
 /* /// */
 
@@ -665,6 +680,20 @@ static CH376_S32 system_get_file_size(CH376_CONTEXT *context, CH376_FILE file)
     return file_size;
 }
 
+static CH376_S32 system_get_file_offset(CH376_CONTEXT *context, CH376_FILE file)
+{
+    CH376_S32 file_offset = 0xffffffff;
+
+    if (file)
+    {
+       dbg_printf("system_get_file_offset: unsupported error\n");
+    }
+    else
+        dbg_printf("system_get_file_offset: no file handle\n");
+
+    return file_offset;
+}
+
 /* /// */
 
 #elif defined(WIN32)
@@ -1016,6 +1045,20 @@ static CH376_S32 system_get_file_size(CH376_CONTEXT *context, CH376_FILE file)
     return file_size;
 }
 
+static CH376_S32 system_get_file_offset(CH376_CONTEXT *context, CH376_FILE file)
+{
+    CH376_S32 file_offset = 0xffffffff;
+
+    if (file)
+    {
+       dbg_printf("system_get_file_offset: unsupported error\n");
+    }
+    else
+        dbg_printf("system_get_file_offset: no file handle\n");
+
+    return file_offset;
+}
+
 /* /// */
 
 #elif defined(__unix__) || defined(__APPLE__) || defined(__HAIKU__)
@@ -1280,6 +1323,10 @@ static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK
 {
     CH376_BOOL is_done = CH376_FALSE;
     struct stat file_stat;
+    struct tm *timeinfo;
+    CH376_U16 dos_cdate, dos_ctime;
+    CH376_U16 dos_adate;
+    CH376_U16 dos_mdate, dos_mtime;
     char *old_dir = NULL;
 
     if(dir_lock)
@@ -1298,25 +1345,76 @@ static CH376_BOOL system_go_examine_directory(CH376_CONTEXT *context, CH376_LOCK
 
             if(S_ISDIR(file_stat.st_mode))
                 dir_info->DIR_Attr |= DIR_ATTR_DIRECTORY;
-            if((file_stat.st_mode & S_IRUSR) == 0)
+            if((file_stat.st_mode & S_IWUSR) == 0) {
                 dir_info->DIR_Attr |= DIR_ATTR_READ_ONLY;
+                dbg_printf("--- READ ONLY ---");
+            }
 
-            dbg_printf("system_go_examine_directory defined file attributes: %d\n", dir_info->DIR_Attr);
+// FIXME: begin-of-implemented for Linux and Windows
+#if defined(__linux__) || defined(WIN32)
+
+            dbg_printf("system_go_examine_directory defined file attributes: %04o -> %02x\n", file_stat.st_mode, dir_info->DIR_Attr);
+            if (file_stat.st_ctim.tv_sec == 0)
+            {
+                dos_cdate = 0;
+                dos_ctime = 0;
+            }
+            else
+            {
+                timeinfo = localtime(&(file_stat.st_ctim.tv_sec));
+                dos_cdate = DIR_MAKE_FILE_DATE((timeinfo->tm_year + 1900), (timeinfo->tm_mon + 1), timeinfo->tm_mday);
+                dos_ctime = DIR_MAKE_FILE_TIME(timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+                dbg_printf("system_go_examine_directory defined file cdate/time: %s", asctime(timeinfo));
+            }
+
+            if (file_stat.st_atim.tv_sec == 0)
+            {
+                dos_adate = 0;
+            }
+            else
+            {
+                timeinfo = localtime(&(file_stat.st_atim.tv_sec));
+                dos_adate = DIR_MAKE_FILE_DATE((timeinfo->tm_year + 1900), (timeinfo->tm_mon + 1), timeinfo->tm_mday);
+                dbg_printf("system_go_examine_directory defined file adate/time: %s", asctime(timeinfo));
+            }
+
+            if (file_stat.st_mtim.tv_sec == 0)
+            {
+                dos_mdate = 0;
+                dos_mtime = 0;
+            }
+            else
+            {
+                timeinfo = localtime(&(file_stat.st_mtim.tv_sec));
+                dos_mdate = DIR_MAKE_FILE_DATE((timeinfo->tm_year + 1900), (timeinfo->tm_mon + 1), timeinfo->tm_mday);
+                dos_mtime = DIR_MAKE_FILE_TIME(timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+                dbg_printf("system_go_examine_directory defined file mdate/time: %s", asctime(timeinfo));
+            }
+#else
+            // silence compiler warnings
+            timeinfo = 0;
+            dos_ctime = 0;
+            dos_cdate = 0;
+            dos_mtime = 0;
+            dos_mdate = 0;
+            dos_adate = 0;
+#endif
+// FIXME: end-of-implemented for Linux and Windows
 
             dir_info->DIR_NTRes = 0;
             dir_info->DIR_CrtTimeTenth = 0;
-            dir_info->DIR_CrtTime[0] = 0;
-            dir_info->DIR_CrtTime[1] = 0;
-            dir_info->DIR_CrtDate[0] = 0;
-            dir_info->DIR_CrtDate[1] = 0;
-            dir_info->DIR_LstAccDate[0] = 0;
-            dir_info->DIR_LstAccDate[1] = 0;
+            dir_info->DIR_CrtTime[0] = (dos_ctime & 0x00ff);
+            dir_info->DIR_CrtTime[1] = (dos_ctime >> 8);
+            dir_info->DIR_CrtDate[0] = (dos_cdate & 0x00ff);
+            dir_info->DIR_CrtDate[1] = (dos_cdate >> 8);
+            dir_info->DIR_LstAccDate[0] = (dos_adate & 0x00ff);
+            dir_info->DIR_LstAccDate[1] = (dos_adate >> 8);
             dir_info->DIR_FstClusHI[0] = 0;
             dir_info->DIR_FstClusHI[1] = 0;
-            dir_info->DIR_WrtTime[0] = 0;
-            dir_info->DIR_WrtTime[1] = 0;
-            dir_info->DIR_WrtDate[0] = 0;
-            dir_info->DIR_WrtDate[1] = 0;
+            dir_info->DIR_WrtTime[0] = (dos_mtime & 0x00ff);
+            dir_info->DIR_WrtTime[1] = (dos_mtime >> 8);
+            dir_info->DIR_WrtDate[0] = (dos_mdate & 0x00ff);
+            dir_info->DIR_WrtDate[1] = (dos_mdate >> 8);
             dir_info->DIR_FstClusLO[0] = 0;
             dir_info->DIR_FstClusLO[1] = 0;
             dir_info->DIR_FileSize[0] = (file_stat.st_size & 0x000000ff) >>  0;
@@ -1366,6 +1464,25 @@ static CH376_S32 system_get_file_size(CH376_CONTEXT *context, CH376_FILE file)
         dbg_printf("system_get_file_size: no file handle\n");
 
     return file_size;
+}
+
+static CH376_S32 system_get_file_offset(CH376_CONTEXT *context, CH376_FILE file)
+{
+    CH376_S32 file_offset = 0xffffffff;
+
+    if (file)
+    {
+        file_offset = ftell(file);
+
+	if(file_offset == -1)
+        {
+           dbg_printf("system_get_file_offset: error\n");
+        }
+    }
+    else
+        dbg_printf("system_get_file_offset: no file handle\n");
+
+    return file_offset;
 }
 
 /* /// */
@@ -1448,6 +1565,13 @@ static const char * normalize_file_name(const char *file_name, char *normalized_
     int c;
 
     dbg_printf("normalize_file_name: %s\n", file_name);
+
+    // '.' or '..'
+    if(file_name[0] == '.')
+    {
+        if( (file_name[1] == '\0') || (file_name[1] == '.' && file_name[2] == '\0'))
+            return NULL;
+    }
 
     while(file_name[i] != '\0' && file_name[i] != '.' && j < 8)
     {
@@ -1723,14 +1847,14 @@ CH376_U8 ch376_read_data_port(struct ch376 *ch376)
         dbg_printf("[READ][DATA][CH376_CMD_CHECK_EXIST] setting data port to &%02x\n", data_out);
         break;
 
-    case CH376_CMD_GET_FILE_SIZE:
+    case CH376_CMD_READ_VAR32:
         if(ch376->nb_bytes_in_cmd_data)
         {
             if(ch376->nb_bytes_in_cmd_data != ch376->pos_rw_in_cmd_data)
             {
-                data_out = ch376->cmd_data.CMD_FileSize[ch376->pos_rw_in_cmd_data];
+                data_out = ch376->cmd_data.CMD_VAR32[ch376->pos_rw_in_cmd_data];
 
-                dbg_printf("[READ][DATA][CH376_CMD_GET_FILE_SIZE] read &%02x from i/o buffer at position &%02x\n", data_out, ch376->pos_rw_in_cmd_data);
+                dbg_printf("[READ][DATA][CH376_CMD_READ_VAR32] read &%02x from i/o buffer at position &%02x\n", data_out, ch376->pos_rw_in_cmd_data);
 
                 if(++ch376->pos_rw_in_cmd_data == ch376->nb_bytes_in_cmd_data)
                     ch376->nb_bytes_in_cmd_data = 0;
@@ -1739,7 +1863,7 @@ CH376_U8 ch376_read_data_port(struct ch376 *ch376)
         else
         {
             data_out = 0;
-            dbg_printf("[READ][DATA][CH376_CMD_GET_FILE_SIZE] nothing to read from i/o buffer\n");
+            dbg_printf("[READ][DATA][CH376_CMD_READ_VAR32] nothing to read from i/o buffer\n");
         }
 
         break;
@@ -1848,9 +1972,9 @@ void ch376_write_command_port(struct ch376 *ch376, CH376_U8 command)
         dbg_printf("[WRITE][COMMAND][CH376_CMD_CHECK_EXIST] waiting for check byte\n");
         break;
 
-    case CH376_CMD_GET_FILE_SIZE:
-        ch376->command = CH376_CMD_GET_FILE_SIZE;
-        dbg_printf("[WRITE][COMMAND][CH376_CMD_GET_FILE_SIZE] wait for &68 byte\n");
+    case CH376_CMD_READ_VAR32:
+        ch376->command = CH376_CMD_READ_VAR32;
+        dbg_printf("[WRITE][COMMAND][CH376_CMD_READ_VAR32] wait for var offset byte\n");
         break;
 
     case CH376_CMD_GET_IC_VER:
@@ -2334,21 +2458,39 @@ void ch376_write_data_port(struct ch376 *ch376, CH376_U8 data)
         dbg_printf("[WRITE][DATA][CH376_CMD_CHECK_EXIST] got check byte &%02x\n", data);
         break;
 
-    case CH376_CMD_GET_FILE_SIZE:
+    case CH376_CMD_READ_VAR32:
         // dbg_printf("[WRITE][DATA][CH376_CMD_GET_FILE_SIZE] got &%02x byte\n", data);
-        if (data == 0x68)
+        if (data == CH376_VAR_FILE_SIZE)
         {
             CH376_S32 file_size = system_get_file_size(&ch376->context, ch376->current_file);
 
-            ch376->cmd_data.CMD_FileSize[0] = (CH376_U8)((file_size & 0x000000ff) >>  0);
-            ch376->cmd_data.CMD_FileSize[1] = (CH376_U8)((file_size & 0x0000ff00) >>  8);
-            ch376->cmd_data.CMD_FileSize[2] = (CH376_U8)((file_size & 0x00ff0000) >> 16);
-            ch376->cmd_data.CMD_FileSize[3] = (CH376_U8)((file_size & 0xff000000) >> 24);
+            ch376->cmd_data.CMD_VAR32[0] = (CH376_U8)((file_size & 0x000000ff) >>  0);
+            ch376->cmd_data.CMD_VAR32[1] = (CH376_U8)((file_size & 0x0000ff00) >>  8);
+            ch376->cmd_data.CMD_VAR32[2] = (CH376_U8)((file_size & 0x00ff0000) >> 16);
+            ch376->cmd_data.CMD_VAR32[3] = (CH376_U8)((file_size & 0xff000000) >> 24);
 
-            ch376->nb_bytes_in_cmd_data = sizeof(ch376->cmd_data.CMD_FileSize);
+            ch376->nb_bytes_in_cmd_data = sizeof(ch376->cmd_data.CMD_VAR32);
             ch376->pos_rw_in_cmd_data = 0;
-         
+
             dbg_printf("[WRITE][DATA][CH376_CMD_GET_FILE_SIZE] done, file size is %d, waiting for data read\n", file_size);
+
+            // Lignes suivantes utiles?
+            ch376->interface_status = 127;
+            ch376->command_status = CH376_INT_SUCCESS;
+        }
+	else if(data == CH376_VAR_CURRENT_OFFSET)
+        {
+            CH376_S32 file_offset = system_get_file_offset(&ch376->context, ch376->current_file);
+
+            ch376->cmd_data.CMD_VAR32[0] = (CH376_U8)((file_offset & 0x000000ff) >>  0);
+            ch376->cmd_data.CMD_VAR32[1] = (CH376_U8)((file_offset & 0x0000ff00) >>  8);
+            ch376->cmd_data.CMD_VAR32[2] = (CH376_U8)((file_offset & 0x00ff0000) >> 16);
+            ch376->cmd_data.CMD_VAR32[3] = (CH376_U8)((file_offset & 0xff000000) >> 24);
+
+            ch376->nb_bytes_in_cmd_data = sizeof(ch376->cmd_data.CMD_VAR32);
+            ch376->pos_rw_in_cmd_data = 0;
+
+            dbg_printf("[WRITE][DATA][CH376_CMD_GET_FILE_OFFSET] done, file position is %d, waiting for data read\n", file_offset);
 
             // Lignes suivantes utiles?
             ch376->interface_status = 127;
@@ -2356,7 +2498,7 @@ void ch376_write_data_port(struct ch376 *ch376, CH376_U8 data)
         }
         else
         {
-            dbg_printf("[WRITE][DATA][CH376_CMD_GET_FILE_SIZE] wrong command byte: looking for &68, got &%02x\n", data);
+            dbg_printf("[WRITE][DATA][CH376_CMD_READ_VAR32] wrong command byte: looking for &68 or &6c, got &%02x\n", data);
 
             ch376->interface_status = 0;
             ch376->command_status = CH376_RET_ABORT;

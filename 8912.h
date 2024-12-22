@@ -81,7 +81,7 @@ struct ay8912
   Uint8           regs[NUM_AY_REGS], eregs[NUM_AY_REGS];
   SDL_bool        keystates[8], newnoise;
   SDL_bool        soundon;
-  SDL_bool        tapenoiseon;
+  SDL_bool        soundloopon;
   Uint32          toneper[3], noiseper, envper;
   Uint16          tonebit[3], noisebit[3], vol[3], newout;
   Sint32          ct[3], ctn, cte;
@@ -119,3 +119,6 @@ void ay_modeset( struct ay8912 *ay );
 void ay_lockaudio( struct ay8912 *ay );
 void ay_unlockaudio( struct ay8912 *ay );
 void ay_flushlog( struct ay8912 *ay );
+
+void ay_soundloop( struct ay8912 *ay, unsigned char oldval, unsigned char newval);
+

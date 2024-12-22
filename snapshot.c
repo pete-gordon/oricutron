@@ -41,6 +41,10 @@
 #include "tape.h"
 #include "msgbox.h"
 
+#ifdef WWW
+#include <emscripten.h>
+#endif
+
 extern char diskpath[];
 
 #define MAX_BLOCK (262144)
@@ -532,6 +536,15 @@ SDL_bool save_snapshot(struct machine *oric, char *filename)
   if (!ok)
     msgbox(oric, MSGBOX_OK, "Snapshot failed! (3)");
 
+#ifdef WWW
+  // sync from memory state to persisted
+    EM_ASM(
+        FS.syncfs(function (err) {
+          assert(!err);
+        });
+    );
+#endif
+
   return ok;
 }
 
@@ -746,12 +759,14 @@ static Uint32 getu32(struct blockheader *blk)
   return val;
 }
 
+#ifdef WWW_MONITOR
 static Sint32 gets32(struct blockheader *blk)
 {
   Sint32 val = (blk->buf[blk->offs]<<24)|(blk->buf[blk->offs+1]<<16)|(blk->buf[blk->offs+2]<<8)|blk->buf[blk->offs+3];
   blk->offs+=4;
   return val;
 }
+#endif
 
 static Uint16 getu16(struct blockheader *blk)
 {
@@ -1141,7 +1156,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
     case DRV_PRAVETZ:
     {
       Uint8 tmp[PRAV_TRACKS_PER_DISK*PRAV_RAW_TRACK_SIZE*2];
-      Uint32 offs;
+      Uint32 offs_;
 
       /* Get the pravetz block */
       blk = load_block(oric, "PRV\x00", f, SDL_TRUE, 9+2*10, SDL_TRUE);
@@ -1250,12 +1265,12 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
 
         sprintf(oric->wddisk.disk[i]->filename, "%s%cSNAPDISK%d.DSK", diskpath, PATHSEP, i);
 
-        offs = getu32(blk);
+        offs_ = getu32(blk);
         oric->pravetz.drv[i].pimg = oric->wddisk.disk[i];
-        if (offs == 0xffffffff)
+        if (offs_ == 0xffffffff)
           oric->pravetz.drv[i].sector_ptr = NULL;
         else
-          oric->pravetz.drv[i].sector_ptr = &oric->pravetz.drv[i].pimg->rawimage[offs];
+          oric->pravetz.drv[i].sector_ptr = &oric->pravetz.drv[i].pimg->rawimage[offs_];
 
         blk->id[0] = 0; // Don't find this one again
         free_block(blk);
@@ -1481,6 +1496,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
     free_block(blk);
   }
 
+#ifdef WWW_MONITOR
   /* Get the rom symbols block */
   if ((blk = load_block(oric, "SYR\x00", f, SDL_FALSE, -1, SDL_FALSE)))
   {
@@ -1531,6 +1547,7 @@ SDL_bool load_snapshot(struct machine *oric, char *filename)
 
     free_block(blk);
   }
+#endif
 
   free_blockheaders();
   fclose(f);

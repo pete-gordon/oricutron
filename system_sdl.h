@@ -75,7 +75,7 @@
 /* SDL compatability definitions and macroses */
 #if SDL_MAJOR_VERSION == 1
 typedef Uint16 SDL_COMPAT_KEY;        /* Used in 8912.c */
-typedef SDL_keysym SDL_KEYSYM;
+typedef SDL_keysym SDL_COMPAT_KEYSYM;
 typedef SDL_VideoInfo SDL_COMPAT_VideoInfo;
 
 #define SDL_COMPAT_HWSURFACE          SDL_HWSURFACE
@@ -93,7 +93,7 @@ typedef SDL_VideoInfo SDL_COMPAT_VideoInfo;
 
 #else
 typedef Uint32 SDL_COMPAT_KEY;        /* Used in 8912.c */
-typedef SDL_Keysym SDL_KEYSYM;
+typedef SDL_Keysym SDL_COMPAT_KEYSYM;
 typedef SDL_RendererInfo SDL_COMPAT_VideoInfo;
 
 #define SDL_COMPAT_HWSURFACE          0 /* FIXME */
@@ -131,27 +131,37 @@ typedef SDL_RendererInfo SDL_COMPAT_VideoInfo;
 int SDL_COMPAT_GetWMInfo(SDL_SysWMinfo *info);
 #endif
 
+int SDL_COMPAT_Init(Uint32 flags);
 void SDL_COMPAT_WM_SetIcon(SDL_Surface *icon, Uint8 *mask);
 void SDL_COMPAT_WM_SetCaption(const char *title, const char *icon);
 SDL_bool SDL_COMPAT_IsAppActive(SDL_Event* event);
 SDL_bool SDL_COMPAT_IsAppFocused(SDL_Event* event);
 int SDL_COMPAT_EnableKeyRepeat(int delay, int interval);
 int SDL_COMPAT_EnableUNICODE(int enable);
-SDL_COMPAT_KEY SDL_COMPAT_GetKeysymUnicode(SDL_KEYSYM keysym);
-SDL_COMPAT_KEY SDL_COMPAT_TranslateUnicode(SDL_KEYSYM keysym);
+SDL_COMPAT_KEY SDL_COMPAT_GetKeysymUnicode(SDL_COMPAT_KEYSYM keysym);
+SDL_COMPAT_KEY SDL_COMPAT_TranslateUnicode(SDL_COMPAT_KEYSYM keysym);
 int SDL_COMPAT_Flip(SDL_Surface* screen);
 int SDL_COMPAT_GetBitsPerPixel(void);
 int SDL_COMPAT_WM_ToggleFullScreen(SDL_Surface *surface);
 SDL_Surface* SDL_COMPAT_SetVideoMode(int width, int height, int bitsperpixel, Uint32 flags);
 int SDL_COMPAT_SetPalette(SDL_Surface *surface, int flags, SDL_Color *colors, int firstcolor, int ncolors);
 void SDL_COMPAT_SetEventFilter(SDL_EventFilter filter);
-void SDL_COMPAT_Quit(void);
+void SDL_COMPAT_Quit(SDL_bool freeall);
 void SDL_COMPAT_TakeScreenshot(char *fname);
 
 #ifdef __OPENGL_AVAILABLE__
 void SDL_COMPAT_GL_SwapBuffers(void);
 #endif
 
+
+#ifdef __ANDROID__
+#include <android/log.h>
+#define  LOG_TAG    "Oricutron"
+#define  debug_printf(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
+#define  error_printf(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
+#else
+#define  debug_printf(...)  fprintf(stdout,__VA_ARGS__)
 void error_printf( char *fmt, ... );
+#endif
 
 #endif /* ORICUTRON_SYSTEM_SDL_H */

@@ -89,20 +89,20 @@ char* get_clipboard_text_win(void)
   return text;
 }
 
-static void set_clipboard_text_win(const char* text)
+static void set_clipboard_text_win(const char* text_)
 {
     if (!initialized)
         return;
     
-    if ( text != NULL )
+    if ( text_ != NULL )
     {
         if ( OpenClipboard(g_SDL_Window) )
         {
-            HANDLE hMem = GlobalAlloc((GMEM_MOVEABLE|GMEM_DDESHARE), strlen(text)+1);
+            HANDLE hMem = GlobalAlloc((GMEM_MOVEABLE|GMEM_DDESHARE), strlen(text_)+1);
             if ( hMem != NULL )
             {
                 char* dst = (char*)GlobalLock(hMem);
-                memcpy(dst, text, strlen(text)+1);
+                memcpy(dst, text_, strlen(text_)+1);
                 GlobalUnlock(hMem);
                 EmptyClipboard();
                 SetClipboardData(CF_TEXT, hMem);
@@ -141,7 +141,7 @@ SDL_bool clipboard_copy( struct machine *oric )
         return SDL_FALSE;
         
     int line, col, i;
-    char text[40 * 28 + 28 + 1];
+    char text_[40 * 28 + 28 + 1];
     unsigned char *vidmem = (&oric->mem[oric->vid_addr]);
 
     for (i = 0, line = 0; line < 28; line++) {
@@ -153,16 +153,16 @@ SDL_bool clipboard_copy( struct machine *oric )
             }
             
             if (c < ' ' || c == 127) {
-                text[i++] = ' ';
+                text_[i++] = ' ';
             } else
-                text[i++] = (char)c;
+                text_[i++] = (char)c;
         }
-        text[i++] = '\n';
+        text_[i++] = '\n';
     }
-    text[i++] = '\0';
-    //printf("%s\n", text);
+    text_[i++] = '\0';
+    //printf("%s\n", text_);
     
-    set_clipboard_text_win(text);
+    set_clipboard_text_win(text_);
     return SDL_TRUE;
 }
 

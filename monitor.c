@@ -19,6 +19,8 @@
 **  Monitor/Debugger
 */
 
+#ifndef WWW_NO_MONITOR
+
 #define MAX_CONS_INPUT 127        // Max line length in console
 #define MAX_ASM_INPUT 36
 #define CONS_WIDTH 46             // Actual console width for input
@@ -29,7 +31,12 @@
 #include <stdarg.h>
 #include <ctype.h>
 
+#endif
+
 #include "system.h"
+
+#ifndef WWW_NO_MONITOR
+
 #undef REG_PC                     // MorphOS should not define REG_PC
 #define REG_PC _REG_PC
 #include "6502.h"
@@ -43,6 +50,7 @@
 #include "ula.h"
 #include "tape.h"
 #include "snapshot.h"
+#include "plugins/twilighte_board/oric_twilighte_board_plugin.h"
 
 #define LOG_DEBUG 0
 
@@ -87,10 +95,15 @@ static int ilen, iloff=0, cursx, histu=0, histp=-1;
 static unsigned short mon_addr, mon_asmmode = SDL_FALSE;
 static SDL_bool kshifted = SDL_FALSE, updatepreview = SDL_FALSE;
 static int helpcount=0;
+static int memory_search_pos=0;
 
 static struct symboltable defaultsyms;
 
+#endif
+
 char mon_bpmsg[80];
+
+#ifndef WWW_NO_MONITOR
 
 static SDL_bool mw_split = SDL_FALSE;
 static int mw_which = 0;
@@ -109,6 +122,21 @@ static SDL_bool via_oldvalid = SDL_FALSE;
 static struct via via2_old;
 static SDL_bool via2_oldvalid = SDL_FALSE;
 static SDL_bool modified = SDL_FALSE;
+
+static uint16_t memory_search[0x9800-0x0500];
+static int memory_hits= 0;
+
+// auto repeat commands
+enum
+{
+  ARPT_NULL    = 0,
+  ARPT_SEARCH  = 1,
+  ARPT_HELP    = '?',
+  ARPT_MEMORY  = 'm',
+  ARPT_DISASM  = 'd',
+  ARPT_ASSEM   = 'a',
+  ARPT_QUIT    = 'q',
+};
 
 //                                                             12345678901       12345678
 static struct msym defsym_tele[]  = { { 0x0300, 0,            "VIA_IORB"      , "VIA_IORB"   , "VIA_IORB" },
@@ -181,6 +209,7 @@ enum
   MSHOW_VIA2,
   MSHOW_AY,
   MSHOW_DISK,
+  MSHOW_TWIL,
   MSHOW_LAST
 };
 
@@ -252,7 +281,7 @@ enum
 #define AMF_IND (1<<AM_IND)
 
 //                                          imp   imm    zp   zpx   zpy   abs   abx   aby   zix   ziy   rel   ind
-static struct asminf asmtab[] = { { "BRK", 0x00,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
+static struct asminf asmtab[] = { { "BRK",   -1, 0x00,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
                                   { "ORA",   -1, 0x09, 0x05, 0x15,   -1, 0x0d, 0x1d, 0x19, 0x01, 0x11,   -1,   -1 },
                                   { "ASL", 0x0a,   -1, 0x06, 0x16,   -1, 0x0e, 0x1e,   -1,   -1,   -1,   -1,   -1 },
                                   { "PHP", 0x08,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1 },
@@ -592,6 +621,8 @@ static struct disinf distab[] = { { "BRK", AM_IMM },  // 00
                                   { "INC", AM_ABX },  // FE
                                   { "ISC", AM_ABX } };// FF (illegal)
 
+#endif
+
 SDL_bool isws( char c )
 {
   if( ( c == 9 ) || ( c == 32 ) ) return SDL_TRUE;
@@ -646,6 +677,8 @@ int hexit( char c )
   if( ( c >= 'A' ) && ( c <= 'F' ) ) return c-('A'-10);
   return -1;
 }
+
+#ifndef WWW_NO_MONITOR
 
 static int bp_at( struct machine *oric, unsigned short addr, int *xbp, int *mbp )
 {
@@ -1081,7 +1114,11 @@ char *mon_disassemble( struct machine *oric, unsigned short *paddr, SDL_bool *lo
 
       if( strlen( tmpsname ) > SNAME_LEN )
       {
-        sprintf( distmp, "%s\n", tmpsname );
+        int ln = strlen(tmpsname);
+        ln = (ln<127)? ln : 126;
+        memcpy( distmp, tmpsname, ln );
+        distmp[ln] = '\n';
+        distmp[ln+1] = 0;
         disptr = &distmp[strlen(distmp)];
         tmpsname = "";
       }
@@ -1623,6 +1660,42 @@ void mon_update_disk( struct machine *oric )
   }
 }
 
+void mon_update_twil( struct machine *oric )
+{
+  if ( (oric->twilighteboard_activated == SDL_FALSE ) && (oric->ch376_activated == SDL_FALSE) )
+    return;
+
+
+  if ( oric->twilighteboard_activated )
+  {
+    int current_bank = oric->twilighte->current_bank & 0x07;
+    int is_ram = (current_bank == 0) || ((twilighteboard_oric_read(oric->twilighte, 0x342) & 0x20) && (current_bank < 5));
+    tzprintfpos( tz[TZ_TWIL], 2, 2, "Board version = %02X", (twilighteboard_oric_read(oric->twilighte, 0x342) & 0x07) );
+    tzprintfpos( tz[TZ_TWIL], 2, 4, "Bank set      = %02X", twilighteboard_oric_read(oric->twilighte, 0x343) );
+    tzprintfpos( tz[TZ_TWIL], 2, 5, "Bank hardware number = %02X", twilighte_board_mapping_bank(oric->twilighte) );
+    tzprintfpos( tz[TZ_TWIL], 2, 6, "Bank software number = %02X", twilighte_board_mapping_software_bank(oric->twilighte) );
+    tzprintfpos( tz[TZ_TWIL], 2, 7, "Bank type     = %s" , is_ram ? "SRAM  ": "EEPROM");
+    tzprintfpos( tz[TZ_TWIL], 2, 9, "Twil register = %02X", twilighteboard_oric_read(oric->twilighte, 0x342) );
+    tzprintfpos( tz[TZ_TWIL], 2, 10, "Bank register = %02X", twilighteboard_oric_read(oric->twilighte, 0x343) );
+    tzprintfpos( tz[TZ_TWIL], 2, 12, "IORB          = %02X", twilighteboard_oric_read(oric->twilighte, 0x320) );
+    tzprintfpos( tz[TZ_TWIL], 2, 13, "IORAh         = %02X", twilighteboard_oric_read(oric->twilighte, 0x321) );
+    tzprintfpos( tz[TZ_TWIL], 2, 14, "DDRB          = %02X", twilighteboard_oric_read(oric->twilighte, 0x322) );
+    tzprintfpos( tz[TZ_TWIL], 2, 15, "DDRA          = %02X", twilighteboard_oric_read(oric->twilighte, 0x323) );
+  }
+
+  int offs = 8*tz[TZ_TWIL]->w+1;
+  for( int k=0; k<28; k++ )
+  {
+    tz[TZ_TWIL]->tx[offs+k] = 2;
+    tz[TZ_TWIL]->bc[offs+k] = 3;
+    tz[TZ_TWIL]->fc[offs+k] = 2;
+  }
+
+  if ( oric->ch376_activated )
+  {
+  }
+}
+
 void mon_state_reset( struct machine *oric )
 {
   mwatch_oldvalid = SDL_FALSE;
@@ -1730,6 +1803,10 @@ void mon_update( struct machine *oric )
     case MSHOW_DISK:
       mon_update_disk( oric );
       break;
+
+    case MSHOW_TWIL:
+      mon_update_twil( oric );
+      break;
   }
 
   switch( cshow )
@@ -1762,6 +1839,10 @@ void mon_render( struct machine *oric )
 
     case MSHOW_DISK:
       oric->render_textzone( oric, TZ_DISK );
+      break;
+
+    case MSHOW_TWIL:
+      oric->render_textzone( oric, TZ_TWIL );
       break;
   }
 
@@ -2340,7 +2421,7 @@ SDL_bool mon_getnum( struct machine *oric, unsigned int *num, char *buf, int *of
     return SDL_TRUE;
   }
 
-  if( buf[i] == '$' )
+  if( buf[i] == '$' || buf[i] == '#' )
   {
     // Hex
     i++;
@@ -2569,7 +2650,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
   switch( cmd[i] )
   {
     case 'a':
-      lastcmd = cmd[i];
+      lastcmd = ARPT_ASSEM;
       i++;
 
       if( mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
@@ -2747,11 +2828,12 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           {
             if( oric->cpu.breakpoints[j] != -1 )
             {
-              mon_printf( "%02d: $%04X %s%s",
-                j, 
+              mon_printf( "%02d: $%04X %s%s%s",
+                j,
                 oric->cpu.breakpoints[j],
                 (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLES) ? "z" : "",
-                (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLESCONTINUE) ? "c" : "");
+                (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLESCONTINUE) ? "c" : "",
+                (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLESPRINT) ? "t" : "" );
               oric->cpu.anybp = SDL_TRUE;
             }
           }
@@ -2842,7 +2924,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           oric->cpu.anybp = SDL_TRUE;
 
           while( isws( cmd[i] ) ) i++;
-          
+
           for( ;; )
           {
             switch( cmd[i] )
@@ -2855,15 +2937,20 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
                 oric->cpu.breakpoint_flags[j] |= MBPF_RESETCYCLESCONTINUE;
                 i++;
                 continue;
+              case 't':
+                oric->cpu.breakpoint_flags[j] |= MBPF_RESETCYCLESPRINT;
+                i++;
+                continue;
             }
             break;
           }
 
-          mon_printf( "%02d: $%04X %s%s", 
-            j, 
+          mon_printf( "%02d: $%04X %s%s%s",
+            j,
             oric->cpu.breakpoints[j],
             (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLES) ? "z" : "",
-            (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLESCONTINUE) ? "c" : "" );
+            (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLESCONTINUE) ? "c" : "",
+            (oric->cpu.breakpoint_flags[j]&MBPF_RESETCYCLESPRINT) ? "t" : "" );
           break;
 
         case 'c':
@@ -2935,11 +3022,102 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
       break;
 
     case 'm':
-      lastcmd = cmd[i];
+      lastcmd = ARPT_MEMORY;
       i++;
 
       switch( cmd[i] )
       {
+        case 's':
+         lastcmd = 0;
+          i++;
+
+          if( !mon_getnum( oric, &w, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+          {
+            mon_str( "Value expected" );
+          }
+          else
+          {
+            Uint16* collection = memory_search;
+            memory_search_pos = 0;
+            memory_hits = 0;
+            for ( j=0x500; j < 0x9800; j++ )
+            {
+              if ((unsigned char)w == mon_read( oric, j ) )
+              {
+                *collection++ = j;
+                memory_hits++;
+              }
+            }
+            sprintf( vsptmp, "Found %i match(es)", memory_hits );
+            mon_str(vsptmp);
+          }
+          break;
+
+        case 'r':
+          lastcmd = 0;
+          i++;
+
+          if( !mon_getnum( oric, &w, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+          {
+            mon_str( "Value expected" );
+          }
+          else
+          {
+            int newhits = 0;
+            memory_search_pos = 0;
+            for ( j = 0; j < memory_hits; j++ )
+            {
+              Uint16 curr_mem_addr = memory_search[j];
+              if ( (unsigned char)w == mon_read( oric, curr_mem_addr ) )
+              {
+                memory_search[newhits++] = curr_mem_addr;
+              }
+            }
+            memory_hits = newhits;
+
+            sprintf( vsptmp, "Refined match(es) : %i", memory_hits );
+            mon_str( vsptmp );
+          }
+          break;
+
+        case 'p':
+        {
+          char tmp[16];
+          int lines = 0;
+          int j, k = 0;
+
+          lastcmd = ARPT_SEARCH;
+          vsptmp[0] = 0;
+
+          for ( j = memory_search_pos; j < memory_hits; j++, k++ )
+          {
+            sprintf( tmp, "[%04X]:[%02X] ", memory_search[j], mon_read( oric, memory_search[j] ) );
+            strcat( vsptmp, tmp );
+            if (k == 4)
+            {
+              mon_str( vsptmp );
+              vsptmp[0] = 0;
+              lines++;
+              k = 0;
+            }
+            if (lines > 16)
+            {
+                memory_search_pos = j;
+                break;
+            }
+          }
+          if (strlen( vsptmp ))
+          {
+            mon_str( vsptmp );
+          }
+          if ( j >= memory_hits )
+          {
+            memory_search_pos = 0;
+            lastcmd = 0;
+          }
+          break;
+        }
+
         case 'm':
           lastcmd = 0;
           i++;
@@ -2958,7 +3136,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
 
           mon_set_modified( oric );
           oric->cpu.write( &oric->cpu, v, w );
-		  updatepreview = SDL_TRUE;
+          updatepreview = SDL_TRUE;
           break;
 
         case 'w':
@@ -3018,49 +3196,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
       break;
 
     case 'd':
-      if( cmd[i+1] == 'f' )
-      {
-        i+=2;
-
-        if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
-        {
-          mon_str( "Start address expected\n" );
-          break;
-        }
-
-        mon_addr = v;
-        if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
-        {
-          mon_str( "End address expected\n" );
-          break;
-        }
-
-        while( isws( cmd[i] ) ) i++;
-        if( !cmd[i] )
-        {
-          mon_str( "Filename expected" );
-          break;
-        }
-
-        f = fopen( &cmd[i], "w" );
-        if( !f )
-        {
-          mon_printf( "Unable to open '%s'", &cmd[i] );
-          break;
-        }
-
-        while( mon_addr <= v )
-        {
-          SDL_bool looped;
-          fprintf( f, "%s\n", mon_disassemble( oric, &mon_addr, &looped, SDL_TRUE ) );
-          if( looped ) break;
-        }
-
-        fclose( f );
-        break;
-      }
-
-      lastcmd = cmd[i];
+      lastcmd = ARPT_DISASM;
       i++;
       if( mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
         mon_addr = v;
@@ -3133,7 +3269,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
       return SDL_FALSE;
 
     case 'q':
-      lastcmd = cmd[i];
+      lastcmd = ARPT_QUIT;
       switch( cmd[i+1] )
       {
         case 32:
@@ -3158,12 +3294,53 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
       setemumode( oric, NULL, EM_RUNNING );
       break;
 
-    case 'w':
+    case 'f':
       lastcmd = 0;
       i++;
       switch( cmd[i] )
       {
-        case 'm':
+        // fd - disassemble to file
+        case 'd':
+          i++;
+          if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+          {
+            mon_str( "Start address expected\n" );
+            break;
+          }
+
+          mon_addr = v;
+          if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+          {
+            mon_str( "End address expected\n" );
+            break;
+          }
+
+          while( isws( cmd[i] ) ) i++;
+          if( !cmd[i] )
+          {
+            mon_str( "Filename expected" );
+            break;
+          }
+
+          f = fopen( &cmd[i], "w" );
+          if( !f )
+          {
+            mon_printf( "Unable to open '%s'", &cmd[i] );
+            break;
+          }
+
+          while( mon_addr <= v )
+          {
+            SDL_bool looped;
+            fprintf( f, "%s\n", mon_disassemble( oric, &mon_addr, &looped, SDL_TRUE ) );
+            if( looped ) break;
+          }
+
+          fclose( f );
+          break;
+
+        // fw - write mem to bin file
+        case 'w':
           i++;
           if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_TRUE, SDL_TRUE, SDL_TRUE ) )
           {
@@ -3206,6 +3383,49 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           fclose( f );
           free( tmem );
           mon_printf( "Written %d bytes to '%s'", w, &cmd[i] );
+          break;
+
+        // ToDo: fw - write mem to tap file
+        // case 't':
+        //   break;
+
+        // fr - read file to mem
+        case 'r':
+          i++;
+          if( !mon_getnum( oric, &v, cmd, &i, SDL_TRUE, SDL_TRUE, SDL_TRUE, SDL_TRUE ) )
+          {
+            mon_str( "Address expected" );
+            break;
+          }
+
+          while( isws( cmd[i] ) ) i++;
+          if( !cmd[i] )
+          {
+            mon_str( "Filename expected" );
+            break;
+          }
+
+          f = fopen( &cmd[i], "rb" );
+          if( !f )
+          {
+            mon_printf( "Unable to open '%s'", &cmd[i] );
+            break;
+          }
+
+          mon_set_modified( oric );
+          for( j=0; !feof( f ); )
+          {
+            w = fgetc(f);
+            if( -1 != w )
+            {
+              oric->cpu.write( &oric->cpu, v & 0xffff, w & 0xff );
+              v++;
+              j++;
+            }
+          }
+          fclose( f );
+          mon_printf( "%d bytes read from '%s'", j, &cmd[i] );
+          updatepreview = SDL_TRUE;
           break;
       }
       break;
@@ -3250,7 +3470,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
       break;
 
     case '?':
-      lastcmd = cmd[i];
+      lastcmd = ARPT_HELP;
       switch( helpcount )
       {
         case 0:
@@ -3267,7 +3487,7 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "  bcm <bp id>           - Clear mem breakpoint" );
           mon_str( "  bl                    - List breakpoints" );
           mon_str( "  blm                   - List mem breakpoints" );
-          mon_str( "  bs <addr> [zc]        - Set breakpoint/cycles" );
+          mon_str( "  bs <addr> [zct]       - Set breakpoint/cycles" );
           mon_str( "  bsm <addr> [rwc]      - Set mem breakpoint" );
           mon_str( "  bz                    - Zap breakpoints" );
           mon_str( "  bzm                   - Zap mem breakpoints" );
@@ -3277,10 +3497,12 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           break;
 
         case 1:
-          mon_str( "  df <addr> <end> <file>- Disassemble to file" );
           mon_str( "  m <addr>              - Dump memory" );
           mon_str( "  mm <addr> <value>     - Modify memory" );
           mon_str( "  mw <addr>             - Memory watch at addr" );
+          mon_str( "  ms <addr> <value>     - Memory search" );
+          mon_str( "  mr <addr>             - Memory search refine" );
+          mon_str( "  mp                    - Memory print search" );
           mon_str( "  nl <filename>         - Load snapshot" );
           mon_str( "  ns <filename>         - Save snapshot" );
           mon_str( "  r <reg> <val>         - Set <reg> to <val>" );
@@ -3293,7 +3515,31 @@ SDL_bool mon_cmd( char *cmd, struct machine *oric, SDL_bool *needrender )
           mon_str( "  sl <file>             - Load user symbols" );
           mon_str( "  sx <file>             - Export user symbols" );
           mon_str( "  sz                    - Zap user symbols" );
-          mon_str( "  wm <addr> <len> <file>- Write mem to disk" );
+          mon_str( " " );
+          mon_str( "---- MORE" );
+          helpcount++;
+          break;
+
+        case 2:
+          mon_str( "  fd <addr> <end> <file>- Disassemble to file" );
+          mon_str( "  fw <addr> <len> <file>- Write mem to bin file" );
+// ToDo:  mon_str( "  ft <addr> <len> <file>- Write mem to tap file" );
+          mon_str( "  fr <addr> <file>      - Read bin file to mem" );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
+          mon_str( " " );
           helpcount = 0;
           lastcmd = 0;
           break;
@@ -3800,32 +4046,46 @@ static SDL_bool mon_console_keydown( SDL_Event *ev, struct machine *oric, SDL_bo
     case SDLK_KP_ENTER:
       mon_hide_curs();
       ibuf[ilen] = 0;
-      if( ilen == 0 )
+      if( 0 == ilen && 0 != lastcmd )
       {
         switch( lastcmd )
         {
-          case '?':
-          case 'm':
-          case 'd':
+          case ARPT_HELP:   // '?'
+          case ARPT_MEMORY: // 'm'
+          case ARPT_DISASM: // 'd'
+          case ARPT_ASSEM:  // 'a'
+          case ARPT_QUIT:   // 'q',
             ibuf[cursx++] = lastcmd;
             ibuf[cursx] = 0;
             ilen = 1;
             break;
+          case ARPT_SEARCH: // 'mp'
+            ibuf[cursx++] = 'm';
+            ibuf[cursx++] = 'p';
+            ibuf[cursx] = 0;
+            ilen = 2;
+            break;
+          default:
+            lastcmd = 0;
+            ilen = 0;
+            break;
         }
-      } else {
-        if( ( histu > 0 ) && ( strcmp( &history[0][0], ibuf ) == 0 ) )
+      }
+
+      else if ( 0 < ilen )
+      {
+        if( !( ( histu > 0 ) && ( strcmp( &history[0][0], ibuf ) == 0 ) ) )
         {
-        } else {
           if( histu > 0 )
           {
             for( i=histu; i>0; i-- )
               strcpy( &history[i][0], &history[i-1][0] );
-
           }
           strcpy( &history[0][0], ibuf );
           if( histu < 10 ) histu++;
         }
       }
+
       histp = -1;
 
       tzsetcol( tz[TZ_MONITOR], 2, 3 );
@@ -3987,18 +4247,18 @@ static unsigned int steppy_step( struct machine *oric )
   return oric->cpu.icycles;
 }
 
-static SDL_bool clickzone( struct textzone *tz, int *tx, int *ty, SDL_bool *dblclk )
+static SDL_bool clickzone( struct textzone *tz_, int *tx, int *ty, SDL_bool *dblclk )
 {
   int dx, dy;
 
-  if( !in_textzone( tz, leftclick[0].x, leftclick[0].y ) )
+  if( !in_textzone( tz_, leftclick[0].x, leftclick[0].y ) )
     return SDL_FALSE;
 
-  *tx = (leftclick[0].x - tz->x) / 8;
-  *ty = (leftclick[0].y - tz->y) / 12;
+  *tx = (leftclick[0].x - tz_->x) / 8;
+  *ty = (leftclick[0].y - tz_->y) / 12;
 
-  dx = (leftclick[1].x - tz->x) / 8;
-  dy = (leftclick[1].y - tz->y) / 12;
+  dx = (leftclick[1].x - tz_->x) / 8;
+  dy = (leftclick[1].y - tz_->y) / 12;
 
   if( ( (*tx) == dx ) && ( (*ty) == dy ) && ( (leftclick[0].time-leftclick[1].time) < 1000 ) )
   {
@@ -4101,6 +4361,8 @@ SDL_bool mon_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           if( ( mshow == MSHOW_VIA2 ) && ( oric->type != MACH_TELESTRAT ) )
             mshow = (mshow+1)%MSHOW_LAST;
           if( ( oric->drivetype == DRV_NONE ) && ( mshow == MSHOW_DISK ) )
+            mshow = (mshow+1)%MSHOW_LAST;
+          if( ( oric->twilighteboard_activated == SDL_FALSE ) && ( mshow == MSHOW_TWIL ) )
             mshow = (mshow+1)%MSHOW_LAST;
           *needrender = SDL_TRUE;
           break;
@@ -4390,4 +4652,6 @@ void dump_cputrace(struct machine *oric)
     iter = iter->next;
   }
 }
+#endif
+
 #endif

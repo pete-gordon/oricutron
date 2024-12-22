@@ -22,14 +22,7 @@
 #include <proto/intuition.h>
 
 #include "system.h"
-#include "6502.h"
 #include "via.h"
-#include "8912.h"
-#include "gui.h"
-#include "disk.h"
-#include "monitor.h"
-#include "6551.h"
-#include "machine.h"
 #include "msgbox.h"
 
 SDL_bool init_msgbox( struct machine *oric )
@@ -48,9 +41,9 @@ SDL_bool msgbox( struct machine *oric, int type, char *msg )
     {
     sizeof(struct EasyStruct),
     0,
-    "Oricutron Request",
-    msg,
-    btns,
+    (UBYTE *) "Oricutron Request",
+    (UBYTE *) msg,
+    (UBYTE *) btns,
     };
 
   switch( type )

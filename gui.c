@@ -64,6 +64,7 @@
 
 #include "plugins/ch376/ch376.h"
 #include "plugins/ch376/oric_ch376_plugin.h"
+#include "plugins/twilighte_board/oric_twilighte_board_plugin.h"
 
 extern SDL_bool fullscreen;
 
@@ -74,6 +75,7 @@ char pravdiskpath[4096], pravdiskfile[512];
 extern char atmosromfile[];
 extern char oric1romfile[];
 extern char mdiscromfile[];
+extern char bd500romfile[];
 extern char jasmnromfile[];
 extern char pravetzromfile[2][1024];
 extern char telebankfiles[8][1024];
@@ -107,9 +109,14 @@ struct guiimg gimgs[NUM_GIMG]  = { { IMAGEPREFIX"statusbar.bmp",              64
                                    { IMAGEPREFIX"tape_stop.bmp",      GIMG_W_TAPE, 16, NULL },
                                    { IMAGEPREFIX"tape_record.bmp",    GIMG_W_TAPE, 16, NULL },
                                    { IMAGEPREFIX"avirec.bmp",         GIMG_W_AVIR, 16, NULL },
+#ifndef WWW_NO_ORIC1
                                    { IMAGEPREFIX"gfx_oric1kbd.bmp",   640, 240, NULL },
+#endif
                                    { IMAGEPREFIX"gfx_atmoskbd.bmp",   640, 240, NULL },
-                                   { IMAGEPREFIX"gfx_pravetzkbd.bmp", 640, 240, NULL }};
+#ifndef WWW_NO_PRAVETZ
+                                   { IMAGEPREFIX"gfx_pravetzkbd.bmp", 640, 240, NULL }
+#endif
+                                    };
 
 SDL_bool soundavailable, soundon;
 #if defined(__linux__)
@@ -192,6 +199,7 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive );
 void resetoric( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void toggletapeturbo( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglech376(struct machine *oric, struct osdmenuitem *mitem, int dummy);
+void toggletwilighte(struct machine *oric, struct osdmenuitem *mitem, int dummy);
 void toggleautowind( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void toggleautoinsrt( struct machine *oric, struct osdmenuitem *mitem, int dummy );
 void togglesymbolsauto( struct machine *oric, struct osdmenuitem *mitem, int dummy );
@@ -249,14 +257,18 @@ struct osdmenuitem mainitems[] = { { "Insert tape...",         "T",    't',     
                                    { "Debug options...",       "D",    'd',      gotomenu,        3, 0 },
                                    { "Overclock options...",   "C",    'c',      gotomenu,        6, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
+#ifndef WWW_NO_MONITOR
                                    { "Monitor",                "[F2]", SDLK_F2,  setemumode,      EM_DEBUG, 0 },
+#endif
                                    { "Reset Button NMI",       "[F3]", SDLK_F3,  softresetoric,       0, 0 },
                                    { "Hard Reset",             "[F4]", SDLK_F4,  resetoric,       0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,setemumode, EM_RUNNING, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "About",                  NULL,   0,        gotomenu,        5, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
+#ifndef WWW
                                    { "Quit",                   NULL,   0,        setemumode,      EM_PLEASEQUIT, 0 },
+#endif
                                    { NULL, } };
 
 struct osdmenuitem hwopitems[] = { { " Oric-1",                "1",    SDLK_1,   swapmach,        (0xffff<<16)|MACH_ORIC1, 0 },
@@ -268,6 +280,7 @@ struct osdmenuitem hwopitems[] = { { " Oric-1",                "1",    SDLK_1,  
                                    { " No disk",               "X",    'x',      setdrivetype,    DRV_NONE, 0 },
                                    { " Microdisc",             "M",    'm',      setdrivetype,    DRV_MICRODISC, 0 },
                                    { " Jasmin",                "J",    'j',      setdrivetype,    DRV_JASMIN, 0 },
+                                   { " BD500",                 "B",    'b',      setdrivetype,    DRV_BD500, 0 },
 //                                   { " Cumana",                "C",    'c',      NULL,            0, 0 },
                                    { " Pravetz 8D disk",       "P",    'p',      setdrivetype,    DRV_PRAVETZ, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
@@ -279,6 +292,7 @@ struct osdmenuitem hwopitems[] = { { " Oric-1",                "1",    SDLK_1,  
                                    { " Lightpen",              NULL,   0,        togglelightpen,  0, 0 },
                                    { " Serial none          ", NULL,   0,        toggleaciabackend, 0, 0 },
                                    { " CH376 (Telestrat)    ", NULL,   0,        togglech376, 0, 0 },
+                                   { " Twilighte board    ", NULL,   0,        toggletwilighte, 0, 0 },
 //                                   { " Mouse",                 NULL,   0,        NULL,            0, 0 },
                                    { OSDMENUBAR,               NULL,   0,        NULL,            0, 0 },
                                    { "Back",                   "\x17", SDLK_BACKSPACE,gotomenu,   0, 0 },
@@ -379,6 +393,16 @@ struct osdmenu menus[] = { { "Main Menu",        LAST_ITEM(mainitems)-4, mainite
                            { "Overclock",        LAST_ITEM(ovopitems),  ovopitems },
                            { "Keyboard options", LAST_ITEM(keopitems),  keopitems }};
 
+#define MKPATH_MAX (1024)
+
+// Prepend file prefix to filename
+static void mkpath( char buf[MKPATH_MAX], const char *filename )
+{
+  strncpy( buf, get_fileprefix(), MKPATH_MAX-1 );
+  buf[MKPATH_MAX-1] = 0;
+  strncat( buf, filename, MKPATH_MAX-strlen(buf)-1 );
+}
+
 // Load a 24bit BMP for the GUI
 SDL_bool gimg_load( struct guiimg *gi )
 {
@@ -386,9 +410,11 @@ SDL_bool gimg_load( struct guiimg *gi )
   Uint8 hdrbuf[640*3];
   Sint32 x, y;
   SDL_bool fileok;
+  char path[MKPATH_MAX];
 
   // Get the file
-  f = SDL_RWFromFile( gi->filename, "rb" );
+  mkpath( path, gi->filename );
+  f = SDL_RWFromFile( path, "rb" );
   if( !f )
   {
     error_printf( "Unable to open '%s' SDL_Error: %s\n", gi->filename, SDL_GetError() );
@@ -460,13 +486,17 @@ void draw_keyboard( struct machine *oric ) {
   if (oric->show_keyboard) {
     switch( oric->type )
     {
+#ifndef WWW_NO_PRAVETZ
        case MACH_PRAVETZ:
             oric->render_gimg( GIMG_PRAVETZ_KEYBOARD, 0, 480);
             break;
+#endif
+#ifndef WWW_NO_ORIC1
        case MACH_ORIC1:
        case MACH_ORIC1_16K:
             oric->render_gimg( GIMG_ORIC1_KEYBOARD, 0, 480);
             break;
+#endif
        default:
            oric->render_gimg( GIMG_ATMOS_KEYBOARD, 0, 480);
            break;
@@ -592,8 +622,10 @@ void render( struct machine *oric )
 {
   int perc, fps; //, i;
 
+#ifndef WWW_NO_MONITOR
   if( oric->emu_mode == EM_DEBUG )
     mon_update( oric );
+#endif
 
   oric->render_begin( oric );
 
@@ -635,9 +667,11 @@ void render( struct machine *oric )
       }
       break;
 
+#ifndef WWW_NO_MONITOR
     case EM_DEBUG:
       mon_render( oric );
       break;
+#endif
   }
 
   oric->render_end( oric );
@@ -784,10 +818,10 @@ void tzsettitle( struct textzone *ptz, char *title )
   ptz->py = oy;
 }
 
-SDL_bool in_textzone( struct textzone *tz, int x, int y )
+SDL_bool in_textzone( struct textzone *tz_, int x, int y )
 {
-  if( ( x >= tz->x ) && ( x < (tz->x+tz->w*8) ) &&
-      ( y >= tz->y ) && ( y < (tz->y+tz->h*12) ) )
+  if( ( x >= tz_->x ) && ( x < (tz_->x+tz_->w*8) ) &&
+      ( y >= tz_->y ) && ( y < (tz_->y+tz_->h*12) ) )
   {
     return SDL_TRUE;
   }
@@ -1134,7 +1168,9 @@ void inserttape( struct machine *oric, struct osdmenuitem *mitem, int dummy )
   }
 
   tape_load_tap( oric, filetmp );
+#ifndef WWW_NO_MONITOR
   if( oric->symbolsautoload ) mon_new_symbols( &oric->usersyms, oric, "symbols", SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
+#endif
   setemumode( oric, NULL, EM_RUNNING );
 }
 
@@ -1305,7 +1341,9 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
       {
         oric->lasttapefile[0] = 0;
         tape_load_tap( oric, filetmp );
+#ifndef WWW_NO_MONITOR
         if( oric->symbolsautoload ) mon_new_symbols( &oric->usersyms, oric, "symbols", SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
+#endif
       }
       setemumode( oric, NULL, EM_RUNNING );
       return;
@@ -1316,7 +1354,8 @@ void insertdisk( struct machine *oric, struct osdmenuitem *mitem, int drive )
 
   if( oric->drivetype == DRV_NONE )
   {
-    swapmach( oric, NULL, (DRV_MICRODISC<<16)|oric->type );
+    if (!oric->twilighteboard_activated)
+      swapmach( oric, NULL, (DRV_MICRODISC<<16)|oric->type );
 //    setemumode( oric, NULL, EM_DEBUG );
     return;
   }
@@ -1521,6 +1560,32 @@ void togglech376(struct machine *oric, struct osdmenuitem *mitem, int dummy)
 	oric->ch376 = ch376_oric_init();
 	if (oric->ch376 != NULL)
 		ch376_oric_config(oric->ch376);
+}
+
+// Toggle twilighte on/off
+void toggletwilighte(struct machine *oric, struct osdmenuitem *mitem, int dummy)
+{
+
+	if (oric->twilighteboard_activated)
+	{
+		oric->twilighteboard_activated = SDL_FALSE;
+		mitem->name = " Twilighte board";
+		return;
+	}
+
+	oric->twilighteboard_activated = SDL_TRUE;
+	mitem->name = "\x0e""Twilighte board";
+	oric->twilighte = twilighte_oric_init();
+	if (oric->twilighte == NULL)
+  {
+     oric->twilighteboard_activated = SDL_FALSE; // Impossible to create struct, we did not activate twilighteboard
+  }
+  else
+  {
+    oric->ch376_activated = SDL_TRUE;
+  }
+
+
 }
 
 // Toggle symbols autoload
@@ -1730,7 +1795,6 @@ void gotomenu( struct machine *oric, struct osdmenuitem *mitem, int menunum )
         keyw = (int)strlen( cmenu->items[i].key )+1;
     }
   }
-
   w+=keyw+2; i+=2;
 
   if( !alloc_textzone( oric, TZ_MENU, 320-w*4, 240-i*6, w, i, cmenu->title ) )
@@ -1845,11 +1909,9 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 {
   SDL_bool done = SDL_FALSE;
   int i, x, y;
-
   // Wot, no menu?!
   if( ( !cmenu ) || ( !tz[TZ_MENU] ) )
     return done;
-
   x = -1;
   y = -1;
   switch( ev->type )
@@ -1984,6 +2046,12 @@ SDL_bool menu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
         case SDLK_ESCAPE:
           setemumode( oric, NULL, EM_RUNNING );
+#ifdef WWW
+          if( oric->ay.soundon )
+          {
+            SDL_PauseAudio(0);
+          }
+#endif
           *needrender = SDL_TRUE;
           break;
 
@@ -2118,27 +2186,16 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
 
   shut_gui( oric );
   shut_joy( oric );
-  SDL_COMPAT_Quit();
+  SDL_COMPAT_Quit( SDL_FALSE );
   need_sdl_quit = SDL_FALSE;
 
   // Go SDL!
-  if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
+  if( SDL_COMPAT_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
   {
-    error_printf( "SDL init failed\n" );
     oric->emu_mode = EM_PLEASEQUIT;
     return;
   }
   need_sdl_quit = SDL_TRUE;
-
-#ifndef __APPLE__
-  SDL_COMPAT_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
-#endif
-
-  if( !init_joy( oric ) )
-  {
-    oric->emu_mode = EM_PLEASEQUIT;
-    return;
-  }
 
   if( !init_gui( oric, newrendermode ) )
   {
@@ -2147,6 +2204,12 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
   }
 
   if( !ay_init( &oric->ay, oric ) )
+  {
+    oric->emu_mode = EM_PLEASEQUIT;
+    return;
+  }
+
+  if( !init_joy( oric ) )
   {
     oric->emu_mode = EM_PLEASEQUIT;
     return;
@@ -2165,11 +2228,12 @@ void swap_render_mode( struct machine *oric, struct osdmenuitem *mitem, int newr
   }
 
   joy_setup( oric );
+#ifdef WWW_MONITOR
   mon_warminit( oric );
+#endif
 
   setemumode( oric, NULL, EM_RUNNING );
 }
-
 
 // Set things to default that can't fail
 void preinit_gui( struct machine *oric )
@@ -2177,33 +2241,40 @@ void preinit_gui( struct machine *oric )
   int i;
   for( i=0; i<NUM_TZ; i++ ) tz[i] = NULL;
   for( i=0; i<NUM_GIMG; i++ ) gimgs[i].buf = NULL;
-  strcpy( tapepath, FILEPREFIX"tapes" );
+  mkpath( tapepath, "tapes" );
   strcpy( tapefile, "" );
-  strcpy( diskpath, FILEPREFIX"disks" );
+  mkpath( diskpath, "disks" );
   strcpy( diskfile, "" );
-  strcpy( telediskpath, FILEPREFIX"teledisks" );
+  mkpath( telediskpath, "teledisks" );
   strcpy( telediskfile, "" );
-  strcpy( pravdiskpath, FILEPREFIX"pravdisks" );
+  mkpath( pravdiskpath, "pravdisks" );
   strcpy( pravdiskfile, "" );
-  strcpy( atmosromfile, ROMPREFIX"basic11b" );
-  strcpy( oric1romfile, ROMPREFIX"basic10" );
-  strcpy( mdiscromfile, ROMPREFIX"microdis" );
-  strcpy( jasmnromfile, ROMPREFIX"jasmin" );
-  strcpy( pravetzromfile[0], ROMPREFIX"pravetzt" );
-  strcpy( pravetzromfile[1], ROMPREFIX"8dos2" );
+  mkpath( atmosromfile, ROMPREFIX"basic11b" );
+  mkpath( oric1romfile, ROMPREFIX"basic10" );
+  mkpath( mdiscromfile, ROMPREFIX"microdis" );
+  mkpath( bd500romfile, ROMPREFIX"bd500" );
+  mkpath( jasmnromfile, ROMPREFIX"jasmin" );
+  mkpath( pravetzromfile[0], ROMPREFIX"pravetzt" );
+  mkpath( pravetzromfile[1], ROMPREFIX"8dos2" );
   telebankfiles[0][0] = 0;
   telebankfiles[1][0] = 0;
   telebankfiles[2][0] = 0;
   telebankfiles[3][0] = 0;
   telebankfiles[4][0] = 0;
-  strcpy( telebankfiles[5], ROMPREFIX"teleass" );
-  strcpy( telebankfiles[6], ROMPREFIX"hyperbas" );
-  strcpy( telebankfiles[7], ROMPREFIX"telmon24" );
+  mkpath( telebankfiles[5], ROMPREFIX"teleass" );
+  mkpath( telebankfiles[6], ROMPREFIX"hyperbas" );
+  mkpath( telebankfiles[7], ROMPREFIX"telmon24" );
   set_render_mode( oric, RENDERMODE_NULL );
-  strcpy( snappath, FILEPREFIX"snapshots" );
+  mkpath( snappath, "snapshots" );
   strcpy( snapfile, "" );
-  strcpy( mappingpath, FILEPREFIX"keymap" );
+  mkpath( mappingpath, "keymap" );
   strcpy( mappingfile, "" );
+
+#ifndef __APPLE__
+  char path[MKPATH_MAX];
+  mkpath( path, IMAGEPREFIX"winicon.bmp" );
+  SDL_COMPAT_WM_SetIcon( SDL_LoadBMP( path ), NULL );
+#endif
 }
 
 // Ensure the sanity of toggle menuitems
@@ -2213,6 +2284,7 @@ void setmenutoggles( struct machine *oric )
   {
     case DRV_JASMIN:
     case DRV_MICRODISC:
+    case DRV_BD500:
       find_item_by_key(mainitems, SDLK_0)->func = insertdisk;
       find_item_by_key(mainitems, SDLK_1)->func = insertdisk;
       find_item_by_key(mainitems, SDLK_2)->func = insertdisk;
@@ -2326,10 +2398,11 @@ void setmenutoggles( struct machine *oric )
   find_item_by_key(hwopitems, 'j')->func = jasminrom_valid ? setdrivetype : NULL;
   find_item_by_key(hwopitems, 'p')->func = pravetzrom_valid ? setdrivetype : NULL;
 
-  find_item_by_key(hwopitems, 'x')->name = oric->drivetype==DRV_NONE      ? "\x0e""No disk"        : " No disk";
-  find_item_by_key(hwopitems, 'm')->name = oric->drivetype==DRV_MICRODISC ? "\x0e""Microdisc"      : " Microdisc";
-  find_item_by_key(hwopitems, 'j')->name = oric->drivetype==DRV_JASMIN    ? "\x0e""Jasmin"         : " Jasmin";
-  find_item_by_key(hwopitems, 'p')->name = oric->drivetype==DRV_PRAVETZ   ? "\x0e""Pravetz 8D disk": " Pravetz 8D disk";
+  find_item_by_key(hwopitems, 'x')->name = oric->drivetype==DRV_NONE      ? "\x0e""No disk"         : " No disk";
+  find_item_by_key(hwopitems, 'm')->name = oric->drivetype==DRV_MICRODISC ? "\x0e""Microdisc"       : " Microdisc";
+  find_item_by_key(hwopitems, 'b')->name = oric->drivetype==DRV_BD500     ? "\x0e""BD500"           : " BD500";
+  find_item_by_key(hwopitems, 'j')->name = oric->drivetype==DRV_JASMIN    ? "\x0e""Jasmin"          : " Jasmin";
+  find_item_by_key(hwopitems, 'p')->name = oric->drivetype==DRV_PRAVETZ   ? "\x0e""Pravetz 8D disk" : " Pravetz 8D disk";
 
   if(oric->show_keyboard)
      find_item_by_function(keopitems, togglekeyboard)->name = "\x0e""Show keyboard";
@@ -2341,7 +2414,10 @@ void setmenutoggles( struct machine *oric )
   else
      find_item_by_function(keopitems, togglestickykeys)->name = " Sticky mod keys";
 
+  g_menu_scheme = oric->disable_menuscheme? 5 : oric->type;
+
   find_item_by_function(hwopitems, togglech376)->name = oric->ch376_activated ? "\x0e""CH376 (Telestrat)" : " CH376 (Telestrat)    ";
+  find_item_by_function(hwopitems, toggletwilighte)->name = oric->twilighteboard_activated ? "\x0e""Twilighte board" : " Twilighte board";
 }
 
 // Initialise the GUI
@@ -2367,6 +2443,7 @@ SDL_bool init_gui( struct machine *oric, Sint32 rendermode )
   if( !alloc_textzone( oric, TZ_VIA2,     400, 228, 30, 21, "Telestrat VIA Status" ) ) return SDL_FALSE;
   if( !alloc_textzone( oric, TZ_AY,       400, 228, 30, 21, "AY Status"            ) ) return SDL_FALSE;
   if( !alloc_textzone( oric, TZ_DISK,     400, 228, 30, 21, "Disk Status"          ) ) return SDL_FALSE;
+  if( !alloc_textzone( oric, TZ_TWIL,     400, 228, 30, 21, "Twilighte Status"     ) ) return SDL_FALSE;
 
   // Set up SDL audio
   wanted.freq     = AUDIO_FREQ;

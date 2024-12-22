@@ -1,0 +1,257 @@
+<!doctypehtml>
+<html lang=en-us>
+<head>
+    <meta charset=utf-8>
+    <meta content="text/html; charset=utf-8" http-equiv=Content-Type>
+    <title>Emscripten-Generated Code</title>
+    <style>body {
+        font-family: arial;
+        margin: 0;
+        padding: none
+    }
+
+    .emscripten {
+        padding-right: 0;
+        margin-left: auto;
+        margin-right: auto;
+        display: block
+    }
+
+    div.emscripten {
+        text-align: center
+    }
+
+    div.emscripten_border {
+        border: 1px solid #000
+    }
+
+    canvas.emscripten {
+        border: 0 none;
+        background-color: #000
+    }
+
+    #emscripten_logo {
+        display: inline-block;
+        margin: 0
+    }
+
+    .spinner {
+        height: 30px;
+        width: 30px;
+        margin: 0;
+        margin-top: 20px;
+        margin-left: 20px;
+        display: inline-block;
+        vertical-align: top;
+        -webkit-animation: rotation .8s linear infinite;
+        -moz-animation: rotation .8s linear infinite;
+        -o-animation: rotation .8s linear infinite;
+        animation: rotation .8s linear infinite;
+        border-left: 5px solid #ebebeb;
+        border-right: 5px solid #ebebeb;
+        border-bottom: 5px solid #ebebeb;
+        border-top: 5px solid #787878;
+        border-radius: 100%;
+        background-color: #bdd72e
+    }
+
+    @-webkit-keyframes rotation {
+        from {
+            -webkit-transform: rotate(0)
+        }
+        to {
+            -webkit-transform: rotate(360deg)
+        }
+    }
+
+    @-moz-keyframes rotation {
+        from {
+            -moz-transform: rotate(0)
+        }
+        to {
+            -moz-transform: rotate(360deg)
+        }
+    }
+
+    @-o-keyframes rotation {
+        from {
+            -o-transform: rotate(0)
+        }
+        to {
+            -o-transform: rotate(360deg)
+        }
+    }
+
+    @keyframes rotation {
+        from {
+            transform: rotate(0)
+        }
+        to {
+            transform: rotate(360deg)
+        }
+    }
+
+    #status {
+        display: inline-block;
+        vertical-align: top;
+        margin-top: 30px;
+        margin-left: 20px;
+        font-weight: 700;
+        color: #787878
+    }
+
+    #progress {
+        height: 20px;
+        width: 300px
+    }
+
+    #controls {
+        display: inline-block;
+        float: right;
+        vertical-align: top;
+        margin-top: 30px;
+        margin-right: 20px
+    }
+
+    #output {
+        width: 100%;
+        height: 200px;
+        margin: 0 auto;
+        margin-top: 10px;
+        border-left: 0;
+        border-right: 0;
+        padding-left: 0;
+        padding-right: 0;
+        display: block;
+        background-color: #000;
+        color: #fff;
+        font-family: 'Lucida Console', Monaco, monospace;
+        outline: 0
+    }</style>
+</head>
+<body>
+<div align="center">The Disks and Tapes files are in the /readwritefs/ directory!
+    You may need to go up twice in the directory structure to find this directory.<br>
+    Remember to save snapshots, tapes and dsk in this directory as it is the only one
+    that is saved in your browser's storage space.
+    <br>
+    In order to download one tape or dsk file so that you can use it in an emulator
+    on your computer first click on this button and then on the name of the file
+    <br>
+    <button onclick="getFileList()">Get File List</button>
+    <br>
+    <div id="fileList">
+
+    </div>
+</div>
+<div class=spinner id=spinner></div>
+<div class=emscripten id=status>Downloading...</div>
+<div class=emscripten>
+    <progress hidden id=progress max=100 value=0></progress>
+</div>
+<div class=emscripten_border>
+    <canvas class=emscripten id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
+</div>
+<textarea id=output rows=8></textarea>
+<script>var statusElement = document.getElementById("status"), progressElement = document.getElementById("progress"),
+    spinnerElement = document.getElementById("spinner"), Module = {
+        preRun: [], postRun: [], print: function () {
+            var e = document.getElementById("output");
+            return e && (e.value = ""), function (t) {
+                arguments.length > 1 && (t = Array.prototype.slice.call(arguments).join(" ")), console.log(t), e && (e.value += t + "\n", e.scrollTop = e.scrollHeight)
+            }
+        }(), printErr: function (e) {
+            arguments.length > 1 && (e = Array.prototype.slice.call(arguments).join(" ")), console.error(e)
+        }, canvas: function () {
+            var e = document.getElementById("canvas");
+            return e.addEventListener("webglcontextlost", (function (e) {
+                alert("WebGL context lost. You will need to reload the page."), e.preventDefault()
+            }), !1), e
+        }(), setStatus: function (e) {
+            if (Module.setStatus.last || (Module.setStatus.last = {
+                time: Date.now(),
+                text: ""
+            }), e !== Module.setStatus.last.text) {
+                var t = e.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/), n = Date.now();
+                t && n - Module.setStatus.last.time < 30 || (Module.setStatus.last.time = n, Module.setStatus.last.text = e, t ? (e = t[1], progressElement.value = 100 * parseInt(t[2]), progressElement.max = 100 * parseInt(t[4]), progressElement.hidden = !1, spinnerElement.hidden = !1) : (progressElement.value = null, progressElement.max = null, progressElement.hidden = !0, e || (spinnerElement.style.display = "none")), statusElement.innerHTML = e)
+            }
+        }, totalDependencies: 0, monitorRunDependencies: function (e) {
+            this.totalDependencies = Math.max(this.totalDependencies, e), Module.setStatus(e ? "Preparing... (" + (this.totalDependencies - e) + "/" + this.totalDependencies + ")" : "All downloads complete.")
+        }
+    };
+Module.setStatus("Downloading..."), window.onerror = function (e) {
+    Module.setStatus("Exception thrown, see JavaScript console"), spinnerElement.style.display = "none", Module.setStatus = function (e) {
+        e && Module.printErr("[post-exception status] " + e)
+    }
+}</script>
+
+
+<script>
+    Module.preRun.push(function () {
+        ENV.FILE = sessionStorage.file
+    });
+</script>
+
+<script async src=Oricutron.js></script>
+
+<script>
+    var downloadBlob, downloadURL;
+
+    downloadBlob = function (data, fileName, mimeType) {
+        var blob, url;
+        blob = new Blob([data], {
+            type: mimeType
+        });
+        url = window.URL.createObjectURL(blob);
+        downloadURL(url, fileName);
+        setTimeout(function () {
+            var fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            return window.URL.revokeObjectURL(url);
+        }, 1000);
+    };
+
+    downloadURL = function (data, fileName) {
+        var a;
+        a = document.createElement('a');
+        a.href = data;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.style = 'display: none';
+        a.click();
+        a.remove();
+    };
+
+    function createLink(file) {
+        var newLink = document.createElement('a');
+        newLink.setAttribute('href', '');
+        newLink.addEventListener("click", function (event) {
+            event.preventDefault();
+            var ret = FS.readFile('/readwritefs/' + file, {flags: 'r'});
+            console.log(ret);
+            downloadBlob(ret, file, 'application/octet-stream');
+        });
+        var newText = document.createTextNode(file);
+        newLink.appendChild(newText);
+
+        return newLink;
+    }
+
+    function getFileList() {
+        var node = FS.readdir('/readwritefs/');
+
+        console.log(node);
+
+        var fileList = document.getElementById('fileList');
+        node.forEach(function (file) {
+            if (file !== '.' && file !== '..') {
+                var newLink = createLink(file);
+                fileList.appendChild(newLink);
+                fileList.appendChild(document.createElement('br'));
+            }
+        });
+    }
+</script>
+
+</body>
+</html>

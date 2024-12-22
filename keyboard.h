@@ -43,7 +43,7 @@ int kbd_init( struct machine *oric );
 
 SDL_bool keyboard_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender );
 
-void release_sticky_keys();
+void release_sticky_keys(void);
 
 void add_to_keyboard_mapping( struct keyboard_mapping *map, SDL_COMPAT_KEY host_key, SDL_COMPAT_KEY oric_key );
 
@@ -52,5 +52,9 @@ void reset_keyboard_mapping( struct keyboard_mapping *map );
 SDL_bool save_keyboard_mapping( struct machine *oric, char *filename );
 
 SDL_bool load_keyboard_mapping( struct machine *oric, char *filename );
+
+#ifdef __ANDROID__
+void android_togglekeyboard(struct machine* oric);
+#endif
 
 #endif

@@ -110,14 +110,16 @@ void m6502_reset( struct m6502 *cpu )
 // Macro to perform ADC logic
 #define DO_ADC if( cpu->f_d )\
                {\
+                 r = cpu->a + v + cpu->f_c;\
+                 cpu->f_z = (r & 0xff)==0;\
                  r = (cpu->a&0xf)+(v&0xf)+cpu->f_c;\
-                 if( r > 9 ) r += 6;\
-                 t = (cpu->a>>4)+(v>>4)+(r>15?1:0);\
-                 if( t > 9 ) t += 6;\
-                 cpu->a = (r&0xf)|(t<<4);\
-                 cpu->f_c = t>15 ? 1 : 0;\
-                 cpu->f_z = cpu->a!=0;\
-                 cpu->f_n = cpu->a&0x80;\
+                 if( r > 9 ) r = ((r+6)& 0xf)+0x10;\
+                 t = (cpu->a & 0xf0)+(v & 0xf0)+r;\
+                 cpu->f_v = (~(cpu->a^v)&(cpu->a^t)) & FF_N ? 1 : 0;\
+                 cpu->f_n = (t&0x80) ? 1 : 0;\
+                 if (t >= 0xa0) t += 0x60;\
+                 cpu->a = t;\
+                 cpu->f_c = t>=0x100 ? 1 : 0;\
                } else {\
                  r = cpu->a + v + cpu->f_c;\
                  cpu->f_v = (~(cpu->a^v)&(cpu->a^r)) & FF_N ? 1 : 0;\
@@ -162,14 +164,17 @@ void m6502_reset( struct m6502 *cpu )
 // Macro to perform SBC logic
 #define DO_SBC if( cpu->f_d )\
                {\
-                 r = (cpu->a&0xf) - (v&0xf) - (cpu->f_c^1);\
-                 if( r&0x10 ) r -= 6;\
-                 t = (cpu->a>>4) - (v>>4) - ((r&0x10)>>4);\
-                 if( t&0x10 ) t -= 6;\
-                 cpu->a = (r&0xf)|(t<<4);\
-                 cpu->f_c = (t>15) ? 0 : 1;\
-                 cpu->f_z = cpu->a!=0;\
-                 cpu->f_n = cpu->a&0x80;\
+                 r = (cpu->a - v) - (cpu->f_c^1);\
+                 cpu->f_v = ((cpu->a^v)&(cpu->a^r)) & FF_N ? 1 : 0;\
+                 cpu->f_z = (r & 0xff) == 0;\
+                 cpu->f_n = (r & 0x80) != 0;\
+                 t = v& 0xf0;\
+                 r = (cpu->a & 0xf) - (v & 0xf) - (cpu->f_c^1);\
+                 if( r & 0x80 ) {r = (r-6) & 0x0f; t += 0x10;};\
+                 r = r + (cpu->a & 0xf0);\
+                 if (t > r) t += 0x60;\
+                 cpu->f_c = (cpu->a >= (v+(cpu->f_c^1))) ? 1 : 0;\
+                 cpu->a = r-t;\
                } else {\
                  r = (cpu->a - v) - (cpu->f_c^1);\
                  cpu->f_v = ((cpu->a^v)&(cpu->a^r)) & FF_N ? 1 : 0;\
@@ -314,8 +319,14 @@ SDL_bool m6502_set_icycles( struct m6502 *cpu, SDL_bool dobp, char *bpmsg )
       {
         if( ( cpu->breakpoints[i] != -1 ) && ( cpu->calcpc == cpu->breakpoints[i] ) )
         {
-          if( (cpu->breakpoint_flags[i] & MBPF_RESETCYCLES) ==  MBPF_RESETCYCLES ) cpu->cycles = 0;
-          if( (cpu->breakpoint_flags[i] & MBPF_RESETCYCLESCONTINUE) !=  MBPF_RESETCYCLESCONTINUE ) return SDL_TRUE;
+          if( (cpu->breakpoint_flags[i] & MBPF_RESETCYCLESPRINT) ==  MBPF_RESETCYCLESPRINT )
+            printf("%.4X: %d\n", cpu->breakpoints[i], cpu->cycles);
+
+          if( (cpu->breakpoint_flags[i] & MBPF_RESETCYCLES) ==  MBPF_RESETCYCLES )
+            cpu->cycles = 0;
+
+          if( (cpu->breakpoint_flags[i] & MBPF_RESETCYCLESCONTINUE) !=  MBPF_RESETCYCLESCONTINUE )
+            return SDL_TRUE;
         }
       }
     }

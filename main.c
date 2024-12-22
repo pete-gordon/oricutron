@@ -18,6 +18,11 @@
 **
 */
 
+#ifdef WWW
+#include <emscripten.h>
+#include <emscripten/fetch.h>
+#endif
+
 #ifdef __APPLE__
 #include "CoreFoundation/CoreFoundation.h"
 #endif
@@ -32,7 +37,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef __amigaos4__
+#if defined(__amigaos4__) || defined(__MORPHOS__) || defined(__AROS__)
 #include <proto/exec.h>
 #include <proto/dos.h>
 #endif
@@ -63,6 +68,12 @@
 #include "snapshot.h"
 #include "keyboard.h"
 
+#ifdef _MSC_VER
+#if SDL_MAJOR_VERSION == 1
+#undef main
+#endif
+#endif
+
 #define FRAMES_TO_AVERAGE 8
 
 SDL_bool need_sdl_quit = SDL_FALSE;
@@ -75,12 +86,25 @@ extern char tapepath[], diskpath[], telediskpath[], pravdiskpath[];
 extern char atmosromfile[];
 extern char oric1romfile[];
 extern char mdiscromfile[];
+extern char bd500romfile[];
 extern char jasmnromfile[];
 extern char pravetzromfile[2][1024];
 extern char telebankfiles[8][1024];
 
-static char keymap_path[4096+32];
+static char keymap_path[4096];
 static int  load_keymap = SDL_FALSE;
+
+struct context
+{
+  struct machine oric;
+  SDL_Event event;
+  Uint64 nextframe_us;
+  Uint32 nextframe_ms;
+  Uint32 now;
+  Uint32 then;
+  SDL_bool needrender;
+  SDL_bool framedone;
+};
 
 #ifdef __amigaos4__
 char __attribute__((used)) stackcookie[] = "$STACK: 1000000";
@@ -113,6 +137,8 @@ struct start_opts
   Sint32   start_syms_count;
   char     start_snapshot[1024];
   char    *start_breakpoint;
+  Sint32   start_disks_count;
+  char     start_disks[4][1024];
 };
 
 static char *machtypes[] = { "oric1",
@@ -125,6 +151,7 @@ static char *machtypes[] = { "oric1",
 static char *disktypes[] = { "none",
                              "jasmin",
                              "microdisc",
+                             "bd500",
                              "pravetz",
                              NULL };
 
@@ -155,6 +182,102 @@ static char *rendermodes[] = { "{{INVALID}}",
                                NULL };
 
 static char *swdepths[] = { "8", "16", "32", NULL };
+
+static char *sbarmodes[] = { "full", "nofps", "none", NULL };
+
+static char *fileprefix = 0;
+
+// Initialize path prefix for locating program resources
+static void init_fileprefix( char *argv[] )
+{
+  (void) argv;
+#if defined(__amigaos4__)
+
+  fileprefix = "PROGDIR:";
+
+#elif defined(__ANDROID__)
+
+  fileprefix = "/data/data/com.emul.oricutron/files/";
+
+#elif defined(__linux__) || defined(__APPLE__)
+
+  // Find program directory
+  fileprefix = realpath( argv[0], 0 );           // convert to absolute path
+  int len = strlen( fileprefix );
+  while ( len && fileprefix[len-1] != PATHSEP )  // strip the program filename
+    len--;
+  fileprefix[len] = 0;
+
+#if defined(__APPLE__)
+  // When bundled, program is in <something>/Oricutron.app/Contents/MacOS/
+  // but data files are further up in the parent of Oricutron.app.
+  const char *suffix = ".app/Contents/MacOS/";
+  int suffix_len = strlen(suffix);
+  if ( len > suffix_len && !strcasecmp( fileprefix + len - suffix_len, suffix ) )
+  {
+     // Located in bundle - go to parent of .app dir
+     len -= suffix_len;                            // strip the suffix we matched
+     while ( len && fileprefix[len-1] != PATHSEP ) // strip the .app dir
+       len--;
+     fileprefix[len] = 0;
+  }
+  // else not bundled, stay in program directory
+#endif
+
+#else
+  fileprefix = "";
+#endif
+}
+
+// Get prefix string to locate program resources
+const char *get_fileprefix()
+{
+  return fileprefix;
+}
+
+// Check if filename looks to be absolute path
+SDL_bool is_abs_path( const char *filename )
+{
+  char c = *(filename++);
+
+  // Detect unix-style absolute path
+  if ( c == '/' || c == '\\' || c == '~' )
+    return SDL_TRUE;
+
+  // Detect Amiga style absolute path or DOS drive letter
+  while ( c )
+  {
+    if ( c == ':' )
+      return SDL_TRUE;
+    c = *(filename++);
+  }
+
+  return SDL_FALSE;
+}
+
+// Prepend file prefix to relative path, buffer of size maxlen
+void add_fileprefix( char *filename, int maxlen )
+{
+  const char *prefix = get_fileprefix();
+  Sint32 prefix_len = strlen( prefix );
+  if ( prefix_len == 0 )
+    return; // no file prefix on this platform
+
+  Sint32 filename_len = strlen( filename );
+  if ( prefix_len + filename_len + 1 > maxlen )
+    return; // won't fit in buffer
+
+  if ( is_abs_path ( filename ) )
+    return; // don't apply prefix to absolute path
+
+  // Move filename including terminating zero
+  for ( int i=filename_len+1; i>=0; i-- )
+    filename[prefix_len+i] = filename[i];
+
+  // Put the prefix before
+  for (int i=0; i<prefix_len; i++)
+    filename[i] = prefix[i];
+}
 
 static SDL_bool istokend( char c )
 {
@@ -207,6 +330,14 @@ SDL_bool read_config_string( char *buf, char *token, char *dest, Sint32 maxlen )
   }
 
   dest[d] = 0;
+  return SDL_TRUE;
+}
+
+SDL_bool read_config_path( char *buf, char *token, char *dest, Sint32 maxlen )
+{
+  if ( !read_config_string( buf, token, dest, maxlen ) )
+    return SDL_FALSE;
+  add_fileprefix( dest, maxlen );
   return SDL_TRUE;
 }
 
@@ -380,9 +511,11 @@ static void load_config( struct start_opts *sto, struct machine *oric )
   FILE *f;
   Sint32 i, j;
   char tbtmp[32];
-  char keymap_file[4096];
+  char config_path[4096];
 
-  f = fopen( FILEPREFIX"oricutron.cfg", "r" );
+  strcpy(config_path, "oricutron.cfg");
+  add_fileprefix(config_path, 4096);
+  f = fopen( config_path, "r" );
   if( !f ) return;
 
   while( !feof( f ) )
@@ -391,30 +524,34 @@ static void load_config( struct start_opts *sto, struct machine *oric )
 
     for( i=0; isws( sto->lctmp[i] ); i++ ) ;
 
-    if( read_config_option( &sto->lctmp[i], "machine",      &sto->start_machine, machtypes ) ) continue;
-    if( read_config_option( &sto->lctmp[i], "disktype",     &sto->start_disktype, disktypes ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "debug",        &sto->start_debug ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "fullscreen",   &fullscreen ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "hwsurface",    &hwsurface ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "scanlines",    &oric->scanlines ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "aratio",       &oric->aratio ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "hstretch",     &oric->hstretch ) ) continue;
-    if( read_config_bool(   &sto->lctmp[i], "palghosting",  &oric->palghost ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "diskimage",    sto->start_disk, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "tapeimage",    sto->start_tape, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "symbols",      sto->start_syms, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "tapepath",     tapepath, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "diskpath",     diskpath, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "telediskpath", telediskpath, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "pravdiskpath", pravdiskpath, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "atmosrom",     atmosromfile, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "oric1rom",     oric1romfile, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "mdiscrom",     mdiscromfile, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "jasminrom",    jasmnromfile, 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "pravetzrom",   pravetzromfile[0], 1024 ) ) continue;
-    if( read_config_string( &sto->lctmp[i], "pravetz8drom", pravetzromfile[1], 1024 ) ) continue;
-    if( read_config_int(    &sto->lctmp[i], "rampattern",   &oric->rampattern, 0, 1 ) ) continue;
-    if( read_config_option( &sto->lctmp[i], "swdepth",      &oric->sw_depth, swdepths ) )
+    if( read_config_option( &sto->lctmp[i], "machine",       &sto->start_machine, machtypes ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "disktype",      &sto->start_disktype, disktypes ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "debug",         &sto->start_debug ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "fullscreen",    &fullscreen ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "statusbarmode", &oric->statusbar_mode, sbarmodes) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "hwsurface",     &hwsurface ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "scanlines",     &oric->scanlines ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "aratio",        &oric->aratio ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "hstretch",      &oric->hstretch ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "palghosting",   &oric->palghost ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "rom16",         &oric->rom16 ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "dos70",         &oric->dos70 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "diskimage",     sto->start_disk, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "tapeimage",     sto->start_tape, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "symbols",       sto->start_syms, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "tapepath",      tapepath, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "diskpath",      diskpath, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "telediskpath",  telediskpath, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "pravdiskpath",  pravdiskpath, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "atmosrom",      atmosromfile, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "oric1rom",      oric1romfile, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "mdiscrom",      mdiscromfile, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "bd500rom",      bd500romfile, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "jasminrom",     jasmnromfile, 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "pravetzrom",    pravetzromfile[0], 1024 ) ) continue;
+    if( read_config_path(   &sto->lctmp[i], "pravetz8drom",  pravetzromfile[1], 1024 ) ) continue;
+    if( read_config_int(    &sto->lctmp[i], "rampattern",    &oric->rampattern, 0, 1 ) ) continue;
+    if( read_config_option( &sto->lctmp[i], "swdepth",       &oric->sw_depth, swdepths ) )
     {
       /* Convert index to depth */
       switch (oric->sw_depth)
@@ -436,11 +573,13 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     for( j=0; j<8; j++ )
     {
       sprintf( tbtmp, "telebank%c", j+'0' );
-      if( read_config_string( &sto->lctmp[i], tbtmp, telebankfiles[j], 1024 ) ) break;
+      if( read_config_path( &sto->lctmp[i], tbtmp, telebankfiles[j], 1024 ) ) break;
     }
     if( read_config_bool(   &sto->lctmp[i], "lightpen",     &oric->lightpen ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "printenable",  &oric->printenable ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "printfilter",  &oric->printfilter ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "dcadjust",     &oric->dcadjust ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "soundloopon",  &oric->soundloopon ) ) continue;
     if( read_config_int(    &sto->lctmp[i], "serial_address", &oric->aciaoffset, 0x310, 0x3fc ) ) continue;
     if( read_config_string( &sto->lctmp[i], "serial",       oric->aciabackendname, ACIA_BACKEND_NAME_LEN ) )
     {
@@ -491,26 +630,27 @@ static void load_config( struct start_opts *sto, struct machine *oric )
     if( read_config_joykey( &sto->lctmp[i], "kbjoy1_right", &oric->kbjoy1[3] ) ) continue;
     if( read_config_joykey( &sto->lctmp[i], "kbjoy1_fire1", &oric->kbjoy1[4] ) ) continue;
     if( read_config_joykey( &sto->lctmp[i], "kbjoy1_fire2", &oric->kbjoy1[5] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy1_fire3", &oric->kbjoy1[6] ) ) continue;
     if( read_config_joykey( &sto->lctmp[i], "kbjoy2_up",    &oric->kbjoy2[0] ) ) continue;
     if( read_config_joykey( &sto->lctmp[i], "kbjoy2_down",  &oric->kbjoy2[1] ) ) continue;
     if( read_config_joykey( &sto->lctmp[i], "kbjoy2_left",  &oric->kbjoy2[2] ) ) continue;
     if( read_config_joykey( &sto->lctmp[i], "kbjoy2_right", &oric->kbjoy2[3] ) ) continue;
     if( read_config_joykey( &sto->lctmp[i], "kbjoy2_fire1", &oric->kbjoy2[4] ) ) continue;
     if( read_config_joykey( &sto->lctmp[i], "kbjoy2_fire2", &oric->kbjoy2[5] ) ) continue;
+    if( read_config_joykey( &sto->lctmp[i], "kbjoy2_fire3", &oric->kbjoy2[6] ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "diskautosave", &oric->diskautosave ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "ch376",        &oric->ch376_activated) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "twilighte_board",&oric->twilighteboard_activated) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "pravdiskautoboot", &oric->pravdiskautoboot ) ) continue;
+    if( read_config_bool(   &sto->lctmp[i], "disable_menuscheme", &oric->disable_menuscheme ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "show_keyboard", &oric->show_keyboard ) ) continue;
     if( read_config_bool(   &sto->lctmp[i], "sticky_mod_keys", &oric->sticky_mod_keys ) )continue;
-    if( read_config_string( &sto->lctmp[i], "autoload_keyboard_mapping", keymap_file, 4096 ) )
+    if( read_config_path(   &sto->lctmp[i], "autoload_keyboard_mapping", keymap_path, 4096 ) )
     {
-        strcpy(keymap_path, FILEPREFIX"");
-        strcat(keymap_path, keymap_file);
         load_keymap = SDL_TRUE;
         continue;
     }
   }
-
   fclose( f );
 }
 
@@ -532,11 +672,13 @@ static void usage( int ret )
           "\n"
           "                       \"microdisc\" or \"m\" for Microdisc\n"
           "                       \"jasmin\" or \"j\" for Jasmin\n"
+          "                       \"bd500\" or \"b\" for Byte Drive 500\n"
           "                       \"pravetz\" or \"p\" for Pravetz\n"
           "                       \"none\" or \"n\"\n"
           "\n"
           "  -s / --symbols     = Load symbols from a file\n"
           "  -f / --fullscreen  = Run oricutron fullscreen\n"
+          "  --statusbar        = Set initial status bar mode: 'full', 'nofps' or 'none'\n"
           "  -w / --window      = Run oricutron in a window\n"
 #ifdef __OPENGL_AVAILABLE__
           "  -R / --rendermode  = Render mode. Valid modes are:\n"
@@ -574,10 +716,16 @@ static void usage( int ret )
           "                                                 \"com:115200,8,N,1,/dev/ttyUSB0\"\n"
 #endif
           "\n");
+
+#ifdef __ANDROID__
+  error_printf("Bad command line.");
+#endif
+
   exit(ret);
 }
 
 // Print a formatted string into a textzone
+#ifndef __ANDROID__
 void error_printf( char *fmt, ... )
 {
   static char str[256];  // Stupid MinGW32 not having vasprintf...
@@ -595,6 +743,7 @@ void error_printf( char *fmt, ... )
   }
   va_end( ap );
 }
+#endif
 
 static SDL_bool on_or_off( char *arg, char *option, SDL_bool *storage )
 {
@@ -621,7 +770,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 {
   Sint32 i;
   struct start_opts *sto;
-  char opt_type, *opt_arg, *tmp;
+  char opt_type, *opt_arg = NULL, *tmp;
 
   sto = malloc( sizeof( struct start_opts ) );
   if( !sto ) return SDL_FALSE;
@@ -633,6 +782,11 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   sto->start_disktype_set = SDL_FALSE;
   sto->start_debug    = SDL_FALSE;
   sto->start_rendermode = RENDERMODE_SW;
+  sto->start_disks_count = 0;
+  sto->start_disks[0][0] = 0;
+  sto->start_disks[1][0] = 0;
+  sto->start_disks[2][0] = 0;
+  sto->start_disks[3][0] = 0;
   sto->start_disk[0]  = 0;
   sto->start_tape[0]  = 0;
   sto->start_syms[0]  = 0;
@@ -646,11 +800,11 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 #else
   hwsurface           = SDL_FALSE;
 #endif
-
   preinit_ula( oric );
   preinit_machine( oric );
   preinit_render_sw( oric );
   preinit_render_sw8( oric );
+
 #ifdef __OPENGL_AVAILABLE__
   preinit_render_gl( oric );
 #endif
@@ -659,17 +813,12 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
   kbd_init(oric);
 
   // Go SDL!
-  if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
+  if( SDL_COMPAT_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
   {
-    error_printf( "SDL init failed" );
     free( sto );
     return SDL_FALSE;
   }
   need_sdl_quit = SDL_TRUE;
-
-#ifndef __APPLE__
-  SDL_COMPAT_WM_SetIcon( SDL_LoadBMP( IMAGEPREFIX"winicon.bmp" ), NULL );
-#endif
 
   render_sw_detectvideo( oric );
 
@@ -769,7 +918,8 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
             else
             {
 #ifdef BACKEND_COM
-              strncpy(oric->aciabackendname, opt_arg, ACIA_BACKEND_NAME_LEN);
+              strncpy(oric->aciabackendname, opt_arg, ACIA_BACKEND_NAME_LEN-1);
+              oric->aciabackendname[ACIA_BACKEND_NAME_LEN-1] = 0;
               oric->aciabackendcfg = oric->aciabackend = ACIA_TYPE_COM;
 #endif
             }
@@ -786,6 +936,32 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           {
             if( !on_or_off( argv[i-1], opt_arg, &oric->scanlines ) ) exit( EXIT_FAILURE );
             continue;
+          }
+
+          if( strcasecmp( tmp, "statusbar" ) == 0 )
+          {
+            if( opt_arg )
+            {
+              if( strcasecmp( opt_arg, "none" ) == 0 )
+              {
+                oric->statusbar_mode = STATUSBARMODE_NONE;
+                continue;
+              }
+              if( strcasecmp( opt_arg, "full" ) == 0 )
+              {
+                oric->statusbar_mode = STATUSBARMODE_FULL;
+                continue;
+              }
+              if( strcasecmp( opt_arg, "nofps" ) == 0 )
+              {
+                oric->statusbar_mode = STATUSBARMODE_NOFPS;
+                continue;
+              }
+            }
+
+            error_printf( "Invalid statusbar mode" );
+            free( sto );
+            exit( EXIT_FAILURE );
           }
           break;
 
@@ -871,6 +1047,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
               case IMG_ATMOS_MICRODISC:
               case IMG_ATMOS_JASMIN:
               case IMG_TELESTRAT_DISK:
+              case IMG_BD500_DISK:
               case IMG_PRAVETZ_DISK:
               case IMG_GUESS_MICRODISC:
                 printf("'%s' seems to be a disk image.\n", opt_arg);
@@ -921,6 +1098,11 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
                 if (!sto->start_disktype_set) sto->start_disktype = DRV_MICRODISC;
                 break;
 
+              case IMG_BD500_DISK:
+                if (!sto->start_machine_set)  sto->start_machine = MACH_ATMOS;
+                if (!sto->start_disktype_set) sto->start_disktype = DRV_BD500;
+                break;
+
               case IMG_PRAVETZ_DISK:
                 if (!sto->start_machine_set)  sto->start_machine = MACH_PRAVETZ;
                 if (!sto->start_disktype_set) sto->start_disktype = DRV_PRAVETZ;
@@ -940,7 +1122,16 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
                 printf("'%s' seems to be a snapshot file.\n", opt_arg);
                 strncpy( sto->start_snapshot, opt_arg, 1024);
                 sto->start_snapshot[1023] = 0;
+                sto->start_disk[0] = 0;
                 break;
+            }
+            if( sto->start_disk[0] )
+            {
+              if( sto->start_disks_count < 4 )
+              {
+                strcpy( sto->start_disks[sto->start_disks_count], sto->start_disk );
+                sto->start_disks_count++;
+              }
             }
           } else {
             error_printf( "No disk image specified" );
@@ -956,6 +1147,13 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
                ( strcasecmp( opt_arg, "m"         ) == 0 ))
             {
               sto->start_disktype = DRV_MICRODISC;
+              sto->start_disktype_set = SDL_TRUE;
+              break;
+            }
+            if(( strcasecmp( opt_arg, "bd500" ) == 0 ) ||
+               ( strcasecmp( opt_arg, "b"     ) == 0 ))
+            {
+              sto->start_disktype = DRV_BD500;
               sto->start_disktype_set = SDL_TRUE;
               break;
             }
@@ -1005,6 +1203,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 
         case 'f':
           fullscreen = SDL_TRUE;
+		  oric->statusbar_mode = STATUSBARMODE_NONE;
           break;
 
         case 'w':
@@ -1078,6 +1277,13 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
           sto->start_disk[1023] = 0;
           break;
 
+        case IMG_BD500_DISK:
+          if (!sto->start_machine_set)  sto->start_machine = MACH_ATMOS;
+          if (!sto->start_disktype_set) sto->start_disktype = DRV_BD500;
+          strncpy( sto->start_disk, argv[i], 1024 );
+          sto->start_disk[1023] = 0;
+          break;
+
         case IMG_PRAVETZ_DISK:
           if (!sto->start_machine_set)  sto->start_machine = MACH_PRAVETZ;
           if (!sto->start_disktype_set) sto->start_disktype = DRV_PRAVETZ;
@@ -1099,6 +1305,14 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
         default:
           free( sto );
           usage( EXIT_FAILURE );
+      }
+      if( sto->start_disk[0] )
+      {
+        if( sto->start_disks_count < 4 )
+        {
+          strcpy( sto->start_disks[sto->start_disks_count], sto->start_disk );
+          sto->start_disks_count++;
+        }
       }
     }
   }
@@ -1122,7 +1336,70 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 
   if( sto->start_disk[0] )
   {
-    diskimage_load( oric, sto->start_disk, 0 );
+#ifdef WWW
+      // NOT SURE WHY I HAD TO DO THIS ???
+      if( sto->start_disk[0] )
+      {
+        if( sto->start_disks_count < 4 )
+        {
+          strcpy( sto->start_disks[sto->start_disks_count], sto->start_disk );
+          sto->start_disks_count++;
+        }
+      }
+#endif
+    switch (detect_image_type(sto->start_disk))
+    {
+      case IMG_ATMOS_MICRODISC:
+        if (!sto->start_machine_set)  sto->start_machine = MACH_ATMOS;
+        if (!sto->start_disktype_set) sto->start_disktype = DRV_MICRODISC;
+        break;
+
+      case IMG_ATMOS_JASMIN:
+        if (!sto->start_machine_set)  sto->start_machine = MACH_ATMOS;
+        if (!sto->start_disktype_set) sto->start_disktype = DRV_JASMIN;
+        break;
+
+      case IMG_TELESTRAT_DISK:
+        if (!sto->start_machine_set)  sto->start_machine = MACH_TELESTRAT;
+        if (!sto->start_disktype_set) sto->start_disktype = DRV_MICRODISC;
+        break;
+
+      case IMG_BD500_DISK:
+        if (!sto->start_machine_set)  sto->start_machine = MACH_ATMOS;
+        if (!sto->start_disktype_set) sto->start_disktype = DRV_BD500;
+        break;
+
+      case IMG_PRAVETZ_DISK:
+        if (!sto->start_machine_set)  sto->start_machine = MACH_PRAVETZ;
+        if (!sto->start_disktype_set) sto->start_disktype = DRV_PRAVETZ;
+        break;
+
+      case IMG_GUESS_MICRODISC:
+        if (!sto->start_disktype_set) sto->start_disktype = DRV_MICRODISC;
+        break;
+
+      case IMG_TAPE:
+        printf("'%s' seems to be a tape image.\n", sto->start_disk);
+        strcpy(sto->start_tape, sto->start_disk);
+        sto->start_disk[0] = 0;
+        break;
+
+      case IMG_SNAPSHOT:
+        printf("'%s' seems to be a snapshot file.\n", opt_arg);
+        strncpy( sto->start_snapshot, opt_arg, 1024);
+        sto->start_snapshot[1023] = 0;
+        sto->start_disk[0] = 0;
+        break;
+    }
+
+    for( i=0; i<4; i++ )
+    {
+      disk_eject( oric, i );
+    }
+    for( i=0; i<sto->start_disks_count; i++ )
+    {
+      diskimage_load( oric, sto->start_disks[i], i );
+    }
     switch (oric->drivetype)
     {
       case DRV_PRAVETZ:
@@ -1140,6 +1417,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
       queuekeys( "CLOAD\"\"\x0d" );
   }
 
+#ifndef WWW_NO_MONITOR
   mon_init( oric );
   if( sto->start_syms[0] )
     mon_new_symbols( &oric->usersyms, oric, sto->start_syms, SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
@@ -1185,9 +1463,9 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
     }
     else
     {
-      int i = 0;
+      int off = 0;
       unsigned int addr;
-      if( !mon_getnum( oric, &addr, sto->start_breakpoint, &i, SDL_FALSE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
+      if( !mon_getnum( oric, &addr, sto->start_breakpoint, &off, SDL_FALSE, SDL_FALSE, SDL_FALSE, SDL_TRUE ) )
       {
         error_printf( "Invalid breakpoint" );
         free( sto );
@@ -1204,7 +1482,7 @@ SDL_bool init( struct machine *oric, int argc, char *argv[] )
 
   if( sto->start_debug )
     setemumode( oric, NULL, EM_DEBUG );
-
+#endif
   free( sto );
   return SDL_TRUE;
 }
@@ -1220,12 +1498,15 @@ void shut( struct machine *oric )
     shut_machine( oric );
     shut_joy( oric );
     shut_ula( oric );
+#ifndef WWW_NO_MONITOR
     mon_shut( oric );
+#endif
     shut_filerequester( oric );
     shut_msgbox( oric );
     shut_gui( oric );
   }
-  if( need_sdl_quit ) SDL_COMPAT_Quit();
+  if( need_sdl_quit )
+    SDL_COMPAT_Quit( SDL_TRUE );
 }
 
 void frameloop_overclock( struct machine *oric, SDL_bool *framedone, SDL_bool *needrender )
@@ -1241,9 +1522,11 @@ void frameloop_overclock( struct machine *oric, SDL_bool *framedone, SDL_bool *n
       {
         if( m6502_set_icycles( &oric->cpu, SDL_TRUE, mon_bpmsg ) )
         {
+#ifndef WWW_NO_MONITOR
           // Hit breakpoint
           setemumode( oric, NULL, EM_DEBUG );
           *needrender = SDL_TRUE;
+#endif
           break;
         }
 
@@ -1263,7 +1546,16 @@ void frameloop_overclock( struct machine *oric, SDL_bool *framedone, SDL_bool *n
       /* Move the emulation on */
       via_clock( &oric->via, instcycles );
       ay_ticktock( &oric->ay, instcycles );
-      if((oric->drivetype == DRV_MICRODISC) || (oric->drivetype == DRV_JASMIN)) wd17xx_ticktock( &oric->wddisk, instcycles );
+
+      switch( oric->drivetype )
+      {
+        case DRV_MICRODISC:
+        case DRV_BD500:
+        case DRV_JASMIN:
+          wd17xx_ticktock( &oric->wddisk, instcycles );
+          break;
+      }
+
       if( oric->type == MACH_TELESTRAT )
       {
         via_clock( &oric->tele_via, instcycles );
@@ -1279,9 +1571,11 @@ void frameloop_overclock( struct machine *oric, SDL_bool *framedone, SDL_bool *n
       if( m6502_inst( &oric->cpu ) )
       {
         // Hit JAM instruction
+#ifndef WWW_NO_MONITOR
         mon_printf_above( "Opcode %02X executed at %04X", oric->cpu.calcop, oric->cpu.lastpc );
         setemumode( oric, NULL, EM_DEBUG );
         *needrender = SDL_TRUE;
+#endif
         break;
       }
     }
@@ -1302,16 +1596,29 @@ void frameloop_normal( struct machine *oric, SDL_bool *framedone, SDL_bool *need
     {
       if( m6502_set_icycles( &oric->cpu, SDL_TRUE, mon_bpmsg ) )
       {
+#ifndef WWW_NO_MONITOR
         // Hit breakpoint
         setemumode( oric, NULL, EM_DEBUG );
         *needrender = SDL_TRUE;
+#endif
         break;
       }
 
+      if (!oric->twilighteboard_activated)
       tape_patches( oric );
+
       via_clock( &oric->via, oric->cpu.icycles );
       ay_ticktock( &oric->ay, oric->cpu.icycles );
-      if((oric->drivetype == DRV_MICRODISC) || (oric->drivetype == DRV_JASMIN)) wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
+
+      switch( oric->drivetype )
+      {
+        case DRV_MICRODISC:
+        case DRV_BD500:
+        case DRV_JASMIN:
+          wd17xx_ticktock( &oric->wddisk, oric->cpu.icycles );
+          break;
+      }
+
       if( oric->type == MACH_TELESTRAT )
       {
         via_clock( &oric->tele_via, oric->cpu.icycles );
@@ -1322,10 +1629,12 @@ void frameloop_normal( struct machine *oric, SDL_bool *framedone, SDL_bool *need
       oric->cpu.rastercycles -= oric->cpu.icycles;
       if( m6502_inst( &oric->cpu ) )
       {
+#ifndef WWW_NO_MONITOR
         // Hit JAM instruction
         mon_printf_above( "Opcode %02X executed at %04X", oric->cpu.calcop, oric->cpu.lastpc );
         setemumode( oric, NULL, EM_DEBUG );
         *needrender = SDL_TRUE;
+#endif
         break;
       }
     }
@@ -1359,189 +1668,420 @@ void once_per_frame( struct machine *oric )
   }
 }
 
-int main( int argc, char *argv[] )
+static void loop_handler( void* arg )
 {
-  static struct machine oric;
-  SDL_bool isinit;
+  struct context* ctx = arg;
+  struct machine* oric = &ctx->oric;
+  SDL_Event* event = &ctx->event;
+
+  SDL_bool done = SDL_FALSE;
+  Sint32 i;
+
+  while (!done)
+  {
+    if ( oric->emu_mode == EM_PLEASEQUIT )
+      break;
+
+    if ( oric->emu_mode == EM_RUNNING )
+    {
+      if (oric->overclockmult == 1)
+        frameloop_normal( oric, &ctx->framedone, &ctx->needrender );
+      else
+        frameloop_overclock( oric, &ctx->framedone, &ctx->needrender );
+
+      ay_unlockaudio( &oric->ay );
+
+      if (ctx->framedone)
+      {
+        ctx->nextframe_us += oric->vid_freq ? 20000LL : 16667LL;
+        ctx->nextframe_ms = (Uint32)(ctx->nextframe_us / 1000LL);
+
+        if (warpspeed)
+        {
+          if ((oric->frames&3)==0)
+            ctx->needrender = SDL_TRUE;
+        }
+        else
+        {
+          ctx->needrender = SDL_TRUE;
+        }
+      }
+
+      if (ctx->needrender)
+      {
+        render( oric );
+        ctx->needrender = SDL_FALSE;
+      }
+
+      if (ctx->framedone)
+      {
+        once_per_frame( oric );
+
+        ctx->then = ctx->now;
+        ctx->now = SDL_GetTicks();
+
+        frametimeave = 0;
+        for (i = (FRAMES_TO_AVERAGE - 1); i > 0; i--)
+        {
+          lastframetimes[i] = lastframetimes[i - 1];
+          frametimeave += lastframetimes[i];
+        }
+        lastframetimes[0] = ctx->now - ctx->then;
+        frametimeave = (frametimeave + lastframetimes[0]) / FRAMES_TO_AVERAGE;
+
+        if (warpspeed)
+        {
+          ctx->nextframe_ms = ctx->now;
+          ctx->nextframe_us = ((Uint64)ctx->nextframe_ms) * 1000;
+        }
+        else
+        {
+          if (ctx->now > ctx->nextframe_ms)
+          {
+            ctx->nextframe_ms = ctx->now;
+            ctx->nextframe_us = ((Uint64)ctx->nextframe_ms) * 1000;
+          }
+          else
+          {
+            SDL_Delay(ctx->nextframe_ms - ctx->now);
+          }
+        }
+        ctx->framedone = SDL_FALSE;
+      }
+
+#if defined(WWW)
+      if (!SDL_PollEvent(event))
+        break;
+#else
+      if (!SDL_PollEvent(event))
+        continue;
+#endif
+    }
+    else
+    {
+      ay_unlockaudio( &oric->ay );
+      if (ctx->needrender)
+      {
+        render( oric );
+        ctx->needrender = SDL_FALSE;
+      }
+#if defined(WWW)
+      if (!SDL_PollEvent(event))
+        break;
+#else
+      if (!SDL_WaitEvent(event))
+        break;
+#endif
+    }
+
+    do {
+       switch (event->type) {
+            case SDL_COMPAT_ACTIVEEVENT: {
+                if (SDL_COMPAT_IsAppActive(event)) {
+                    oric->shut_render(oric);
+                    oric->init_render(oric);
+                    ctx->needrender = SDL_TRUE;
+                }
+            }
+                break;
+            case SDL_QUIT:
+                done = SDL_TRUE;
+                break;
+
+            default:
+                switch (oric->emu_mode) {
+                    case EM_MENU:
+                        done |= menu_event(event, oric, &ctx->needrender);
+                        break;
+
+                    case EM_RUNNING:
+                        done |= emu_event(event, oric, &ctx->needrender);
+                        break;
+#ifndef WWW_NO_MONITOR
+                    case EM_DEBUG:
+                        done |= mon_event(event, oric, &ctx->needrender);
+                        break;
+#endif
+                }
+        }
+        if (oric->show_keyboard)
+            keyboard_event(event, oric, &ctx->needrender);
+      } while ( SDL_PollEvent( event ) );
+
+#if defined(WWW)
+    // 1 loop only because emscripten will simulate the actual looping
+  	done = SDL_TRUE;
+#endif
+
+  }
+#if defined(WWW)
+#else
+      ay_unlockaudio(&oric->ay);
+      shut(oric);
+#endif
+  }
+
+#ifdef WWW
+
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+
+struct context *gCtx = NULL;
+
+void success(char* path, const char* fileToLoad)
+{
+  int i;
+  printf("Loading disk %s\n", fileToLoad);
+  switch (detect_image_type(path))
+  {
+    case IMG_SNAPSHOT:
+      load_snapshot(&gCtx->oric, path);
+      break;
+
+    case IMG_ATMOS_MICRODISC:
+      if ((gCtx->oric.type != MACH_ATMOS) &&
+          (gCtx->oric.type != MACH_ORIC1) &&
+          (gCtx->oric.type != MACH_PRAVETZ))
+      {
+        swapmach( &gCtx->oric, NULL, (DRV_MICRODISC<<16)|MACH_ATMOS );
+        break;
+      }
+
+      if ((gCtx->oric.drivetype != DRV_MICRODISC) &&
+          (gCtx->oric.drivetype != DRV_NONE))
+      {
+        swapmach( &gCtx->oric, NULL, (DRV_MICRODISC<<16)|gCtx->oric.type );
+      }
+      break;
+
+    case IMG_ATMOS_JASMIN:
+      if ((gCtx->oric.type != MACH_ATMOS) &&
+          (gCtx->oric.type != MACH_ORIC1) &&
+          (gCtx->oric.type != MACH_PRAVETZ))
+      {
+        swapmach( &gCtx->oric, NULL, (DRV_JASMIN<<16)|MACH_ATMOS );
+        gCtx->oric.auto_jasmin_reset = SDL_TRUE;
+        break;
+      }
+
+      if (gCtx->oric.drivetype == DRV_NONE)
+      {
+        swapmach( &gCtx->oric, NULL, (DRV_JASMIN<<16)|gCtx->oric.type);
+        gCtx->oric.auto_jasmin_reset = SDL_TRUE;
+        break;
+      }
+
+      if (gCtx->oric.drivetype != DRV_JASMIN)
+      {
+        swapmach( &gCtx->oric, NULL, (DRV_JASMIN<<16)|gCtx->oric.type );
+        gCtx->oric.auto_jasmin_reset = SDL_TRUE;
+        break;
+      }
+      break;
+
+    case IMG_TELESTRAT_DISK:
+      if (gCtx->oric.type != MACH_TELESTRAT)
+      {
+        swapmach( &gCtx->oric, NULL, MACH_TELESTRAT );
+        break;
+      }
+      break;
+
+    case IMG_PRAVETZ_DISK:
+      if (gCtx->oric.type != MACH_PRAVETZ)
+      {
+        swapmach( &gCtx->oric, NULL, (DRV_PRAVETZ<<16)|MACH_PRAVETZ );
+        pravdiskboot( &gCtx->oric );
+        break;
+      }
+
+      if (gCtx->oric.drivetype == DRV_NONE)
+      {
+        swapmach( &gCtx->oric, NULL, (DRV_PRAVETZ<<16)|MACH_PRAVETZ );
+        pravdiskboot( &gCtx->oric );
+        break;
+      }
+
+      if (gCtx->oric.drivetype != DRV_PRAVETZ)
+      {
+        swapmach( &gCtx->oric, NULL, (DRV_PRAVETZ<<16)|MACH_PRAVETZ );
+        pravdiskboot( &gCtx->oric );
+        break;
+      }
+      break;
+
+    case IMG_GUESS_MICRODISC:
+      if (gCtx->oric.drivetype == DRV_PRAVETZ)
+      {
+        swapmach( &gCtx->oric, NULL, (DRV_MICRODISC<<16)|gCtx->oric.type );
+        break;
+      }
+      break;
+
+    case IMG_TAPE:
+      gCtx->oric.lasttapefile[0] = 0;
+      tape_load_tap( &(gCtx->oric), path );
+#ifndef WWW_NO_MONITOR
+      if( gCtx->oric.symbolsautoload ) mon_new_symbols( &gCtx->oric.usersyms, &(gCtx->oric), "symbols", SYM_BESTGUESS, SDL_TRUE, SDL_TRUE );
+#endif
+      queuekeys( "CLOAD\"\"\x0d" );
+      return;
+  }
+
+  diskimage_load( &(gCtx->oric), path, 0 );
+
+  if( gCtx->oric.drivetype == DRV_NONE )
+  {
+    swapmach( &(gCtx->oric), NULL, (DRV_MICRODISC<<16)|gCtx->oric.type );
+    return;
+  }
+}
+
+void downloadSucceeded(emscripten_fetch_t *fetch) {
+  int fd;
+  char path[1024];
+
+  printf("Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
+  // The data is now available at fetch->data[0] through fetch->data[fetch->numBytes-1];
+  printf("%s\n",fetch->data);
+  printf("status %d\n",fetch->status);
+
+  sprintf(path, "/readwritefs/%s", fetch->url),
+  fd = open(path, O_RDWR | O_CREAT, 0666);
+  if (fd == -1)
+    perror("Failing to create file");
+  else
+  {
+    if (write(fd, fetch->data, fetch->numBytes) != fetch->numBytes) {
+      perror("Failing to write to file");
+    } else if (close(fd) != 0) {
+      perror("Failing to close file");
+    } else {
+      success(path, fetch->url);
+    }
+  }
+
+    // sync from memory state to persisted
+    EM_ASM(
+        FS.syncfs(function (err) {
+          assert(!err);
+        });
+    );
+
+  emscripten_fetch_close(fetch); // Free data associated with the fetch.
+}
+
+void downloadFailed(emscripten_fetch_t *fetch) {
+  printf("Downloading %s failed, HTTP failure status code: %d.\n", fetch->url, fetch->status);
+  emscripten_fetch_close(fetch); // Also free data on failure.
+}
+
+  void EMSCRIPTEN_KEEPALIVE www_async_dload() {
+
+    // is the file here
+    char * fileToLoad = getenv("FILE");
+
+    printf("Downloading file %s\n", fileToLoad);
+
+    if(fileToLoad == NULL)
+      return;
+
+    char path[1024];
+    sprintf(path, "/readwritefs/%s", fileToLoad);
+
+    int fd = open(path, O_RDWR);
+    if (fd == -1)
+    {
+      emscripten_fetch_attr_t attr;
+      emscripten_fetch_attr_init(&attr);
+      strcpy(attr.requestMethod, "GET");
+      attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
+
+      attr.onsuccess = downloadSucceeded;
+      attr.onerror = downloadFailed;
+      emscripten_fetch(&attr, fileToLoad);
+    } else {
+      printf("%s is already downloaded!\n", fileToLoad);
+      success(path, fileToLoad);
+    }
+  }
+#endif
+
+  int main( int argc, char *argv[] )
+  {
+    static struct context ctx;
 
 #ifdef _MSC_VER
-  _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
-  // This should center SDL window
+    // This should center SDL window
 #ifndef __MORPHOS__
-  putenv("SDL_VIDEO_CENTERED=center");
+    putenv("SDL_VIDEO_CENTERED=center");
 #endif
 
-  memset(&oric, 0, sizeof(oric));
-
-    // ----------------------------------------------------------------------------
-    // This makes relative paths work in C++ in Xcode by changing directory to the Resources folder inside the .app bundle
+#ifndef WWW
+  init_fileprefix( argv );
+#endif
+      // ----------------------------------------------------------------------------
+      // This makes relative paths work in C++ in Xcode by changing directory to the Resources folder inside the .app bundle
 #ifdef __APPLE__
-    CFBundleRef mainBundle = CFBundleGetMainBundle();
-    CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
-    char path[PATH_MAX];
-    if (!CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8 *)path, PATH_MAX))
-    {
-        // error!
-    }
-    CFRelease(resourcesURL);
-    // this directory is something/Oricutron.app/Contents/Resources
-    // go down 3 times to find the app containing directory
-    strcat(path, "/../../..");
-    chdir(path);
-    //printf("Current Path: %s\n", path);
+      CFBundleRef mainBundle = CFBundleGetMainBundle();
+      CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
+      char path[PATH_MAX];
+      if (!CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8 *)path, PATH_MAX))
+      {
+          // error!
+      }
+      CFRelease(resourcesURL);
+      // this directory is something/Oricutron.app/Contents/Resources
+      // go down 3 times to find the app containing directory
+      strcat(path, "/../../..");
+      chdir(path);
+      //printf("Current Path: %s\n", path);
 #endif
 
-  if( ( isinit = init( &oric, argc, argv ) ) )
-  {
-    Uint64 nextframe_us;
-    Uint32 nextframe_ms, now=0, then;
-    SDL_bool done, needrender, framedone;
-    Sint32 i;
-
-    now = SDL_GetTicks();
-    nextframe_ms = now;
-    nextframe_us = ((Uint64)nextframe_ms)*1000;
-
-    done = SDL_FALSE;
-    needrender = SDL_TRUE;
-    framedone = SDL_FALSE;
-
-    if(load_keymap)
+    memset(&ctx.oric, 0, sizeof(ctx.oric));
+    if (!init(&ctx.oric, argc, argv))
     {
-      load_keyboard_mapping( &oric, keymap_path );
+      shut(&ctx.oric);
+      return EXIT_FAILURE;
+    }
+    // call to SDL_GetTicks must be behind init
+    ctx.now = SDL_GetTicks();
+    ctx.nextframe_ms = ctx.now;
+    ctx.nextframe_us = ((Uint64)ctx.nextframe_ms) * 1000;
+    ctx.needrender = SDL_TRUE;
+    ctx.framedone = SDL_FALSE;
+
+    if (load_keymap)
+    {
+      load_keyboard_mapping(&ctx.oric, keymap_path);
       load_keymap = SDL_FALSE;
     }
 
-    while( !done )
-    {
-      SDL_Event event;
+#ifdef WWW
+      // save the context to a global
+      gCtx = &ctx;
+      // create read-write fs
+      EM_ASM(
+        FS.mkdir('/readwritefs');
+        FS.mount(IDBFS, {}, '/readwritefs');
 
-      if( oric.emu_mode == EM_PLEASEQUIT )
-        break;
+        // sync from persisted state into memory and then
+        // run the 'www_async_dload' function
+        FS.syncfs(true, function (err) {
+          assert(!err);
+          // async download of space1999-fr.dsk
+          ccall('www_async_dload', 'v');
+        });
+      );
 
-      if( oric.emu_mode == EM_RUNNING )
-      {
-        if( oric.overclockmult==1 )
-          frameloop_normal( &oric, &framedone, &needrender );
-        else
-          frameloop_overclock( &oric, &framedone, &needrender );
+      emscripten_set_main_loop_arg(loop_handler, &ctx, -1, 0);
+#else
+      loop_handler(&ctx);
+#endif
 
-        ay_unlockaudio( &oric.ay );
-
-        if( framedone )
-        {
-          nextframe_us += oric.vid_freq ? 20000LL : 16667LL;
-          nextframe_ms = (Uint32)(nextframe_us/1000LL);
-
-          if (warpspeed)
-          {
-            if ((oric.frames&3)==0)
-              needrender = SDL_TRUE;
-          }
-          else
-          {
-            needrender = SDL_TRUE;
-          }
-        }
-
-        if( needrender )
-        {
-          render( &oric );
-          needrender = SDL_FALSE;
-        }
-
-        if( framedone )
-        {
-          once_per_frame( &oric );
-
-          then = now;
-          now = SDL_GetTicks();
-
-          frametimeave = 0;
-          for( i=(FRAMES_TO_AVERAGE-1); i>0; i-- )
-          {
-            lastframetimes[i] = lastframetimes[i-1];
-            frametimeave += lastframetimes[i];
-          }
-          lastframetimes[0] = now-then;
-          frametimeave = (frametimeave+lastframetimes[0])/FRAMES_TO_AVERAGE;
-
-          if (warpspeed)
-          {
-            nextframe_ms = now;
-            nextframe_us = ((Uint64)nextframe_ms)*1000;
-          }
-          else
-          {
-            if (now > nextframe_ms)
-            {
-              nextframe_ms = now;
-              nextframe_us = ((Uint64)nextframe_ms)*1000;
-            }
-            else
-            {
-              SDL_Delay(nextframe_ms-now);
-            }
-          }
-          framedone = SDL_FALSE;
-        }
-
-        if( !SDL_PollEvent( &event ) ) continue;
-      }
-      else
-      {
-        ay_unlockaudio( &oric.ay );
-        if( needrender )
-        {
-          render( &oric );
-          needrender = SDL_FALSE;
-        }
-        if( !SDL_WaitEvent( &event ) ) break;
-      }
-
-      do {
-        switch( event.type )
-        {
-          case SDL_COMPAT_ACTIVEEVENT:
-            {
-                if(SDL_COMPAT_IsAppActive(&event))
-                {
-                    oric.shut_render(&oric);
-                    oric.init_render(&oric);
-                    needrender = SDL_TRUE;
-                }
-            }
-            break;
-          case SDL_QUIT:
-            done = SDL_TRUE;
-            break;
-
-          default:
-            switch( oric.emu_mode )
-            {
-              case EM_MENU:
-                done |= menu_event( &event, &oric, &needrender );
-                break;
-
-              case EM_RUNNING:
-                done |= emu_event( &event, &oric, &needrender );
-                break;
-
-              case EM_DEBUG:
-                done |= mon_event( &event, &oric, &needrender );
-                break;
-            }
-        }
-        if (oric.show_keyboard)
-            keyboard_event( &event, &oric, &needrender );
-
-      } while( SDL_PollEvent( &event ) );
-    }
-    ay_unlockaudio( &oric.ay );
+    return EXIT_SUCCESS;
   }
-  shut( &oric );
-
-  return isinit ? EXIT_SUCCESS : EXIT_FAILURE;
-}

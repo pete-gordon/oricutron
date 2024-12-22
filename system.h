@@ -51,15 +51,23 @@
 #define ROMPREFIX "roms\\"
 #define IMAGEPREFIX "images\\"
 
-#else
+#elif defined(WWW)
 
 #define PATHSEP '/'
 #define PATHSEPSTR "/"
-#define FILEPREFIX
-#define ROMPREFIX "roms/"
-#define IMAGEPREFIX "images/"
+#define FILEPREFIX "assets/"
+#define ROMPREFIX "assets/roms/"
+#define IMAGEPREFIX "assets/images/"
 
+#else
+
+  #define PATHSEP '/'
+  #define PATHSEPSTR "/"
+  #define ROMPREFIX "roms"PATHSEPSTR
+  #define IMAGEPREFIX "images"PATHSEPSTR
 #endif
+
+const char *get_fileprefix();
 
 /* SDL related stuff */
 #include "system_sdl.h"

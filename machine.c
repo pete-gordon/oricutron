@@ -46,6 +46,8 @@
 #include "plugins/ch376/ch376.h"
 #include "plugins/ch376/oric_ch376_plugin.h"
 
+#include "plugins/twilighte_board/oric_twilighte_board_plugin.h"
+
 #include "machine.h"
 #include "avi.h"
 #include "filereq.h"
@@ -60,11 +62,11 @@ extern char diskpath[], diskfile[], filetmp[];
 extern char telediskpath[], telediskfile[];
 extern char pravdiskpath[], pravdiskfile[];
 extern SDL_bool refreshstatus, refreshavi;
-extern int g_menu_scheme; // #InfoBadDesign - init g_menu_scheme should be done lesewher - machine.c should not depend on gui - but this is the only place I know
 
 char atmosromfile[1024];
 char oric1romfile[1024];
 char mdiscromfile[1024];
+char bd500romfile[1024];
 char jasmnromfile[1024];
 char pravetzromfile[2][1024];
 char telebankfiles[8][1024];
@@ -76,9 +78,9 @@ int vidcapcount = 0;
 char screencapname[128];
 int screencapcount = 0;
 
-unsigned char rom_microdisc[8912], rom_jasmin[2048], rom_pravetz[512];
-struct symboltable sym_microdisc, sym_jasmin, sym_pravetz;
-SDL_bool microdiscrom_valid, jasminrom_valid, pravetzrom_valid;
+unsigned char rom_microdisc[8912], rom_bd500[8912], rom_jasmin[2048], rom_pravetz[512];
+struct symboltable sym_microdisc, sym_bd500, sym_jasmin, sym_pravetz;
+SDL_bool microdiscrom_valid, bd500rom_valid, jasminrom_valid, pravetzrom_valid;
 extern struct osdmenuitem mainitems[];
 
 Uint8 oricpalette[] = { 0x00, 0x00, 0x00,
@@ -109,6 +111,13 @@ static Uint8 ftdos_detect[] =
     0xfb, 0x78, 0xa9, 0x7f, 0x8d, 0x0e, 0x03, 0xa9, 0x01, 0x8d, 0xfa, 0x03, 0xa9, 0x00, 0x8d, 0xfb,
     0x03, 0x85, 0x04, 0x8d, 0xf4, 0x03, 0xa2, 0x02, 0xac, 0x30, 0x02, 0xc0, 0x40, 0xd0, 0x04, 0xa9,
     0x04, 0xa2, 0x06, 0x85, 0x01, 0x8e, 0x53, 0x04, 0xa9, 0xac, 0x8d, 0xfe, 0xff, 0xa9, 0x04, 0x8d,
+  };
+
+static Uint8 ftdos_master_detect[] =
+  {
+    0xfb, 0xea, 0x78, 0xa9, 0x7f, 0x8d, 0x0e, 0x03, 0xa9, 0x01, 0x8d, 0xfa, 0x03, 0xa9, 0x00, 0x8d,
+    0xfb, 0x03, 0x85, 0x04, 0x85, 0x01, 0x8d, 0xf4, 0x03, 0xa9, 0xab, 0x8d, 0xfe, 0xff, 0xa9, 0x04,
+    0x8d, 0xff, 0xff, 0x8d, 0x39, 0x04, 0x8d, 0x48, 0x04, 0x8d, 0x66, 0x04, 0xa9, 0x03, 0x85, 0x02,
   };
 
 int detect_image_type(char *filename)
@@ -216,6 +225,9 @@ int detect_image_type(char *filename)
 
       if (memcmp(ptr, ftdos_detect, sizeof(ftdos_detect))==0)
         return IMG_ATMOS_JASMIN;
+
+      if (memcmp(ptr, ftdos_master_detect, sizeof(ftdos_master_detect))==0)
+        return IMG_ATMOS_JASMIN;
     }
 
     /* No.. best guess is some sort of microdisc image */
@@ -259,7 +271,7 @@ void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode )
       if( soundavailable )
         SDL_PauseAudio( 1 );
       break;
-
+#ifndef WWW_NO_MONITOR
     case EM_DEBUG:
       if( vidcap ) avi_close( &vidcap );
       mon_enter( oric );
@@ -269,6 +281,7 @@ void setemumode( struct machine *oric, struct osdmenuitem *mitem, int mode )
       if( soundavailable )
         SDL_PauseAudio( 1 );
       break;
+#endif
   }
 }
 
@@ -288,6 +301,10 @@ void setromon( struct machine *oric )
   else if( oric->drivetype == DRV_PRAVETZ )
   {
     oric->romon = !oric->pravetz.olay;
+  }
+  else if ( oric->type == MACH_TELESTRAT )
+  {
+    oric->romon = ( oric->tele_banktype == TELEBANK_ROM );
   } else {
     oric->romon = !oric->romdis;
   }
@@ -297,7 +314,13 @@ void setromon( struct machine *oric )
 void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
+
+
+  if (oric->twilighteboard_activated &&  addr >= 0xc000  )
+    twilighteboard_oric_ROM_RAM_write(oric->twilighte,addr-0xc000,data);
+  else
   if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) return;  // Can't write to ROM!
+
   if( ( addr & 0xff00 ) == 0x0300 )
   {
     if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
@@ -305,6 +328,16 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 
     else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
       ch376_oric_write(oric->ch376, addr, data);
+
+    else if(oric->twilighteboard_activated && ((0x342 <= addr && addr < 0x344 ) || (0x320 <= addr && addr < 0x330 )))
+      twilighteboard_oric_write(oric->twilighte,addr,0x00,data);
+
+    else if(oric->twilighteboard_activated && oric->twilighte->microdisc==SDL_TRUE && (0x310 <= addr && addr < 0x319 ))
+      {
+      if (addr==0x314)
+        twilighteboard_oric_write(oric->twilighte,addr,0x00,data);
+      microdisc_write( &oric->md, addr, data );
+      }
 
     else
       via_write( &oric->via, addr, data );
@@ -314,7 +347,7 @@ void atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
   oric->mem[addr] = data;
 }
 
-// 16k oric-1 CPU write
+// Oric-1 16k CPU write
 void o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
@@ -363,7 +396,6 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
   {
     switch( addr & 0x0f0 )
     {
-
       case 0x20:
         via_write( &oric->tele_via, addr, data );
         break;
@@ -393,7 +425,7 @@ void telestratwrite( struct m6502 *cpu, unsigned short addr, unsigned char data 
   oric->mem[addr] = data;
 }
 
-// Atmos + jasmin
+// Oric Atmos + jasmin
 void jasmin_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
@@ -427,7 +459,7 @@ void jasmin_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char da
   oric->mem[addr] = data;
 }
 
-// 16k + jasmin
+// Oric-1 16k + jasmin
 void jasmin_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
@@ -462,7 +494,7 @@ void jasmin_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char dat
   oric->mem[addr&0x3fff] = data;
 }
 
-// Atmos + microdisc
+// Oric Atmos + microdisc
 void microdisc_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
@@ -483,7 +515,7 @@ void microdisc_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char
 
     else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
       ch376_oric_write(oric->ch376, addr, data);
-    
+
     else
       via_write( &oric->via, addr, data );
 
@@ -492,7 +524,37 @@ void microdisc_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char
   oric->mem[addr] = data;
 }
 
-// Atmos + microdisc
+// Oric Atmos + bd500
+void bd500_atmoswrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
+{
+  struct machine *oric = (struct machine *)cpu->userdata;
+  if( oric->romdis )
+  {
+    if( ( oric->bd.diskrom ) && ( addr >= 0xc000 ) ) return; // Can't write to ROM!
+  } else {
+    if( addr >= 0xc000 ) return;
+  }
+
+  if( ( addr & 0xff00 ) == 0x0300 )
+  {
+    if( ( addr >= 0x310 ) && ( addr < 0x324 ) )
+      bd500_write( &oric->bd, addr, data );
+
+    else if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
+      acia_write( &oric->tele_acia, addr, data );
+
+    else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      ch376_oric_write(oric->ch376, addr, data);
+
+    else
+      via_write( &oric->via, addr, data );
+
+    return;
+  }
+  oric->mem[addr] = data;
+}
+
+// Oric-1 16k + microdisc
 void microdisc_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
@@ -507,6 +569,36 @@ void microdisc_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char 
   {
     if( ( addr >= 0x310 ) && ( addr < 0x31c ) )
       microdisc_write( &oric->md, addr, data );
+
+    else if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
+      acia_write( &oric->tele_acia, addr, data );
+
+    else if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      ch376_oric_write(oric->ch376, addr, data);
+
+    else
+      via_write( &oric->via, addr, data );
+
+    return;
+  }
+  oric->mem[addr&0x3fff] = data;
+}
+
+// Oric-1 16k + bd500
+void bd500_o16kwrite( struct m6502 *cpu, unsigned short addr, unsigned char data )
+{
+  struct machine *oric = (struct machine *)cpu->userdata;
+  if( oric->romdis )
+  {
+    if( ( oric->bd.diskrom ) && ( addr >= 0xc000 ) ) return; // Can't write to ROM!
+  } else {
+    if( addr >= 0xc000 ) return;
+  }
+
+  if( ( addr & 0xff00 ) == 0x0300 )
+  {
+    if( ( addr >= 0x310 ) && ( addr < 0x324 ) )
+      bd500_write( &oric->bd, addr, data );
 
     else if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
       acia_write( &oric->tele_acia, addr, data );
@@ -597,6 +689,11 @@ SDL_bool isram( struct machine *oric, unsigned short addr )
       if( addr >= 0xe000 ) return SDL_FALSE;
       break;
 
+    case DRV_BD500:
+      if( !oric->bd.diskrom ) return SDL_TRUE;
+      if( addr >= 0xc000 ) return SDL_FALSE;
+      break;
+
     case DRV_JASMIN:
       if( oric->jasmin.olay ) return SDL_TRUE;
       if( addr >= 0xf800 ) return SDL_FALSE;
@@ -624,12 +721,29 @@ unsigned char atmosread( struct m6502 *cpu, unsigned short addr )
     if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
       return ch376_oric_read(oric->ch376, addr);
 
+    if( oric->twilighteboard_activated)
+    {
+      if ((0x342 <= addr  && addr < 0x344 ) || (0x320 <= addr && addr < 0x330 ))
+        return twilighteboard_oric_read(oric->twilighte,addr);
+
+      if (oric->twilighte->microdisc==SDL_TRUE)
+      {
+        if (0x310 <= addr && addr < 0x319)
+          return microdisc_read( &oric->md, addr );
+      }
+
+    }
+
     return via_read( &oric->via, addr );
   }
 
-  if( ( !oric->romdis ) && ( addr >= 0xc000 ) )
-    return oric->rom[addr-0xc000];
+  if( ( !oric->romdis ) && ( addr >= 0xc000 ) ) {
 
+    if (oric->twilighteboard_activated)
+      return twilighteboard_oric_ROM_RAM_read(oric->twilighte,addr-0xc000);
+    else
+      return oric->rom[addr-0xc000];
+  }
   return oric->mem[addr];
 }
 
@@ -701,7 +815,7 @@ unsigned char telestratread( struct m6502 *cpu, unsigned short addr )
   return oric->mem[addr];
 }
 
-// Atmos + jasmin
+// Oric Atmos + jasmin
 unsigned char jasmin_atmosread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
@@ -733,7 +847,7 @@ unsigned char jasmin_atmosread( struct m6502 *cpu, unsigned short addr )
   return oric->mem[addr];
 }
 
-// 16k + jasmin
+// Oric 16k + jasmin
 unsigned char jasmin_o16kread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
@@ -765,7 +879,7 @@ unsigned char jasmin_o16kread( struct m6502 *cpu, unsigned short addr )
   return oric->mem[addr&0x3fff];
 }
 
-// Atmos + microdisc
+// Oric Atmos + microdisc
 unsigned char microdisc_atmosread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
@@ -796,7 +910,38 @@ unsigned char microdisc_atmosread( struct m6502 *cpu, unsigned short addr )
   return oric->mem[addr];
 }
 
-// Atmos + microdisc
+// Oric Atmos + bd500
+unsigned char bd500_atmosread( struct m6502 *cpu, unsigned short addr )
+{
+  struct machine *oric = (struct machine *)cpu->userdata;
+
+  if( oric->romdis )
+  {
+    if( ( oric->bd.diskrom ) && ( addr >= 0xe000 ) )
+      return rom_bd500[addr-0xe000];
+  } else {
+    if( addr >= 0xc000 )
+      return oric->rom[addr-0xc000];
+  }
+
+  if( ( addr & 0xff00 ) == 0x0300 )
+  {
+    if( ( addr >= 0x310 ) && ( addr < 0x324 ) )
+      return bd500_read( &oric->bd, addr );
+
+    if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
+      return acia_read( &oric->tele_acia, addr );
+
+    if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      return ch376_oric_read(oric->ch376, addr);
+
+    return via_read( &oric->via, addr );
+  }
+
+  return oric->mem[addr];
+}
+
+// Oric-1 16k + microdisc
 unsigned char microdisc_o16kread( struct m6502 *cpu, unsigned short addr )
 {
   struct machine *oric = (struct machine *)cpu->userdata;
@@ -814,6 +959,37 @@ unsigned char microdisc_o16kread( struct m6502 *cpu, unsigned short addr )
   {
     if( ( addr >= 0x310 ) && ( addr < 0x31c ) )
       return microdisc_read( &oric->md, addr );
+
+    if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
+      return acia_read( &oric->tele_acia, addr );
+
+    if( oric->ch376_activated && ( 0x340 <= addr ) && ( addr < 0x342 ) )
+      return ch376_oric_read(oric->ch376, addr);
+
+    return via_read( &oric->via, addr );
+  }
+
+  return oric->mem[addr&0x3fff];
+}
+
+// Oric-1 16k + bd500
+unsigned char bd500_o16kread( struct m6502 *cpu, unsigned short addr )
+{
+  struct machine *oric = (struct machine *)cpu->userdata;
+
+  if( oric->romdis )
+  {
+    if( ( oric->bd.diskrom ) && ( addr >= 0xe000 ) )
+      return rom_bd500[addr-0xe000];
+  } else {
+    if( addr >= 0xc000 )
+      return oric->rom[addr-0xc000];
+  }
+
+  if( ( addr & 0xff00 ) == 0x0300 )
+  {
+    if( ( addr >= 0x310 ) && ( addr < 0x324 ) )
+      return bd500_read( &oric->bd, addr );
 
     if( oric->aciabackend && ( oric->aciaoffset <= addr && addr < oric->aciaoffset+4 ) )
       return acia_read( &oric->tele_acia, addr );
@@ -875,7 +1051,6 @@ unsigned char lightpen_read( struct m6502 *cpu, unsigned short addr )
   return oric->read_not_lightpen( cpu, addr );
 }
 
-
 static SDL_bool load_rom( struct machine *oric, char *fname, int size, unsigned char *where, struct symboltable *stab, int symflags )
 {
   SDL_RWops *f;
@@ -922,10 +1097,11 @@ static SDL_bool load_rom( struct machine *oric, char *fname, int size, unsigned 
   }
 
   SDL_RWclose( f );
-
+#ifndef WWW_NO_MONITOR
   sprintf( tmpname, "%s.sym", fname );
   mon_new_symbols( stab, oric, tmpname, symflags, SDL_FALSE, SDL_FALSE );
   free( tmpname );
+#endif
 
   return SDL_TRUE;
 }
@@ -933,7 +1109,7 @@ static SDL_bool load_rom( struct machine *oric, char *fname, int size, unsigned 
 void preinit_machine( struct machine *oric )
 {
   int i;
-
+#ifndef WWW_NO_MONITOR
   mon_init_symtab( &sym_microdisc );
   mon_init_symtab( &sym_jasmin );
   mon_init_symtab( &oric->romsyms );
@@ -945,6 +1121,7 @@ void preinit_machine( struct machine *oric )
   mon_init_symtab( &oric->tele_banksyms[5] );
   mon_init_symtab( &oric->tele_banksyms[6] );
   mon_init_symtab( &oric->tele_banksyms[7] );
+#endif
 
   oric->mem = NULL;
   oric->rom = NULL;
@@ -977,6 +1154,8 @@ void preinit_machine( struct machine *oric )
   oric->tapecap = NULL;
   oric->tapenoise = SDL_FALSE;
   oric->rawtape = SDL_FALSE;
+  oric->rom16 = SDL_TRUE;
+  oric->dos70 = SDL_FALSE;
 
   oric->joy_iface = JOYIFACE_NONE;
   oric->joymode_a = JOYMODE_KB1;
@@ -994,12 +1173,14 @@ void preinit_machine( struct machine *oric )
   oric->kbjoy1[3] = SDLK_KP6;
   oric->kbjoy1[4] = SDLK_KP_ENTER;
   oric->kbjoy1[5] = SDLK_KP_PLUS;
+  oric->kbjoy1[6] = SDLK_KP_MINUS;
   oric->kbjoy2[0] = 'w';
   oric->kbjoy2[1] = 's';
   oric->kbjoy2[2] = 'a';
   oric->kbjoy2[3] = 'd';
   oric->kbjoy2[4] = SDLK_SPACE;
   oric->kbjoy2[5] = 'n';
+  oric->kbjoy2[5] = SDLK_LALT;
 
   oric->drivetype = DRV_NONE;
   for( i=0; i<MAX_DRIVES; i++ )
@@ -1014,10 +1195,12 @@ void preinit_machine( struct machine *oric )
   oric->lightpenx = 0;
   oric->lightpeny = 0;
   oric->read_not_lightpen = NULL;
-  
+
   oric->printenable = SDL_TRUE;
   oric->printfilter = SDL_TRUE;
-  
+  oric->dcadjust = SDL_TRUE;
+  oric->soundloopon = SDL_FALSE;
+
   oric->aciabackend = ACIA_TYPE_NONE;
   oric->aciaoffset = 0x31c;
 
@@ -1027,13 +1210,16 @@ void preinit_machine( struct machine *oric )
   oric->show_keyboard = SDL_FALSE;
   oric->define_mapping = SDL_FALSE;
   oric->sticky_mod_keys = SDL_FALSE;
-  
+
+  oric->disable_menuscheme = SDL_FALSE;
+
   oric->pravdiskautoboot = SDL_TRUE;
 }
 
 void load_diskroms( struct machine *oric )
 {
   microdiscrom_valid = load_rom( oric, mdiscromfile, 8192, rom_microdisc, &sym_microdisc, SYMF_ROMDIS1|SYMF_MICRODISC );
+  bd500rom_valid     = load_rom( oric, bd500romfile, 8192, rom_bd500, &sym_bd500, SYMF_ROMDIS1|SYMF_BD500 );
   jasminrom_valid    = load_rom( oric, jasmnromfile, 2048, rom_jasmin,    &sym_jasmin,    SYMF_ROMDIS1|SYMF_JASMIN );
   pravetzrom_valid   = load_rom( oric, pravetzromfile[1], 512, rom_pravetz, &sym_pravetz,  SYMF_PRAVZ8D );
 }
@@ -1137,7 +1323,6 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           break;
       }
       break;
-
     case SDL_MOUSEBUTTONUP:
       if( ev->button.button == SDL_BUTTON_LEFT )
         lightpendown = SDL_FALSE;
@@ -1147,7 +1332,20 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
       move_lightpen( oric, ev->motion.x, ev->motion.y );
       break;
 
-    case SDL_KEYUP:
+#ifdef WWW
+    case SDL_MULTIGESTURE:
+      {
+        SDL_MultiGestureEvent *m = (SDL_MultiGestureEvent*)ev;
+        if (m->numFingers == 2)
+        {
+          setemumode( oric, NULL, EM_MENU );
+          *needrender = SDL_TRUE;
+        }
+        break;
+      }
+#endif
+
+      case SDL_KEYUP:
       switch( ev->key.keysym.sym )
       {
         case SDLK_F1:
@@ -1166,11 +1364,19 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
 
         case SDLK_F4:
           if( ( shifted ) && ( oric->drivetype == DRV_JASMIN ) )
-            oric->cpu.write( &oric->cpu, 0x3fb, 1 ); // ROMDIS
+          {
+            // ROMDIS
+            oric->cpu.write( &oric->cpu, 0x3fb, 1 );
+          }
           if( oric->drivetype == DRV_MICRODISC )
           {
             oric->romdis = SDL_TRUE;
             microdisc_init( &oric->md, &oric->wddisk, oric );
+          }
+          else if( oric->drivetype == DRV_BD500 )
+          {
+            oric->romdis = SDL_TRUE;
+            bd500_init( &oric->bd, &oric->wddisk, oric );
           }
           else if( oric->drivetype == DRV_PRAVETZ )
           {
@@ -1185,13 +1391,31 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           via_init( &oric->tele_via, oric, VIA_TELESTRAT );
           acia_init( &oric->tele_acia, oric );
 
+          if (oric->twilighteboard_activated)
+          {
+            oric->ch376_activated=SDL_TRUE;
+            oric->twilighte=twilighte_oric_init();
+            if (oric->twilighte->microdisc==SDL_TRUE)
+            {
+              oric->drivetype = DRV_MICRODISC;
+              oric->disksyms = NULL;
+              microdisc_init( &oric->md, &oric->wddisk, oric );
+            }
+          }
+
+          if (oric->twilighte==NULL)
+          {
+            oric->twilighteboard_activated=SDL_FALSE;
+          }
+          else
+            oric->ch376_activated=SDL_TRUE;
+
           if (oric->ch376_activated)
           {
             oric->ch376 = ch376_oric_init();
             if (oric->ch376 != NULL)
               ch376_oric_config(oric->ch376);
           }
-
           break;
 
         case SDLK_F5:
@@ -1202,14 +1426,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           break;
 
         case SDLK_F6:
-          if( vidcap )
-          {
-            warpspeed = SDL_FALSE;
-          }
-          else
-          {
-            warpspeed = warpspeed ? SDL_FALSE : SDL_TRUE;
-          }
+          warpspeed = ( vidcap || warpspeed )? SDL_FALSE : SDL_TRUE;
 
           if( soundavailable && soundon )
           {
@@ -1272,6 +1489,7 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
           break;
 
         case SDLK_F10:
+#ifndef __ANDROID__
            if( vidcap )
            {
              ay_lockaudio( &oric->ay );
@@ -1293,6 +1511,9 @@ SDL_bool emu_event( SDL_Event *ev, struct machine *oric, SDL_bool *needrender )
              do_popup( oric, vidcapname );
            }
            refreshavi = SDL_TRUE;
+#else
+           android_togglekeyboard( oric );
+#endif
            break;
 #ifdef __CBCOPY__
         case SDLK_F11:
@@ -1558,6 +1779,15 @@ static void setup_for_microdisc( struct machine *oric, void *readptr, void *writ
   oric->disksyms = &sym_microdisc;
 }
 
+static void setup_for_bd500( struct machine *oric, void *readptr, void *writeptr )
+{
+  oric->cpu.read = readptr;
+  oric->cpu.write = writeptr;
+  oric->romdis = SDL_TRUE;
+  bd500_init( &oric->bd, &oric->wddisk, oric );
+  oric->disksyms = &sym_bd500;
+}
+
 static void setup_for_jasmin( struct machine *oric, void *readptr, void *writeptr )
 {
   oric->cpu.read = readptr;
@@ -1613,8 +1843,6 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
 
   clear_patches( oric );
 
-  g_menu_scheme = type;
-
   switch( type )
   {
     case MACH_ORIC1_16K:
@@ -1636,6 +1864,10 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       {
         case DRV_MICRODISC:
           setup_for_microdisc( oric, microdisc_o16kread, microdisc_o16kwrite);
+          break;
+
+        case DRV_BD500:
+          setup_for_bd500( oric, bd500_o16kread, bd500_o16kwrite);
           break;
 
         case DRV_JASMIN:
@@ -1671,6 +1903,10 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           setup_for_microdisc( oric, microdisc_atmosread, microdisc_atmoswrite);
           break;
 
+        case DRV_BD500:
+          setup_for_bd500( oric, bd500_atmosread, bd500_atmoswrite);
+          break;
+
         case DRV_JASMIN:
           setup_for_jasmin( oric, jasmin_atmosread, jasmin_atmoswrite);
           break;
@@ -1702,6 +1938,10 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
       {
         case DRV_MICRODISC:
           setup_for_microdisc( oric, microdisc_atmosread, microdisc_atmoswrite);
+          break;
+
+        case DRV_BD500:
+          setup_for_bd500( oric, bd500_atmosread, bd500_atmoswrite);
           break;
 
         case DRV_JASMIN:
@@ -1771,6 +2011,10 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
           setup_for_microdisc( oric, microdisc_atmosread, microdisc_atmoswrite);
           break;
 
+        case DRV_BD500:
+          setup_for_bd500( oric, bd500_atmosread, bd500_atmoswrite);
+          break;
+
         case DRV_JASMIN:
           setup_for_jasmin( oric, jasmin_atmosread, jasmin_atmoswrite);
           break;
@@ -1808,6 +2052,22 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
   setromon( oric );
   oric->tapename[0] = 0;
   tape_rewind( oric );
+  if (oric->twilighteboard_activated)
+  {
+    oric->twilighte=twilighte_oric_init();
+    oric->ch376_activated=SDL_TRUE;
+
+    if (oric->twilighte->microdisc==SDL_TRUE)
+    {
+      oric->drivetype = DRV_MICRODISC;
+      oric->disksyms = NULL;
+      microdisc_init( &oric->md, &oric->wddisk, oric );
+    }
+
+  }
+
+  if (oric->twilighte==NULL) oric->twilighteboard_activated=SDL_FALSE;
+
   m6502_reset( &oric->cpu );
   via_init( &oric->via, oric, VIA_MAIN );
   via_init( &oric->tele_via, oric, VIA_TELESTRAT );
@@ -1818,6 +2078,8 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
     oric->ch376 = ch376_oric_init();
     ch376_oric_config(oric->ch376);
   }
+
+
 
   ay_init( &oric->ay, oric );
   joy_setup( oric );
@@ -1837,14 +2099,17 @@ SDL_bool init_machine( struct machine *oric, int type, SDL_bool nukebreakpoints 
 void shut_machine( struct machine *oric )
 {
   if( oric->drivetype == DRV_MICRODISC ) { microdisc_free( &oric->md ); oric->drivetype = DRV_NONE; }
+  if( oric->drivetype == DRV_BD500 )     { bd500_free( &oric->bd ); oric->drivetype = DRV_NONE; }
   if( oric->drivetype == DRV_JASMIN )    { jasmin_free( &oric->jasmin ); oric->drivetype = DRV_NONE; }
-  if( oric->drivetype == DRV_PRAVETZ )    { pravetz_free( &oric->pravetz ); oric->drivetype = DRV_NONE; }
+  if( oric->drivetype == DRV_PRAVETZ )   { pravetz_free( &oric->pravetz ); oric->drivetype = DRV_NONE; }
   if( oric->mem ) { free( oric->mem ); oric->mem = NULL; oric->rom = NULL; }
   if( oric->prf ) { fclose( oric->prf ); oric->prf = NULL; }
   if( oric->tsavf ) tape_stop_savepatch( oric );
   if( oric->tapecap ) toggletapecap( oric, find_item_by_function(mainitems, toggletapecap), 0 );
   if (oric->tapebuf) { free(oric->tapebuf); oric->tapebuf = NULL; }
+#ifndef WWW_NO_MONITOR
   mon_freesyms( &sym_microdisc );
+  mon_freesyms( &sym_bd500 );
   mon_freesyms( &sym_jasmin );
   mon_freesyms( &sym_pravetz );
   mon_freesyms( &oric->romsyms );
@@ -1856,9 +2121,9 @@ void shut_machine( struct machine *oric )
   mon_freesyms( &oric->tele_banksyms[5] );
   mon_freesyms( &oric->tele_banksyms[6] );
   mon_freesyms( &oric->tele_banksyms[7] );
+#endif
 }
 
-void shut( void );
 void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
 {
   if( oric->drivetype == type )
@@ -1876,6 +2141,7 @@ void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
   switch( type )
   {
     case DRV_MICRODISC:
+    case DRV_BD500:
     case DRV_JASMIN:
     case DRV_PRAVETZ:
         oric->drivetype = type;
@@ -1886,10 +2152,15 @@ void setdrivetype( struct machine *oric, struct osdmenuitem *mitem, int type )
       break;
   }
 
+#ifndef WWW_NO_MONITOR
   mon_state_reset( oric );
+#endif
   if( !init_machine( oric, oric->type, SDL_FALSE ) )
   {
-    shut();
+    shut( oric );
+#ifdef __ANDROID__
+    error_printf("'init_machine' failed");
+#endif
     exit( EXIT_FAILURE );
   }
 
@@ -1915,10 +2186,15 @@ void swapmach( struct machine *oric, struct osdmenuitem *mitem, int which )
   /* Wipe it to prevent garbage. */
   clear_textzone( oric, TZ_DISK );
 
+#ifndef WWW_NO_MONITOR
   mon_state_reset( oric );
+#endif
   if( !init_machine( oric, which, which!=oric->type ) )
   {
-    shut();
+    shut( oric );
+#ifdef __ANDROID__
+    error_printf("'init_machine' failed");
+#endif
     exit( EXIT_FAILURE );
   }
 }

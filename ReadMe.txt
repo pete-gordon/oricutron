@@ -1,7 +1,7 @@
 Oricutron 1.2
 -------------
 
-(c)2009-2014 Peter Gordon (pete@petergordon.org.uk)
+(c)2009-2014 Peter Gordon (pete@gordon.plus)
 
 This is a work in progress.
 
@@ -14,7 +14,7 @@ Current status
   AY:    99% done.
   Video: 100% done
   Tape:  99% done (.TAP, .ORT and .WAV supported)
-  Disk:  Reading/Writing sectors works. No track read/write.
+  Disk:  90% done (single-density mode not supported)
 
 
 
@@ -37,6 +37,7 @@ Credits
   Kamel Biskri
   Iss
   Christian from defence-force forum
+  Cedric Paille
 
 
   Amiga & Windows ports
@@ -146,6 +147,8 @@ Here are all the options:
 
                        "microdisc" or "m" for Microdisc
                        "jasmin" or "j" for Jasmin
+                       "bd500" or "b" for ByteDrive BD-500
+                       "pravetz" or "p" for Pravetz-8D FDC
 
   -s / --symbols     = Load symbols from a file
   -f / --fullscreen  = Run oricutron fullscreen
@@ -224,6 +227,7 @@ Keys
   F12      - Paste (BeOS, Linux & Windows)
   Help     - Show guide (Amiga, MorphOS and AROS)
   AltGr    - Additional modifier
+  PrtSc    - Save screen as BMP
 
 
   In menus
@@ -242,7 +246,7 @@ Keys
   F1      - Go to the menu
   F2      - Return to the emulator
   F3      - Toggle console/debug output/memwatch
-  F4      - Toggle VIA/AY/disk information
+  F4      - Toggle VIA/AY/disk information/Twilighte board registers
   F9      - Reset cycle count
   F10     - Step over code
   F11     - Step over code without tracing into
@@ -285,15 +289,20 @@ Commands:
   bcm <bp id>           - Clear mem breakpoint
   bl                    - List breakpoints
   blm                   - List mem breakpoints
-  bs <addr> [zc]        - Set breakpoint
+  bs <addr> [zct]       - Set breakpoint
   bsm <addr> [rwc]      - Set mem breakpoint
   bz                    - Zap breakpoints
   bzm                   - Zap mem breakpoints
   d <addr>              - Disassemble
-  df <addr> <end> <file>- Disassemble to file
+  fd <addr> <end> <file>- Disassemble to file
+  fw <addr> <len> <file>- Write mem to BIN file
+  fr <addr> <file>      - Read BIN file to mem
   m <addr>              - Dump memory
   mm <addr> <value>     - Modify memory
   mw <addr>             - Memory watch at addr
+  ms <value>            - Search value in RAM memory
+  mr <value>            - Refine search with new value
+  mp                    - Print memory search addresses
   nl <file>             - Load snapshot
   ns <file>             - Save snapshot
   r <reg> <val>         - Set <reg> to <val>
@@ -306,25 +315,27 @@ Commands:
   sl <file>             - Load user symbols
   sx <file>             - Export user symbols
   sz                    - Zap user symbols
-  wm <addr> <len> <file>- Write mem to disk
 
 
 
 Breakpoints
 ===========
 
-There are two types of breakpoints. "Normal" breakpoints trigger when the CPU
+There are two types of breakpoint. "Normal" breakpoints trigger when the CPU
 is about to execute an instruction at the breakpoint address. "Memory" breakpoints
 trigger when the breakpoint address is accessed or modified.
 
-Normal breakpoints can use 'z' and/or 'c' modifiers.
+Normal breakpoints can use 'z','c' and 't' modifiers.
 bs $0c00           <-- Break when the CPU is about to execute code at $0c00
 bs $0c00 z         <-- Break when the CPU is about to execute code at $0c00
                        and set cycles counter to 0
 bs $0c00 zc        <-- Set cycles counter to 0 and continues
 bs $0c00 c         <-- Continues execution (i.e. disabled breakpoint)
+bs $0c00 zct       <-- Prints in console current counter,
+                       set cycles counter to 0 and continues
 
-Main purpose of this modifiers is to make cycle counting easier.
+
+The main purpose of these modifiers is to make cycle counting easier.
 If symbols are loaded, they can be used instead of absolute addresses.
 
 There are three ways a memory breakpoint can be triggered; when the CPU is about
@@ -350,7 +361,7 @@ and macOS. The best way to cope with them is to install an UK or US
 keyboard definition and to switch to it *before* starting oricutron.
 
 Under macOS you can do that in the "System Preferences", "Keyboard", "Input
-sources". Click on the + and search for the UK or US keyboard.
+Sources". Click on the + and search for the UK or US keyboard.
 
 Under Ubuntu you can do that in the System menu, select Preferences, and
 then select Keyboard. In the Keyboard Preferences dialog, select the
@@ -394,7 +405,7 @@ Oricutron can emulate ACIA at address #31C (standard address for Telestrat).
 The emulation works for Oric, Atmos, Telestrat and Pravetz and can be used
 together with any disk type.
 
-The emulated ACIA communicates with the out-side world trough back-ends.
+The emulated ACIA communicates with the out-side world through back-ends.
 Back-ends can be configured from 'oricutron.cfg' or from command line
 (see default 'oricutron.cfg' for usage).
 
@@ -404,7 +415,7 @@ Back-ends are:
 - com       - Oricutron uses any real or virtual COM port in the host machine and communicates with the hardware attached to this serial port
 - modem     - unites ACIA with attached modem linked to internet with server and client sockets
 
-In 'modem' mode are available folowing 'AT' commands:
+In 'modem' mode are available following 'AT' commands:
 AT          - returns 'OK'
 ATZ         - initialize the modem
 AT&F        - initialize the modem
@@ -432,7 +443,7 @@ emulation: contact Jede (jede@oric.org). Because this emulation is used
 also in ACE emulator (cpc emulation). Offset and me are trying to keep the
 same emulation. It's easier to work together than alone.
 
-CH376 command emulated :
+CH376 command emulated:
 - CH376_CMD_GET_IC_VER
 - CH376_CMD_CHECK_EXIST
 - CH376_CMD_SET_USB_MODE
@@ -453,18 +464,59 @@ CH376 command emulated :
 - CH376_CMD_BYTE_WR_GO
 - CH376_CMD_DISK_QUERY
 - CH376_CMD_DIR_CREATE (not emulated under linux)
-- CH376_CMD_DISK_RD_GO 
+- CH376_CMD_DISK_RD_GO
 
-Known bug :
-Under windows, API's file does not send "." and ".." entries when we read the content on the folder. It's a problem because ch376 chip send these 
+Known bug:
+Under windows, API's file does not send "." and ".." entries when we read the content on the folder. It's a problem because ch376 chip send these
 entries, when we ask to this chip to read the content of a directory.
 
-If someone wants to emulate CH376_CMD_DIR_CREATE and CH376_CMD_FILE_ERASE. It's easy to do : it justs need to copy WIN32 function and replace DeleteFile
+If someone wants to emulate CH376_CMD_DIR_CREATE and CH376_CMD_FILE_ERASE. It's easy to do: it just needs to copy WIN32 function and replace DeleteFile
  and CreateDir with rm() and mkdir(). But it's not done because we are not able to test it.
 
-CH376 emulation added for :
+CH376 emulation added for:
 CH376_CMD_FILE_ERASE suppress a file
 CH376_CMD_DIR_CREATE create folder
+
+Twilighte board emulation
+=========================
+
+The twilighte board is working on atmos (and Oric-1). It disables internal Oric ROM and add 64 banks (by bank switching).
+It adds 32 banks of ROM (eeprom) and 32 banks of RAM (Static RAM saved with a battery).
+EEprom can be programmed from Orix command line.
+The board handles ch376 (sdcard/usbdrive/usb/hid controller).
+And the board adds 2 joysticks ports.
+
+The emulation, for instance, handles 32 ROM banks and 32 RAM banks. It emulates this bank switching.
+
+Board is working with a cumulus. Anyway, this part is not emulated and you need to switch to Telestrat mode to have this behavior.
+
+Anyway, on Telestrat, orix can start floppy disk because FDC is present.
+
+Not emulated parts:
+* eeprom programming sequence
+* loading ROM into RAM bank (which could emulate RAM saved with battery)
+* save on disk any modification into RAM bank (which could emulate RAM saved with battery)
+* ch376 is not fully supported in the emulation mode. There is a lot of others functionalities which are missing on ch376 emulation
+* firmware 2 of the board. Only firmware 1 of the board is supported
+
+To activate the plugin, you must activate twilighte_board option in oricutron.cfg
+
+Update twilighte.cfg plugin in plugins/twilighte_card/twilighte.cfg if you want to load others roms.
+
+In order to start at least, minimal configuration, kernel.rom must be set in twilbankrom07 and shell.rom in twilbankrom05.
+
+Last roms can be found here: http://repo.orix.oric.org/dists/official/tgz/6502/
+* kernel.tgz contains kernel.rom
+* shell.tgz contains shell.rom
+
+Under linux, sdcard folder and/or usbdrive folder must have uppercase filenames or else, no binaries can be started. You can mount a fat32 filesystem in sdcard or usbdrive.
+
+Filenames must be in uppercase, because usb chip manage by default FAT32 filesystem.
+
+For basic11 rom which handles joysticks and .tap load from sdcard or usbdrive, you have to download basic.tgz here: http://repo.orix.oric.org/dists/official/tgz/6502/
+And you need to replace twilbankrom06 with the rom in basic11.tgz. 
+
+Oricutron is provided with kernel (Orix) and shell (Orix) v2022.1 roms. For updates, see http://repo.orix.oric.org/dists/official/tgz/6502/
 
 
 ROM patch files
@@ -472,7 +524,7 @@ ROM patch files
 
 For detailed usage see included '.pch' files in roms subdirectory.
 
-Additionaly unlimited number of binary patches can be added:
+Additionally unlimited number of binary patches can be added:
 
 $XXXX:00112233445566778899AABBCCDDEEFF....
 $YYYY:AA55AA55....

@@ -1,6 +1,6 @@
-/* $VER: ReadMe2Guide 0.7 $
+/* $VER: ReadMe2Guide 1.0 $
  * Convert simple ReadMe file to AmigaGuide
- * © Stefan Haubenthal 2010-2014
+ * © Stefan Haubenthal 2010-2019
  * rx ReadMe2Guide <foo.txt >foo.guide foo.guide 1.0
  */
 
@@ -26,8 +26,9 @@ do until eof(stdin)
 		prevnode=last
 	end
 	/* escape at-sign */
-	if pos("@", last)>0 then
-		say insert("\", last, pos("@", last)-1)
+	a=pos("@", last)
+	if a>0 then
+		say insert("\", last, a-1)
 	else
 		/* *bold* */
 		do

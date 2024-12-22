@@ -146,7 +146,13 @@ void acia_init( struct acia *acia, struct machine *oric )
 #endif
     case ACIA_TYPE_NONE:
     default:
-      acia_init_none( acia );
+      if ( oric->type == MACH_TELESTRAT )
+      {
+        oric->aciabackend = ACIA_TYPE_LOOPBACK;
+        acia_init_loopback( acia );
+      }
+      else
+        acia_init_none( acia );
       break;
   }
 }
