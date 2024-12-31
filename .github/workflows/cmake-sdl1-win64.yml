@@ -1,6 +1,6 @@
 name: Oricutron Release on windows-latest - cmake SDL1
 
-on: [push]
+on: workflow_dispatch 
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
