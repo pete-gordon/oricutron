@@ -84,7 +84,7 @@ FILEREQ_OBJ = filereq_sdl.o
 MSGBOX_OBJ = msgbox_sdl.o
 EXTRAOBJS =
 CUSTOMOBJS =
-PKGDIR = Oricutron_$(PLATFORM)_v$(VERSION_MAJ)$(VERSION_MIN)
+PKGDIR = build/Oricutron_$(PLATFORM)_v$(VERSION_MAJ)$(VERSION_MIN)
 DOCFILES = ReadMe.txt oricutron.cfg ChangeLog.txt
 
 ####### PLATFORM DETECTION HERE #######
