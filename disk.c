@@ -168,7 +168,9 @@ static struct diskimage *diskimage_alloc( Uint32 rawimglen )
   {
     // FIXME: this is temporary solution to allow
     // low-level formatting up to 128 track per side
-    if( rawimglen < 128*2*6400+256 ) rawimglen = 128*2*6400+256;
+    if( 143360 != rawimglen && rawimglen < 128*2*6400+256 )
+      rawimglen = 128*2*6400+256;
+
     buf = malloc( rawimglen );
     if( !buf ) return NULL;
   }
