@@ -1,4 +1,4 @@
-﻿Oricutron 1.2
+Oricutron 1.2
 -------------
 
 (c)2009-2014 Peter Gordon (pete@gordon.plus)

@@ -18,13 +18,13 @@ msvc/**/Oricutron.psess
 msvc/**/*.user
 msvc/**/vcpkg
 build/**
-Oricutron
-Oricutron-sdl2.exe
-Oricutron.exe
 SDL.dll
 SDL2.dll
 disks/*.dsk
 pravdisks/*.dsk
 teledisks/*.dsk
-Oricutron-sdl2
 oricutron
+Oricutron
+Oricutron-sdl2
+Oricutron.exe
+Oricutron-sdl2.exe
