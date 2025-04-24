@@ -4,26 +4,27 @@ Release/
 x64/
 *.d
 *.o
-/msvc/**/Debug clang
-/msvc/**/Release clang
-/msvc/**/images
-/msvc/**/oricutron.cfg
-/msvc/**/roms
-/msvc/**/sdl
-/msvc/**/sdl2
-/roms/*.rom
-/roms/orix*.rom
-/oricutron.aps
-/msvc/**/Oricutron.psess
-/msvc/**/*.user
-/msvc/**/vcpkg
-build
-/Oricutron
-/Oricutron-sdl2.exe
-/Oricutron.exe
-/SDL.dll
-/SDL2.dll
-/disks/*.dsk
-/pravdisks/*.dsk
-/teledisks/*.dsk
-/Oricutron-sdl2
+msvc/**/Debug clang
+msvc/**/Release clang
+msvc/**/images
+msvc/**/oricutron.cfg
+msvc/**/roms
+msvc/**/sdl
+msvc/**/sdl2
+roms/*.rom
+roms/orix*.rom
+oricutron.aps
+msvc/**/Oricutron.psess
+msvc/**/*.user
+msvc/**/vcpkg
+build/**
+Oricutron
+Oricutron-sdl2.exe
+Oricutron.exe
+SDL.dll
+SDL2.dll
+disks/*.dsk
+pravdisks/*.dsk
+teledisks/*.dsk
+Oricutron-sdl2
+oricutron
