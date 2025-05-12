@@ -10,6 +10,7 @@
 # PLATFORM = lin-64
 # PLATFORM = linux
 # PLATFORM = linux-nogl
+# PLATFORM = linux-native
 # PLATFORM = mint
 # PLATFORM = mint-cf
 # PLATFORM = morphos
@@ -378,6 +379,25 @@ MSGBOX_OBJ = msgbox_gtk.o
 endif
 CFLAGS += -g $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --cflags) -D__OPENGL_AVAILABLE__ -DAUDIO_BUFLEN=1024 -D__CBCOPY__ -D__CBPASTE__
 LFLAGS += -lm -L/usr/$(BASELIBDIR) $(shell PKG_CONFIG_PATH=/usr/$(BASELIBDIR)/pkgconfig pkg-config $(SDL_LIB) --libs) -lGL -lX11
+CUSTOMOBJS = gui_x11.o
+EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o
+TARGET = oricutron
+INSTALLDIR = /usr/local
+endif
+
+# Linux Native
+ifeq ($(PLATFORM),linux-native)
+CFLAGS +=
+LFLAGS +=
+STRIP :=  $(CROSS_COMPILE)$(STRIP)
+ifeq ($(NOGTK),)
+CFLAGS += $(shell pkg-config gtk+-3.0 --cflags)
+LFLAGS += $(shell pkg-config gtk+-3.0 --libs)
+FILEREQ_OBJ = filereq_gtk.o
+MSGBOX_OBJ = msgbox_gtk.o
+endif
+CFLAGS += -g $(shell pkg-config $(SDL_LIB) --cflags) -D__OPENGL_AVAILABLE__ -DAUDIO_BUFLEN=1024 -D__CBCOPY__ -D__CBPASTE__
+LFLAGS += -lm $(shell pkg-config $(SDL_LIB) --libs) -lGL -lX11
 CUSTOMOBJS = gui_x11.o
 EXTRAOBJS = oric_ch376_plugin.o ch376.o oric_twilighte_board_plugin.o
 TARGET = oricutron
