@@ -113,8 +113,12 @@ struct mfmsector
 struct diskimage
 {
   Sint16   drivenum;              // The drive this disk is inserted into, or -1
-  Uint32   numtracks;             // Number of tracks per side
   Uint32   numsides;              // Number of sides in the image
+  Uint32   numtracks;             // Number of tracks per side
+  Uint32   numsides_in;           // Number of sides in the image on input
+  Uint32   numtracks_in;          // Number of tracks per side on input
+  Uint32   numsides_out;          // Number of sides in the image on output
+  Uint32   numtracks_out;         // Number of tracks per side on output
   Uint32   geometry;              // Geometry. I don't know what this is.
   Sint16   cachedtrack;           // Currently cached track (or -1 for none)
   Sint16   cachedside;            // Currently cached side (or -1 for none)
