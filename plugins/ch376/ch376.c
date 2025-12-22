@@ -1474,7 +1474,7 @@ static CH376_S32 system_get_file_offset(CH376_CONTEXT *context, CH376_FILE file)
     {
         file_offset = ftell(file);
 
-	if(file_offset == -1)
+        if(file_offset == -1)
         {
            dbg_printf("system_get_file_offset: error\n");
         }
@@ -1495,19 +1495,21 @@ static CH376_S32 system_get_file_offset(CH376_CONTEXT *context, CH376_FILE file)
 
 static char *clone_string(const char *string)
 {
-    int l;
-    char *s;
+    // int l;
+    // char *s;
+    //
+    // for(l=0; string[l]!='\0'; l++);
+    //
+    // s = system_alloc_mem(l);
+    //
+    // for(l=0; string[l]!='\0'; l++)
+    //     s[l] = string[l];
+    //
+    // s[l] = '\0';
 
-    for(l=0; string[l]!='\0'; l++);
+    // return s;
 
-    s = system_alloc_mem(l);
-
-    for(l=0; string[l]!='\0'; l++)
-        s[l] = string[l];
-
-    s[l] = '\0';
-
-    return s;
+    return strdup(string);
 }
 
 static void clear_structure(struct ch376 *ch376)
@@ -2478,7 +2480,7 @@ void ch376_write_data_port(struct ch376 *ch376, CH376_U8 data)
             ch376->interface_status = 127;
             ch376->command_status = CH376_INT_SUCCESS;
         }
-	else if(data == CH376_VAR_CURRENT_OFFSET)
+        else if(data == CH376_VAR_CURRENT_OFFSET)
         {
             CH376_S32 file_offset = system_get_file_offset(&ch376->context, ch376->current_file);
 

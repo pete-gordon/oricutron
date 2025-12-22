@@ -556,7 +556,8 @@ SDL_bool diskimage_load( struct machine *oric, char *fname, int drive )
         uint8_t* dst = oric->wddisk.disk[drive]->rawimage + 256+128*6400;
         memmove(dst,src,size);
         // Clear the reallocated space
-        memset(src+size,0x00,128*6400-size);
+        // NOTE: Cleared space is unformatted
+        memset(src,0x00,dst-src);
       }
     }
   }

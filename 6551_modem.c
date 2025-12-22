@@ -611,7 +611,7 @@ static int socket_bind(int sock, int port, int domain)
   sprintf(service, "%d", port);
 
   if ( (n = getaddrinfo(NULL, service, &hints, &res)) != 0)  {
-    printf("socket_bind, getaddrinfo error: %s", gai_strerror(n));
+    fprintf(stderr, "socket_bind, getaddrinfo error: %s\n", gai_strerror(n));
     return 0;
   }
   ressave = res;
@@ -742,7 +742,7 @@ static int socket_connect(int sock, const char* host, int port, int domain)
   sprintf(service, "%d", port);
 
   if ( (n = getaddrinfo(host, service, &hints, &res)) != 0)  {
-    printf("socket_connect, getaddrinfo error: %s", gai_strerror(n));
+    fprintf(stderr, "socket_connect, getaddrinfo error: %s\n", gai_strerror(n));
     return 0;
   }
   ressave = res;
