@@ -90,7 +90,7 @@ static struct keyjoydef keyjoytab[] = { { "BACKSPACE",   SDLK_BACKSPACE },
                                         { NULL,          0 } };
 
 static SDL_bool joysubinited = SDL_FALSE;
-Uint8 joystate_a[7], joystate_b[7];
+Uint8 joystate_a[JOYSTATE_LAST], joystate_b[JOYSTATE_LAST];
 
 static SDL_bool is_real_joystick( Sint16 joymode )
 {
@@ -119,6 +119,33 @@ static void close_joysticks( struct machine *oric )
     SDL_JoystickEventState( SDL_FALSE );
   }
 }
+
+
+// Returns the type of controller.
+// Most of the code should be controller agnostic, but in certain cases it can be useful to know more precisely which controller is used.
+// Typical example would be the handling of additional or non standard buttons and axis.
+Uint8 get_joystick_type(SDL_Joystick* joystick)
+{
+  if (joystick)
+  {
+    const char* joy_name = SDL_JoystickName(joystick);
+    if (joy_name)
+    {
+      //
+      // Examples of strings returned by SDL_JoystickName:
+      // - "DualSense Wireless Controller"
+      // - "SPEED-LINK Competition Pro" (USB variant of the old four direction joystick, that one has many more buttons)
+      //
+      if (strcmp(joy_name, "DualSense Wireless Controller") == 0)
+      {
+        return JOYTYPE_DUALSENSE;
+      }
+      return JOYTYPE_DEFAULT;
+    }
+  }
+  return JOYTYPE_NONE;
+}
+
 
 // Return an SDL keysym corresponding to the specified name (or 0)
 SDL_COMPAT_KEY joy_keyname_to_sym( char *name )
@@ -163,7 +190,7 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
       SDL_COMPAT_KEY *kbtab = mode == JOYMODE_KB1? oric->kbjoy1 : oric->kbjoy2;
       int st = ev->type == SDL_KEYDOWN? 1 : 0;
       int i;
-      for( i=0; i<7; i++ )
+      for( i=0; i< JOYSTATE_LAST; i++ )
       {
         if( ev->key.keysym.sym == kbtab[i] )
         {
@@ -187,54 +214,129 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
     case JOYMODE_SDL9:
       if( !sjoy ) return SDL_FALSE;
 
+      //
+      // The way the controllers report the 4 direction digital values can change:
+      // - Some will report them as a set if two SDL_JOYAXISMOTION (one for horizontal movement and one for vertical movement)
+      // - Some will instead report them as SDL_JOYHATMOTION using a bit field to indicate which directions are set
+      // - And some (like the Sony DualSense) report them as SDL_JOYBUTTONDOWN/SDL_JOYBUTTONUP events
+      //
+      // The current SDL implementation is using the Joystick API, which unfortunately does not know much about the various controllers.
+      // Ideally this code should be revamped to use the SDL GameController API (see the article at https://blog.rubenwardy.com/2023/01/24/using_sdl_gamecontroller/ for an example),
+      // but that require a significant amount of changes are would have to be tested extensively to make sure it works properly in every situation.
+      //
       switch( ev->type )
       {
-        case SDL_JOYAXISMOTION:
-          if( ev->jaxis.which != (mode-JOYMODE_SDL0) ) return SDL_FALSE;
-          swallowit = SDL_TRUE;
-          switch( ev->jaxis.axis )
-          {
-            case 0: // left/right
-              if( ev->jaxis.value < -3200 )
-              {
-                joystate[2] = 1;  // left
-                joystate[3] = 0;
-              } else if( ev->jaxis.value > 3200 ) {
-                joystate[2] = 0;  // right
-                joystate[3] = 1;
-              } else {
-                joystate[2] = 0;
-                joystate[3] = 0;
-              }
-              break;
+      case SDL_JOYHATMOTION:
+        if(ev->jhat.which != (mode-JOYMODE_SDL0) ) return SDL_FALSE;
+        swallowit = SDL_TRUE;
 
-            case 1: // up/down
-              if( ev->jaxis.value < -3200 )
-              {
-                joystate[0] = 1;  // up
-                joystate[1] = 0;
-              } else if( ev->jaxis.value > 3200 ) {
-                joystate[0] = 0;  // down
-                joystate[1] = 1;
-              } else {
-                joystate[0] = 0;
-                joystate[1] = 0;
-              }
-              break;
+        joystate[JOYSTATE_UP]    = (ev->jhat.value & SDL_HAT_UP) ? 1 : 0;
+        joystate[JOYSTATE_DOWN]  = (ev->jhat.value & SDL_HAT_DOWN) ? 1 : 0;
+        joystate[JOYSTATE_LEFT]  = (ev->jhat.value & SDL_HAT_LEFT) ? 1 : 0;
+        joystate[JOYSTATE_RIGHT] = (ev->jhat.value & SDL_HAT_RIGHT) ? 1 : 0;
+        break;
+
+      case SDL_JOYAXISMOTION:
+        if( ev->jaxis.which != (mode-JOYMODE_SDL0) ) return SDL_FALSE;
+        swallowit = SDL_TRUE;
+
+        switch (ev->jaxis.axis)
+        {
+        case 0: // left/right
+        case 2: // secondary analog stick on modern controllers
+          if( ev->jaxis.value < -AXIS_THRESHOLD )
+          {
+            joystate[JOYSTATE_LEFT] = 1;  // left
+            joystate[JOYSTATE_RIGHT] = 0;
+          }
+          else if( ev->jaxis.value > AXIS_THRESHOLD )
+          {
+            joystate[JOYSTATE_LEFT] = 0;  // right
+            joystate[JOYSTATE_RIGHT] = 1;
+          }
+          else
+          {
+            joystate[JOYSTATE_LEFT] = 0;
+            joystate[JOYSTATE_RIGHT] = 0;
           }
           break;
 
-        case SDL_JOYBUTTONDOWN:
-          if( ev->jbutton.which != (mode-JOYMODE_SDL0) ) return SDL_FALSE;
-          joystate[4+(ev->jbutton.button % 3)] = 1;
-          swallowit = SDL_TRUE;
+        case 1: // up/down
+        case 3: // secondary analog stick on modern controllers
+          if( ev->jaxis.value < -AXIS_THRESHOLD )
+          {
+            joystate[JOYSTATE_UP] = 1;  // up
+            joystate[JOYSTATE_DOWN] = 0;
+          }
+          else if(ev->jaxis.value > AXIS_THRESHOLD )
+          {
+            joystate[JOYSTATE_UP] = 0;  // down
+            joystate[JOYSTATE_DOWN] = 1;
+          }
+          else
+          {
+            joystate[JOYSTATE_UP] = 0;
+            joystate[JOYSTATE_DOWN] = 0;
+          }
           break;
 
-        case SDL_JOYBUTTONUP:
-          if( ev->jbutton.which != (mode-JOYMODE_SDL0) ) return SDL_FALSE;
-          joystate[4+(ev->jbutton.button % 3)] = 0;
-          swallowit = SDL_TRUE;
+        case 4: // analog trigger on modern controllers
+        case 5: // analog trigger on modern controllers
+          // Trigger a fire action if the analog value passes over the threshold
+          joystate[JOYSTATE_FIRE1] = (ev->jaxis.value > AXIS_THRESHOLD) ? 1 : 0;
           break;
+
+        default:
+          break;
+        }
+        break;
+
+      case SDL_JOYBUTTONDOWN:
+      {
+        if( ev->jbutton.which != (mode-JOYMODE_SDL0) ) return SDL_FALSE;
+        if( ( joystate[JOYSTATE_TYPE] == JOYTYPE_DUALSENSE ) &&
+            ( (ev->jbutton.button>=11) && (ev->jbutton.button<=14) ) )
+        {
+          // Specific code path for the Sony PS5 DualSense d-pad
+          switch( ev->jbutton.button )
+          {
+          case 11: joystate[JOYSTATE_UP]    = 1; break;  // Up
+          case 12: joystate[JOYSTATE_DOWN]  = 1; break;  // Down
+          case 13: joystate[JOYSTATE_LEFT]  = 1; break;  // Left
+          case 14: joystate[JOYSTATE_RIGHT] = 1; break;  // Right
+          }
+        }
+        else
+        {
+          // Standard code path to handle button press on most controllers
+          joystate[JOYSTATE_FIRE1 + (ev->jbutton.button % 3)] = 1;
+        }
+        swallowit = SDL_TRUE;
+      }
+
+        break;
+
+      case SDL_JOYBUTTONUP:
+        if( ev->jbutton.which != (mode-JOYMODE_SDL0) ) return SDL_FALSE;
+        if( ( joystate[JOYSTATE_TYPE] == JOYTYPE_DUALSENSE ) &&
+            ( (ev->jbutton.button >= 11) && (ev->jbutton.button <= 14) ) )
+        {
+          // Specific code path for the Sony PS5 DualSense d-pad
+          switch( ev->jbutton.button )
+          {
+          case 11: joystate[JOYSTATE_UP]    = 0; break;  // Up
+          case 12: joystate[JOYSTATE_DOWN]  = 0; break;  // Down
+          case 13: joystate[JOYSTATE_LEFT]  = 0; break;  // Left
+          case 14: joystate[JOYSTATE_RIGHT] = 0; break;  // Right
+          }
+        }
+        else
+        {
+          // Standard code path to handle button release on most controllers
+          joystate[JOYSTATE_FIRE1 + (ev->jbutton.button % 3)] = 0;
+        }
+        swallowit = SDL_TRUE;
+        break;
       }
       break;
   }
@@ -261,14 +363,14 @@ void joy_buildmask( struct machine *oric )
     if ( twilighteboard_joysel & 0x80 )
     {
       // Right Port
-      if( joystate_a[0] ) mkmask &= 0xef;
-      if( joystate_a[1] ) mkmask &= 0xf7;
-      if( joystate_a[2] ) mkmask &= 0xfd;
-      if( joystate_a[3] ) mkmask &= 0xfe;
-      if( joystate_a[4] ) mkmask &= 0xfb;
+      if( joystate_a[JOYSTATE_UP] )    mkmask &= 0xef;
+      if( joystate_a[JOYSTATE_DOWN] )  mkmask &= 0xf7;
+      if( joystate_a[JOYSTATE_LEFT] )  mkmask &= 0xfd;
+      if( joystate_a[JOYSTATE_RIGHT] ) mkmask &= 0xfe;
+      if( joystate_a[JOYSTATE_FIRE1] ) mkmask &= 0xfb;
 
-      if( joystate_a[5] ) mkmask_f &= 0x7f;  // PA7 - fire 2
-      if( joystate_a[6] ) mkmask_f &= 0xdf;  // PA5 - fire 3
+      if( joystate_a[JOYSTATE_FIRE2] ) mkmask_f &= 0x7f;  // PA7 - fire 2
+      if( joystate_a[JOYSTATE_FIRE3] ) mkmask_f &= 0xdf;  // PA5 - fire 3
 
       gimme_port_a = SDL_TRUE;
       gimme_port_b = SDL_TRUE;
@@ -277,11 +379,11 @@ void joy_buildmask( struct machine *oric )
     if ( twilighteboard_joysel & 0x40 )
     {
       // Left Port
-      if( joystate_b[0] ) mkmask &= 0xef;  // 0x10  - up
-      if( joystate_b[1] ) mkmask &= 0xf7;  // 0x08  - down
-      if( joystate_b[2] ) mkmask &= 0xfd;  // 0x02  - left
-      if( joystate_b[3] ) mkmask &= 0xfe;  // 0x01  - right
-      if( joystate_b[4] ) mkmask &= 0xfb;  // 0x04  - fire
+      if( joystate_b[JOYSTATE_UP] )    mkmask &= 0xef;  // 0x10  - up
+      if( joystate_b[JOYSTATE_DOWN] )  mkmask &= 0xf7;  // 0x08  - down
+      if( joystate_b[JOYSTATE_LEFT] )  mkmask &= 0xfd;  // 0x02  - left
+      if( joystate_b[JOYSTATE_RIGHT] ) mkmask &= 0xfe;  // 0x01  - right
+      if( joystate_b[JOYSTATE_FIRE1] ) mkmask &= 0xfb;  // 0x04  - fire
       gimme_port_b = SDL_TRUE;
     }
 
@@ -301,14 +403,14 @@ void joy_buildmask( struct machine *oric )
     if ( telestrat_joysel & 0x80 )
     {
       // Right Port
-      if( joystate_a[0] ) mkmask &= 0xef;
-      if( joystate_a[1] ) mkmask &= 0xf7;
-      if( joystate_a[2] ) mkmask &= 0xfd;
-      if( joystate_a[3] ) mkmask &= 0xfe;
-      if( joystate_a[4] ) mkmask &= 0xfb;
+      if( joystate_a[JOYSTATE_UP] )    mkmask &= 0xef;
+      if( joystate_a[JOYSTATE_DOWN] )  mkmask &= 0xf7;
+      if( joystate_a[JOYSTATE_LEFT] )  mkmask &= 0xfd;
+      if( joystate_a[JOYSTATE_RIGHT] ) mkmask &= 0xfe;
+      if( joystate_a[JOYSTATE_FIRE1] ) mkmask &= 0xfb;
 
-      if( joystate_a[5] ) mkmask_f &= 0x7f;  // PA7 - fire 2
-      if( joystate_a[6] ) mkmask_f &= 0xdf;  // PA5 - fire 3
+      if( joystate_a[JOYSTATE_FIRE2] ) mkmask_f &= 0x7f;  // PA7 - fire 2
+      if( joystate_a[JOYSTATE_FIRE3] ) mkmask_f &= 0xdf;  // PA5 - fire 3
 
       gimme_port_a = SDL_TRUE;
       gimme_port_b = SDL_TRUE;
@@ -317,11 +419,11 @@ void joy_buildmask( struct machine *oric )
     if ( telestrat_joysel & 0x40 )
     {
       // Left Port
-      if( joystate_b[0] ) mkmask &= 0xef;  // 0x10  - up
-      if( joystate_b[1] ) mkmask &= 0xf7;  // 0x08  - down
-      if( joystate_b[2] ) mkmask &= 0xfd;  // 0x02  - left
-      if( joystate_b[3] ) mkmask &= 0xfe;  // 0x01  - right
-      if( joystate_b[4] ) mkmask &= 0xfb;  // 0x04  - fire
+      if( joystate_b[JOYSTATE_UP] )    mkmask &= 0xef;  // 0x10  - up
+      if( joystate_b[JOYSTATE_DOWN] )  mkmask &= 0xf7;  // 0x08  - down
+      if( joystate_b[JOYSTATE_LEFT] )  mkmask &= 0xfd;  // 0x02  - left
+      if( joystate_b[JOYSTATE_RIGHT ]) mkmask &= 0xfe;  // 0x01  - right
+      if( joystate_b[JOYSTATE_FIRE1 ]) mkmask &= 0xfb;  // 0x04  - fire
       gimme_port_b = SDL_TRUE;
     }
 
@@ -342,21 +444,25 @@ void joy_buildmask( struct machine *oric )
       case JOYIFACE_ALTAI:
         if( joysel & 0x80 )
         {
-          if( joystate_a[0] ) mkmask &= 0xef;
-          if( joystate_a[1] ) mkmask &= 0xf7;
-          if( joystate_a[2] ) mkmask &= 0xfe;
-          if( joystate_a[3] ) mkmask &= 0xfd;
-          if( joystate_a[4] ) mkmask &= 0xdf;
+          if( joystate_a[JOYSTATE_UP] )     mkmask &= 0xef;
+          if( joystate_a[JOYSTATE_DOWN] )   mkmask &= 0xf7;
+          if( joystate_a[JOYSTATE_LEFT] )   mkmask &= 0xfe;
+          if( joystate_a[JOYSTATE_RIGHT] )  mkmask &= 0xfd;
+          if( joystate_a[JOYSTATE_FIRE1] ||
+              joystate_a[JOYSTATE_FIRE2] ||
+              joystate_a[JOYSTATE_FIRE3] )  mkmask &= 0xdf;
           gimme_port_a = SDL_TRUE;
         }
 
         if( joysel & 0x40 )
         {
-          if( joystate_b[0] ) mkmask &= 0xef; // 0x10  - up
-          if( joystate_b[1] ) mkmask &= 0xf7; // 0x08  - down
-          if( joystate_b[2] ) mkmask &= 0xfe; // 0x01  - left
-          if( joystate_b[3] ) mkmask &= 0xfd; // 0x02  - right
-          if( joystate_b[4] ) mkmask &= 0xdf; // 0x20  - fire
+          if( joystate_b[JOYSTATE_UP] )     mkmask &= 0xef; // 0x10  - up
+          if( joystate_b[JOYSTATE_DOWN] )   mkmask &= 0xf7; // 0x08  - down
+          if( joystate_b[JOYSTATE_LEFT] )   mkmask &= 0xfe; // 0x01  - left
+          if( joystate_b[JOYSTATE_RIGHT] )  mkmask &= 0xfd; // 0x02  - right
+          if( joystate_b[JOYSTATE_FIRE1] ||
+              joystate_b[JOYSTATE_FIRE2] ||
+              joystate_b[JOYSTATE_FIRE3] )  mkmask &= 0xdf; // 0x20  - fire
           gimme_port_a = SDL_TRUE;
         }
         break;
@@ -374,20 +480,24 @@ void joy_buildmask( struct machine *oric )
 
         if( joysel & 0x40 )
         {
-          if( joystate_a[0] ) mkmask &= 0xef;
-          if( joystate_a[1] ) mkmask &= 0xf7;
-          if( joystate_a[2] ) mkmask &= 0xfd;
-          if( joystate_a[3] ) mkmask &= 0xfe;
-          if( joystate_a[4] ) mkmask &= 0xfb;
+          if( joystate_a[JOYSTATE_UP] )     mkmask &= 0xef;
+          if( joystate_a[JOYSTATE_DOWN])    mkmask &= 0xf7;
+          if( joystate_a[JOYSTATE_LEFT])    mkmask &= 0xfd;
+          if( joystate_a[JOYSTATE_RIGHT])   mkmask &= 0xfe;
+          if( joystate_a[JOYSTATE_FIRE1] ||
+              joystate_a[JOYSTATE_FIRE2] ||
+              joystate_a[JOYSTATE_FIRE3] )  mkmask &= 0xfb;
         }
 
         if( joysel & 0x80 )
         {
-          if( joystate_b[0] ) mkmask &= 0xef;  // 0x10  - up
-          if( joystate_b[1] ) mkmask &= 0xf7;  // 0x08  - down
-          if( joystate_b[2] ) mkmask &= 0xfd;  // 0x02  - left
-          if( joystate_b[3] ) mkmask &= 0xfe;  // 0x01  - right
-          if( joystate_b[4] ) mkmask &= 0xfb;  // 0x04  - fire
+          if( joystate_b[JOYSTATE_UP] )     mkmask &= 0xef;  // 0x10  - up
+          if( joystate_b[JOYSTATE_DOWN] )   mkmask &= 0xf7;  // 0x08  - down
+          if( joystate_b[JOYSTATE_LEFT] )   mkmask &= 0xfd;  // 0x02  - left
+          if( joystate_b[JOYSTATE_RIGHT] )  mkmask &= 0xfe;  // 0x01  - right
+          if( joystate_b[JOYSTATE_FIRE1] ||
+              joystate_b[JOYSTATE_FIRE2] ||
+              joystate_b[JOYSTATE_FIRE3] )  mkmask &= 0xfb;  // 0x04  - fire
         }
         break;
     }
@@ -438,11 +548,13 @@ static void dojoysetup( struct machine *oric, Sint16 mode_a, Sint16 mode_b )
 
   close_joysticks( oric );
 
-  for( i=0; i<6; i++ )
+  for( i=0; i< JOYSTATE_LAST; i++ )
   {
     joystate_a[i] = 0;
     joystate_b[i] = 0;
   }
+  joystate_a[JOYSTATE_TYPE] = JOYTYPE_NONE;
+  joystate_b[JOYSTATE_TYPE] = JOYTYPE_NONE;
 
   if( (!is_real_joystick( mode_a )) && (!is_real_joystick( mode_b )) )
     return;
@@ -460,6 +572,7 @@ static void dojoysetup( struct machine *oric, Sint16 mode_a, Sint16 mode_b )
   if( is_real_joystick( mode_a ) )
   {
     oric->sdljoy_a = SDL_JoystickOpen( mode_a - JOYMODE_SDL0 );
+    joystate_a[JOYSTATE_TYPE] = get_joystick_type(oric->sdljoy_a);
     //dbg_printf( "Joy0 = %p", oric->sdljoy_a );
     SDL_JoystickEventState( SDL_TRUE );
   }
@@ -471,6 +584,7 @@ static void dojoysetup( struct machine *oric, Sint16 mode_a, Sint16 mode_b )
       oric->sdljoy_b = oric->sdljoy_a;
     } else {
       oric->sdljoy_b = SDL_JoystickOpen( mode_b - JOYMODE_SDL0 );
+      joystate_b[JOYSTATE_TYPE] = get_joystick_type(oric->sdljoy_b);
       SDL_JoystickEventState( SDL_TRUE );
     }
   }

@@ -19,6 +19,8 @@
 **  Joystick definitions
 */
 
+#define AXIS_THRESHOLD 8000       // How far the user needs to push an analog axis before it triggers a digital impulse. (was previously defined as 3200, but was too sensitive and made it almost impossible to accurately go in one direction)
+
 // Joystick interface types
 enum
 {
@@ -44,6 +46,27 @@ enum
   JOYMODE_SDL8,
   JOYMODE_SDL9,
   JOYMODE_MOUSE
+};
+
+enum
+{
+  JOYSTATE_UP = 0,
+  JOYSTATE_DOWN,
+  JOYSTATE_LEFT,
+  JOYSTATE_RIGHT,
+  JOYSTATE_FIRE1,
+  JOYSTATE_FIRE2,
+  JOYSTATE_FIRE3,
+  JOYSTATE_TYPE,
+  JOYSTATE_LAST
+};
+
+// Hacked joystick detection mode
+enum
+{
+  JOYTYPE_NONE = 0,
+  JOYTYPE_DEFAULT,
+  JOYTYPE_DUALSENSE,
 };
 
 SDL_bool init_joy( struct machine *oric );
