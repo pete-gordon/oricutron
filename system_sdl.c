@@ -628,6 +628,18 @@ void SDL_COMPAT_TakeScreenshot(char *fname)
 #endif
 #endif
 
+#if SDL_MAJOR_VERSION == 1
+const char* SDL_COMPAT_JoystickName(SDL_Joystick *joystick)
+{
+  return NULL;
+}
+#else
+const char* SDL_COMPAT_JoystickName(SDL_Joystick *joystick)
+{
+  return SDL_JoystickName(joystick);
+}
+#endif
+
 // This is an ugly hack for OSX will be removed
 #ifdef __APPLE__
 int32_t __isPlatformVersionAtLeast(int32_t Major, int32_t Minor, int32_t Subminor)

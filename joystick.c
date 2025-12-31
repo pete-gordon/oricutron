@@ -87,6 +87,7 @@ static struct keyjoydef keyjoytab[] = { { "BACKSPACE",   SDLK_BACKSPACE },
                                         { "END",         SDLK_END },
                                         { "PAGEUP",      SDLK_PAGEUP },
                                         { "PAGEDOWN",    SDLK_PAGEDOWN },
+                                        { "NONE",        0 },
                                         { NULL,          0 } };
 
 static SDL_bool joysubinited = SDL_FALSE;
@@ -128,10 +129,10 @@ Uint8 get_joystick_type(SDL_Joystick* joystick)
 {
   if (joystick)
   {
-    const char* joy_name = SDL_JoystickName(joystick);
+    // @iss: SDL_JoystickName unsupported under SDL 1.x - returns NULL
+    const char* joy_name = SDL_COMPAT_JoystickName(joystick);
     if (joy_name)
     {
-      //
       // Examples of strings returned by SDL_JoystickName:
       // - "DualSense Wireless Controller"
       // - "SPEED-LINK Competition Pro" (USB variant of the old four direction joystick, that one has many more buttons)
@@ -166,7 +167,7 @@ SDL_COMPAT_KEY joy_keyname_to_sym( char *name )
   {
     if( strcasecmp( keyjoytab[i].id, name ) == 0 )
     {
-      // dbg_printf("%s => %.8X\n", name, keyjoytab[i].sym);
+      // dbg_printf("%s => %s = %.8X\n", name, keyjoytab[i].id, keyjoytab[i].sym);
       return keyjoytab[i].sym;
     }
   }
@@ -174,7 +175,7 @@ SDL_COMPAT_KEY joy_keyname_to_sym( char *name )
   return 0;
 }
 
-static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Uint8 *joystate, SDL_Joystick *sjoy )
+static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint32 mode, Uint8 *joystate, SDL_Joystick *sjoy )
 {
   SDL_bool swallowit = SDL_FALSE;
 
@@ -188,8 +189,7 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
     case JOYMODE_KB2:
     {
       SDL_COMPAT_KEY *kbtab = mode == JOYMODE_KB1? oric->kbjoy1 : oric->kbjoy2;
-      int st = ev->type == SDL_KEYDOWN? 1 : 0;
-      int i;
+      int i, st = ev->type == SDL_KEYDOWN? 1 : 0;
       for( i=0; i< JOYSTATE_LAST; i++ )
       {
         if( ev->key.keysym.sym == kbtab[i] )
@@ -236,16 +236,16 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
         joystate[JOYSTATE_RIGHT] = (ev->jhat.value & SDL_HAT_RIGHT) ? 1 : 0;
         break;
 
-      case SDL_JOYAXISMOTION:
-        if( ev->jaxis.which != (mode-JOYMODE_SDL0) ) return SDL_FALSE;
-        swallowit = SDL_TRUE;
+        case SDL_JOYAXISMOTION:
+          if( ev->jaxis.which != (mode-JOYMODE_SDL0) ) return SDL_FALSE;
+          swallowit = SDL_TRUE;
 
         switch (ev->jaxis.axis)
-        {
-        case 0: // left/right
+          {
+            case 0: // left/right
         case 2: // secondary analog stick on modern controllers
           if( ev->jaxis.value < -AXIS_THRESHOLD )
-          {
+              {
             joystate[JOYSTATE_LEFT] = 1;  // left
             joystate[JOYSTATE_RIGHT] = 0;
           }
@@ -258,13 +258,13 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
           {
             joystate[JOYSTATE_LEFT] = 0;
             joystate[JOYSTATE_RIGHT] = 0;
-          }
-          break;
+              }
+              break;
 
-        case 1: // up/down
+            case 1: // up/down
         case 3: // secondary analog stick on modern controllers
           if( ev->jaxis.value < -AXIS_THRESHOLD )
-          {
+              {
             joystate[JOYSTATE_UP] = 1;  // up
             joystate[JOYSTATE_DOWN] = 0;
           }
@@ -277,8 +277,8 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
           {
             joystate[JOYSTATE_UP] = 0;
             joystate[JOYSTATE_DOWN] = 0;
-          }
-          break;
+              }
+              break;
 
         case 4: // analog trigger on modern controllers
         case 5: // analog trigger on modern controllers
@@ -288,12 +288,12 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
 
         default:
           break;
-        }
-        break;
+          }
+          break;
 
-      case SDL_JOYBUTTONDOWN:
+        case SDL_JOYBUTTONDOWN:
       {
-        if( ev->jbutton.which != (mode-JOYMODE_SDL0) ) return SDL_FALSE;
+          if( ev->jbutton.which != (mode-JOYMODE_SDL0) ) return SDL_FALSE;
         if( ( joystate[JOYSTATE_TYPE] == JOYTYPE_DUALSENSE ) &&
             ( (ev->jbutton.button>=11) && (ev->jbutton.button<=14) ) )
         {
@@ -311,13 +311,13 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
           // Standard code path to handle button press on most controllers
           joystate[JOYSTATE_FIRE1 + (ev->jbutton.button % 3)] = 1;
         }
-        swallowit = SDL_TRUE;
+          swallowit = SDL_TRUE;
       }
 
-        break;
+          break;
 
-      case SDL_JOYBUTTONUP:
-        if( ev->jbutton.which != (mode-JOYMODE_SDL0) ) return SDL_FALSE;
+        case SDL_JOYBUTTONUP:
+          if( ev->jbutton.which != (mode-JOYMODE_SDL0) ) return SDL_FALSE;
         if( ( joystate[JOYSTATE_TYPE] == JOYTYPE_DUALSENSE ) &&
             ( (ev->jbutton.button >= 11) && (ev->jbutton.button <= 14) ) )
         {
@@ -335,8 +335,8 @@ static SDL_bool dojoyevent( SDL_Event *ev, struct machine *oric, Sint16 mode, Ui
           // Standard code path to handle button release on most controllers
           joystate[JOYSTATE_FIRE1 + (ev->jbutton.button % 3)] = 0;
         }
-        swallowit = SDL_TRUE;
-        break;
+          swallowit = SDL_TRUE;
+          break;
       }
       break;
   }

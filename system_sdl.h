@@ -148,6 +148,7 @@ int SDL_COMPAT_SetPalette(SDL_Surface *surface, int flags, SDL_Color *colors, in
 void SDL_COMPAT_SetEventFilter(SDL_EventFilter filter);
 void SDL_COMPAT_Quit(SDL_bool freeall);
 void SDL_COMPAT_TakeScreenshot(char *fname);
+const char* SDL_COMPAT_JoystickName(SDL_Joystick *joystick);
 
 #ifdef __OPENGL_AVAILABLE__
 void SDL_COMPAT_GL_SwapBuffers(void);

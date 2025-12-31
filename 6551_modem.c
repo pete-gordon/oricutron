@@ -55,9 +55,9 @@ static Uint32 mdm_time_buf[CMD_BUF_SIZE];
 // FIXME: BUG: drops byte(s)... kind of buffer overflow ???
 #define DATA_BUF_SIZE   0x10000
 
-static int mdm_in = 0;
+static unsigned int mdm_in = 0;
 static Uint8 mdm_in_buf[DATA_BUF_SIZE];
-static int mdm_out = 0;
+static unsigned int mdm_out = 0;
 static Uint8 mdm_out_buf[DATA_BUF_SIZE];
 
 static SDL_bool connected = SDL_FALSE;
@@ -101,7 +101,7 @@ static void send_str(const char* s)
     if(mdm_out == DATA_BUF_SIZE)
     {
       memmove(mdm_out_buf, mdm_out_buf+1, DATA_BUF_SIZE-1);
-      mdm_in--;
+      mdm_out--;
     }
   }
 }
