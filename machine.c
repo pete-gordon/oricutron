@@ -1718,11 +1718,11 @@ void load_patches( struct machine *oric, char *fname )
     if( read_config_option( &filetmp[i], "keymap",                     &oric->keymap, keymapnames ) )                      continue;
 
     /*
-     * parse real patch line formated as:
+     * parse real patch line formatted as:
      * $xxxx:00112233445566778899AABBCCDDEEFF
      */
 
-    // atleast address and 1 byte required
+    // at least address and 1 byte required
     if(8 <= strlen(&filetmp[i]) && ';' != filetmp[i])
     {
       char* ptmp = &filetmp[i];

@@ -720,7 +720,7 @@ void wd17xx_seek_track( struct wd17xx *wd, Uint8 track, SDL_bool dofudge )
   // Is there a disk in the drive?
   if(wd->disk[wd->c_drive])
   {
-    // Yes. If we are trying to seek to a non-existant track, just seek as far as we can
+    // Yes. If we are trying to seek to a non-existent track, just seek as far as we can
     if(track >= wd->disk[wd->c_drive]->numtracks)
     {
       track = (wd->disk[wd->c_drive]->numtracks>0)?wd->disk[wd->c_drive]->numtracks-1:0;
@@ -970,7 +970,7 @@ unsigned char wd17xx_read( struct wd17xx *wd, unsigned short addr )
               wd->currsector = wd17xx_find_sector(wd, wd->r_sector);
               wd->crc        = 0xe295;
 
-              // If we hit the end of the track, thats fine, it just means the operation
+              // If we hit the end of the track, that's fine, it just means the operation
               // is finished.
               if(!wd->currsector)
               {

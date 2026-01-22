@@ -72,7 +72,7 @@
 #define _MAKE_BE16(X)
 #endif
 
-/* SDL compatability definitions and macroses */
+/* SDL compatibility definitions and macros */
 #if SDL_MAJOR_VERSION == 1
 typedef Uint16 SDL_COMPAT_KEY;        /* Used in 8912.c */
 typedef SDL_keysym SDL_COMPAT_KEYSYM;
@@ -126,7 +126,7 @@ typedef SDL_RendererInfo SDL_COMPAT_VideoInfo;
 #define SDLK_PRINT                    SDLK_PRINTSCREEN
 #endif
 
-/* SDL compatability protos */
+/* SDL compatibility protos */
 #ifdef WANT_WMINFO
 int SDL_COMPAT_GetWMInfo(SDL_SysWMinfo *info);
 #endif

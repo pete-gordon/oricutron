@@ -267,7 +267,7 @@ static CH376_BOOL system_get_disk_info(CH376_CONTEXT *context, CH376_LOCK root_l
 // Return 0 if a directory could not be locked (not a directory or not existing)
 static CH376_LOCK system_obtain_directory_lock(CH376_CONTEXT *context, const char *dir_path, CH376_LOCK root_lock);
 
-// Release a lock previouly obtained from system_obtain_directory_lock
+// Release a lock previously obtained from system_obtain_directory_lock
 // It is safe to call it with a 0
 static void system_release_directory_lock(CH376_CONTEXT *context, CH376_LOCK dir_lock);
 
@@ -1532,7 +1532,7 @@ static void cancel_all_io(struct ch376 *ch376)
     // Cancel data buffer read/write sessions
     ch376->bytes_to_read_write = 0;
 
-    // End directory browing or file i/o sessions
+    // End directory browsing or file i/o sessions
     system_finish_examine_directory(&ch376->context, ch376->current_directory_browsing);
     ch376->current_directory_browsing = (CH376_DIR)0;
     system_file_close(&ch376->context, ch376->current_file);
@@ -2353,7 +2353,7 @@ file_enum_go:
         }
         else
         {
-            dbg_printf("[WRITE][COMMAND][CH376_CMD_FILE_ENUM_GO] directory browing finished\n");
+            dbg_printf("[WRITE][COMMAND][CH376_CMD_FILE_ENUM_GO] directory browsing finished\n");
 
             system_finish_examine_directory(&ch376->context, ch376->current_directory_browsing);
             ch376->current_directory_browsing = (CH376_DIR)0;

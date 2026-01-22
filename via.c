@@ -190,10 +190,10 @@ void via_main_w_ca2ext( struct via *v )
 {
   switch( v->pcr & PCRF_CA2CON )
   {
-    case 0x00:  // Interrupt on negative transision
-    case 0x02:  // Independant negative transition
+    case 0x00:  // Interrupt on negative transition
+    case 0x02:  // Independent negative transition
     case 0x04:  // Interrupt on positive transition
-    case 0x06:  // Independant positive transition
+    case 0x06:  // Independent positive transition
       ay_set_bc1( &v->oric->ay, v->ca2 );
       break;
 
@@ -324,7 +324,7 @@ void via_write_portb( struct via *v, unsigned char mask, unsigned char data )
       (!(v->acr&VIRQF_CB1)) )
     v->irbl = v->irb;
 
-  // Is timer 2 counting PB6 negative transisions?
+  // Is timer 2 counting PB6 negative transitions?
   if( ( v->acr & ACRF_T2CON ) == 0 ) return;
 
   // Was there a negative transition?
@@ -994,15 +994,15 @@ void via_write_CA2( struct via *v, unsigned char data )
 {
   switch( v->pcr & PCRF_CA2CON )
   {
-    case 0x00:  // Interrupt on negative transision
-    case 0x02:  // Independant negative transition
+    case 0x00:  // Interrupt on negative transition
+    case 0x02:  // Independent negative transition
       if( ( v->ca2 ) && ( data == 0 ) )
         via_set_irq( v, VIRQF_CA2 );
       v->ca2 = data != 0;
       break;
 
     case 0x04:  // Interrupt on positive transition
-    case 0x06:  // Independant positive transition
+    case 0x06:  // Independent positive transition
       if( ( !v->ca2 ) && ( data != 0 ) )
         via_set_irq( v, VIRQF_CA2 );
       v->ca2 = data != 0;

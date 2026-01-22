@@ -396,7 +396,7 @@ Oricutron can emulate ACIA at address #31C (standard address for Telestrat).
 The emulation works for Oric, Atmos, Telestrat and Pravetz and can be used
 together with any disk type.
 
-The emulated ACIA communicates with the out-side world trough back-ends.
+The emulated ACIA communicates with the out-side world through back-ends.
 Back-ends can be configured from 'oricutron.cfg' or from command line
 (see default 'oricutron.cfg' for usage).
 
@@ -406,7 +406,7 @@ Back-ends are:
 - com       - Oricutron uses any real or virtual COM port in the host machine and communicates with the hardware attached to this serial port
 - modem     - unites ACIA with attached modem linked to internet with server and client sockets
 
-In 'modem' mode are available folowing 'AT' commands:
+In 'modem' mode are available following 'AT' commands:
 AT          - returns 'OK'
 ATZ         - initialize the modem
 AT&F        - initialize the modem
@@ -429,7 +429,7 @@ ROM patch files
 
 For detailed usage see included '.pch' files in roms subdirectory.
 
-Additionaly unlimited number of binary patches can be added:
+Additionally unlimited number of binary patches can be added:
 
 $XXXX:00112233445566778899AABBCCDDEEFF....
 $YYYY:AA55AA55....

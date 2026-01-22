@@ -57,7 +57,7 @@ void shut_filerequester( struct machine *oric )
 //   path  = initial path to show
 //   fname = initial contents of the filename textbox
 // It returns true if the user selected a file, although the file is not
-// guarranteed to exist.
+// guaranteed to exist.
 SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fname, int type )
 {
   GtkWidget *dialog;

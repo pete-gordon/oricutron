@@ -593,12 +593,12 @@ $(OBJECTS): %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $(notdir $@)
 	@$(CC) -MM $(CFLAGS) $< > $(notdir $*).d
 
-# Overide the default C rule for C++
+# Override the default C rule for C++
 %.o: %.cpp
 	$(CXX) -c $(CFLAGS) $< -o $(notdir $@)
 	@$(CXX) -MM $(CFLAGS) $< > $(notdir $*).d
 
-# Overide the default C rule for ObjC
+# Override the default C rule for ObjC
 %.o: %.m
 	$(CC) -c $(CFLAGS) $< -o $(notdir $@)
 	@$(CC) -MM $(CFLAGS) $< > $(notdir $*).d
