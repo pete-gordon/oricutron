@@ -505,8 +505,15 @@ SDL_Surface* SDL_COMPAT_SetVideoMode(int width, int height, int bitsperpixel, Ui
 
   if(flags & SDL_WINDOW_OPENGL)
   {
-    g_screen = SDL_GetWindowSurface(g_window);
+    /* In SDL2 a window is backed by EITHER a window framebuffer
+       (SDL_GetWindowSurface/SDL_UpdateWindowSurface) OR an OpenGL drawable
+       (SDL_GL_SwapWindow), never both. Calling SDL_GetWindowSurface() here put
+       the window into framebuffer-presentation mode, so the GL back buffer was
+       never shown (black window under Mesa/XWayland on Ubuntu 24.04).
+       In GL mode g_screen is only used as a non-NULL "success" sentinel, so we
+       create a tiny dummy surface instead of grabbing the window surface. */
     g_glcontext = SDL_GL_CreateContext(g_window);
+    g_screen = SDL_CreateRGBSurface(0, 1, 1, g_bpp, RMASK, GMASK, BMASK, AMASK);
 
     SDL_GL_SetSwapInterval(1);
   }
