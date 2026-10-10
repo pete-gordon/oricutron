@@ -24,7 +24,9 @@
 #endif
 
 #ifdef __APPLE__
-#include "CoreFoundation/CoreFoundation.h"
+#include <limits.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #endif
 
 #ifdef _MSC_VER
@@ -191,6 +193,7 @@ static char* swdepths[] = { "8", "16", "32", NULL };
 static char* sbarmodes[] = { "full", "nofps", "none", NULL };
 
 static char* fileprefix = 0;
+static char* userprefix = 0;
 
 // Initialize path prefix for locating program resources
 static void init_fileprefix(char* argv[])
@@ -214,17 +217,72 @@ static void init_fileprefix(char* argv[])
   fileprefix[len] = 0;
 
 #if defined(__APPLE__)
-  // When bundled, program is in <something>/Oricutron.app/Contents/MacOS/
-  // but data files are further up in the parent of Oricutron.app.
+  // When bundled, program is in <something>/Oricutron.app/Contents/MacOS/.
+  // Legacy layout: roms/, images/ etc. sit in the parent of Oricutron.app.
+  // Modern layout: they live in Oricutron.app/Contents/Resources/ and user
+  // files (config, tapes, disks, snapshots, captures) go to ~/Documents/Oricutron/.
   const char* suffix = ".app/Contents/MacOS/";
   int suffix_len = strlen(suffix);
   if(len > suffix_len && !strcasecmp(fileprefix + len - suffix_len, suffix))
   {
-    // Located in bundle - go to parent of .app dir
-    len -= suffix_len;                            // strip the suffix we matched
-    while(len && fileprefix[len-1] != PATHSEP)    // strip the .app dir
-      len--;
-    fileprefix[len] = 0;
+    char test[PATH_MAX];
+    struct stat st;
+    int applen = len - suffix_len;
+    while(applen && fileprefix[applen-1] != PATHSEP)  // strip the .app dir
+      applen--;
+
+    snprintf(test, sizeof(test), "%.*sroms", applen, fileprefix);
+    if(stat(test, &st) == 0 && S_ISDIR(st.st_mode))
+    {
+      // Legacy layout - go to parent of .app dir
+      fileprefix[applen] = 0;
+    }
+    else
+    {
+      // Self-contained bundle - use Contents/Resources/
+      const char* home = getenv("HOME");
+      char* res = malloc(len + 16);
+      snprintf(res, len + 16, "%.*sResources/", len - 6, fileprefix);  // replace "MacOS/"
+      free(fileprefix);
+      fileprefix = res;
+
+      if(home && *home)
+      {
+        static const char* subdirs[] = { "", "tapes", "disks", "teledisks", "pravdisks", "snapshots", "keymap", NULL };
+        int i;
+        userprefix = malloc(PATH_MAX);
+        snprintf(userprefix, PATH_MAX, "%s/Documents/Oricutron/", home);
+        for(i=0; subdirs[i]; i++)
+        {
+          snprintf(test, sizeof(test), "%s%s", userprefix, subdirs[i]);
+          mkdir(test, 0755);
+        }
+
+        // Seed an editable config from the bundled default on first run
+        snprintf(test, sizeof(test), "%soricutron.cfg", userprefix);
+        if(stat(test, &st) != 0)
+        {
+          char src[PATH_MAX];
+          FILE *in, *out;
+          snprintf(src, sizeof(src), "%soricutron.cfg", fileprefix);
+          if((in = fopen(src, "rb")))
+          {
+            if((out = fopen(test, "wb")))
+            {
+              char buf[4096];
+              size_t n;
+              while((n = fread(buf, 1, sizeof(buf), in)) > 0)
+                fwrite(buf, 1, n, out);
+              fclose(out);
+            }
+            fclose(in);
+          }
+        }
+
+        // Screenshots and AVI captures are written to the current directory
+        chdir(userprefix);
+      }
+    }
   }
   // else not bundled, stay in program directory
 #endif
@@ -238,6 +296,12 @@ static void init_fileprefix(char* argv[])
 const char* get_fileprefix()
 {
   return fileprefix;
+}
+
+// Get prefix string for user-writable files (falls back to the resource prefix)
+const char* get_userprefix()
+{
+  return userprefix ? userprefix : fileprefix;
 }
 
 // Check if filename looks to be absolute path
@@ -520,8 +584,7 @@ static void load_config(struct start_opts *sto, struct machine *oric)
   char tbtmp[32];
   char config_path[4096];
 
-  strcpy(config_path, "oricutron.cfg");
-  add_fileprefix(config_path, 4096);
+  snprintf(config_path, 4096, "%soricutron.cfg", get_userprefix());
   f = fopen(config_path, "r");
   if(!f) return;
 
@@ -2151,23 +2214,6 @@ int main(int argc, char* argv[])
 
 #ifndef WWW
   init_fileprefix(argv);
-#endif
-  // ----------------------------------------------------------------------------
-  // This makes relative paths work in C++ in Xcode by changing directory to the Resources folder inside the .app bundle
-#ifdef __APPLE__
-  CFBundleRef mainBundle = CFBundleGetMainBundle();
-  CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
-  char path[PATH_MAX];
-  if(!CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8 *)path, PATH_MAX))
-  {
-    // error!
-  }
-  CFRelease(resourcesURL);
-  // this directory is something/Oricutron.app/Contents/Resources
-  // go down 3 times to find the app containing directory
-  strcat(path, "/../../..");
-  chdir(path);
-  //printf("Current Path: %s\n", path);
 #endif
 
   memset(&ctx.oric, 0, sizeof(ctx.oric));

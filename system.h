@@ -68,6 +68,7 @@
 #endif
 
 const char* get_fileprefix();
+const char* get_userprefix();
 
 /* SDL related stuff */
 #include "system_sdl.h"

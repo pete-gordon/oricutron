@@ -130,7 +130,10 @@ $(info Target platform : $(PLATFORM))
 
 ####### PLATFORM SPECIFIC STUFF HERE #######
 
-### set SDL_LIB to 'sdl' or 'sdl2' for SDL2 (default is sdl)
+### set SDL_LIB to 'sdl' or 'sdl2' for SDL2 (default is sdl, sdl2 on macOS)
+ifeq ($(PLATFORM),osx)
+SDL_LIB ?= sdl2
+endif
 SDL_LIB ?= sdl
 $(info Using SDL lib   : $(SDL_LIB))
 $(info Using SDL prefix: $(SDL_PREFIX))
@@ -334,7 +337,7 @@ LFLAGS += $(CROSS_LFLAGS)
 else
 LFLAGS += $(shell $(SDL_LIB)-config --libs)
 endif
-LFLAGS += -lm -Wl,-framework,OpenGL -framework CoreFoundation -framework AppKit
+LFLAGS += -lm -Wl,-framework,OpenGL -framework CoreFoundation -framework AppKit -framework UniformTypeIdentifiers
 TARGET = $(TARGET_NAME)
 FILEREQ_OBJ =
 MSGBOX_OBJ =
@@ -657,21 +660,50 @@ package-beos package-haiku:
 	install -m 644 $(DOCFILES) $(PKGDIR)
 	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
 
+# Self-contained Oricutron.app: data in Contents/Resources, SDL dylibs in
+# Contents/Frameworks, ad-hoc signed. User files go to ~/Documents/Oricutron.
+OSX_APP = $(PKGDIR)/Oricutron.app
+OSX_SIGN_ID ?= -
+OSX_ICON_SRC = XCode/Oricutron/Oricutron/Images.xcassets/AppIcon.appiconset/logo1024.png
 package-osx: $(TARGET)
-	mkdir -p $(PKGDIR)/Oricutron.app/Contents/MacOS
-	mkdir -p $(PKGDIR)/Oricutron.app/Contents/Resources/images
-	mkdir -p $(PKGDIR)/Oricutron.app/Contents/Resources/roms
-	install -m 755 $(TARGET) $(PKGDIR)/Oricutron.app/Contents/MacOS/Oricutron
-	echo 'APPL????' > $(PKGDIR)/Oricutron.app/Contents/PkgInfo
-	sed "s/@@VERSION@@/$(VERSION_MAJ).$(VERSION_MIN)/g" Info.plist > $(PKGDIR)/Oricutron.app/Contents/Info.plist
-	install -m 644 XCode/Oricutron/Oricutron/winicon.icns $(PKGDIR)/Oricutron.app/Contents/Resources
-	install -m 644 images/* $(PKGDIR)/Oricutron.app/Contents/Resources/images
-	# XXX: SDL now opens files in bundles first, but not old versions
-	ln -s Oricutron.app/Contents/Resources/images $(PKGDIR)/images
-	install -m 644 roms/* $(PKGDIR)/Oricutron.app/Contents/Resources/roms
-	ln -s Oricutron.app/Contents/Resources/roms $(PKGDIR)/roms
+	rm -rf $(OSX_APP)
+	mkdir -p $(OSX_APP)/Contents/MacOS $(OSX_APP)/Contents/Frameworks
+	mkdir -p $(OSX_APP)/Contents/Resources/images $(OSX_APP)/Contents/Resources/roms
+	install -m 755 $(TARGET) $(OSX_APP)/Contents/MacOS/Oricutron
+	echo 'APPL????' > $(OSX_APP)/Contents/PkgInfo
+	sed -e "s/@@VERSION@@/$(VERSION_FULL)/g" \
+	    -e "s/@@MINOS@@/$$(otool -l $(TARGET) | awk '/minos/{print $$2; exit}')/g" \
+	    Info.plist > $(OSX_APP)/Contents/Info.plist
+	# Build a full-resolution icon from the 1024px logo (winicon.icns is 32px only)
+	rm -rf $(PKGDIR)/winicon.iconset && mkdir -p $(PKGDIR)/winicon.iconset
+	for sz in 16 32 128 256 512; do \
+	  sips -z $$sz $$sz $(OSX_ICON_SRC) --out $(PKGDIR)/winicon.iconset/icon_$${sz}x$${sz}.png >/dev/null; \
+	  sips -z $$((sz*2)) $$((sz*2)) $(OSX_ICON_SRC) --out $(PKGDIR)/winicon.iconset/icon_$${sz}x$${sz}@2x.png >/dev/null; \
+	done
+	iconutil -c icns $(PKGDIR)/winicon.iconset -o $(OSX_APP)/Contents/Resources/winicon.icns
+	rm -rf $(PKGDIR)/winicon.iconset
+	install -m 644 images/* $(OSX_APP)/Contents/Resources/images
+	install -m 644 roms/* $(OSX_APP)/Contents/Resources/roms
+	install -m 644 oricutron.cfg $(OSX_APP)/Contents/Resources
+	# Bundle SDL2 (sdl2-compat) and the SDL3 it dlopens from @loader_path
+	sdl2lib=$$(otool -L $(TARGET) | awk '/libSDL2/{print $$1}'); \
+	sdl2name=$$(basename $$sdl2lib); \
+	if [ -n "$$sdl2lib" ]; then \
+	  install -m 644 "$$(realpath $$sdl2lib)" $(OSX_APP)/Contents/Frameworks/$$sdl2name; \
+	  install_name_tool -id @rpath/$$sdl2name $(OSX_APP)/Contents/Frameworks/$$sdl2name; \
+	  install_name_tool -change $$sdl2lib @rpath/$$sdl2name $(OSX_APP)/Contents/MacOS/Oricutron; \
+	  install_name_tool -add_rpath @executable_path/../Frameworks $(OSX_APP)/Contents/MacOS/Oricutron; \
+	  sdl3dir=$$(dirname "$$(realpath $$sdl2lib)")/../../sdl3/lib; \
+	  [ -e "$$sdl3dir/libSDL3.dylib" ] || sdl3dir=$$(pkg-config --variable=libdir sdl3 2>/dev/null); \
+	  if [ -e "$$sdl3dir/libSDL3.dylib" ]; then \
+	    install -m 644 "$$(realpath $$sdl3dir/libSDL3.dylib)" $(OSX_APP)/Contents/Frameworks/libSDL3.dylib; \
+	    install_name_tool -id @rpath/libSDL3.dylib $(OSX_APP)/Contents/Frameworks/libSDL3.dylib; \
+	  fi; \
+	fi
+	codesign --force --sign "$(OSX_SIGN_ID)" --timestamp=none $(OSX_APP)/Contents/Frameworks/*.dylib
+	codesign --force --sign "$(OSX_SIGN_ID)" --timestamp=none $(OSX_APP)
 	install -m 644 $(DOCFILES) $(PKGDIR)
-	zip -ry9 $(PKGDIR).zip $(PKGDIR)/
+	cd $(dir $(PKGDIR)) && rm -f $(notdir $(PKGDIR)).zip && ditto -c -k --keepParent $(notdir $(PKGDIR)) $(notdir $(PKGDIR)).zip
 
 package-win32:
 	mkdir -p $(PKGDIR)/images

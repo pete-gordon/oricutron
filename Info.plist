@@ -3,26 +3,38 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>English</string>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>Oricutron</string>
 	<key>CFBundleExecutable</key>
 	<string>Oricutron</string>
 	<key>CFBundleIconFile</key>
 	<string>winicon.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>Oricutron</string>
+	<string>plus.gordon.oricutron</string>
 	<key>CFBundleInfoDictionaryVersion</key>
-	<string>@@VERSION@@</string>
+	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>Oricutron</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>@@VERSION@@</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>@@VERSION@@</string>
-	<key>NSMainNibFile</key>
-	<string>SDLMain</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.games</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>@@MINOS@@</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright Peter Gordon. GPL v2.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSSupportsAutomaticGraphicsSwitching</key>
+	<true/>
 </dict>
 </plist>
