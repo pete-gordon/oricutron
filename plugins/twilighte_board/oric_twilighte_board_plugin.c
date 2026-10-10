@@ -271,7 +271,7 @@ unsigned char twilighte_board_mapping_software_bank(struct twilighte *twilighte)
 
 unsigned char twilighte_board_mapping_bank(struct twilighte *twilighte)
 {
-  unsigned char bank;
+  unsigned char bank = 0;
   // RAM Overlay?
   if(twilighte->current_bank == 0)
     bank = 7;

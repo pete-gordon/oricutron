@@ -25,6 +25,7 @@
 #include <unistd.h>
 
 #import <Cocoa/Cocoa.h>
+#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 #include "system.h"
 #include "6502.h"
@@ -37,13 +38,18 @@
 #include "machine.h"
 #include "filereq.h"
 
-#ifndef MAC_OS_X_VERSION_10_9
-#define MAC_OS_X_VERSION_10_9 1090
-#endif
-
-#if MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_9
-#define NSModalResponseOK NSFileHandlingPanelOKButton
-#endif
+// Build content types for a list of file extensions. Oric file extensions
+// have no registered UTI, so this yields dynamic types matched by extension.
+static NSArray<UTType *> *types_for_extensions( NSArray<NSString *> *exts )
+{
+  NSMutableArray<UTType *> *types = [NSMutableArray array];
+  for (NSString *ext in exts) {
+    UTType *t = [UTType typeWithFilenameExtension:ext];
+    if (t)
+      [types addObject:t];
+  }
+  return types;
+}
 
 SDL_bool init_filerequester( struct machine *oric )
 {
@@ -124,15 +130,10 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
     [sp setDirectoryURL:[NSURL fileURLWithPath:[NSString stringWithUTF8String:path]]];
 
   if (pat) {
-      if (pat2) {
-          if (pat3)
-              [sp setAllowedFileTypes:[NSArray arrayWithObjects:pat, [pat uppercaseString], pat2,
-                                        [pat2 uppercaseString], pat3, [pat3 uppercaseString], nil]];
-          else
-              [sp setAllowedFileTypes:[NSArray arrayWithObjects:pat, [pat uppercaseString], pat2, [pat2 uppercaseString], nil]];
-      } else {
-          [sp setAllowedFileTypes:[NSArray arrayWithObjects:pat, [pat uppercaseString], nil]];
-      }
+      NSMutableArray<NSString *> *exts = [NSMutableArray arrayWithObjects:pat, [pat uppercaseString], nil];
+      if (pat2) [exts addObjectsFromArray:@[pat2, [pat2 uppercaseString]]];
+      if (pat3) [exts addObjectsFromArray:@[pat3, [pat3 uppercaseString]]];
+      [sp setAllowedContentTypes:types_for_extensions(exts)];
   }
 
   ret = [sp runModal] == NSModalResponseOK;
@@ -143,7 +144,7 @@ SDL_bool filerequester( struct machine *oric, char *title, char *path, char *fna
     return SDL_FALSE;
 
   strncpy( path,  [[[[sp URL] URLByDeletingLastPathComponent] path] UTF8String], 4096 ); path[4095] = 0;
-  strncpy( fname, [[[sp URL] lastPathComponent] UTF8String],   512  ); path[511]  = 0;
+  strncpy( fname, [[[sp URL] lastPathComponent] UTF8String],   512  ); fname[511] = 0;
 
   return ret;
 }

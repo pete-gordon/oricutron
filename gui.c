@@ -421,6 +421,14 @@ static void mkpath(char buf[MKPATH_MAX], const char* filename)
   strncat(buf, filename, MKPATH_MAX-strlen(buf)-1);
 }
 
+// Prepend user file prefix to filename
+static void mkuserpath(char buf[MKPATH_MAX], const char* filename)
+{
+  strncpy(buf, get_userprefix(), MKPATH_MAX-1);
+  buf[MKPATH_MAX-1] = 0;
+  strncat(buf, filename, MKPATH_MAX-strlen(buf)-1);
+}
+
 // Load a 24bit BMP for the GUI
 SDL_bool gimg_load(struct guiimg *gi)
 {
@@ -2272,13 +2280,13 @@ void preinit_gui(struct machine *oric)
   int i;
   for(i=0; i<NUM_TZ; i++) tz[i] = NULL;
   for(i=0; i<NUM_GIMG; i++) gimgs[i].buf = NULL;
-  mkpath(tapepath, "tapes");
+  mkuserpath(tapepath, "tapes");
   strcpy(tapefile, "");
-  mkpath(diskpath, "disks");
+  mkuserpath(diskpath, "disks");
   strcpy(diskfile, "");
-  mkpath(telediskpath, "teledisks");
+  mkuserpath(telediskpath, "teledisks");
   strcpy(telediskfile, "");
-  mkpath(pravdiskpath, "pravdisks");
+  mkuserpath(pravdiskpath, "pravdisks");
   strcpy(pravdiskfile, "");
   mkpath(atmosromfile, ROMPREFIX"basic11b");
   mkpath(oric1romfile, ROMPREFIX"basic10");
@@ -2296,9 +2304,9 @@ void preinit_gui(struct machine *oric)
   mkpath(telebankfiles[6], ROMPREFIX"hyperbas");
   mkpath(telebankfiles[7], ROMPREFIX"telmon24");
   set_render_mode(oric, RENDERMODE_NULL);
-  mkpath(snappath, "snapshots");
+  mkuserpath(snappath, "snapshots");
   strcpy(snapfile, "");
-  mkpath(mappingpath, "keymap");
+  mkuserpath(mappingpath, "keymap");
   strcpy(mappingfile, "");
 
 #ifndef __APPLE__

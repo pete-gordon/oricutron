@@ -505,8 +505,17 @@ SDL_Surface* SDL_COMPAT_SetVideoMode(int width, int height, int bitsperpixel, Ui
 
   if(flags & SDL_WINDOW_OPENGL)
   {
-    g_screen = SDL_GetWindowSurface(g_window);
+    // Don't use SDL_GetWindowSurface() here: it attaches a framebuffer to the
+    // window, after which SDL_GL_CreateContext() fails (SDL3 / sdl2-compat).
+    // The GL renderer only needs a non-NULL surface with the right size.
     g_glcontext = SDL_GL_CreateContext(g_window);
+    if(!g_glcontext)
+    {
+      printf("SDL_GL_CreateContext failed: %s\n", SDL_GetError());
+      return NULL;
+    }
+    g_screen = SDL_CreateRGBSurface(0, g_width, g_height, 32,
+                                    RMASK, GMASK, BMASK, AMASK);
 
     SDL_GL_SetSwapInterval(1);
   }
@@ -683,16 +692,5 @@ const char* SDL_COMPAT_JoystickName(SDL_Joystick *joystick)
 const char* SDL_COMPAT_JoystickName(SDL_Joystick *joystick)
 {
   return SDL_JoystickName(joystick);
-}
-#endif
-
-// This is an ugly hack for OSX will be removed
-#ifdef __APPLE__
-int32_t __isPlatformVersionAtLeast(int32_t Major, int32_t Minor, int32_t Subminor)
-{
-  (void) Major;
-  (void) Minor;
-  (void) Subminor;
-  return SDL_TRUE;
 }
 #endif

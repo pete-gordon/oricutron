@@ -48,22 +48,29 @@ void shut_msgbox( struct machine *oric )
 {
 }
 
+static NSModalResponse run_alert( const char *msg, NSString *button1, NSString *button2 )
+{
+  NSAlert *alert = [[NSAlert alloc] init];
+  [alert setMessageText:@"Oricutron Request"];
+  [alert setInformativeText:[NSString stringWithUTF8String:msg]];
+  [alert addButtonWithTitle:button1];
+  if (button2)
+    [alert addButtonWithTitle:button2];
+  return [alert runModal];
+}
+
 SDL_bool msgbox( struct machine *oric, int type, char *msg )
 {
-  NSAlert *alert;
   switch( type )
   {
     case MSGBOX_YES_NO:
-	  alert = [NSAlert alertWithMessageText:@"Oricutron Request" defaultButton:@"Yes" alternateButton:@"No" otherButton:nil informativeTextWithFormat:@"%s", msg];
-	  return ([alert runModal] == NSAlertDefaultReturn);
+      return (run_alert(msg, @"Yes", @"No") == NSAlertFirstButtonReturn);
 
     case MSGBOX_OK_CANCEL:
-	  alert = [NSAlert alertWithMessageText:@"Oricutron Request" defaultButton:@"Ok" alternateButton:@"Cancel" otherButton:nil informativeTextWithFormat:@"%s", msg];
-	  return ([alert runModal] == NSAlertDefaultReturn);
-    
+      return (run_alert(msg, @"Ok", @"Cancel") == NSAlertFirstButtonReturn);
+
     case MSGBOX_OK:
-	  alert = [NSAlert alertWithMessageText:@"Oricutron Request" defaultButton:@"Ok" alternateButton:nil otherButton:nil informativeTextWithFormat:@"%s", msg];
-	  [alert runModal];
+      run_alert(msg, @"Ok", nil);
       return SDL_TRUE;
   }
 
